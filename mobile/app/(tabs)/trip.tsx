@@ -60,8 +60,6 @@ const TripsIndexScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoaded, userLoaded, user]);
 
-  console.log('Events:', events);
-
   return (
     <ParallaxScrollView
     headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}

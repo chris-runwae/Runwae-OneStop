@@ -20,45 +20,36 @@ const TripsIndexScreen = () => {
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
 
-  // READ - Fetch all events for current user
-  const fetchEvents = useCallback(async (): Promise<void> => {
-    if (!user) {
-      console.log('User not loaded yet');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const supabase = await getSupabaseClient(getToken);
-
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setEvents(data || []);
-      console.log('Events fetched:', data);
-    } catch (error) {
-      const err = error as Error;
-      console.error('Error fetching events:', err.message);
-      Alert.alert('Error', err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, getToken]);
-
   // Fetch events on component mount
   useEffect(() => {
     if (userLoaded && authLoaded && user) {
-      fetchEvents();
-      console.log('Events fetched successfully');
-    }
+      (async () => {
+        setLoading(true);
+        try {
+          const supabase = await getSupabaseClient(getToken);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoaded, userLoaded, user]);
+          const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          setEvents(data || []);
+          console.log('Events fetched:', data);
+        } catch (error) {
+          const err = error as Error;
+          console.error('Error fetching events:', err.message);
+          Alert.alert('Error', err.message);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [authLoaded, userLoaded, user, getToken]);
+
+  console.log('Events:', events);
 
   return (
     <ParallaxScrollView

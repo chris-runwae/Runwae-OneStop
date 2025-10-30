@@ -26,7 +26,7 @@ export default function Page() {
       // and redirect the user
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('/')
+        router.replace('/(tabs)')
       } else {
         // If the status isn't complete, check why. User might need to
         // complete further steps.
@@ -40,7 +40,7 @@ export default function Page() {
   }
 
   return (
-    <View>
+    <View className="flex-1 items-center justify-center">
       <Text>Sign in</Text>
       <TextInput
         autoCapitalize="none"

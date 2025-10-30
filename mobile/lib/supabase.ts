@@ -12,3 +12,22 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     detectSessionInUrl: false,
   },
 })
+
+export const getSupabaseClient = async (
+  getToken: (options?: { template?: string }) => Promise<string | null>
+) => {
+  const token = await getToken({ template: 'supabase' });
+  if (!token) {
+    throw new Error('Authentication token unavailable');
+  }
+
+  const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+
+  return supabase;
+}

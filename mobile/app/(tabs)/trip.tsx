@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Alert, Platform, StyleSheet } from 'react-native';
+import { Alert, Button, Platform, StyleSheet } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 
@@ -11,6 +11,7 @@ import { Link, useRouter } from 'expo-router';
 import { SignOutButton } from '@/components/SignOutButton';
 
 import { getSupabaseClient } from '@/lib/supabase';
+import { searchViator } from '@/services/viator';
 
 const TripsIndexScreen = () => {
   const router = useRouter();
@@ -37,7 +38,7 @@ const TripsIndexScreen = () => {
           if (error) throw error;
 
           setEvents(data || []);
-          console.log('Events fetched:', data);
+          // console.log('Events fetched:', data);
         } catch (error) {
           const err = error as Error;
           console.error('Error fetching events:', err.message);
@@ -47,9 +48,20 @@ const TripsIndexScreen = () => {
         }
       })();
     }
-  }, [authLoaded, userLoaded, user, getToken]);
+  }, [authLoaded, userLoaded, user]);
 
-  console.log('Events:', events);
+  async function handleSearch() {
+    const results = await searchViator({
+      filters: {
+        lowestPrice: 10, // override default
+        highestPrice: 300,
+      },
+    });
+  
+    console.log('Viator results:', JSON.stringify(results, null, 2));
+  }
+
+  // console.log('Events:', events);
 
   return (
     <ParallaxScrollView
@@ -108,6 +120,7 @@ const TripsIndexScreen = () => {
       </ThemedText>
     </ThemedView>
     <SignOutButton />
+    <Button title="Search Viator" onPress={() => handleSearch()} />
   </ParallaxScrollView>
   );
 };

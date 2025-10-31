@@ -23,6 +23,15 @@ export type EventCategory =
   | "family"
   | "other";
 
+export type TripCategory =
+  | "leisure"
+  | "business"
+  | "family"
+  | "adventure"
+  | "cultural"
+  | "romantic"
+  | "other";
+
 export interface Trip {
   id: string;
   user_id: string;
@@ -59,6 +68,55 @@ export interface Trip {
   // Timestamps
   created_at?: string;
   updated_at?: string;
+}
+
+export interface FeaturedTrip {
+  id: string;
+  title: string;
+  destination: string;
+  description?: string | null;
+  category?: TripCategory | null;
+  estimatedBudget?: number | null;
+  currency?: string | null;
+  coverImageUrl?: string | null;
+  imageUrls?: string[] | null;
+  startDate?: string | null; // ISO date string
+  endDate?: string | null; // ISO date string
+  status?: TripStatus;
+  visibility?: TripVisibility;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TripType = "featured" | "user";
+
+export interface TripItinerary {
+  id: string;
+  tripId: string;
+  tripType: TripType;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  date: string; // ISO date
+  time?: string | null;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
+  durationMinutes?: number | null;
+  cost?: number | null;
+  currency?: string;
+  bookingReference?: string | null;
+  notes?: string | null;
+  orderIndex: number;
+  isCompleted: boolean;
+  completedAt?: string | null;
+  createdBy?: string | null;
+  canBeDeletedBy?: string | null;
+  coverImageUrl?: string | null;
+  imageUrls?: string[] | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateTripInput {

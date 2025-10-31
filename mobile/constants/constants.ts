@@ -12,8 +12,51 @@ export const ICON_NAMES = {
 
 export type IconNameType = (typeof ICON_NAMES)[keyof typeof ICON_NAMES];
 
+export interface SuggestedItinerary {
+  id: string;
+  title: string;
+  location: string;
+  image: any;
+}
+
+const SUGGESTED_ITINERARIES: SuggestedItinerary[] = [
+  {
+    id: "1",
+    title: "FIFA World Cup 2026",
+    location: "New York, USA",
+    image:
+      "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1200&q=80",
+    // 🏟️ Football stadium lights
+  },
+  {
+    id: "2",
+    title: "Lake Como",
+    location: "Como, Italy",
+    image:
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+    // 🌅 Classic Lake Como panorama
+  },
+  {
+    id: "3",
+    title: "Christmas @ Time Square",
+    location: "New York, USA",
+    image:
+      "https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1200&q=80",
+    // 🎄 Times Square during winter
+  },
+  {
+    id: "4",
+    title: "Santorini Sunset",
+    location: "Santorini, Greece",
+    image:
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+    // 🌇 Iconic Santorini sunset with blue domes
+  },
+];
+
 export const constants = {
   ORIENTATION,
   ...ORIENTATION,
   ...ICON_NAMES,
+  SUGGESTED_ITINERARIES,
 };

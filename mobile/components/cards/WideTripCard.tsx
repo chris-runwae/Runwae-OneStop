@@ -111,5 +111,3 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
 };
 
 export default WideTripCard;
-
-const styles = StyleSheet.create({});

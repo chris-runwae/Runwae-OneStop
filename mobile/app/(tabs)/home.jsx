@@ -1,17 +1,26 @@
-import { ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 
 import {
   IconButton,
   ScreenContainer,
+  SectionHeader,
   Spacer,
   WelcomeAvatar,
   UpcomingTripContainer,
 } from "@/components";
-// import useTrips from "@/hooks/useTrips";
-import { ICON_NAMES } from "@/constants";
+import useTrips from "@/hooks/useTrips";
+import { COLORS, ICON_NAMES } from "@/constants";
 
 export default function HomeScreen2() {
-  // const { trips, nextTrip } = useTrips();
+  const { featuredTrips, loading } = useTrips();
+
+  if (loading) {
+    return (
+      <ScreenContainer header={{ leftComponent: <WelcomeAvatar /> }}>
+        <ActivityIndicator size="large" color={COLORS.pink.default} />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer
@@ -25,13 +34,19 @@ export default function HomeScreen2() {
         leftComponent: <WelcomeAvatar />,
       }}
     >
-      {/* <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" /> */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollViewContent}
       >
         <Spacer size={32} vertical />
         <UpcomingTripContainer linkText="More" linkTo="/explore" />
+
+        <Spacer size={32} vertical />
+        <SectionHeader
+          title="Featured Trips"
+          linkText="More"
+          linkTo="/explore"
+        />
       </ScrollView>
     </ScreenContainer>
   );

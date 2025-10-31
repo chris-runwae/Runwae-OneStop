@@ -1,24 +1,18 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import React from "react";
-import { Fonts } from "@/constants/theme";
-import { ExpandLink, Spacer, ExpandLinkProps } from "@/components";
+import { Fonts } from "@/constants";
+import { ExpandLink, Spacer, ExpandLinkProps, Text } from "@/components";
 
 type SectionHeaderProps = ExpandLinkProps & {
   title: string;
 };
 
-const SectionHeader = ({
-  title,
-  linkText,
-  linkTo,
-}: SectionHeaderProps) => {
+const SectionHeader = ({ title, linkText, linkTo }: SectionHeaderProps) => {
   return (
     <>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionHeadersText}>{title}</Text>
-        {linkText && (
-          <ExpandLink linkText={linkText} linkTo={linkTo!} />
-        )}
+        {linkText && <ExpandLink linkText={linkText} linkTo={linkTo!} />}
       </View>
 
       <Spacer size={16} vertical />
@@ -33,11 +27,11 @@ const styles = StyleSheet.create({
   sectionHeadersText: {
     fontFamily: Fonts.rounded,
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 });

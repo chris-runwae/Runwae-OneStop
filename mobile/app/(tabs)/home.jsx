@@ -1,24 +1,17 @@
-import { Image } from "expo-image";
-import { Pressable, StyleSheet, useColorScheme } from "react-native";
-import { BellIcon } from "lucide-react-native";
-
-import { HelloWave } from "@/components/hello-wave";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import { ScrollView, StyleSheet } from "react-native";
 
 import {
   IconButton,
-  SectionHeader,
   ScreenContainer,
+  Spacer,
   WelcomeAvatar,
+  UpcomingTripContainer,
 } from "@/components";
-import useTrips from "@/hooks/useTrips";
-import { Colors, ICON_NAMES } from "@/constants";
+// import useTrips from "@/hooks/useTrips";
+import { ICON_NAMES } from "@/constants";
 
 export default function HomeScreen2() {
-  const colorScheme = useColorScheme() ?? "light";
-  const colors = Colors[colorScheme];
-  const { trips, nextTrip } = useTrips();
+  // const { trips, nextTrip } = useTrips();
 
   return (
     <ScreenContainer
@@ -32,12 +25,14 @@ export default function HomeScreen2() {
         leftComponent: <WelcomeAvatar />,
       }}
     >
-      {/* <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView> */}
-
       {/* <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" /> */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+      >
+        <Spacer size={16} vertical />
+        <UpcomingTripContainer linkText="More" linkTo="/explore" />
+      </ScrollView>
     </ScreenContainer>
   );
 }
@@ -48,15 +43,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
+  scrollViewContent: {
+    paddingHorizontal: 16,
   },
 });

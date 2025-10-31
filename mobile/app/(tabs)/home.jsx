@@ -1,15 +1,20 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-import { SignOutButton } from '@/components/SignOutButton';
+// import { Link } from 'expo-router';
 import { SectionHeader } from '@/components';
+import useTrips from '@/hooks/useTrips';
 
 export default function HomeScreen2() {
+  const { trips, events } = useTrips();
+
+  console.log('Trips:  ', JSON.stringify(trips));
+  // console.log('Events:  ', JSON.stringify(events));
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -22,7 +27,7 @@ export default function HomeScreen2() {
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
-      </ThemedView>``
+      </ThemedView>
 
       <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" />
     </ParallaxScrollView>

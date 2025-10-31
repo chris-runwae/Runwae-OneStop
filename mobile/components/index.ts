@@ -7,6 +7,7 @@ import IconButton from "./icons/IconButton";
 import UpcomingTripContainer from "./containers/UpcomingTripContainer";
 import UserAvatar from "./containers/UserAvatar";
 import WelcomeAvatar from "./containers/WelcomeAvatar";
+import WideTripCard from "./cards/WideTripCard";
 
 export {
   Spacer,
@@ -19,4 +20,5 @@ export {
   UpcomingTripContainer,
   UserAvatar,
   WelcomeAvatar,
+  WideTripCard,
 };

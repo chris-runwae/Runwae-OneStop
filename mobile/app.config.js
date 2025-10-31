@@ -51,6 +51,14 @@ export default {
       ],
       "expo-sqlite",
       "expo-secure-store",
+      [
+        "sentry-expo",
+        {
+          organization: "runwae",
+          project: "react-native",
+          setCommits: false,
+        },
+      ],
     ],
 
     experiments: {

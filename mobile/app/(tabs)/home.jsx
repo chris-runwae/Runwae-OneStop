@@ -10,10 +10,10 @@ import { SectionHeader } from '@/components';
 import useTrips from '@/hooks/useTrips';
 
 export default function HomeScreen2() {
-  const { trips, events } = useTrips();
+  const { trips, nextTrip } = useTrips();
 
-  console.log('Trips:  ', JSON.stringify(trips));
-  // console.log('Events:  ', JSON.stringify(events));
+  // console.log('Trips:  ', JSON.stringify(trips));
+  console.log('Next Trip: ', JSON.stringify(nextTrip));
 
   return (
     <ParallaxScrollView

@@ -6,7 +6,12 @@ import { HelloWave } from "@/components/hello-wave";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { IconButton, SectionHeader, ScreenContainer } from "@/components";
+import {
+  IconButton,
+  SectionHeader,
+  ScreenContainer,
+  WelcomeAvatar,
+} from "@/components";
 import useTrips from "@/hooks/useTrips";
 import { Colors, ICON_NAMES } from "@/constants";
 
@@ -24,14 +29,15 @@ export default function HomeScreen2() {
             onPress={() => console.log("Notifications")}
           />
         ),
+        leftComponent: <WelcomeAvatar />,
       }}
     >
-      <ThemedView style={styles.titleContainer}>
+      {/* <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
-      </ThemedView>
+      </ThemedView> */}
 
-      <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" />
+      {/* <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" /> */}
     </ScreenContainer>
   );
 }

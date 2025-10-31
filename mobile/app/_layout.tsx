@@ -1,3 +1,4 @@
+import * as Sentry from "sentry-expo";
 import {
   DarkTheme,
   DefaultTheme,
@@ -18,17 +19,11 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-function TabLayout() {
-  return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="modal"
-        options={{ presentation: "modal", title: "Modal" }}
-      />
-    </Stack>
-  );
-}
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enableInExpoDevelopment: true,
+  debug: __DEV__, // logs info in dev mode
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

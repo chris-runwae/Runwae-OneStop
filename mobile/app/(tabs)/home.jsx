@@ -30,7 +30,7 @@ export default function HomeScreen2() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollViewContent}
       >
-        <Spacer size={16} vertical />
+        <Spacer size={32} vertical />
         <UpcomingTripContainer linkText="More" linkTo="/explore" />
       </ScrollView>
     </ScreenContainer>

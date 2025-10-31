@@ -1,12 +1,13 @@
 import {
   StyleSheet,
-  Text,
   useColorScheme,
   View,
   ImageBackground,
   Pressable,
 } from "react-native";
 import React from "react";
+
+import { Text } from "@/components";
 import { Colors } from "@/constants/theme";
 import { Trip } from "@/types/trips.types";
 
@@ -32,7 +33,7 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
 
   const styles = StyleSheet.create({
     container: {
-      minHeight: 260,
+      height: 260,
       width: "100%",
       overflow: "hidden",
       borderRadius: 12,
@@ -65,30 +66,37 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
       justifyContent: "space-between",
       paddingBottom: 16,
     },
+    titleContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingBottom: 16,
+    },
 
     //Text Styles
     title: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: "600",
       lineHeight: 24,
-      color: colors.text,
+      color: colors.white,
     },
     infoText: {
       fontSize: 12,
       fontWeight: "400",
       lineHeight: 16.5,
-      color: colors.textColors.subtitle,
+      color: colors.white,
     },
   });
+
   return (
     <ImageBackground source={{ uri: coverImageUrl }} style={styles.container}>
       <Pressable onPress={() => {}} style={styles.cardContent}>
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>{trip.title}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>{trip.title}</Text>
+          </View>
           <View style={styles.infoContainer}>
-            {/* <Text style={styles.infoText}>
-              {people} people | {duration} days
-            </Text> */}
+            <Text style={styles.infoText}>{trip?.visibility}</Text>
             {/* <DateRange startDate={startDate} endDate={endDate} /> */}
           </View>
         </View>

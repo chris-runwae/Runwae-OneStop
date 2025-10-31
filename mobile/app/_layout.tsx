@@ -32,6 +32,11 @@ export default function RootLayout() {
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     Constants.expoConfig?.extra?.clerkPublishableKey;
 
+  if (!publishableKey) {
+    Sentry.Native.captureMessage("❌ Missing Clerk publishable key");
+    console.error("❌ Missing Clerk publishable key");
+  }
+
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

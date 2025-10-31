@@ -10,7 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Link, useRouter } from 'expo-router';
 import { SignOutButton } from '@/components/SignOutButton';
 
-import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseClient, supabase } from '@/lib/supabase';
 import { searchViator } from '@/services/viator';
 
 const TripsIndexScreen = () => {
@@ -59,6 +59,16 @@ const TripsIndexScreen = () => {
     });
   
     console.log('Viator results:', JSON.stringify(results, null, 2));
+
+// const { data, error } = await supabase.functions.invoke('viator', {
+//   body: { endpoint: "products/search", body: { filtering: { destination: "732" } } }
+// })
+
+//   console.log('Viator results:', JSON.stringify(data, null, 2));
+//   if (error) {
+//     console.log('Error calling Viator:', error);
+//   }
+
   }
 
   // console.log('Events:', events);

@@ -1,19 +1,36 @@
 // supabase/functions/viator/index.ts
+export const config = {
+  runtime: "edge",
+  allowUnauthenticated: true,
+};
+
 export default async function handler(req: Request): Promise<Response> {
+  console.log("Request received:", req);
   const VIATOR_API_KEY = Deno.env.get("VIATOR_API_KEY");
+  const supabaseKey = Deno.env.get("SUPABASE_KEY");
+  console.log("VIATOR_API_KEY loaded?", !!VIATOR_API_KEY);
 
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
   try {
+    console.log("Incoming headers:", Object.fromEntries(req.headers.entries()));
     const { endpoint, method = "GET", params = {}, headers = {}, body } = await req.json();
+
+    console.log("Sending headers to Viator:", {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "exp-api-key": VIATOR_API_KEY ? "[HIDDEN]" : "MISSING",
+      "Authorization": `Bearer ${supabaseKey}`,
+    });
 
     const response = await fetch(`https://api.viator.com/partner/${endpoint}`, {
       method,
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${VIATOR_API_KEY}`,
+        "Accept": "application/json;version=2.0",
+        "exp-api-key": `${VIATOR_API_KEY}`,
         ...headers
       },
       body: method === "GET" ? undefined : JSON.stringify(body ?? params)

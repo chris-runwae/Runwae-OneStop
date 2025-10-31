@@ -43,7 +43,6 @@ export default function HomeScreen2() {
       >
         <Spacer size={32} vertical />
         <UpcomingTripContainer linkText="More" linkTo="/explore" />
-
         <Spacer size={32} vertical />
         {featuredTrips.length > 0 && (
           <>

@@ -1,4 +1,4 @@
-import * as Sentry from "sentry-expo";
+import * as Sentry from "@sentry/react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -21,11 +21,27 @@ export const unstable_settings = {
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  enableInExpoDevelopment: true,
-  debug: __DEV__, // logs info in dev mode
+  enabled: !__DEV__,
+  // enabled: true,
+  sendDefaultPii: true,
+  // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
+  // We recommend adjusting this value in production.
+  // Learn more at
+  // https://docs.sentry.io/platforms/react-native/configuration/options/#traces-sample-rate
+  tracesSampleRate: 1.0,
+  // Enable logs to be sent to Sentry
+  // Learn more at https://docs.sentry.io/platforms/react-native/logs/
+  enableLogs: true,
+  // profilesSampleRate is relative to tracesSampleRate.
+  // Here, we'll capture profiles for 100% of transactions.
+  profilesSampleRate: 1.0,
+  // Record session replays for 100% of errors and 10% of sessions
+  replaysOnErrorSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  integrations: [Sentry.mobileReplayIntegration()],
 });
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
 
   const publishableKey =
@@ -33,7 +49,7 @@ export default function RootLayout() {
     Constants.expoConfig?.extra?.clerkPublishableKey;
 
   if (!publishableKey) {
-    Sentry.Native.captureMessage("❌ Missing Clerk publishable key");
+    Sentry.captureException(new Error("❌ Missing Clerk publishable key"));
     console.error("❌ Missing Clerk publishable key");
   }
 
@@ -46,3 +62,5 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

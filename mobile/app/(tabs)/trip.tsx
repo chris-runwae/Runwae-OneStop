@@ -51,24 +51,23 @@ const TripsIndexScreen = () => {
   }, [authLoaded, userLoaded, user]);
 
   async function handleSearch() {
-    const results = await searchViator({
-      filters: {
-        lowestPrice: 10, // override default
-        highestPrice: 300,
-      },
-    });
-  
-    console.log('Viator results:', JSON.stringify(results, null, 2));
+    //Call indirectly through service functions, this is safer than direct calls to the API, still need to check the headers are correct. WIP
+    // const results = await searchViator({
+    //   filters: {
+    //     lowestPrice: 10, // override default
+    //     highestPrice: 300,
+    //   },
+    // });
 
-// const { data, error } = await supabase.functions.invoke('viator', {
-//   body: { endpoint: "products/search", body: { filtering: { destination: "732" } } }
-// })
+    //Call directly through Supabase Functions, works, can expand body
+    const { data, error } = await supabase.functions.invoke('viator', {
+      body: { name: 'Super' },
+    })
 
-//   console.log('Viator results:', JSON.stringify(data, null, 2));
-//   if (error) {
-//     console.log('Error calling Viator:', error);
-//   }
-
+    console.log('Viator results:', JSON.stringify(data, null, 2));
+    if (error) {
+      console.log('Error calling Viator:', error);
+    }
   }
 
   // console.log('Events:', events);

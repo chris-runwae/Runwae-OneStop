@@ -55,6 +55,14 @@ export const COLORS = {
     lighter: "#FFC5C5",
     dangerBorder: "#D30200",
   },
+  pink: {
+    default: "#FF2E92",
+    light: "#FFF0F4",
+    border: "#FF96BA",
+    dark: "#FE6FA6",
+    darkBackground: "#FFF0F4",
+    // darkBorder: "#FF96BA",
+  },
 };
 
 export const Colors = {
@@ -98,6 +106,11 @@ export const Colors = {
     borderColors: {
       default: COLORS.gray[750],
       subtle: COLORS.gray[380],
+    },
+    primaryColors: {
+      default: COLORS.pink.default,
+      background: COLORS.pink.light,
+      border: COLORS.pink.border,
     },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[700],
@@ -145,6 +158,11 @@ export const Colors = {
     borderColors: {
       default: COLORS.gray[750],
       subtle: COLORS.gray[750],
+    },
+    primaryColors: {
+      default: COLORS.pink.dark,
+      background: COLORS.pink.darkBackground,
+      border: COLORS.pink.border,
     },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[500],

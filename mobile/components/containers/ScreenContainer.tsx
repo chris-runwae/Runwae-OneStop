@@ -42,6 +42,8 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
       alignItems: "center",
       paddingHorizontal: 16,
       paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderColor: Colors[colorScheme].borderColors.subtle,
     },
     rightComponent: {
       flex: 1,

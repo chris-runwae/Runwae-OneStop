@@ -89,10 +89,11 @@ export const Colors = {
     textColors: {
       default: COLORS.black.default,
       subtle: COLORS.gray[750],
+      subtitle: COLORS.gray[550],
     },
     borderColors: {
       default: COLORS.gray[750],
-      subtle: COLORS.gray[600],
+      subtle: COLORS.gray[380],
     },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[700],
@@ -131,10 +132,11 @@ export const Colors = {
     textColors: {
       default: COLORS.white.base,
       subtle: COLORS.gray[650],
+      subtitle: COLORS.gray[450],
     },
     borderColors: {
       default: COLORS.gray[750],
-      subtle: COLORS.gray[600],
+      subtle: COLORS.gray[750],
     },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[500],

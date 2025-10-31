@@ -5,6 +5,7 @@ import ScreenContainer from "./containers/ScreenContainer";
 import Text from "./utils/Text";
 import IconButton from "./icons/IconButton";
 import UserAvatar from "./containers/UserAvatar";
+import WelcomeAvatar from "./containers/WelcomeAvatar";
 
 export {
   Spacer,
@@ -15,4 +16,5 @@ export {
   Text,
   IconButton,
   UserAvatar,
+  WelcomeAvatar,
 };

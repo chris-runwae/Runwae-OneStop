@@ -2,7 +2,6 @@ import React from "react";
 import {
   StyleProp,
   StyleSheet,
-  Text,
   View,
   ViewStyle,
   useColorScheme,
@@ -11,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BellIcon } from "lucide-react-native";
 import { Colors } from "@/constants";
+import { Text } from "@/components";
 
 type ScreenContainerProps = {
   children?: React.ReactNode;
@@ -24,6 +24,7 @@ type ScreenContainerProps = {
 
 const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
   const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
@@ -51,7 +52,6 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
       alignItems: "flex-start",
     },
     headerTitle: {
-      color: Colors[colorScheme].headerText,
       fontFamily: "Space Grotesk",
       fontWeight: "500",
       fontSize: 25,
@@ -77,7 +77,12 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
   });
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: Colors[colorScheme].background },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.leftComponent}>
           {header?.leftComponent ? (
@@ -92,13 +97,15 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
             header?.rightComponent
           ) : (
             <View style={styles.svgContainer}>
-              <BellIcon size={20} color={Colors[colorScheme].headerIcon} />
+              <BellIcon size={20} color={colors.headerIcon} />
             </View>
           )}
         </View>
       </View>
 
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
+        {children}
+      </View>
     </View>
   );
 };

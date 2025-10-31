@@ -1,25 +1,28 @@
 import { Image } from "expo-image";
-import { StyleSheet, useColorScheme } from "react-native";
+import { Pressable, StyleSheet, useColorScheme } from "react-native";
 import { BellIcon } from "lucide-react-native";
 
 import { HelloWave } from "@/components/hello-wave";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-import { SectionHeader, ScreenContainer } from "@/components";
+import { IconButton, SectionHeader, ScreenContainer } from "@/components";
 import useTrips from "@/hooks/useTrips";
-import { Colors } from "@/constants";
+import { Colors, ICON_NAMES } from "@/constants";
 
 export default function HomeScreen2() {
   const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
   const { trips, nextTrip } = useTrips();
-  // console.log('Next Trip: ', JSON.stringify(nextTrip));
 
   return (
     <ScreenContainer
       header={{
         rightComponent: (
-          <BellIcon size={20} color={Colors[colorScheme].headerIcon} />
+          <IconButton
+            icon={ICON_NAMES.BELL}
+            onPress={() => console.log("Notifications")}
+          />
         ),
       }}
     >

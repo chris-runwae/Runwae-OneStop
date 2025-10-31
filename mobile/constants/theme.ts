@@ -3,87 +3,169 @@
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = "#0a7ea4";
+const tintColorDark = "#fff";
+
+export const COLORS = {
+  black: {
+    default: "#000000",
+    subtle: "#000000",
+    base: "#000000",
+    dark: "#0D0D0D",
+    dark950: "#131313",
+    dark900: "#171717",
+    dark880: "#1E1E1E",
+    dark870: "#1F1F1F",
+  },
+  gray: {
+    800: "#333333",
+    750: "#3B3B3B",
+    740: "#3C3C3C",
+    700: "#575757",
+    650: "#747474",
+    600: "#878787",
+    550: "#A8A8A8",
+    500: "#BFBFBF",
+    490: "#BEBEBE",
+    450: "#D4D4D4",
+    440: "#D9D9D9",
+    400: "#E4E4E4",
+    390: "#E8E8E8",
+    380: "#EDEDED",
+    360: "#F0F0F0",
+    350: "#FAFAFA",
+  },
+  white: {
+    base: "#FFFFFF",
+    default: "#FFFFFF",
+    translucent13: "#FFFFFF21",
+    translucent36: "#FFFFFF5C",
+    translucent43: "#FFFFFF6E",
+    translucent26: "#FFFFFF42",
+  },
+  red: {
+    dark: "#4E1010",
+    light: "#F4C6C6",
+    medium: "#C31D1D",
+    bright: "#DA2020",
+    base: "#FF0000",
+    pale: "#FFB6B6",
+    lighter: "#FFC5C5",
+    dangerBorder: "#D30200",
+  },
+};
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: "#687076",
+    tabIconDefault: "#687076",
     tabIconSelected: tintColorLight,
 
     //Hannefah's Colors
-    black: '#000000',
-    white: '#FFFFFF',
-    textBlack: '#0A071A',
-    pink500: '#FF2E92', //Move this to colors palette later
-    secondaryText: '#ABACB9',
-    shadow: '#3E3445',
-    borderGray: '#E7E8EE',
-    backgroundColor: '#F6F6F9',
-    headerText: '#212134',
-    headerGrey: '#EAEAEF',
-    headerIcon: '#C0C0CF',
-    imageOverlay: '#00000073', //rgba(0, 0, 0, 0.45)
-    imageOverlay35: '#00000059', //rgba(0, 0, 0, 0.35)
-    iconBorderGrey: '#A5A5BA',
-    pillBorderGrey: '#878787',
-    greyBackgroundBorder: '#DCDCE4',
+    black: "#000000",
+    white: "#FFFFFF",
+    textBlack: "#0A071A",
+    pink500: "#FF2E92", //Move this to colors palette later
+    secondaryText: "#ABACB9",
+    shadow: "#3E3445",
+    borderGray: "#E7E8EE",
+    backgroundColor: "#F6F6F9",
+    headerText: "#212134",
+    headerGrey: "#EAEAEF",
+    headerIcon: "#C0C0CF",
+    imageOverlay: "#00000073", //rgba(0, 0, 0, 0.45)
+    imageOverlay35: "#00000059", //rgba(0, 0, 0, 0.35)
+    iconBorderGrey: "#A5A5BA",
+    pillBorderGrey: "#878787",
+    greyBackgroundBorder: "#DCDCE4",
+
+    //variable names
+    background: COLORS.white.base,
+    card: COLORS.white.default,
+    text: COLORS.black.default,
+    textColors: {
+      default: COLORS.black.default,
+      subtle: COLORS.gray[750],
+    },
+    borderColors: {
+      default: COLORS.gray[750],
+      subtle: COLORS.gray[600],
+    },
+    primary: COLORS.red.medium,
+    secondary: COLORS.gray[700],
+    border: COLORS.gray[400],
+    placeholder: COLORS.gray[500],
+    notification: COLORS.red.bright,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: "#9BA1A6",
+    tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
 
     //Hannefah's Colors
-    black: '#000000',
-    white: '#FFFFFF',
-    textBlack: '#0A071A',
-    pink500: '#FF2E92', //Move this to colors palette later
-    secondaryText: '#ABACB9',
-    shadow: '#3E3445',
-    borderGray: '#E7E8EE',
-    backgroundColor: '#F6F6F9',
-    headerText: '#212134',
-    headerGrey: '#EAEAEF',
-    headerIcon: '#C0C0CF',
-    imageOverlay: '#00000073', //rgba(0, 0, 0, 0.45)
-    imageOverlay35: '#00000059', //rgba(0, 0, 0, 0.35)
-    iconBorderGrey: '#A5A5BA',
-    pillBorderGrey: '#878787',
-    greyBackgroundBorder: '#DCDCE4',
+    black: "#000000",
+    white: "#FFFFFF",
+    textBlack: "#0A071A",
+    pink500: "#FF2E92", //Move this to colors palette later
+    secondaryText: "#ABACB9",
+    shadow: "#3E3445",
+    borderGray: "#E7E8EE",
+    backgroundColor: "#F6F6F9",
+    headerText: "#212134",
+    headerGrey: "#EAEAEF",
+    headerIcon: "#C0C0CF",
+    imageOverlay: "#00000073", //rgba(0, 0, 0, 0.45)
+    imageOverlay35: "#00000059", //rgba(0, 0, 0, 0.35)
+    iconBorderGrey: "#A5A5BA",
+    pillBorderGrey: "#878787",
+    greyBackgroundBorder: "#DCDCE4",
+
+    //variable names
+    background: COLORS.black.dark900,
+    card: COLORS.black.dark880,
+    text: COLORS.white.base,
+    textColors: {
+      default: COLORS.white.base,
+      subtle: COLORS.gray[650],
+    },
+    borderColors: {
+      default: COLORS.gray[750],
+      subtle: COLORS.gray[600],
+    },
+    primary: COLORS.red.medium,
+    secondary: COLORS.gray[500],
+    border: COLORS.gray[750],
+    placeholder: COLORS.gray[600],
+    notification: COLORS.red.bright,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
+    sans: "system-ui",
     /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
+    serif: "ui-serif",
     /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
+    rounded: "ui-rounded",
     /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    mono: "ui-monospace",
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+    sans: "normal",
+    serif: "serif",
+    rounded: "normal",
+    mono: "monospace",
   },
   web: {
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    rounded:
+      "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });

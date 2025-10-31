@@ -3,13 +3,14 @@ import React from "react";
 
 import { FlashList } from "@shopify/flash-list";
 import { FeaturedTrip } from "@/types/trips.types";
-import { Text } from "@/components";
+import { FeaturedTripCard, Text } from "@/components";
 
 const HorizontalCarousel = ({ data }: { data: FeaturedTrip[] }) => {
   return (
     <FlashList
       data={data}
       renderItem={({ item }: { item: FeaturedTrip }) => (
+        // <FeaturedTripCard data={item} />
         <Text>{item.title}</Text>
       )}
       keyExtractor={(item: FeaturedTrip) => item.id}

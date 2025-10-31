@@ -1,6 +1,7 @@
 import Spacer from "./utils/Spacer";
 import DateRange from "./utils/DateRange";
 import ExpandLink, { ExpandLinkProps } from "./headers/ExpandLink";
+import FeaturedTripCard from "./cards/FeaturedTripCard";
 import HorizontalCarousel from "./containers/HorizontalCarousel";
 import SectionHeader from "./headers/SectionHeader";
 import ScreenContainer from "./containers/ScreenContainer";
@@ -15,6 +16,7 @@ export {
   Spacer,
   DateRange,
   ExpandLink,
+  FeaturedTripCard,
   HorizontalCarousel,
   SectionHeader,
   ExpandLinkProps,

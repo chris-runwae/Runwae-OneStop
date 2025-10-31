@@ -86,6 +86,10 @@ export const Colors = {
     background: COLORS.white.base,
     card: COLORS.white.default,
     text: COLORS.black.default,
+    backgroundColors: {
+      default: COLORS.white.default,
+      subtle: COLORS.white.translucent13,
+    },
     textColors: {
       default: COLORS.black.default,
       subtle: COLORS.gray[750],
@@ -133,6 +137,10 @@ export const Colors = {
       default: COLORS.white.base,
       subtle: COLORS.gray[650],
       subtitle: COLORS.gray[450],
+    },
+    backgroundColors: {
+      default: COLORS.black.default,
+      subtle: COLORS.black.subtle,
     },
     borderColors: {
       default: COLORS.gray[750],

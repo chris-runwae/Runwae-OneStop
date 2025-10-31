@@ -31,7 +31,7 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
     //Container
     container: {
       flex: 1,
-      backgroundColor: Colors[colorScheme].white,
+      backgroundColor: colors.backgroundColors.default,
       paddingTop: insets.top + 10,
     },
 
@@ -43,7 +43,7 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
       paddingHorizontal: 16,
       paddingBottom: 12,
       borderBottomWidth: 1,
-      borderColor: Colors[colorScheme].borderColors.subtle,
+      borderColor: colors.borderColors.subtle,
     },
     rightComponent: {
       flex: 1,
@@ -74,17 +74,12 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
     content: {
       flex: 1,
       // paddingHorizontal: 15,
-      backgroundColor: Colors[colorScheme].backgroundColor,
+      backgroundColor: colors.backgroundColors.default,
     },
   });
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: Colors[colorScheme].background },
-      ]}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.leftComponent}>
           {header?.leftComponent ? (
@@ -105,9 +100,7 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
         </View>
       </View>
 
-      <View style={[styles.content, { backgroundColor: colors.background }]}>
-        {children}
-      </View>
+      <View style={styles.content}>{children}</View>
     </View>
   );
 };

@@ -7,9 +7,10 @@ import {
 } from "react-native";
 import React from "react";
 
-import { Text } from "@/components";
+import { DateRange, Text } from "@/components";
 import { Colors } from "@/constants/theme";
 import { Trip } from "@/types/trips.types";
+import { toSentenceCase } from "@/utils/stringManipulation";
 
 interface WideTripCardProps {
   data: Trip[] | null;
@@ -23,13 +24,13 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
     return null;
   }
   const trip: Trip = data[0] as Trip;
+  if (!trip) {
+    return null;
+  }
 
   const coverImageUrl =
     trip?.cover_image_url ??
     "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80";
-
-  // const { title, start_date, end_date, duration, image } = data;
-  // console.log(trip.cover_image_url);
 
   const styles = StyleSheet.create({
     container: {
@@ -41,30 +42,15 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
     cardContent: {
       flex: 1,
       backgroundColor: colors.imageOverlay,
-      justifyContent: "flex-end",
-    },
-
-    imageContainer: {
-      width: "100%",
-      height: 185,
-      borderTopLeftRadius: 10,
-      borderTopRightRadius: 10,
-      overflow: "hidden",
-    },
-    image: {
-      width: "100%",
-      height: "100%",
-    },
-    contentContainer: {
+      justifyContent: "space-between",
+      paddingVertical: 12,
       paddingHorizontal: 12,
     },
-
+    contentContainer: {},
     infoContainer: {
-      flexDirection: "row",
-      alignItems: "center",
       width: "100%",
-      justifyContent: "space-between",
-      paddingBottom: 16,
+      height: 50,
+      justifyContent: "center",
     },
     titleContainer: {
       flexDirection: "row",
@@ -72,18 +58,30 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
       justifyContent: "space-between",
       paddingBottom: 16,
     },
+    pillContainer: {
+      backgroundColor: "#000000A6",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
 
     //Text Styles
     title: {
-      fontSize: 18,
-      fontWeight: "600",
+      fontSize: 20,
+      fontWeight: "bold",
       lineHeight: 24,
       color: colors.white,
     },
     infoText: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: "400",
-      lineHeight: 16.5,
+      lineHeight: 19.5,
+      color: colors.white,
+    },
+    pillText: {
+      fontSize: 12,
+      fontWeight: "bold",
+      lineHeight: 16,
       color: colors.white,
     },
   });
@@ -91,14 +89,21 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
   return (
     <ImageBackground source={{ uri: coverImageUrl }} style={styles.container}>
       <Pressable onPress={() => {}} style={styles.cardContent}>
-        <View style={styles.contentContainer}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{trip.title}</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{trip.title}</Text>
+          <View style={styles.pillContainer}>
+            <Text style={styles.pillText}>
+              {toSentenceCase(trip.category ?? "")}
+            </Text>
           </View>
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>{trip?.visibility}</Text>
-            {/* <DateRange startDate={startDate} endDate={endDate} /> */}
-          </View>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>📍 {trip.destination}</Text>
+          <DateRange
+            startDate={trip?.start_date ?? ""}
+            endDate={trip?.end_date ?? ""}
+            emoji={true}
+          />
         </View>
       </Pressable>
     </ImageBackground>

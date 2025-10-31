@@ -1,4 +1,5 @@
 import Spacer from "./utils/Spacer";
+import DateRange from "./utils/DateRange";
 import ExpandLink, { ExpandLinkProps } from "./headers/ExpandLink";
 import SectionHeader from "./headers/SectionHeader";
 import ScreenContainer from "./containers/ScreenContainer";
@@ -11,6 +12,7 @@ import WideTripCard from "./cards/WideTripCard";
 
 export {
   Spacer,
+  DateRange,
   ExpandLink,
   SectionHeader,
   ExpandLinkProps,

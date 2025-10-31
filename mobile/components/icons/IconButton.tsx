@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, useColorScheme } from "react-native";
+import { Pressable, StyleSheet, useColorScheme } from "react-native";
 import React from "react";
 import { BellIcon, ArrowLeft, ArrowRight } from "lucide-react-native";
 

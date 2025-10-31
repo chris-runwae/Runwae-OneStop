@@ -11,11 +11,10 @@ import { Link, useRouter } from 'expo-router';
 import { SignOutButton } from '@/components/SignOutButton';
 
 import { getSupabaseClient, supabase } from '@/lib/supabase';
-import { searchViator } from '@/services/viator';
+// import { searchViator } from '@/services/viator';
 
 const TripsIndexScreen = () => {
-  const router = useRouter();
-  const { getToken, isLoaded: authLoaded, isSignedIn } = useAuth();
+  const { getToken, isLoaded: authLoaded } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
 
   const [loading, setLoading] = useState(false);

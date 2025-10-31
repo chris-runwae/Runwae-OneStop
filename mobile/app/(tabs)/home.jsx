@@ -1,43 +1,42 @@
-import { Image } from 'expo-image';
-import { StyleSheet } from 'react-native';
+import { Image } from "expo-image";
+import { StyleSheet, useColorScheme } from "react-native";
+import { BellIcon } from "lucide-react-native";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-// import { Link } from 'expo-router';
-import { SectionHeader } from '@/components';
-import useTrips from '@/hooks/useTrips';
+import { HelloWave } from "@/components/hello-wave";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+
+import { SectionHeader, ScreenContainer } from "@/components";
+import useTrips from "@/hooks/useTrips";
+import { Colors } from "@/constants";
 
 export default function HomeScreen2() {
+  const colorScheme = useColorScheme() ?? "light";
   const { trips, nextTrip } = useTrips();
-
-  // console.log('Trips:  ', JSON.stringify(trips));
-  console.log('Next Trip: ', JSON.stringify(nextTrip));
+  // console.log('Next Trip: ', JSON.stringify(nextTrip));
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
+    <ScreenContainer
+      header={{
+        rightComponent: (
+          <BellIcon size={20} color={Colors[colorScheme].headerIcon} />
+        ),
+      }}
+    >
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
 
       <SectionHeader title="Welcome!" linkText="View all" linkTo="/explore" />
-    </ParallaxScrollView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   stepContainer: {
@@ -49,6 +48,6 @@ const styles = StyleSheet.create({
     width: 290,
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    position: "absolute",
   },
 });

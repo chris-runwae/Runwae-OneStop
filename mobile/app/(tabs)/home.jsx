@@ -2,6 +2,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 
 import {
   IconButton,
+  HorizontalCarousel,
   ScreenContainer,
   SectionHeader,
   Spacer,
@@ -13,6 +14,8 @@ import { COLORS, ICON_NAMES } from "@/constants";
 
 export default function HomeScreen2() {
   const { featuredTrips, loading } = useTrips();
+
+  console.log("featuredTrips", featuredTrips);
 
   if (loading) {
     return (
@@ -42,11 +45,16 @@ export default function HomeScreen2() {
         <UpcomingTripContainer linkText="More" linkTo="/explore" />
 
         <Spacer size={32} vertical />
-        <SectionHeader
-          title="Featured Trips"
-          linkText="More"
-          linkTo="/explore"
-        />
+        {featuredTrips.length > 0 && (
+          <>
+            <SectionHeader
+              title="Featured Trips"
+              linkText="More"
+              linkTo="/explore"
+            />
+            <HorizontalCarousel data={featuredTrips} />
+          </>
+        )}
       </ScrollView>
     </ScreenContainer>
   );

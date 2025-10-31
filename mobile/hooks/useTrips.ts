@@ -63,10 +63,7 @@ const useTrips = () => {
     setLoading(true);
     try {
       const supabase = await getSupabaseClient(getToken);
-      const { data, error } = await supabase
-        .from("trips")
-        .select("*")
-        .eq("type", "featured");
+      const { data, error } = await supabase.from("featured_trips").select("*");
       if (error) throw error;
       setFeaturedTrips(data || []);
     } catch (error) {

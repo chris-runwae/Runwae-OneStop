@@ -1,6 +1,7 @@
 import Spacer from "./utils/Spacer";
 import DateRange from "./utils/DateRange";
 import ExpandLink, { ExpandLinkProps } from "./headers/ExpandLink";
+import HorizontalCarousel from "./containers/HorizontalCarousel";
 import SectionHeader from "./headers/SectionHeader";
 import ScreenContainer from "./containers/ScreenContainer";
 import Text from "./utils/Text";
@@ -14,6 +15,7 @@ export {
   Spacer,
   DateRange,
   ExpandLink,
+  HorizontalCarousel,
   SectionHeader,
   ExpandLinkProps,
   ScreenContainer,

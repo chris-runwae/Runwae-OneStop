@@ -1,18 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import { RelativePathString } from 'expo-router';
 import { Fonts } from "@/constants/theme";
-import { ExpandLink, Spacer } from "@/components";
+import { ExpandLink, Spacer, ExpandLinkProps } from "@/components";
+
+type SectionHeaderProps = ExpandLinkProps & {
+  title: string;
+};
 
 const SectionHeader = ({
   title,
   linkText,
   linkTo,
-}: {
-  title: string;
-  linkText?: string;
-  linkTo?: RelativePathString;
-}) => {
+}: SectionHeaderProps) => {
   return (
     <>
       <View style={styles.sectionHeader}>

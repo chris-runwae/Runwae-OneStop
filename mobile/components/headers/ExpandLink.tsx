@@ -5,13 +5,15 @@ import { RelativePathString, router } from 'expo-router';
 import { MoveRight } from 'lucide-react-native';
 import { Colors } from "@/constants/theme";
 
+export interface ExpandLinkProps {
+  linkText?: string;
+  linkTo?: RelativePathString;
+}
+
 const ExpandLink = ({
   linkText,
   linkTo,
-}: {
-  linkText: string;
-  linkTo?: RelativePathString;
-}) => {
+}: ExpandLinkProps) => {
   const colorScheme = useColorScheme() ?? 'light';
 
   if (!linkTo) {

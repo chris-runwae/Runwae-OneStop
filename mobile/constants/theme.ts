@@ -16,6 +16,24 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+
+    //Hannefah's Colors
+    black: '#000000',
+    white: '#FFFFFF',
+    textBlack: '#0A071A',
+    pink500: '#FF2E92', //Move this to colors palette later
+    secondaryText: '#ABACB9',
+    shadow: '#3E3445',
+    borderGray: '#E7E8EE',
+    backgroundColor: '#F6F6F9',
+    headerText: '#212134',
+    headerGrey: '#EAEAEF',
+    headerIcon: '#C0C0CF',
+    imageOverlay: '#00000073', //rgba(0, 0, 0, 0.45)
+    imageOverlay35: '#00000059', //rgba(0, 0, 0, 0.35)
+    iconBorderGrey: '#A5A5BA',
+    pillBorderGrey: '#878787',
+    greyBackgroundBorder: '#DCDCE4',
   },
   dark: {
     text: '#ECEDEE',
@@ -24,6 +42,24 @@ export const Colors = {
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+
+    //Hannefah's Colors
+    black: '#000000',
+    white: '#FFFFFF',
+    textBlack: '#0A071A',
+    pink500: '#FF2E92', //Move this to colors palette later
+    secondaryText: '#ABACB9',
+    shadow: '#3E3445',
+    borderGray: '#E7E8EE',
+    backgroundColor: '#F6F6F9',
+    headerText: '#212134',
+    headerGrey: '#EAEAEF',
+    headerIcon: '#C0C0CF',
+    imageOverlay: '#00000073', //rgba(0, 0, 0, 0.45)
+    imageOverlay35: '#00000059', //rgba(0, 0, 0, 0.35)
+    iconBorderGrey: '#A5A5BA',
+    pillBorderGrey: '#878787',
+    greyBackgroundBorder: '#DCDCE4',
   },
 };
 

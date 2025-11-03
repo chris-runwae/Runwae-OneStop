@@ -3,6 +3,7 @@ import DateRange from "./utils/DateRange";
 import ExpandLink, { ExpandLinkProps } from "./headers/ExpandLink";
 import FeaturedTripCard from "./cards/FeaturedTripCard";
 import HorizontalCarousel from "./containers/HorizontalCarousel";
+import PrimaryButton from "./buttons/PrimaryButton";
 import SectionHeader from "./headers/SectionHeader";
 import ScreenContainer from "./containers/ScreenContainer";
 import Text from "./utils/Text";
@@ -18,6 +19,7 @@ export {
   ExpandLink,
   FeaturedTripCard,
   HorizontalCarousel,
+  PrimaryButton,
   SectionHeader,
   ExpandLinkProps,
   ScreenContainer,

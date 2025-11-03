@@ -5,6 +5,7 @@ import { FeaturedTrip } from "@/types/trips.types";
 import { FeaturedTripCard, Spacer } from "@/components";
 
 const HorizontalCarousel = ({ data }: { data: FeaturedTrip[] }) => {
+  console.log("data", data);
   return (
     <FlashList
       data={data}

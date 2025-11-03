@@ -78,7 +78,7 @@ export interface FeaturedTrip {
   category?: TripCategory | null;
   estimatedBudget?: number | null;
   currency?: string | null;
-  coverImageUrl?: string | null;
+  coverimageurl?: string | null;
   imageUrls?: string[] | null;
   startDate?: string | null; // ISO date string
   endDate?: string | null; // ISO date string

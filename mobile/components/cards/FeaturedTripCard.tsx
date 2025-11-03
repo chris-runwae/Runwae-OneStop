@@ -16,9 +16,9 @@ interface FeaturedItemsCardProps {
 const FeaturedItemsCard = ({ data }: FeaturedItemsCardProps) => {
   const colorScheme = useColorScheme() ?? "light";
 
-  const { title, destination, coverImageUrl } = data;
+  const { title, destination, coverimageurl } = data;
   const image =
-    coverImageUrl ??
+    coverimageurl ??
     "https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80";
 
   const styles = StyleSheet.create({
@@ -87,6 +87,7 @@ const FeaturedItemsCard = ({ data }: FeaturedItemsCardProps) => {
       source={image}
       style={styles.imageContainer}
       contentFit="cover"
+      transition={1000}
     >
       <LinkArrow />
       <BlurView intensity={13} style={styles.blurView}>

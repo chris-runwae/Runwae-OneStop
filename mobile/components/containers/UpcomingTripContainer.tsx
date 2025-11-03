@@ -41,7 +41,6 @@ const UpcomingTripContainer = ({ linkText, linkTo }: ExpandLinkProps) => {
     noActiveTripCardImage: {
       width: 117,
       height: 94,
-      resizeMode: "cover",
     },
     noActiveTripCardContent: {
       alignItems: "center",
@@ -54,6 +53,8 @@ const UpcomingTripContainer = ({ linkText, linkTo }: ExpandLinkProps) => {
         <Image
           source={require("@/assets/images/noActiveTrip.png")}
           style={styles.noActiveTripCardImage}
+          contentFit="contain"
+          transition={1000}
         />
         <Spacer size={32} vertical />
         <View style={styles.noActiveTripCardContent}>

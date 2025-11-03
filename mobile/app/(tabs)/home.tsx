@@ -1,5 +1,5 @@
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { useMemo } from "react";
+import { RelativePathString } from "expo-router";
 
 import {
   IconButton,
@@ -13,15 +13,8 @@ import {
 import useTrips from "@/hooks/useTrips";
 import { COLORS, ICON_NAMES } from "@/constants";
 
-import { FlashList } from "@shopify/flash-list";
-import { FeaturedTrip } from "@/types/trips.types";
-import { FeaturedTripCard, Text } from "@/components";
-
 export default function HomeScreen2() {
   const { featuredTrips, loading } = useTrips();
-  const featuredItineraries = useMemo(() => featuredTrips, [featuredTrips]);
-
-  console.log("featuredTrips", featuredTrips);
 
   if (loading) {
     return (
@@ -48,14 +41,17 @@ export default function HomeScreen2() {
         contentContainerStyle={styles.scrollViewContent}
       >
         <Spacer size={32} vertical />
-        <UpcomingTripContainer linkText="More" linkTo="/explore" />
+        <UpcomingTripContainer
+          linkText="More"
+          linkTo={"/explore" as RelativePathString}
+        />
         <Spacer size={32} vertical />
         {featuredTrips.length > 0 && (
           <>
             <SectionHeader
               title="Featured Trips"
               linkText="More"
-              linkTo="explore"
+              linkTo={"/explore" as RelativePathString}
             />
             <View style={styles.carouselContainer}>
               <HorizontalCarousel data={featuredTrips} />

@@ -1,4 +1,5 @@
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { useMemo } from "react";
 
 import {
   IconButton,
@@ -12,8 +13,13 @@ import {
 import useTrips from "@/hooks/useTrips";
 import { COLORS, ICON_NAMES } from "@/constants";
 
+import { FlashList } from "@shopify/flash-list";
+import { FeaturedTrip } from "@/types/trips.types";
+import { FeaturedTripCard, Text } from "@/components";
+
 export default function HomeScreen2() {
   const { featuredTrips, loading } = useTrips();
+  const featuredItineraries = useMemo(() => featuredTrips, [featuredTrips]);
 
   console.log("featuredTrips", featuredTrips);
 
@@ -49,9 +55,11 @@ export default function HomeScreen2() {
             <SectionHeader
               title="Featured Trips"
               linkText="More"
-              linkTo="/explore"
+              linkTo="explore"
             />
-            <HorizontalCarousel data={featuredTrips} />
+            <View style={styles.carouselContainer}>
+              <HorizontalCarousel data={featuredTrips} />
+            </View>
           </>
         )}
       </ScrollView>
@@ -67,5 +75,9 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingHorizontal: 16,
+  },
+  carouselContainer: {
+    marginHorizontal: -16,
+    paddingLeft: 16,
   },
 });

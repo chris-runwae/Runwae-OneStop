@@ -3,7 +3,7 @@ import React from "react";
 
 import { FlashList } from "@shopify/flash-list";
 import { FeaturedTrip } from "@/types/trips.types";
-import { FeaturedTripCard, Text } from "@/components";
+import { FeaturedTripCard, Spacer, Text } from "@/components";
 
 const HorizontalCarousel = ({ data }: { data: FeaturedTrip[] }) => {
   return (
@@ -11,11 +11,12 @@ const HorizontalCarousel = ({ data }: { data: FeaturedTrip[] }) => {
       data={data}
       renderItem={({ item }: { item: FeaturedTrip }) => (
         // <FeaturedTripCard data={item} />
-        <Text>{item.title}</Text>
+        <FeaturedTripCard data={item} />
       )}
       keyExtractor={(item: FeaturedTrip) => item.id}
       horizontal
       showsHorizontalScrollIndicator={false}
+      ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
     />
   );
 };

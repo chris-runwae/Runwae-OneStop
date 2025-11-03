@@ -1,5 +1,6 @@
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { RelativePathString } from "expo-router";
+import { Redirect, RelativePathString } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
 
 import {
   IconButton,
@@ -15,6 +16,11 @@ import { COLORS, ICON_NAMES } from "@/constants";
 
 export default function HomeScreen2() {
   const { featuredTrips, loading } = useTrips();
+  const { isSignedIn } = useAuth();
+
+  if (!isSignedIn) {
+    return <Redirect href={"(auth)/sign-in" as RelativePathString} />;
+  }
 
   if (loading) {
     return (

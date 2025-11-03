@@ -11,7 +11,7 @@ const tintColorDark = "#fff";
 export const COLORS = {
   black: {
     default: "#000000",
-    subtle: "#000000",
+    subtle: "#1A1A1A",
     base: "#000000",
     dark: "#0D0D0D",
     dark950: "#131313",
@@ -96,7 +96,7 @@ export const Colors = {
     text: COLORS.black.default,
     backgroundColors: {
       default: COLORS.white.default,
-      subtle: COLORS.white.translucent13,
+      subtle: COLORS.gray[350],
     },
     textColors: {
       default: COLORS.black.default,

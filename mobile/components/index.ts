@@ -3,6 +3,8 @@ import DateRange from "./utils/DateRange";
 import ExpandLink, { ExpandLinkProps } from "./headers/ExpandLink";
 import FeaturedTripCard from "./cards/FeaturedTripCard";
 import HorizontalCarousel from "./containers/HorizontalCarousel";
+import HomeSkeleton from "./containers/HomeSkeleton";
+import { IconSymbol } from "./ui/icon-symbol";
 import PrimaryButton from "./buttons/PrimaryButton";
 import SectionHeader from "./headers/SectionHeader";
 import ScreenContainer from "./containers/ScreenContainer";
@@ -19,6 +21,8 @@ export {
   ExpandLink,
   FeaturedTripCard,
   HorizontalCarousel,
+  HomeSkeleton,
+  IconSymbol,
   PrimaryButton,
   SectionHeader,
   ExpandLinkProps,

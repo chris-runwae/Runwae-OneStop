@@ -1,73 +1,145 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { Redirect, RelativePathString } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { Image } from "expo-image";
+import { Alert, Button, Platform, StyleSheet } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 
-import {
-  IconButton,
-  HorizontalCarousel,
-  ScreenContainer,
-  SectionHeader,
-  Spacer,
-  WelcomeAvatar,
-  UpcomingTripContainer,
-} from "@/components";
-import useTrips from "@/hooks/useTrips";
-import { COLORS, ICON_NAMES } from "@/constants";
+import { HelloWave } from "@/components/hello-wave";
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Link, RelativePathString } from "expo-router";
+import { SignOutButton } from "@/components/SignOutButton";
 
-export default function HomeScreen2() {
-  const { featuredTrips, loading } = useTrips();
-  const { isSignedIn } = useAuth();
+import { getSupabaseClient, supabase } from "@/lib/supabase";
+// import { searchViator } from '@/services/viator';
 
-  if (!isSignedIn) {
-    return <Redirect href={"(auth)/sign-in" as RelativePathString} />;
+const TripsIndexScreen = () => {
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+
+  const [loading, setLoading] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+
+  // Fetch events on component mount
+  useEffect(() => {
+    if (userLoaded && authLoaded && user) {
+      (async () => {
+        setLoading(true);
+        try {
+          const supabase = await getSupabaseClient(getToken);
+
+          const { data, error } = await supabase
+            .from("events")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+
+          setEvents(data || []);
+          // console.log('Events fetched:', data);
+        } catch (error) {
+          const err = error as Error;
+          console.error("Error fetching events:", err.message);
+          Alert.alert("Error", err.message);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [authLoaded, userLoaded, user]);
+
+  async function handleSearch() {
+    //Call indirectly through service functions, this is safer than direct calls to the API, still need to check the headers are correct. WIP
+    // const results = await searchViator({
+    //   filters: {
+    //     lowestPrice: 10, // override default
+    //     highestPrice: 300,
+    //   },
+    // });
+
+    //Call directly through Supabase Functions, works, can expand body
+    const { data, error } = await supabase.functions.invoke("viator", {
+      body: { name: "Super" },
+    });
+
+    console.log("Viator results:", JSON.stringify(data, null, 2));
+    if (error) {
+      console.log("Error calling Viator:", error);
+    }
   }
 
-  if (loading) {
-    return (
-      <ScreenContainer header={{ leftComponent: <WelcomeAvatar /> }}>
-        <ActivityIndicator size="large" color={COLORS.pink.default} />
-      </ScreenContainer>
-    );
-  }
+  // console.log('Events:', events);
 
   return (
-    <ScreenContainer
-      header={{
-        rightComponent: (
-          <IconButton
-            icon={ICON_NAMES.BELL}
-            onPress={() => console.log("Notifications")}
-          />
-        ),
-        leftComponent: <WelcomeAvatar />,
-      }}
-    >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        <Spacer size={32} vertical />
-        <UpcomingTripContainer
-          linkText="More"
-          linkTo={"/explore" as RelativePathString}
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
+      headerImage={
+        <Image
+          source={require("@/assets/images/partial-react-logo.png")}
+          style={styles.reactLogo}
         />
-        <Spacer size={32} vertical />
-        {featuredTrips.length > 0 && (
-          <>
-            <SectionHeader
-              title="Featured Trips"
-              linkText="More"
-              linkTo={"/explore" as RelativePathString}
+      }
+    >
+      <ThemedView style={styles.titleContainer}>
+        <ThemedText type="title">Welcome!</ThemedText>
+        <HelloWave />
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
+        <ThemedText>
+          Edit{" "}
+          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText>{" "}
+          to see changes. Press{" "}
+          <ThemedText type="defaultSemiBold">
+            {Platform.select({
+              ios: "cmd + d",
+              android: "cmd + m",
+              web: "F12",
+            })}
+          </ThemedText>{" "}
+          to open developer tools.
+        </ThemedText>
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <Link href={"/modal" as RelativePathString}>
+          <Link.Trigger>
+            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+          </Link.Trigger>
+          <Link.Preview />
+          <Link.Menu>
+            <Link.MenuAction
+              title="Action"
+              icon="cube"
+              onPress={() => alert("Action pressed")}
             />
-            <View style={styles.carouselContainer}>
-              <HorizontalCarousel data={featuredTrips} />
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </ScreenContainer>
+            <Link.MenuAction
+              title="Share"
+              icon="square.and.arrow.up"
+              onPress={() => alert("Share pressed")}
+            />
+            <Link.Menu title="More" icon="ellipsis">
+              <Link.MenuAction
+                title="Delete"
+                icon="trash"
+                destructive
+                onPress={() => alert("Delete pressed")}
+              />
+            </Link.Menu>
+          </Link.Menu>
+        </Link>
+
+        <ThemedText>
+          {`Tap the Explore tab to learn more about what's included in this starter app.`}
+        </ThemedText>
+      </ThemedView>
+      <SignOutButton />
+      <Button title="Search Viator" onPress={() => handleSearch()} />
+    </ParallaxScrollView>
   );
-}
+};
+
+export default TripsIndexScreen;
 
 const styles = StyleSheet.create({
   titleContainer: {
@@ -75,11 +147,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  scrollViewContent: {
-    paddingHorizontal: 16,
+  stepContainer: {
+    gap: 8,
+    marginBottom: 8,
   },
-  carouselContainer: {
-    marginHorizontal: -16,
-    paddingLeft: 16,
+  reactLogo: {
+    height: 178,
+    width: 290,
+    bottom: 0,
+    left: 0,
+    position: "absolute",
   },
 });

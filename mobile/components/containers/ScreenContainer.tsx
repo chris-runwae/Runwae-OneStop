@@ -20,9 +20,15 @@ type ScreenContainerProps = {
     title?: string;
     leftComponent?: React.ReactNode;
   };
+  contentContainerStyle?: StyleProp<ViewStyle>;
 };
 
-const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
+const ScreenContainer = ({
+  children,
+  style,
+  header,
+  contentContainerStyle,
+}: ScreenContainerProps) => {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
@@ -80,7 +86,7 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, style]}>
         <View style={styles.leftComponent}>
           {header?.leftComponent ? (
             header?.leftComponent
@@ -100,7 +106,7 @@ const ScreenContainer = ({ children, style, header }: ScreenContainerProps) => {
         </View>
       </View>
 
-      <View style={styles.content}>{children}</View>
+      <View style={[styles.content, contentContainerStyle]}>{children}</View>
     </View>
   );
 };

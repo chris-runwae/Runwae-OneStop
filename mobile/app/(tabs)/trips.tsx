@@ -3,27 +3,18 @@ import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useRouter, RelativePathString } from "expo-router";
 import React from "react";
-import {
-  StyleSheet,
-  useColorScheme,
-  Pressable,
-  Platform,
-  View,
-} from "react-native";
+import { StyleSheet, useColorScheme, Platform, View } from "react-native";
+import { Image } from "expo-image";
 
-// import { BodyScrollView } from '@/components/ui/BodyScrollView';
 import { Colors } from "@/constants";
-// import { MOCK_TRIPS } from '@/constants/tripData';
-// import { TripCard } from '~/components/trip/TripComponents';
 
 import {
   HomeSkeleton,
   Spacer,
-  IconSymbol,
   PrimaryButton,
   ScreenContainer,
-  Text,
   WideTripCard,
+  Text,
 } from "@/components";
 import useTrips from "@/hooks/useTrips";
 import { Trip } from "@/types/trips.types";
@@ -32,11 +23,12 @@ const TripsScreen = () => {
   const router = useRouter();
   const { isLoaded } = useUser();
   const colorScheme = useColorScheme() || "light";
-  const { trips, loading } = useTrips();
+  const {
+    // trips,
+    loading,
+  } = useTrips();
 
-  // console.log("trips", trips);
-  // Use mock trip data instead of store data
-  // const tripIds = MOCK_TRIPS.map((trip) => trip.id);
+  const trips = [];
 
   if (!isLoaded || loading) {
     return <HomeSkeleton />;
@@ -56,20 +48,32 @@ const TripsScreen = () => {
     </ScreenContainer>
   );
 
-  const renderHeaderRight = () => (
-    <Pressable
-      // work around for https://github.com/software-mansion/react-native-screens/issues/2219
-      // onPress={handleNewListPress}
-      // onPress={() => router.push('/(tabs)/(trips)/trip/new')}
-      style={styles.headerButton}
-    >
-      <IconSymbol name="plus" color={Colors[colorScheme].primary} />
-    </Pressable>
-  );
-
   const renderItem = ({ item }: { item: Trip[] | null }) => {
-    // console.log("item", item);
     return <WideTripCard data={item} />;
+  };
+
+  const NoTripsContainer = () => {
+    return (
+      <View style={styles.emptyStateContainer}>
+        <Image
+          source={require("@/assets/images/noActiveTrip.png")}
+          style={styles.noTripsImage}
+          contentFit="cover"
+        />
+        <Spacer size={32} vertical />
+
+        <Text style={styles.noTripsText}>No Planned Trips 😔</Text>
+        <Text style={styles.noTripsSubtitle}>
+          It looks like you have no active trips planned yet. Click on the
+          button below to plan one.
+        </Text>
+        <Spacer size={12} vertical />
+        <PrimaryButton
+          onPress={handleNewListPress}
+          title="Create your first list"
+        />
+      </View>
+    );
   };
 
   return (
@@ -80,14 +84,21 @@ const TripsScreen = () => {
       <FlashList
         data={trips}
         renderItem={renderItem}
-        // renderItem={({ item }: { item: Trip }) => <Text>{item.title}</Text>}
         contentContainerStyle={styles.listContainer}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyList}
+        ListEmptyComponent={() => <NoTripsContainer />}
         ListFooterComponent={() => <Spacer size={100} vertical />}
         ItemSeparatorComponent={() => <Spacer size={8} vertical />}
       />
+
+      {/* <PrimaryButton
+        title="Create Trip"
+        onPress={() => {
+          router.push("/(tabs)/explore" as RelativePathString);
+        }}
+      /> */}
+      {/* <Spacer size={100} vertical /> */}
     </ScreenContainer>
   );
 };
@@ -140,5 +151,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingTop: 100,
+  },
+  noTripsImage: {
+    width: 275,
+    height: 220,
+  },
+  noTripsText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    // color: Colors[colorScheme].textColors.default,
+  },
+  noTripsSubtitle: {
+    fontSize: 13,
+    // color: Colors[colorScheme].textColors.default,
   },
 });

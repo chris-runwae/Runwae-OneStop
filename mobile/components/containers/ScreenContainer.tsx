@@ -22,12 +22,14 @@ type ScreenContainerProps = {
   };
   contentContainerStyle?: StyleProp<ViewStyle>;
   rightComponent?: boolean;
+  className?: string;
 };
 
 const ScreenContainer = ({
   children,
   style,
   header,
+  className,
   contentContainerStyle,
   rightComponent = false,
 }: ScreenContainerProps) => {
@@ -93,7 +95,7 @@ const ScreenContainer = ({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} className={className}>
       <View style={[styles.header, style]}>
         <View style={styles.leftComponent}>
           {header?.leftComponent ? (

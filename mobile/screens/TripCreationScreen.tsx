@@ -24,7 +24,7 @@ import {
 import { tripCreationData } from "@/components/trip-creation/tripCreationData";
 import { Colors, COLORS } from "@/constants";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ScreenContainer } from "@/components";
+import { ScreenContainer, Spacer } from "@/components";
 
 const { width } = Dimensions.get("window");
 
@@ -198,13 +198,14 @@ export default function TripCreationScreen() {
           </TouchableOpacity>
         ),
       }}
+      className="flex-1"
     >
-      {/* Header with back button and progress */}
-      <View className="flex-row items-center justify-between px-6 pb-4 pt-16">
+      {/* Progress Bar */}
+      <View className="flex-row items-center justify-between px-6 pb-6 pt-2">
         <View
-          className="mx-3 h-2 flex-1 overflow-hidden rounded-full"
+          className="h-2 flex-1 overflow-hidden rounded-full"
           style={{
-            backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
+            backgroundColor: isDarkMode ? "#2a2a2a" : COLORS.gray[350],
           }}
         >
           <Animated.View
@@ -215,8 +216,6 @@ export default function TripCreationScreen() {
             ]}
           />
         </View>
-
-        <View style={{ width: 40 }} />
       </View>
 
       {/* Slides */}
@@ -254,6 +253,8 @@ export default function TripCreationScreen() {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      <Spacer size={40} vertical />
     </ScreenContainer>
   );
 }

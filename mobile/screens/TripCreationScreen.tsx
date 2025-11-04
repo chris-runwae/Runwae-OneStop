@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import React, { useState, useRef } from "react";
 import {
   View,
@@ -66,8 +66,10 @@ export default function TripCreationScreen() {
   }, [currentStep]);
 
   const progressStyle = useAnimatedStyle(() => {
+    // Ensure minimum width of 10% so the bar is always visible
+    const progressPercentage = Math.max(10, progressAnimation.value * 100);
     return {
-      width: `${progressAnimation.value * 100}%`,
+      width: `${progressPercentage}%`,
     };
   });
 
@@ -191,33 +193,39 @@ export default function TripCreationScreen() {
       header={{
         leftComponent: (
           <TouchableOpacity onPress={handleBack}>
-            <ChevronLeft
-              size={24}
-              color={isDarkMode ? COLORS.gray[400] : COLORS.gray[600]}
-            />
+            <ArrowLeft size={24} color={colors.textColors.default} />
           </TouchableOpacity>
         ),
+        // rightComponent: (
+
+        // ),
       }}
       className="flex-1"
     >
+      <Spacer size={16} vertical />
       {/* Progress Bar */}
-      <View className="flex-row items-center justify-between px-6 pb-6 pt-2">
+      <View className="mb-4 items-center justify-center rounded-full px-6">
         <View
-          className="h-2 flex-1 overflow-hidden rounded-full"
+          className="h-1.5 w-full overflow-hidden rounded-full"
           style={{
             backgroundColor: isDarkMode ? "#2a2a2a" : COLORS.gray[350],
+            borderRadius: 100,
+            overflow: "hidden",
           }}
         >
           <Animated.View
             className="h-full rounded-full"
             style={[
               progressStyle,
-              { backgroundColor: colors.primaryColors.default },
+              {
+                backgroundColor: colors.primaryColors.default,
+                height: 16,
+                overflow: "hidden",
+              },
             ]}
           />
         </View>
       </View>
-
       {/* Slides */}
       <ScrollView
         ref={scrollRef}
@@ -244,17 +252,17 @@ export default function TripCreationScreen() {
             }}
             disabled={!isCurrentStepValid()}
           >
-            <Text className="mr-2 text-lg font-semibold text-white">
+            <Text
+              className="mr-2 text-lg font-semibold text-white"
+              style={{ color: COLORS.white.base }}
+            >
               {getButtonText()}
             </Text>
-            {currentStep < totalSteps - 1 && (
-              <ChevronRight size={20} color="white" />
-            )}
           </TouchableOpacity>
         </Animated.View>
       </View>
 
-      <Spacer size={40} vertical />
+      <Spacer size={60} vertical />
     </ScreenContainer>
   );
 }

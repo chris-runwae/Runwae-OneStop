@@ -23,12 +23,13 @@ const TripsScreen = () => {
   const router = useRouter();
   const { isLoaded } = useUser();
   const colorScheme = useColorScheme() || "light";
+
   const {
     // trips,
     loading,
   } = useTrips();
 
-  const trips = [];
+  const trips: (Trip[] | null)[] = []; //Just for testing purposes
 
   if (!isLoaded || loading) {
     return <HomeSkeleton />;
@@ -39,35 +40,54 @@ const TripsScreen = () => {
     return router.push("/explore" as RelativePathString);
   };
 
-  const renderEmptyList = () => (
-    <ScreenContainer contentContainerStyle={styles.emptyStateContainer}>
-      <PrimaryButton
-        onPress={handleNewListPress}
-        title="Create your first list"
-      />
-    </ScreenContainer>
-  );
-
   const renderItem = ({ item }: { item: Trip[] | null }) => {
     return <WideTripCard data={item} />;
   };
 
   const NoTripsContainer = () => {
+    const styles = StyleSheet.create({
+      emptyStateContainer: {
+        alignItems: "center",
+        gap: 8,
+        paddingTop: 100,
+      },
+      noTripsContent: {
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 32,
+      },
+      noTripsImage: {
+        width: 275,
+        height: 220,
+      },
+      noTripsText: {
+        fontSize: 20,
+        fontWeight: "bold",
+      },
+      noTripsSubtitle: {
+        fontSize: 13,
+        color: Colors[colorScheme].textColors.subtitle,
+        lineHeight: 19.5,
+      },
+    });
+
     return (
       <View style={styles.emptyStateContainer}>
         <Image
-          source={require("@/assets/images/noActiveTrip.png")}
+          source={require("@/assets/svgs/NoData.svg")}
           style={styles.noTripsImage}
-          contentFit="cover"
+          contentFit="contain"
         />
         <Spacer size={32} vertical />
 
-        <Text style={styles.noTripsText}>No Planned Trips 😔</Text>
-        <Text style={styles.noTripsSubtitle}>
-          It looks like you have no active trips planned yet. Click on the
-          button below to plan one.
-        </Text>
-        <Spacer size={12} vertical />
+        <View style={styles.noTripsContent}>
+          <Text style={styles.noTripsText}>No Planned Trips 😔</Text>
+          <Text style={styles.noTripsSubtitle}>
+            It looks like you have no active trips planned yet. Click on the
+            button below to plan one.
+          </Text>
+          <Spacer size={12} vertical />
+        </View>
         <PrimaryButton
           onPress={handleNewListPress}
           title="Create your first list"

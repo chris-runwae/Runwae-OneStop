@@ -23,7 +23,7 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
   if (!data) {
     return null;
   }
-  const trip: Trip = data[0] as Trip;
+  const trip: Trip = Array.isArray(data) ? (data[0] as Trip) : data;
   if (!trip) {
     return null;
   }

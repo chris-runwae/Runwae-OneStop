@@ -64,6 +64,7 @@ export default function HomeScreen() {
             </View>
           </>
         )}
+        <Spacer size={100} vertical />
       </ScrollView>
     </ScreenContainer>
   );

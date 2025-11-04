@@ -67,6 +67,11 @@ const TripsScreen = () => {
     </Pressable>
   );
 
+  const renderItem = ({ item }: { item: Trip[] | null }) => {
+    // console.log("item", item);
+    return <WideTripCard data={item} />;
+  };
+
   return (
     <ScreenContainer
       header={{ title: "Trips" }}
@@ -74,9 +79,7 @@ const TripsScreen = () => {
     >
       <FlashList
         data={trips}
-        renderItem={({ item }: { item: Trip[] | null }) => (
-          <WideTripCard data={item} />
-        )}
+        renderItem={renderItem}
         // renderItem={({ item }: { item: Trip }) => <Text>{item.title}</Text>}
         contentContainerStyle={styles.listContainer}
         contentInsetAdjustmentBehavior="automatic"

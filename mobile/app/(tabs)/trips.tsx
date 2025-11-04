@@ -37,7 +37,7 @@ const TripsScreen = () => {
 
   const handleNewListPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    return router.push("/explore" as RelativePathString);
+    return router.push("/trip-creation" as RelativePathString);
   };
 
   const renderItem = ({ item }: { item: Trip[] | null }) => {

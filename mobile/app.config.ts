@@ -52,6 +52,7 @@ const config: ExpoConfig = {
     ],
     "expo-sqlite",
     "expo-secure-store",
+    "expo-web-browser",
   ],
 
   experiments: {

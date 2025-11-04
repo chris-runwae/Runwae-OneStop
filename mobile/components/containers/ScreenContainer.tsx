@@ -21,6 +21,7 @@ type ScreenContainerProps = {
     leftComponent?: React.ReactNode;
   };
   contentContainerStyle?: StyleProp<ViewStyle>;
+  rightComponent?: boolean;
 };
 
 const ScreenContainer = ({
@@ -28,6 +29,7 @@ const ScreenContainer = ({
   style,
   header,
   contentContainerStyle,
+  rightComponent = false,
 }: ScreenContainerProps) => {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
@@ -84,6 +86,12 @@ const ScreenContainer = ({
     },
   });
 
+  const defaultRightComponent = (
+    <View style={styles.svgContainer}>
+      <BellIcon size={20} color={colors.headerIcon} />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, style]}>
@@ -96,13 +104,8 @@ const ScreenContainer = ({
         </View>
 
         <View style={styles.rightComponent}>
-          {header?.rightComponent ? (
-            header?.rightComponent
-          ) : (
-            <View style={styles.svgContainer}>
-              <BellIcon size={20} color={colors.headerIcon} />
-            </View>
-          )}
+          {(header?.rightComponent && header?.rightComponent) ||
+            (rightComponent && defaultRightComponent)}
         </View>
       </View>
 

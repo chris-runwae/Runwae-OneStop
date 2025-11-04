@@ -1,14 +1,13 @@
 import {
   StyleSheet,
   Pressable,
-  View,
   useColorScheme,
   StyleProp,
   ViewStyle,
 } from "react-native";
 import React from "react";
 
-import { Colors } from "@/constants";
+import { Colors, COLORS } from "@/constants";
 import { Text } from "@/components";
 
 type PrimaryButtonProps = {
@@ -16,6 +15,7 @@ type PrimaryButtonProps = {
   title: string;
   width?: number;
   style?: StyleProp<ViewStyle>;
+  rounded?: boolean;
 };
 
 const PrimaryButton = ({
@@ -23,6 +23,7 @@ const PrimaryButton = ({
   title,
   width,
   style,
+  rounded,
 }: PrimaryButtonProps) => {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
@@ -32,13 +33,13 @@ const PrimaryButton = ({
       backgroundColor: colors.primaryColors.default,
       paddingVertical: 12,
       paddingHorizontal: 24,
-      borderRadius: 8,
-      width: width ? width : 343,
+      borderRadius: rounded ? 100 : 8,
+      width: width ? width : "100%",
       alignItems: "center",
       justifyContent: "center",
     },
     buttonText: {
-      color: colors.textColors.default,
+      color: COLORS.white.base,
       fontSize: 13,
       lineHeight: 19.5,
       fontWeight: "bold",
@@ -46,11 +47,9 @@ const PrimaryButton = ({
   });
 
   return (
-    <View>
-      <Pressable onPress={onPress} style={[styles.button, style]}>
-        <Text style={styles.buttonText}>{title}</Text>
-      </Pressable>
-    </View>
+    <Pressable onPress={onPress} style={[styles.button, style]}>
+      <Text style={styles.buttonText}>{title}</Text>
+    </Pressable>
   );
 };
 

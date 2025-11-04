@@ -88,10 +88,7 @@ const TripsScreen = () => {
           </Text>
           <Spacer size={12} vertical />
         </View>
-        <PrimaryButton
-          onPress={handleNewListPress}
-          title="Create your first list"
-        />
+        <PrimaryButton onPress={handleNewListPress} title="Plan Trip" rounded />
       </View>
     );
   };

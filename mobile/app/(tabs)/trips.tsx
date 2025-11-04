@@ -3,8 +3,16 @@ import { FlashList } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { useRouter, RelativePathString } from "expo-router";
 import React from "react";
-import { StyleSheet, useColorScheme, Platform, View } from "react-native";
+import {
+  StyleSheet,
+  useColorScheme,
+  Platform,
+  View,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 import { Image } from "expo-image";
+import { Plus } from "lucide-react-native";
 
 import { Colors } from "@/constants";
 
@@ -23,13 +31,9 @@ const TripsScreen = () => {
   const router = useRouter();
   const { isLoaded } = useUser();
   const colorScheme = useColorScheme() || "light";
+  const colors = Colors[colorScheme];
 
-  const {
-    // trips,
-    loading,
-  } = useTrips();
-
-  const trips: (Trip[] | null)[] = []; //Just for testing purposes
+  const { trips, loading } = useTrips();
 
   if (!isLoaded || loading) {
     return <HomeSkeleton />;
@@ -95,9 +99,17 @@ const TripsScreen = () => {
 
   return (
     <ScreenContainer
-      header={{ title: "Trips" }}
+      header={{
+        title: "Trips",
+        rightComponent: (
+          <Pressable onPress={handleNewListPress}>
+            <Plus size={24} color={colors.primaryColors.default} />
+          </Pressable>
+        ),
+      }}
       contentContainerStyle={styles.container}
     >
+      <Spacer size={16} vertical />
       <FlashList
         data={trips}
         renderItem={renderItem}

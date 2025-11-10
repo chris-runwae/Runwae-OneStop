@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   View,
@@ -14,7 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import { Colors, COLORS } from "@/constants";
+import { COLORS } from "@/constants";
 
 const { width } = Dimensions.get("window");
 

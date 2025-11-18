@@ -21,7 +21,7 @@ import {
 } from './OnboardingComponents';
 import { useColorScheme } from '@/hooks';
 
-import { Colors, COLORS } from '@/constants';
+import { Colors } from '@/constants';
 
 const { width } = Dimensions.get('window');
 

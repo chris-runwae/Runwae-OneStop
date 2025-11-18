@@ -28,7 +28,7 @@ export const FeatureCard = ({
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 100 });
-  }, []);
+  }, [index, animatedValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -103,7 +103,7 @@ export const AnimatedOption = ({
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 100 });
-  }, []);
+  }, [index, animatedValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -182,7 +182,7 @@ export const PillOption = ({
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 50 });
-  }, []);
+  }, [index, animatedValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -240,7 +240,7 @@ export const AnimatedFeatureIcon = ({
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 100 });
-  }, []);
+  }, [index, animatedValue]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

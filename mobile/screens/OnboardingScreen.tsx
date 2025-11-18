@@ -60,7 +60,13 @@ export default function OnboardingScreen() {
       slideAnimation.value = 0;
       buttonAnimation.value = 0;
     };
-  }, [currentStep]);
+  }, [
+    currentStep,
+    totalSteps,
+    progressAnimation,
+    slideAnimation,
+    buttonAnimation,
+  ]);
 
   const progressStyle = useAnimatedStyle(() => {
     return {

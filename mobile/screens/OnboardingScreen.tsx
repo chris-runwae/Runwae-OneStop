@@ -144,6 +144,12 @@ export default function OnboardingScreen() {
     router.push('/(tabs)');
   };
 
+  const handleJoinWaitlist = () => {
+    // console.log('handleJoinWaitlist: ', responses);
+    completeOnboarding(responses);
+    router.push('/(tabs)');
+  };
+
   const handleOptionSelect = (optionId: string) => {
     if (currentSlide.type === 'multiple-choice') {
       setSelectedOptions([optionId]);
@@ -288,31 +294,15 @@ export default function OnboardingScreen() {
             <>
               <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
                 <TouchableOpacity
-                  onPress={() => {}}
-                  style={[
-                    styles.button,
-                    styles.fullWidthButton,
-                    {
-                      backgroundColor: colors.primaryColors.default,
-                      opacity: 0.5,
-                    },
-                  ]}
-                  disabled>
-                  <Text style={styles.buttonText}>Continue to Premium</Text>
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
-                <TouchableOpacity
-                  onPress={() => {}}
+                  onPress={handleJoinWaitlist}
                   style={[
                     styles.button,
                     styles.fullWidthButton,
                     { backgroundColor: colors.primaryColors.default },
                   ]}>
-                  <Text style={styles.buttonText}>Continue to Premium</Text>
+                  <Text style={styles.buttonText}>Join the waitlist</Text>
                 </TouchableOpacity>
-              </Animated.View> */}
+              </Animated.View>
             </>
           ) : (
             <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>

@@ -68,7 +68,7 @@ export const COLORS = {
     default: '#FF2E92',
     light: '#FFF0F4',
     border: '#FF96BA',
-    dark: '#FE6FA6',
+    dark: '#FF48A0',
     darkBackground: '#FFF0F4',
     // darkBorder: "#FF96BA",
   },

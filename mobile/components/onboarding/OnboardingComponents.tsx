@@ -90,17 +90,16 @@ export const AnimatedOption = ({
   index,
   isSelected,
   onSelect,
-  isDarkMode,
 }: {
   option: any;
   index: number;
   isSelected: boolean;
   onSelect: () => void;
-  isDarkMode?: boolean;
 }) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const animatedValue = useSharedValue(0);
+  const isDarkMode = colorScheme === 'dark';
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 100 });
@@ -124,7 +123,9 @@ export const AnimatedOption = ({
           {
             transform: [{ scale: isSelected ? 1.02 : 1 }],
             backgroundColor: isSelected
-              ? colors.primaryColors.background
+              ? isDarkMode
+                ? colors.backgroundColors.default
+                : colors.primaryColors.background
               : colors.backgroundColors.default,
             borderColor: isSelected
               ? colors.primaryColors.default
@@ -137,7 +138,9 @@ export const AnimatedOption = ({
             styles.animatedOptionText,
             {
               color: isSelected
-                ? colors.primaryColors.default
+                ? isDarkMode
+                  ? colors.textColors.default
+                  : colors.primaryColors.default
                 : colors.textColors.default,
               fontWeight: isSelected ? '600' : 'normal',
             },

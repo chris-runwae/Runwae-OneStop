@@ -215,7 +215,9 @@ export default function OnboardingScreen() {
       style={[
         styles.container,
         {
-          backgroundColor: isDarkMode ? '#121212' : COLORS.gray[50],
+          backgroundColor: isDarkMode
+            ? '#121212'
+            : colors.backgroundColors.default,
         },
       ]}>
       {currentStep > 0 && (
@@ -318,8 +320,8 @@ export default function OnboardingScreen() {
                     backgroundColor:
                       selectedOptions.length > 0
                         ? colors.primaryColors.default
-                        : COLORS.gray[300],
-                    opacity: selectedOptions.length > 0 ? 1 : 0.7,
+                        : colors.primaryColors.default,
+                    opacity: selectedOptions.length > 0 ? 1 : 0.1,
                   },
                 ]}
                 disabled={
@@ -327,10 +329,19 @@ export default function OnboardingScreen() {
                     currentSlide.type === 'multiple-select') &&
                   selectedOptions.length === 0
                 }>
-                <Text style={[styles.buttonText, styles.buttonTextWithMargin]}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    styles.buttonTextWithMargin,
+                    // { color: colors.backgroundColors.default },
+                  ]}>
                   Continue
                 </Text>
-                <ChevronRight size={20} color="white" />
+                <ChevronRight
+                  size={20}
+                  // color={colors.backgroundColors.default}
+                  color={colors.textColors.default}
+                />
               </TouchableOpacity>
             </Animated.View>
           )}

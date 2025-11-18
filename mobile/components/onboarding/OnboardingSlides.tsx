@@ -103,8 +103,8 @@ export const WelcomeSlide: React.FC<SlideProps> = ({
             <TouchableOpacity
               onPress={handleNext}
               className="bottom-0 right-0 h-16 w-16 flex-row items-center justify-center rounded-full"
-              style={{ backgroundColor: colors.primary[500] }}>
-              <ArrowRight size={20} color="white" />
+              style={{ backgroundColor: colors.primaryColors.default }}>
+              <ArrowRight size={20} color={colors.white} />
             </TouchableOpacity>
           </View>
         </Animated.View>

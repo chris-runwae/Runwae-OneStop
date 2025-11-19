@@ -1,6 +1,6 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { Redirect, RelativePathString } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { Redirect, RelativePathString } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
 
 import {
   IconButton,
@@ -10,24 +10,37 @@ import {
   Spacer,
   WelcomeAvatar,
   UpcomingTripContainer,
-} from "@/components";
-import useTrips from "@/hooks/useTrips";
-import { COLORS, ICON_NAMES } from "@/constants";
+  HomeScreenSkeleton,
+} from '@/components';
+import useTrips from '@/hooks/useTrips';
+import { COLORS, ICON_NAMES } from '@/constants';
+import { useState } from 'react';
 
 export default function HomeScreen() {
-  const { featuredTrips, loading } = useTrips();
+  const { featuredTrips } = useTrips();
   const { isSignedIn } = useAuth();
+  const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     setLoading(false);
+  //   }, 2000);
+  // }, []);
 
   if (!isSignedIn) {
-    return <Redirect href={"(auth)/sign-in" as RelativePathString} />;
+    return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
   }
 
+  // if (loading) {
+  //   return (
+  //     <ScreenContainer header={{ leftComponent: <WelcomeAvatar /> }}>
+  //       <ActivityIndicator size="large" color={COLORS.pink.default} />
+  //     </ScreenContainer>
+  //   );
+  // }
+
   if (loading) {
-    return (
-      <ScreenContainer header={{ leftComponent: <WelcomeAvatar /> }}>
-        <ActivityIndicator size="large" color={COLORS.pink.default} />
-      </ScreenContainer>
-    );
+    return <HomeScreenSkeleton />;
   }
 
   return (
@@ -36,28 +49,26 @@ export default function HomeScreen() {
         rightComponent: (
           <IconButton
             icon={ICON_NAMES.BELL}
-            onPress={() => console.log("Notifications")}
+            onPress={() => console.log('Notifications')}
           />
         ),
         leftComponent: <WelcomeAvatar />,
-      }}
-    >
+      }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-      >
+        contentContainerStyle={styles.scrollViewContent}>
         <Spacer size={32} vertical />
         <UpcomingTripContainer
           linkText="More"
-          linkTo={"/explore" as RelativePathString}
+          linkTo={'/explore' as RelativePathString}
         />
         <Spacer size={32} vertical />
         {featuredTrips.length > 0 && (
           <>
             <SectionHeader
-              title="Featured Trips"
+              title="Trips for you"
               linkText="More"
-              linkTo={"/explore" as RelativePathString}
+              linkTo={'/explore' as RelativePathString}
             />
             <View style={styles.carouselContainer}>
               <HorizontalCarousel data={featuredTrips} />
@@ -72,8 +83,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   scrollViewContent: {

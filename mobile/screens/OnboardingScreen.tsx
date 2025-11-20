@@ -336,7 +336,7 @@ export default function OnboardingScreen() {
                 <ChevronRight
                   size={20}
                   // color={colors.backgroundColors.default}
-                  color={colors.textColors.default}
+                  color={colors.white}
                 />
               </TouchableOpacity>
             </Animated.View>

@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Redirect, RelativePathString } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 
@@ -13,31 +13,16 @@ import {
   HomeScreenSkeleton,
 } from '@/components';
 import useTrips from '@/hooks/useTrips';
-import { COLORS, ICON_NAMES } from '@/constants';
-import { useState } from 'react';
+import { ICON_NAMES } from '@/constants';
 
 export default function HomeScreen() {
-  const { featuredTrips } = useTrips();
+  const { featuredTrips, loading } = useTrips();
   const { isSignedIn } = useAuth();
-  const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     setLoading(false);
-  //   }, 2000);
-  // }, []);
+  // const [loading, setLoading] = useState(true);
 
   if (!isSignedIn) {
     return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
   }
-
-  // if (loading) {
-  //   return (
-  //     <ScreenContainer header={{ leftComponent: <WelcomeAvatar /> }}>
-  //       <ActivityIndicator size="large" color={COLORS.pink.default} />
-  //     </ScreenContainer>
-  //   );
-  // }
 
   if (loading) {
     return <HomeScreenSkeleton />;

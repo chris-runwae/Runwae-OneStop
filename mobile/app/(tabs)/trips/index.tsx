@@ -1,20 +1,19 @@
-import { useUser } from "@clerk/clerk-expo";
-import { FlashList } from "@shopify/flash-list";
-import * as Haptics from "expo-haptics";
-import { useRouter, RelativePathString } from "expo-router";
-import React from "react";
+import { useUser } from '@clerk/clerk-expo';
+import { FlashList } from '@shopify/flash-list';
+import * as Haptics from 'expo-haptics';
+import { useRouter, RelativePathString } from 'expo-router';
+import React from 'react';
 import {
   StyleSheet,
   useColorScheme,
   Platform,
   View,
-  TouchableOpacity,
   Pressable,
-} from "react-native";
-import { Image } from "expo-image";
-import { Plus } from "lucide-react-native";
+} from 'react-native';
+import { Image } from 'expo-image';
+import { Plus } from 'lucide-react-native';
 
-import { Colors } from "@/constants";
+import { Colors } from '@/constants';
 
 import {
   HomeSkeleton,
@@ -23,17 +22,17 @@ import {
   ScreenContainer,
   WideTripCard,
   Text,
-} from "@/components";
-import useTrips from "@/hooks/useTrips";
-import { Trip } from "@/types/trips.types";
+} from '@/components';
+import useTrips from '@/hooks/useTrips';
+import { Trip } from '@/types/trips.types';
 
 const TripsScreen = () => {
   const router = useRouter();
   const { isLoaded } = useUser();
-  const colorScheme = useColorScheme() || "light";
+  const colorScheme = useColorScheme() || 'light';
   const colors = Colors[colorScheme];
 
-  const { trips, loading } = useTrips();
+  const { trips, loading, fetchTrips } = useTrips();
 
   if (!isLoaded || loading) {
     return <HomeSkeleton />;
@@ -41,7 +40,7 @@ const TripsScreen = () => {
 
   const handleNewListPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    return router.push("/trip-creation" as RelativePathString);
+    return router.push('/trip-creation' as RelativePathString);
   };
 
   const renderItem = ({ item }: { item: Trip[] | null }) => {
@@ -51,12 +50,12 @@ const TripsScreen = () => {
   const NoTripsContainer = () => {
     const styles = StyleSheet.create({
       emptyStateContainer: {
-        alignItems: "center",
+        alignItems: 'center',
         gap: 8,
         paddingTop: 100,
       },
       noTripsContent: {
-        alignItems: "center",
+        alignItems: 'center',
         gap: 8,
         paddingHorizontal: 32,
       },
@@ -66,7 +65,7 @@ const TripsScreen = () => {
       },
       noTripsText: {
         fontSize: 20,
-        fontWeight: "bold",
+        fontWeight: 'bold',
       },
       noTripsSubtitle: {
         fontSize: 13,
@@ -78,7 +77,7 @@ const TripsScreen = () => {
     return (
       <View style={styles.emptyStateContainer}>
         <Image
-          source={require("@/assets/svgs/NoData.svg")}
+          source={require('@/assets/svgs/NoData.svg')}
           style={styles.noTripsImage}
           contentFit="contain"
         />
@@ -100,15 +99,14 @@ const TripsScreen = () => {
   return (
     <ScreenContainer
       header={{
-        title: "Trips",
+        title: 'Trips',
         rightComponent: (
           <Pressable onPress={handleNewListPress}>
             <Plus size={24} color={colors.primaryColors.default} />
           </Pressable>
         ),
       }}
-      contentContainerStyle={styles.container}
-    >
+      contentContainerStyle={styles.container}>
       <Spacer size={16} vertical />
       <FlashList
         data={trips}
@@ -119,6 +117,10 @@ const TripsScreen = () => {
         ListEmptyComponent={() => <NoTripsContainer />}
         ListFooterComponent={() => <Spacer size={100} vertical />}
         ItemSeparatorComponent={() => <Spacer size={8} vertical />}
+        onRefresh={() => {
+          fetchTrips();
+        }}
+        refreshing={loading}
       />
 
       {/* <PrimaryButton
@@ -145,21 +147,21 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 16,
   },
   userAvatar: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    resizeMode: "contain",
+    resizeMode: 'contain',
   },
   userInfo: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
-    alignItems: "center",
+    alignItems: 'center',
   },
   headerButton: {
     padding: 8,
@@ -173,11 +175,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
 
   emptyStateContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     gap: 8,
     paddingTop: 100,
   },
@@ -187,7 +189,7 @@ const styles = StyleSheet.create({
   },
   noTripsText: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     // color: Colors[colorScheme].textColors.default,
   },
   noTripsSubtitle: {

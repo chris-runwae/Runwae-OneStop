@@ -1,16 +1,18 @@
-import React from "react";
+import React from 'react';
 import {
   StyleProp,
   StyleSheet,
+  Pressable,
   View,
   ViewStyle,
   useColorScheme,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BellIcon } from "lucide-react-native";
-import { Colors } from "@/constants";
-import { Text } from "@/components";
+import { ArrowLeftIcon, BellIcon } from 'lucide-react-native';
+import { Colors } from '@/constants';
+import { Text } from '@/components';
+import { router } from 'expo-router';
 
 type ScreenContainerProps = {
   children?: React.ReactNode;
@@ -21,6 +23,7 @@ type ScreenContainerProps = {
     leftComponent?: React.ReactNode;
   };
   contentContainerStyle?: StyleProp<ViewStyle>;
+  leftComponent?: boolean;
   rightComponent?: boolean;
   className?: string;
 };
@@ -31,9 +34,10 @@ const ScreenContainer = ({
   header,
   className,
   contentContainerStyle,
+  leftComponent = false,
   rightComponent = false,
 }: ScreenContainerProps) => {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
@@ -47,9 +51,9 @@ const ScreenContainer = ({
 
     //Header
     header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       paddingHorizontal: 16,
       paddingBottom: 12,
       borderBottomWidth: 1,
@@ -57,15 +61,15 @@ const ScreenContainer = ({
     },
     rightComponent: {
       flex: 1,
-      alignItems: "flex-end",
+      alignItems: 'flex-end',
     },
     leftComponent: {
       flex: 1,
-      alignItems: "flex-start",
+      alignItems: 'flex-start',
     },
     headerTitle: {
-      fontFamily: "Space Grotesk",
-      fontWeight: "500",
+      fontFamily: 'Space Grotesk',
+      fontWeight: '500',
       fontSize: 25,
       lineHeight: 30,
       letterSpacing: 0,
@@ -76,8 +80,8 @@ const ScreenContainer = ({
       height: 50,
       aspectRatio: 1,
       borderRadius: 25,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: 'center',
+      justifyContent: 'center',
     },
 
     //Content
@@ -94,15 +98,20 @@ const ScreenContainer = ({
     </View>
   );
 
+  const defaultLeftComponent = (
+    <Pressable onPress={() => router.back()} style={styles.svgContainer}>
+      <ArrowLeftIcon size={20} color={colors.headerIcon} />
+    </Pressable>
+  );
+
   return (
     <View style={styles.container} className={className}>
       <View style={[styles.header, style]}>
         <View style={styles.leftComponent}>
-          {header?.leftComponent ? (
-            header?.leftComponent
-          ) : (
-            <Text style={styles.headerTitle}>{header?.title ?? "Home"}</Text>
-          )}
+          {(header?.leftComponent && header.leftComponent) ||
+            (leftComponent && defaultLeftComponent) || (
+              <Text style={styles.headerTitle}>{header?.title ?? 'Home'}</Text>
+            )}
         </View>
 
         <View style={styles.rightComponent}>

@@ -40,8 +40,8 @@ const SignInScreen = () => {
       // backgroundColor: colors.backgroundColors.default,
       // backgroundColor: Colors[colorScheme].white,
     },
-    container: {
-      // flex: 1,
+    headerContainer: {
+      borderBottomWidth: 0,
     },
     inputContainer: {
       // gap: 10,
@@ -52,7 +52,7 @@ const SignInScreen = () => {
       borderRadius: 12,
       padding: 12,
       ...textStyles.body_Regular,
-      color: Colors[colorScheme].textBlack,
+      color: colors.textColors.default,
     },
 
     logo: {
@@ -60,10 +60,10 @@ const SignInScreen = () => {
       height: 30,
     },
     text: {
-      color: Colors[colorScheme].textBlack,
+      color: colors.textColors.default,
     },
     body: {
-      color: Colors[colorScheme].textBlack,
+      color: colors.textColors.default,
       fontSize: 12,
       lineHeight: 14,
     },
@@ -88,22 +88,19 @@ const SignInScreen = () => {
       ...textStyles.bold_20,
       fontSize: 24,
       lineHeight: 30,
-      // color: Colors.white,
     },
     descriptionText: {
       ...textStyles.subtitle_Regular,
       fontSize: 16,
-      lineHeight: 24,
       color: Colors[colorScheme].borderColors.default,
     },
     subtitleText: {
-      ...textStyles.body_Bold,
+      ...textStyles.body_Bold, //Add DM Sans semiBold font family here
       fontSize: 13,
       lineHeight: 19.5,
-      color: Colors[colorScheme].textBlack,
     },
     linkText: {
-      color: Colors[colorScheme].pink500,
+      color: colors.primaryColors.default,
       textDecorationLine: 'underline',
     },
     routeText: {
@@ -154,7 +151,7 @@ const SignInScreen = () => {
   return (
     <>
       <ScreenContainer
-        style={styles.container}
+        style={styles.headerContainer}
         header={{
           rightComponent: <View />,
           leftComponent: (
@@ -167,8 +164,8 @@ const SignInScreen = () => {
           ),
         }}>
         <View style={styles.contentContainer}>
+          <Spacer size={8} vertical />
           <Text style={styles.headerText}>Welcome Back!</Text>
-          <Spacer size={4} vertical />
           <Text style={styles.descriptionText}>
             Enter your details to proceed or{' '}
             <Link href="/(auth)/sign-up" asChild>
@@ -187,7 +184,7 @@ const SignInScreen = () => {
               onChangeText={setEmail}
               style={styles.textInputContainer}
               placeholder="johndoe@gmail.com"
-              placeholderTextColor={Colors[colorScheme].borderGray}
+              placeholderTextColor={colors.borderColors.subtle}
             />
             <Spacer size={10} vertical />
             <Text style={styles.subtitleText}>Password</Text>
@@ -198,7 +195,7 @@ const SignInScreen = () => {
                 secureTextEntry={!showPassword}
                 style={[styles.textInputContainer, styles.passwordInput]}
                 placeholder="********"
-                placeholderTextColor={Colors[colorScheme].borderGray}
+                placeholderTextColor={colors.borderColors.subtle}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? (
@@ -227,7 +224,7 @@ const SignInScreen = () => {
             variant="filled"
             disabled={email === '' || password === ''}
             loading={isSigningIn}
-            textStyle={{ color: Colors[colorScheme].text }}>
+            textStyle={{ color: colors.white }}>
             Sign In
           </Button>
           <Spacer size={30} vertical />

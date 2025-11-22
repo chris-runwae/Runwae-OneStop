@@ -76,7 +76,7 @@ const Button: React.FC<ButtonProps> = ({
           ...baseStyle,
           backgroundColor: disabled
             ? Colors[colorScheme].borderColors.default
-            : Colors[colorScheme].pink500,
+            : Colors[colorScheme].primaryColors.default,
           borderWidth: 0,
         };
       case 'outline':

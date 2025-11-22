@@ -96,7 +96,7 @@ const TripsDetailsScreen = () => {
       user_id: 'user_2',
       role: 'admin',
       name: 'Alice',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=2',
+      profile_photo_url: null,
       inserted_at: '2025-11-22T20:01:00Z',
       updated_at: '2025-11-22T20:01:00Z',
     },
@@ -106,7 +106,7 @@ const TripsDetailsScreen = () => {
       user_id: 'user_3',
       role: 'member',
       name: 'Bob',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=3',
+      profile_photo_url: null,
       inserted_at: '2025-11-22T20:02:00Z',
       updated_at: '2025-11-22T20:02:00Z',
     },
@@ -192,7 +192,7 @@ const TripsDetailsScreen = () => {
         <AvatarGroup
           attendees={dummyAttendees}
           maxVisible={4}
-          size={40}
+          size={36}
           overlap={12}
         />
       </ScrollView>

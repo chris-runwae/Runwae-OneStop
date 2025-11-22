@@ -11,7 +11,7 @@ import { DateRange, Text } from '@/components';
 import { Colors } from '@/constants/theme';
 import { Trip } from '@/types/trips.types';
 import { toSentenceCase } from '@/utils/stringManipulation';
-import { RelativePathString, router } from 'expo-router';
+import { router } from 'expo-router';
 
 interface WideTripCardProps {
   data: Trip[] | null;

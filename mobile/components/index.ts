@@ -1,4 +1,5 @@
 import Spacer from './utils/Spacer';
+import Button from './ui/Button';
 import CustomImage from './ui/CustomImage';
 import DateRange from './utils/DateRange';
 import ExpandLink, { ExpandLinkProps } from './headers/ExpandLink';
@@ -19,6 +20,7 @@ import HomeScreenSkeleton from './skeletons/HomeScreenSkeleton';
 
 export {
   Spacer,
+  Button,
   CustomImage,
   DateRange,
   ExpandLink,

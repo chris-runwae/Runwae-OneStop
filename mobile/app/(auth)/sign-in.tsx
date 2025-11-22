@@ -1,68 +1,247 @@
-import { useSignIn } from '@clerk/clerk-expo'
-import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React from 'react'
-import type { Href } from 'expo-router'
+import { isClerkAPIResponseError, useSignIn } from '@clerk/clerk-expo';
+import { ClerkAPIError } from '@clerk/types';
+import { Image } from 'expo-image';
+import { Link, useRouter } from 'expo-router';
+import { EyeIcon, EyeOffIcon } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  useColorScheme,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 
-export default function Page() {
-  const { signIn, setActive, isLoaded } = useSignIn()
-  const router = useRouter()
+import { Spacer, Text, Button } from '@/components';
+import ScreenContainer from '@/components/containers/ScreenContainer';
+import { Colors } from '@/constants';
+import { textStyles } from '@/utils/styles';
 
-  const [emailAddress, setEmailAddress] = React.useState('')
-  const [password, setPassword] = React.useState('')
+// const darkLogo = require('@/assets/images/icon-dark.png');
+const lightLogo = require('@/assets/images/icon.png');
+
+const SignInScreen = () => {
+  const router = useRouter();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [errors, setErrors] = useState<ClerkAPIError[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const styles = StyleSheet.create({
+    contentContainer: {
+      gap: 4,
+      flex: 1,
+      paddingHorizontal: 16,
+      // backgroundColor: colors.backgroundColors.default,
+      // backgroundColor: Colors[colorScheme].white,
+    },
+    container: {
+      // flex: 1,
+    },
+    inputContainer: {
+      // gap: 10,
+    },
+    textInputContainer: {
+      borderWidth: 1,
+      borderColor: Colors[colorScheme].borderGray,
+      borderRadius: 12,
+      padding: 12,
+      ...textStyles.body_Regular,
+      color: Colors[colorScheme].textBlack,
+    },
+
+    logo: {
+      width: 20,
+      height: 30,
+    },
+    text: {
+      color: Colors[colorScheme].textBlack,
+    },
+    body: {
+      color: Colors[colorScheme].textBlack,
+      fontSize: 12,
+      lineHeight: 14,
+    },
+    routeContainer: {
+      alignSelf: 'center',
+    },
+    errorText: {
+      color: 'red',
+      marginBottom: 8,
+    },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    passwordInput: {
+      flex: 1,
+    },
+
+    // Text
+    headerText: {
+      ...textStyles.bold_20,
+      fontSize: 24,
+      lineHeight: 30,
+      // color: Colors.white,
+    },
+    descriptionText: {
+      ...textStyles.subtitle_Regular,
+      fontSize: 16,
+      lineHeight: 24,
+      color: Colors[colorScheme].borderColors.default,
+    },
+    subtitleText: {
+      ...textStyles.body_Bold,
+      fontSize: 13,
+      lineHeight: 19.5,
+      color: Colors[colorScheme].textBlack,
+    },
+    linkText: {
+      color: Colors[colorScheme].pink500,
+      textDecorationLine: 'underline',
+    },
+    routeText: {
+      color: Colors[colorScheme].textBlack,
+    },
+  });
+
+  if (!isLoaded) {
+    return null;
+  }
 
   // Handle the submission of the sign-in form
   const onSignInPress = async () => {
-    if (!isLoaded) return
+    if (!isLoaded) return;
+
+    setIsSigningIn(true);
+    setErrors([]);
 
     // Start the sign-in process using the email and password provided
     try {
       const signInAttempt = await signIn.create({
-        identifier: emailAddress,
+        identifier: email,
         password,
-      })
+      });
 
       // If sign-in process is complete, set the created session as active
       // and redirect the user
       if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('/(tabs)')
+        await setActive({
+          session: signInAttempt.createdSessionId,
+        });
+        router.replace('/(tabs)');
       } else {
         // If the status isn't complete, check why. User might need to
         // complete further steps.
-        console.error(JSON.stringify(signInAttempt, null, 2))
+        console.error(JSON.stringify(signInAttempt, null, 2));
       }
     } catch (err) {
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
+      // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
-      console.error(JSON.stringify(err, null, 2))
+      if (isClerkAPIResponseError(err)) setErrors(err.errors);
+      console.error(JSON.stringify(err, null, 2));
+    } finally {
+      setIsSigningIn(false);
     }
-  }
+  };
 
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text>Sign in</Text>
-      <TextInput
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-      />
-      <TextInput
-        value={password}
-        placeholder="Enter password"
-        secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
-      />
-      <TouchableOpacity onPress={onSignInPress}>
-        <Text>Continue</Text>
-      </TouchableOpacity>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
-        <Text>Don&apos;t have an account?</Text>
-        <Link href={"/(auth)/sign-up" as Href}>
-          <Text>Sign up</Text>
-        </Link>
-      </View>
-    </View>
-  )
-}
+    <>
+      <ScreenContainer
+        style={styles.container}
+        header={{
+          rightComponent: <View />,
+          leftComponent: (
+            <Image
+              // source={colorScheme === 'dark' ? darkLogo : lightLogo} //TODO: Uncomment this when dark mode is implemented
+              source={lightLogo}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          ),
+        }}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.headerText}>Welcome Back!</Text>
+          <Spacer size={4} vertical />
+          <Text style={styles.descriptionText}>
+            Enter your details to proceed or{' '}
+            <Link href="/(auth)/sign-up" asChild>
+              <Text style={styles.linkText}>sign up</Text>
+            </Link>{' '}
+            here.
+          </Text>
+          <Spacer size={24} vertical />
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.subtitleText}>Email Address</Text>
+            <TextInput
+              textContentType="emailAddress"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.textInputContainer}
+              placeholder="johndoe@gmail.com"
+              placeholderTextColor={Colors[colorScheme].borderGray}
+            />
+            <Spacer size={10} vertical />
+            <Text style={styles.subtitleText}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={[styles.textInputContainer, styles.passwordInput]}
+                placeholder="********"
+                placeholderTextColor={Colors[colorScheme].borderGray}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? (
+                  <EyeIcon
+                    size={24}
+                    color={Colors[colorScheme].iconBorderGrey}
+                  />
+                ) : (
+                  <EyeOffIcon
+                    size={24}
+                    color={Colors[colorScheme].iconBorderGrey}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+            {errors.map((error) => (
+              <Text key={error.longMessage} style={styles.errorText}>
+                {error.longMessage}
+              </Text>
+            ))}
+          </View>
+
+          <Spacer size={24} vertical />
+          <Button
+            onPress={onSignInPress}
+            variant="filled"
+            disabled={email === '' || password === ''}
+            loading={isSigningIn}
+            textStyle={{ color: Colors[colorScheme].text }}>
+            Sign In
+          </Button>
+          <Spacer size={30} vertical />
+
+          {/* <Link
+            href="/(auth)/reset-password"
+            asChild
+            style={styles.routeContainer}>
+            <Text style={styles.linkText}>Forgot your password?</Text>
+          </Link> */}
+        </View>
+      </ScreenContainer>
+    </>
+  );
+};
+
+export default SignInScreen;

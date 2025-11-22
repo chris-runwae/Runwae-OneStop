@@ -1,22 +1,27 @@
-import * as Sentry from "@sentry/react-native";
+import * as Sentry from '@sentry/react-native';
+import { useFonts } from 'expo-font';
+import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
+import { DMSans_400Regular } from '@expo-google-fonts/dm-sans';
+import { useEffect } from 'react';
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from "@react-navigation/native";
-import { Slot } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import { ClerkProvider } from "@clerk/clerk-expo";
-import Constants from "expo-constants";
-import { tokenCache } from "@clerk/clerk-expo/token-cache";
+} from '@react-navigation/native';
+import { Slot } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import 'react-native-reanimated';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import Constants from 'expo-constants';
+import { tokenCache } from '@clerk/clerk-expo/token-cache';
 // If using Expo Router, import your CSS file in the app/_layout.tsx file
-import "../global.css";
+import '../global.css';
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: '(tabs)',
 };
 
 Sentry.init({
@@ -48,14 +53,29 @@ function RootLayout() {
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     Constants.expoConfig?.extra?.clerkPublishableKey;
 
+  const [loaded, error] = useFonts({
+    BricolageGrotesque_700Bold,
+    DMSans_400Regular,
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
   if (!publishableKey) {
-    Sentry.captureException(new Error("❌ Missing Clerk publishable key"));
-    console.error("❌ Missing Clerk publishable key");
+    Sentry.captureException(new Error('❌ Missing Clerk publishable key'));
+    console.error('❌ Missing Clerk publishable key');
+  }
+
+  if (!loaded && !error) {
+    return null;
   }
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Slot />
         <StatusBar style="auto" />
       </ThemeProvider>

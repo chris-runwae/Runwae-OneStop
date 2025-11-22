@@ -1,36 +1,37 @@
-export type TripStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
-export type TripVisibility = "private" | "public";
-export type CollaboratorRole = "owner" | "editor" | "viewer";
-export type CollaboratorStatus = "pending" | "accepted" | "declined";
-export type TravelerRole = "organizer" | "traveler" | "guest";
-export type TravelerStatus = "invited" | "confirmed" | "declined";
+export type TripStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+export type TripVisibility = 'private' | 'public';
+export type CollaboratorRole = 'owner' | 'editor' | 'viewer';
+export type CollaboratorStatus = 'pending' | 'accepted' | 'declined';
+export type TravelerRole = 'organizer' | 'traveler' | 'guest';
+export type TravelerStatus = 'invited' | 'confirmed' | 'declined';
+export type TripAttendeeRole = 'owner' | 'admin' | 'member';
 export type ItinerarySourceType =
-  | "user_created"
-  | "destination"
-  | "event"
-  | "activity"
-  | "accommodation";
+  | 'user_created'
+  | 'destination'
+  | 'event'
+  | 'activity'
+  | 'accommodation';
 export type ItineraryDeletePermission =
-  | "creator_only"
-  | "all_collaborators"
-  | "owner_only";
+  | 'creator_only'
+  | 'all_collaborators'
+  | 'owner_only';
 
 export type EventCategory =
-  | "adventure"
-  | "leisure"
-  | "business"
-  | "romantic"
-  | "family"
-  | "other";
+  | 'adventure'
+  | 'leisure'
+  | 'business'
+  | 'romantic'
+  | 'family'
+  | 'other';
 
 export type TripCategory =
-  | "leisure"
-  | "business"
-  | "family"
-  | "adventure"
-  | "cultural"
-  | "romantic"
-  | "other";
+  | 'leisure'
+  | 'business'
+  | 'family'
+  | 'adventure'
+  | 'cultural'
+  | 'romantic'
+  | 'other';
 
 export interface Trip {
   id: string;
@@ -88,7 +89,7 @@ export interface FeaturedTrip {
   updatedAt: string;
 }
 
-export type TripType = "featured" | "user";
+export type TripType = 'featured' | 'user';
 
 export interface TripItinerary {
   id: string;
@@ -263,6 +264,17 @@ export interface CreateTravelerInput {
   special_needs?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+}
+
+export interface TripAttendee {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  role: TripAttendeeRole;
+  name: string | null;
+  profile_photo_url?: string | null;
+  inserted_at: string;
+  updated_at: string;
 }
 
 // Trip with relations

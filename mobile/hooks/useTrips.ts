@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-expo';
 
 import { getSupabaseClient } from '@/lib/supabase';
-import { FeaturedTrip } from '@/types/trips.types';
+import {
+  FeaturedTrip,
+  TripAttendee,
+  TripAttendeeRole,
+} from '@/types/trips.types';
 
 const useTrips = () => {
   const [trips, setTrips] = useState<any[]>([]);
@@ -13,7 +17,7 @@ const useTrips = () => {
   const [error, setError] = useState<Error | null>(null);
   const { user } = useUser();
   const { getToken } = useAuth();
-  // const supabase = getSupabaseClient(getToken);
+  // const supabase = await getSupabaseClient(getToken);
 
   useEffect(() => {
     if (user) {
@@ -109,6 +113,49 @@ const useTrips = () => {
     }
   };
 
+  const fetchTripAttendees = async (tripId: string) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+      const { data, error } = await supabase
+        .from('trip_attendees')
+        .select('*')
+        .eq('trip_id', tripId);
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTripAttendee = async (
+    tripId: string,
+    userId: string,
+    role: TripAttendeeRole,
+    name: string,
+    profilePhotoUrl?: string | null
+  ) => {
+    const supabase = await getSupabaseClient(getToken);
+    const { data, error } = await supabase.from('trip_attendees').insert([
+      {
+        trip_id: tripId,
+        user_id: userId,
+        role: role || 'member',
+        name: name,
+        profile_photo_url: profilePhotoUrl || null,
+      },
+    ]);
+
+    if (error) {
+      console.error('Error adding user to trip:', error.message);
+      return null;
+    }
+
+    return data;
+  };
+
   return {
     trips,
     nextTrip,
@@ -121,6 +168,8 @@ const useTrips = () => {
     fetchNextTrip,
     fetchFeaturedTrips,
     fetchTripById,
+    fetchTripAttendees,
+    addTripAttendee,
   };
 };
 

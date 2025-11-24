@@ -75,7 +75,8 @@ export const DestinationSlide: React.FC<SlideProps> = ({
         name: city.name || '',
         state: city.stateCode || '',
         country: city.countryCode || '',
-        displayName: `${city.name}${city.stateCode ? `, ${city.stateCode}` : ''}, ${city.countryCode}`,
+        // displayName: `${city.name}${city.stateCode ? `, ${city.stateCode}` : ''}, ${city.countryCode}`,
+        displayName: `${city.name}, ${city.countryCode}`,
       }));
   }, [searchText]);
 

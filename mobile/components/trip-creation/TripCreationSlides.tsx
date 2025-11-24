@@ -8,12 +8,15 @@ import {
   Image,
   FlatList,
   Keyboard,
+  Alert,
+  Platform,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { City } from 'country-state-city';
 
 import { COLORS } from '@/constants';
@@ -404,6 +407,40 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
     };
   });
 
+  const pickImage = async () => {
+    try {
+      // Request permissions
+      if (Platform.OS !== 'web') {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Required',
+            'Sorry, we need camera roll permissions to upload images!'
+          );
+          return;
+        }
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [2, 1], // 800x400 aspect ratio (2:1)
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        onUpdateData('headerImage', selectedImage.uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
   return (
     <View style={{ width }} className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
@@ -433,9 +470,7 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
             Header Image
           </Text>
           <TouchableOpacity
-            onPress={() => {
-              // TODO: Implement image picker
-            }}
+            onPress={pickImage}
             className="items-center justify-center rounded-xl border-2 border-dashed py-12"
             style={{
               borderColor: isDarkMode ? '#333333' : COLORS.gray[350],

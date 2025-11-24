@@ -1,37 +1,41 @@
-import { router } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
-import React, { useState, useRef } from "react";
+import { RelativePathString, router } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   Dimensions,
-} from "react-native";
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   useSharedValue,
   withTiming,
   interpolate,
-} from "react-native-reanimated";
+} from 'react-native-reanimated';
+import { useUser } from '@clerk/clerk-expo';
 
 import {
   DestinationSlide,
   DateSlide,
   PersonalizationSlide,
-} from "@/components/trip-creation/TripCreationSlides";
-import { tripCreationData } from "@/components/trip-creation/tripCreationData";
-import { Colors, COLORS } from "@/constants";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ScreenContainer, Spacer } from "@/components";
+} from '@/components/trip-creation/TripCreationSlides';
+import { tripCreationData } from '@/components/trip-creation/tripCreationData';
+import { Colors, COLORS } from '@/constants';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ScreenContainer, Spacer } from '@/components';
+import { useTrips } from '@/hooks';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 export default function TripCreationScreen() {
-  const colorScheme = useColorScheme() || "light";
+  const { createTrip } = useTrips();
+  const { user } = useUser();
+  const colorScheme = useColorScheme() || 'light';
   const colors = Colors[colorScheme];
-  const isDarkMode = colorScheme === "dark";
+  const isDarkMode = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -42,11 +46,11 @@ export default function TripCreationScreen() {
   const buttonAnimation = useSharedValue(0);
 
   const [tripData, setTripData] = useState<Record<string, any>>({
-    destination: "",
+    destination: '',
     startDate: null,
     endDate: null,
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     headerImage: null,
   });
 
@@ -88,11 +92,11 @@ export default function TripCreationScreen() {
 
   const isCurrentStepValid = () => {
     switch (currentSlide.type) {
-      case "destination":
+      case 'destination':
         return tripData.destination && tripData.destination.trim().length > 0;
-      case "dates":
+      case 'dates':
         return tripData.startDate && tripData.endDate;
-      case "personalization":
+      case 'personalization':
         return tripData.name && tripData.name.trim().length > 0;
       default:
         return false;
@@ -131,19 +135,28 @@ export default function TripCreationScreen() {
     }
   };
 
-  const handleSaveTrip = () => {
+  const handleSaveTrip = async () => {
     // TODO: Implement actual trip saving logic
-    console.log("Saving trip:", tripData);
+    const trip = await createTrip({
+      user_id: user?.id,
+      start_date: tripData.startDate,
+      end_date: tripData.endDate,
+      description: tripData.description,
+      title: tripData.name,
+      cover_image_url: tripData.headerImage ?? 'https://placehold.co/600x400',
+      destination: tripData.destination,
+    });
 
+    console.log('Saving trip:', JSON.stringify(trip, null, 2));
     // Navigate back to trips screen
-    router.back();
+    router.replace('/(tabs)/trips' as RelativePathString);
   };
 
   const renderSlide = () => {
     const slide = tripCreationData[currentStep];
 
     switch (slide.type) {
-      case "destination":
+      case 'destination':
         return (
           <DestinationSlide
             slide={slide}
@@ -154,7 +167,7 @@ export default function TripCreationScreen() {
             isDarkMode={isDarkMode}
           />
         );
-      case "dates":
+      case 'dates':
         return (
           <DateSlide
             slide={slide}
@@ -165,7 +178,7 @@ export default function TripCreationScreen() {
             isDarkMode={isDarkMode}
           />
         );
-      case "personalization":
+      case 'personalization':
         return (
           <PersonalizationSlide
             slide={slide}
@@ -183,9 +196,9 @@ export default function TripCreationScreen() {
 
   const getButtonText = () => {
     if (currentStep === totalSteps - 1) {
-      return "Save Trip";
+      return 'Save Trip';
     }
-    return "Continue";
+    return 'Continue';
   };
 
   return (
@@ -200,19 +213,17 @@ export default function TripCreationScreen() {
 
         // ),
       }}
-      className="flex-1"
-    >
+      className="flex-1">
       <Spacer size={16} vertical />
       {/* Progress Bar */}
       <View className="mb-4 items-center justify-center rounded-full px-6">
         <View
           className="h-1.5 w-full overflow-hidden rounded-full"
           style={{
-            backgroundColor: isDarkMode ? "#2a2a2a" : COLORS.gray[350],
+            backgroundColor: isDarkMode ? '#2a2a2a' : COLORS.gray[350],
             borderRadius: 100,
-            overflow: "hidden",
-          }}
-        >
+            overflow: 'hidden',
+          }}>
           <Animated.View
             className="h-full rounded-full"
             style={[
@@ -220,7 +231,7 @@ export default function TripCreationScreen() {
               {
                 backgroundColor: colors.primaryColors.default,
                 height: 16,
-                overflow: "hidden",
+                overflow: 'hidden',
               },
             ]}
           />
@@ -233,14 +244,13 @@ export default function TripCreationScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         scrollEnabled={false}
-        className="flex-1"
-      >
+        className="flex-1">
         {renderSlide()}
       </ScrollView>
 
       {/* Continue/Save Button */}
       <View className="mb-10 items-center gap-y-4 px-6">
-        <Animated.View style={[buttonAnimStyle, { width: "100%" }]}>
+        <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
           <TouchableOpacity
             onPress={handleNext}
             className="w-full flex-row items-center justify-center rounded-xl py-4"
@@ -250,12 +260,10 @@ export default function TripCreationScreen() {
                 : COLORS.gray[350],
               opacity: isCurrentStepValid() ? 1 : 0.7,
             }}
-            disabled={!isCurrentStepValid()}
-          >
+            disabled={!isCurrentStepValid()}>
             <Text
               className="mr-2 text-lg font-semibold text-white"
-              style={{ color: COLORS.white.base }}
-            >
+              style={{ color: COLORS.white.base }}>
               {getButtonText()}
             </Text>
           </TouchableOpacity>

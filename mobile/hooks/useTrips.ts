@@ -177,6 +177,20 @@ const useTrips = () => {
     }
   };
 
+  const createTrip = async (tripData: any) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+      const { data, error } = await supabase.from('trips').insert(tripData);
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -192,6 +206,7 @@ const useTrips = () => {
     fetchTripAttendees,
     addTripAttendee,
     getTripItinerary,
+    createTrip,
   };
 };
 

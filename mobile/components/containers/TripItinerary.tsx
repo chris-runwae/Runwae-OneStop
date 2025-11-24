@@ -89,18 +89,10 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
           styles.dateButton,
           isActive ? dynamicStyles.dateButtonActive : dynamicStyles.dateButton,
         ]}>
-        <Text
-          style={[
-            styles.dateButtonText,
-            { color: colors.white, fontWeight: '300' },
-          ]}>
+        <Text style={[styles.dateButtonText, { fontWeight: '300' }]}>
           {dayjs(date).format('ddd').toUpperCase()}
         </Text>
-        <Text
-          style={[
-            styles.dateButtonText,
-            { color: colors.white, fontWeight: '600' },
-          ]}>
+        <Text style={[styles.dateButtonText, { fontWeight: '600' }]}>
           {dayjs(date).format('DD')}
         </Text>
       </Pressable>

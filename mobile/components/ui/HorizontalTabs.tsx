@@ -30,12 +30,14 @@ export const HorizontalTabs = ({
     },
     tabButtonActive: {
       borderBottomColor: colors.primaryColors.default,
+      borderBottomWidth: 1,
     },
     tabText: {
-      color: colors.textColors.subtle,
+      color: colors.textColors.default,
+      fontWeight: '500', // May need this later
     },
     tabTextActive: {
-      color: colors.textColors.default,
+      color: colors.primaryColors.default,
     },
   });
 
@@ -53,12 +55,16 @@ export const HorizontalTabs = ({
               onPress={() => onTabChange(tab.id)}
               style={[
                 styles.tabButton,
-                isActive ? dynamicStyles.tabButtonActive : dynamicStyles.tabButton,
+                isActive
+                  ? dynamicStyles.tabButtonActive
+                  : dynamicStyles.tabButton,
               ]}>
               <Text
                 style={[
                   styles.tabText,
-                  isActive ? dynamicStyles.tabTextActive : dynamicStyles.tabText,
+                  isActive
+                    ? dynamicStyles.tabTextActive
+                    : dynamicStyles.tabText,
                 ]}>
                 {tab.label}
               </Text>
@@ -77,19 +83,18 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     width: '100%',
+    // gap: 16, May need this later
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabText: {
     ...textStyles.subtitle_Regular,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '300',
   },
 });
-

@@ -151,6 +151,17 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
       <SectionList
         sections={filteredItinerary}
         keyExtractor={(item) => item.id}
+        renderSectionHeader={
+          selectedDate === null
+            ? ({ section }) => (
+                <View style={styles.sectionHeaderContainer}>
+                  <Text style={styles.sectionHeader}>
+                    {dayjs(section.title).format('MMMM DD, YYYY')}
+                  </Text>
+                </View>
+              )
+            : undefined
+        }
         renderItem={({ item }) => <ItineraryItem item={item} />}
       />
     </View>
@@ -195,5 +206,13 @@ const styles = StyleSheet.create({
   },
   itemDescription: {
     ...textStyles.regular_14,
+  },
+
+  sectionHeaderContainer: {
+    paddingBottom: 8,
+  },
+  sectionHeader: {
+    ...textStyles.bold_20,
+    fontSize: 16,
   },
 });

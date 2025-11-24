@@ -21,6 +21,7 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
   const { getTripItinerary } = useTrips();
   const [itinerary, setItinerary] = useState<ItinerarySection[]>([]);
   const [dates, setDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchItinerary();
@@ -45,11 +46,22 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
   }, [tripId, getTripItinerary]);
 
   const scrollToDate = (date: string) => {
-    // implement using SectionList ref if needed
+    // Toggle: if same date is clicked, deselect (show all)
+    setSelectedDate(selectedDate === date ? null : date);
   };
+
+  // Filter itinerary sections based on selected date
+  const filteredItinerary = selectedDate
+    ? itinerary.filter((section) => section.title === selectedDate)
+    : itinerary;
 
   const dynamicStyles = StyleSheet.create({
     dateButton: {
+      backgroundColor: colors.backgroundColors.subtle,
+      borderWidth: 1,
+      borderColor: colors.borderColors.default,
+    },
+    dateButtonActive: {
       backgroundColor: colors.primaryColors.default,
       borderWidth: 1,
       borderColor: colors.primaryColors.border,
@@ -68,11 +80,15 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
   });
 
   const RenderDateButton = ({ date, key }: { date: string; key: number }) => {
+    const isActive = selectedDate === date;
     return (
       <Pressable
         key={key}
         onPress={() => scrollToDate(date)}
-        style={[styles.dateButton, dynamicStyles.dateButton]}>
+        style={[
+          styles.dateButton,
+          isActive ? dynamicStyles.dateButtonActive : dynamicStyles.dateButton,
+        ]}>
         <Text
           style={[
             styles.dateButtonText,
@@ -133,7 +149,7 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
       <Spacer size={24} vertical />
 
       <SectionList
-        sections={itinerary}
+        sections={filteredItinerary}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <ItineraryItem item={item} />}
       />

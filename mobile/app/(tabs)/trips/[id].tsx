@@ -11,6 +11,7 @@ import {
   Text,
 } from '@/components';
 import { AvatarGroup } from '@/components/ui/AvatarGroup';
+import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
 import useTrips from '@/hooks/useTrips';
 import { Trip, TripAttendee } from '@/types/trips.types';
 import { Menu } from 'lucide-react-native';
@@ -30,6 +31,7 @@ const TripsDetailsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [attendees, setAttendees] = useState<TripAttendee[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('itinerary');
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -50,7 +52,6 @@ const TripsDetailsScreen = () => {
 
   useEffect(() => {
     fetchTrip();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTrip]);
 
   useEffect(() => {
@@ -76,6 +77,9 @@ const TripsDetailsScreen = () => {
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
       borderColor: colors.borderColors.default,
+    },
+    emptyText: {
+      color: colors.textColors.subtle,
     },
   });
 
@@ -196,8 +200,46 @@ const TripsDetailsScreen = () => {
           overlap={12}
         />
         <Spacer size={32} vertical />
-        <TripItinerary tripId={trip?.id as string} />
-        <Spacer size={14} vertical />
+
+        <HorizontalTabs
+          tabs={[
+            { id: 'discover', label: 'Discover' },
+            { id: 'saved', label: 'Saved' },
+            { id: 'itinerary', label: 'Itinerary' },
+            { id: 'activity', label: 'Activity' },
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <Spacer size={24} vertical />
+
+        {activeTab === 'itinerary' && (
+          <>
+            <TripItinerary tripId={trip?.id as string} />
+            <Spacer size={14} vertical />
+          </>
+        )}
+        {activeTab === 'discover' && (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+              Discover content coming soon
+            </Text>
+          </View>
+        )}
+        {activeTab === 'saved' && (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+              Saved content coming soon
+            </Text>
+          </View>
+        )}
+        {activeTab === 'activity' && (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+              Activity content coming soon
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -240,6 +282,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   description: {
+    ...textStyles.subtitle_Regular,
+    fontSize: 14,
+    lineHeight: 19.5,
+  },
+  emptyContainer: {
+    paddingVertical: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
     ...textStyles.subtitle_Regular,
     fontSize: 14,
     lineHeight: 19.5,

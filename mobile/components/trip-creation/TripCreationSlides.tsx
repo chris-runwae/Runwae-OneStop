@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,19 @@ import {
   Dimensions,
   TextInput,
   Image,
-} from "react-native";
+  FlatList,
+  Keyboard,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
-} from "react-native-reanimated";
-import DateTimePicker from "@react-native-community/datetimepicker";
+} from 'react-native-reanimated';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { City } from 'country-state-city';
 
-import { COLORS } from "@/constants";
+import { COLORS } from '@/constants';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 interface SlideProps {
   slide: any;
@@ -34,6 +37,9 @@ export const DestinationSlide: React.FC<SlideProps> = ({
   colors,
   isDarkMode,
 }) => {
+  const [searchText, setSearchText] = useState(tripData.destination || '');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
       opacity: slideAnimation.value,
@@ -42,20 +48,56 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           translateX: interpolate(
             slideAnimation.value,
             [0, 1],
-            [width * 0.1, 0],
+            [width * 0.1, 0]
           ),
         },
       ],
     };
   });
 
+  // Get all cities and filter based on search text
+  const citySuggestions = useMemo(() => {
+    if (!searchText || searchText.length < 2) {
+      return [];
+    }
+
+    const allCities = City.getAllCities();
+    const searchLower = searchText.toLowerCase().trim();
+
+    return allCities
+      .filter((city) => {
+        const cityName = city.name?.toLowerCase() || '';
+        return cityName.includes(searchLower);
+      })
+      .slice(0, 10) // Limit to 10 suggestions for performance
+      .map((city) => ({
+        id: `${city.name}-${city.countryCode}-${city.stateCode}`,
+        name: city.name || '',
+        state: city.stateCode || '',
+        country: city.countryCode || '',
+        displayName: `${city.name}${city.stateCode ? `, ${city.stateCode}` : ''}, ${city.countryCode}`,
+      }));
+  }, [searchText]);
+
+  const handleTextChange = (text: string) => {
+    setSearchText(text);
+    onUpdateData('destination', text);
+    setShowSuggestions(text.length >= 2);
+  };
+
+  const handleSelectCity = (city: { name: string; displayName: string }) => {
+    setSearchText(city.displayName);
+    onUpdateData('destination', city.displayName);
+    setShowSuggestions(false);
+    Keyboard.dismiss();
+  };
+
   return (
     <View style={{ width }} className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
           className="mb-2 text-3xl font-bold"
-          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-        >
+          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}>
           {slide.title}
         </Text>
 
@@ -64,40 +106,91 @@ export const DestinationSlide: React.FC<SlideProps> = ({
             className="mb-8 text-base"
             style={{
               color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
-            }}
-          >
+            }}>
             {slide.subtitle}
           </Text>
         )}
 
-        <View
-          className="flex-row items-center rounded-xl px-4 py-3"
-          style={{
-            backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
-            borderWidth: 1,
-            borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
-          }}
-        >
-          <Text
-            className="mr-2 text-lg"
+        <View className="relative">
+          <View
+            className="flex-row items-center rounded-xl px-4 py-3"
             style={{
-              color: isDarkMode ? COLORS.gray[500] : COLORS.gray[400],
-            }}
-          >
-            🔍
-          </Text>
-          <TextInput
-            placeholder={slide.placeholder}
-            placeholderTextColor={
-              isDarkMode ? COLORS.gray[500] : COLORS.gray[400]
-            }
-            value={tripData.destination || ""}
-            onChangeText={(text) => onUpdateData("destination", text)}
-            className="flex-1 text-base"
-            style={{
-              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-            }}
-          />
+              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
+              borderWidth: 1,
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
+            }}>
+            <Text
+              className="mr-2 text-lg"
+              style={{
+                color: isDarkMode ? COLORS.gray[500] : COLORS.gray[400],
+              }}>
+              🔍
+            </Text>
+            <TextInput
+              placeholder={slide.placeholder}
+              placeholderTextColor={
+                isDarkMode ? COLORS.gray[500] : COLORS.gray[400]
+              }
+              value={searchText}
+              onChangeText={handleTextChange}
+              onFocus={() => {
+                if (searchText.length >= 2) {
+                  setShowSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow selection
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              className="flex-1 text-base"
+              style={{
+                color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+              }}
+            />
+          </View>
+
+          {showSuggestions && citySuggestions.length > 0 && (
+            <View
+              className="absolute left-0 right-0 z-50 mt-1 max-h-64 rounded-xl"
+              style={{
+                backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
+                borderWidth: 1,
+                borderColor: isDarkMode ? '#333333' : COLORS.gray[400],
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                top: '100%',
+              }}>
+              <FlatList
+                data={citySuggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => handleSelectCity(item)}
+                    className="border-b px-4 py-3"
+                    style={{
+                      borderBottomColor: isDarkMode
+                        ? '#333333'
+                        : COLORS.gray[400],
+                    }}>
+                    <Text
+                      className="text-base"
+                      style={{
+                        color: isDarkMode
+                          ? COLORS.white.base
+                          : COLORS.gray[750],
+                      }}>
+                      {item.displayName}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              />
+            </View>
+          )}
         </View>
       </Animated.View>
     </View>
@@ -123,7 +216,7 @@ export const DateSlide: React.FC<SlideProps> = ({
           translateX: interpolate(
             slideAnimation.value,
             [0, 1],
-            [width * 0.1, 0],
+            [width * 0.1, 0]
           ),
         },
       ],
@@ -131,23 +224,23 @@ export const DateSlide: React.FC<SlideProps> = ({
   });
 
   const formatDate = (date: Date | null) => {
-    if (!date) return "Select date";
-    return date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+    if (!date) return 'Select date';
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
   const formatDateRange = () => {
-    if (!tripData.startDate || !tripData.endDate) return "";
-    const start = new Date(tripData.startDate).toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
+    if (!tripData.startDate || !tripData.endDate) return '';
+    const start = new Date(tripData.startDate).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
     });
-    const end = new Date(tripData.endDate).toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
+    const end = new Date(tripData.endDate).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
     });
     return `${start} - ${end}`;
   };
@@ -157,8 +250,7 @@ export const DateSlide: React.FC<SlideProps> = ({
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
           className="mb-2 text-3xl font-bold"
-          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-        >
+          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}>
           {slide.title}
         </Text>
 
@@ -167,8 +259,7 @@ export const DateSlide: React.FC<SlideProps> = ({
             className="mb-8 text-base"
             style={{
               color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
-            }}
-          >
+            }}>
             {slide.subtitle}
           </Text>
         )}
@@ -176,19 +267,19 @@ export const DateSlide: React.FC<SlideProps> = ({
         <View className="mb-6">
           <Text
             className="mb-3 text-base font-semibold"
-            style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-          >
+            style={{
+              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+            }}>
             Start Date
           </Text>
           <TouchableOpacity
             onPress={() => setShowStartPicker(true)}
             className="rounded-xl px-4 py-4"
             style={{
-              backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
+              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
               borderWidth: 1,
-              borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
-            }}
-          >
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
+            }}>
             <Text
               className="text-base"
               style={{
@@ -199,10 +290,9 @@ export const DateSlide: React.FC<SlideProps> = ({
                   : isDarkMode
                     ? COLORS.gray[500]
                     : COLORS.gray[400],
-              }}
-            >
+              }}>
               {formatDate(
-                tripData.startDate ? new Date(tripData.startDate) : null,
+                tripData.startDate ? new Date(tripData.startDate) : null
               )}
             </Text>
           </TouchableOpacity>
@@ -218,7 +308,7 @@ export const DateSlide: React.FC<SlideProps> = ({
               onChange={(event, selectedDate) => {
                 setShowStartPicker(false);
                 if (selectedDate) {
-                  onUpdateData("startDate", selectedDate.toISOString());
+                  onUpdateData('startDate', selectedDate.toISOString());
                 }
               }}
             />
@@ -228,19 +318,19 @@ export const DateSlide: React.FC<SlideProps> = ({
         <View className="mb-6">
           <Text
             className="mb-3 text-base font-semibold"
-            style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-          >
+            style={{
+              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+            }}>
             End Date
           </Text>
           <TouchableOpacity
             onPress={() => setShowEndPicker(true)}
             className="rounded-xl px-4 py-4"
             style={{
-              backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
+              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
               borderWidth: 1,
-              borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
-            }}
-          >
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
+            }}>
             <Text
               className="text-base"
               style={{
@@ -251,8 +341,7 @@ export const DateSlide: React.FC<SlideProps> = ({
                   : isDarkMode
                     ? COLORS.gray[500]
                     : COLORS.gray[400],
-              }}
-            >
+              }}>
               {formatDate(tripData.endDate ? new Date(tripData.endDate) : null)}
             </Text>
           </TouchableOpacity>
@@ -268,7 +357,7 @@ export const DateSlide: React.FC<SlideProps> = ({
               onChange={(event, selectedDate) => {
                 setShowEndPicker(false);
                 if (selectedDate) {
-                  onUpdateData("endDate", selectedDate.toISOString());
+                  onUpdateData('endDate', selectedDate.toISOString());
                 }
               }}
             />
@@ -278,12 +367,10 @@ export const DateSlide: React.FC<SlideProps> = ({
         {tripData.startDate && tripData.endDate && (
           <View
             className="mt-4 rounded-xl px-4 py-3"
-            style={{ backgroundColor: colors.primaryColors.background }}
-          >
+            style={{ backgroundColor: colors.primaryColors.background }}>
             <Text
               className="text-center text-sm font-medium"
-              style={{ color: colors.primaryColors.default }}
-            >
+              style={{ color: colors.primaryColors.default }}>
               Selected: {formatDateRange()}
             </Text>
           </View>
@@ -309,7 +396,7 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
           translateX: interpolate(
             slideAnimation.value,
             [0, 1],
-            [width * 0.1, 0],
+            [width * 0.1, 0]
           ),
         },
       ],
@@ -321,8 +408,7 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
           className="mb-2 text-3xl font-bold"
-          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-        >
+          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}>
           {slide.title}
         </Text>
 
@@ -331,8 +417,7 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
             className="mb-8 text-base"
             style={{
               color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
-            }}
-          >
+            }}>
             {slide.subtitle}
           </Text>
         )}
@@ -341,8 +426,9 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
         <View className="mb-6">
           <Text
             className="mb-3 text-base font-semibold"
-            style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-          >
+            style={{
+              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+            }}>
             Header Image
           </Text>
           <TouchableOpacity
@@ -351,10 +437,9 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
             }}
             className="items-center justify-center rounded-xl border-2 border-dashed py-12"
             style={{
-              borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
-              backgroundColor: isDarkMode ? "#1a1a1a" : COLORS.gray[350],
-            }}
-          >
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
+              backgroundColor: isDarkMode ? '#1a1a1a' : COLORS.gray[350],
+            }}>
             {tripData.headerImage ? (
               <Image
                 source={{ uri: tripData.headerImage }}
@@ -366,16 +451,14 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
                 <Text className="mb-2 text-4xl">🖼️</Text>
                 <Text
                   className="mb-1 text-base font-medium"
-                  style={{ color: colors.primaryColors.default }}
-                >
+                  style={{ color: colors.primaryColors.default }}>
                   Tap to upload image
                 </Text>
                 <Text
                   className="text-xs"
                   style={{
                     color: isDarkMode ? COLORS.gray[500] : COLORS.gray[400],
-                  }}
-                >
+                  }}>
                   png or jpg (max 800x400px)
                 </Text>
               </>
@@ -387,8 +470,9 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
         <View className="mb-6">
           <Text
             className="mb-3 text-base font-semibold"
-            style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}
-          >
+            style={{
+              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+            }}>
             Trip Name
           </Text>
           <TextInput
@@ -396,13 +480,13 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
             placeholderTextColor={
               isDarkMode ? COLORS.gray[500] : COLORS.gray[400]
             }
-            value={tripData.name || ""}
-            onChangeText={(text) => onUpdateData("name", text)}
+            value={tripData.name || ''}
+            onChangeText={(text) => onUpdateData('name', text)}
             className="rounded-xl px-4 py-3 text-base"
             style={{
-              backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
+              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
               borderWidth: 1,
-              borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
               color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
             }}
           />
@@ -415,16 +499,14 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
               className="text-base font-semibold"
               style={{
                 color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-              }}
-            >
-              Trip Description{" "}
+              }}>
+              Trip Description{' '}
             </Text>
             <Text
               className="text-sm"
               style={{
                 color: isDarkMode ? COLORS.gray[500] : COLORS.gray[400],
-              }}
-            >
+              }}>
               (Optional)
             </Text>
           </View>
@@ -433,16 +515,16 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
             placeholderTextColor={
               isDarkMode ? COLORS.gray[500] : COLORS.gray[400]
             }
-            value={tripData.description || ""}
-            onChangeText={(text) => onUpdateData("description", text)}
+            value={tripData.description || ''}
+            onChangeText={(text) => onUpdateData('description', text)}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
             className="rounded-xl px-4 py-3 text-base"
             style={{
-              backgroundColor: isDarkMode ? "#222222" : COLORS.gray[350],
+              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
               borderWidth: 1,
-              borderColor: isDarkMode ? "#333333" : COLORS.gray[350],
+              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
               color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
               height: 100,
             }}

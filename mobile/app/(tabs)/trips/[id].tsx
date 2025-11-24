@@ -195,7 +195,7 @@ const TripsDetailsScreen = () => {
           size={30}
           overlap={12}
         />
-        <Spacer size={14} vertical />
+        <Spacer size={32} vertical />
         <TripItinerary tripId={trip?.id as string} />
         <Spacer size={14} vertical />
       </ScrollView>

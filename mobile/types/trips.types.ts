@@ -193,6 +193,9 @@ export interface TripItineraryItem {
   is_completed: boolean;
   completed_at: string | null;
   created_by: string;
+  cover_image: string | null;
+  images: string[] | null;
+  can_be_updated_by: string[];
   can_be_deleted_by: ItineraryDeletePermission;
   created_at: string;
   updated_at: string;

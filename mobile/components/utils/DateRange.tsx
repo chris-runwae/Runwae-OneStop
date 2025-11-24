@@ -1,8 +1,10 @@
-import { CalendarDays } from "lucide-react-native";
-import React from "react";
-import { StyleSheet, Text, View, useColorScheme } from "react-native";
+import { CalendarDays } from 'lucide-react-native';
+import React from 'react';
+import { StyleSheet, View, useColorScheme } from 'react-native';
 
-import { Colors } from "@/constants";
+import { Text } from '@/components';
+import { Colors } from '@/constants';
+import { textStyles } from '@/utils/styles';
 
 interface DateRangeProps {
   startDate?: string;
@@ -18,27 +20,27 @@ const DateRange = ({
   emoji = false,
 }: DateRangeProps) => {
   const colorScheme = useColorScheme();
-  const appColors = Colors[colorScheme ?? "light"];
+  const appColors = Colors[colorScheme ?? 'light'];
 
   const styles = StyleSheet.create({
     dateContainer: {
-      flexDirection: "row",
-      alignItems: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 4,
-      overflow: "hidden",
+      overflow: 'hidden',
       flex: 1,
     },
     infoText: {
+      ...textStyles.subtitle_Regular,
       fontSize: 13,
-      fontWeight: "400",
+      fontWeight: '400',
       lineHeight: 19.5,
-      color: appColors.white,
     },
   });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const month = date.toLocaleString("default", { month: "short" });
+    const month = date.toLocaleString('default', { month: 'short' });
     const day = date.getDate();
     const year = date.getFullYear();
     return `${month} ${day}, ${year}`;
@@ -51,9 +53,9 @@ const DateRange = ({
 
       // If same year, format as "Apr 26 - May 15, 2026"
       if (start.getFullYear() === end.getFullYear()) {
-        const startMonth = start.toLocaleString("default", { month: "short" });
+        const startMonth = start.toLocaleString('default', { month: 'short' });
         const startDay = start.getDate();
-        const endMonth = end.toLocaleString("default", { month: "short" });
+        const endMonth = end.toLocaleString('default', { month: 'short' });
         const endDay = end.getDate();
         const year = start.getFullYear();
 
@@ -67,7 +69,7 @@ const DateRange = ({
         return `${formatDate(startDate)} - ${formatDate(endDate)}`;
       }
     }
-    return "Dec 19 - 25, 2025";
+    return 'Dec 19 - 25, 2025';
   })();
 
   return (

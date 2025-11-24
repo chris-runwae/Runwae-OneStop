@@ -6,6 +6,7 @@ import {
   FeaturedTrip,
   TripAttendee,
   TripAttendeeRole,
+  TripItineraryItem,
 } from '@/types/trips.types';
 
 const useTrips = () => {
@@ -156,6 +157,26 @@ const useTrips = () => {
     return data;
   };
 
+  const getTripItinerary = async (tripId: string) => {
+    console.log('Getting trip itinerary for trip: ', tripId);
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+      const { data, error } = await supabase
+        .from('trip_itinerary')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -170,6 +191,7 @@ const useTrips = () => {
     fetchTripById,
     fetchTripAttendees,
     addTripAttendee,
+    getTripItinerary,
   };
 };
 

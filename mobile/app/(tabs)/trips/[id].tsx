@@ -16,6 +16,7 @@ import { Trip, TripAttendee } from '@/types/trips.types';
 import { Menu } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
 import { textStyles } from '@/utils/styles';
+import { TripItinerary } from '@/components/containers/TripItinerary';
 
 const TripsDetailsScreen = () => {
   const { id } = useLocalSearchParams();
@@ -49,7 +50,6 @@ const TripsDetailsScreen = () => {
 
   useEffect(() => {
     fetchTrip();
-    console.log('Trip: ', trip);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTrip]);
 
@@ -192,9 +192,12 @@ const TripsDetailsScreen = () => {
         <AvatarGroup
           attendees={dummyAttendees}
           maxVisible={4}
-          size={36}
+          size={30}
           overlap={12}
         />
+        <Spacer size={14} vertical />
+        <TripItinerary tripId={trip?.id as string} />
+        <Spacer size={14} vertical />
       </ScrollView>
     </ScreenContainer>
   );

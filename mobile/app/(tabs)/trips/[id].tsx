@@ -31,7 +31,7 @@ const TripsDetailsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [attendees, setAttendees] = useState<TripAttendee[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('itinerary');
+  const [activeTab, setActiveTab] = useState<string>('discover');
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -77,6 +77,7 @@ const TripsDetailsScreen = () => {
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
       borderColor: colors.borderColors.default,
+      maxWidth: 200,
     },
     emptyText: {
       color: colors.textColors.subtle,
@@ -179,13 +180,16 @@ const TripsDetailsScreen = () => {
         <Spacer size={8} vertical />
         <View style={styles.locationTimeSpan}>
           <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-            <Text style={styles.infoText}>📍 {trip?.destination}</Text>
+            <Text style={styles.infoText} numberOfLines={1}>
+              📍 {trip?.destination}
+            </Text>
           </View>
           <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
             <DateRange
               startDate={trip?.start_date ?? ''}
               endDate={trip?.end_date ?? ''}
               emoji={true}
+              color={colors.textColors.default}
             />
           </View>
         </View>

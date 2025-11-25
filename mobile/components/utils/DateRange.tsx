@@ -11,6 +11,7 @@ interface DateRangeProps {
   endDate?: string;
   icon?: boolean;
   emoji?: boolean;
+  color?: string;
 }
 
 const DateRange = ({
@@ -18,6 +19,7 @@ const DateRange = ({
   endDate,
   icon = false,
   emoji = false,
+  color,
 }: DateRangeProps) => {
   const colorScheme = useColorScheme();
   const appColors = Colors[colorScheme ?? 'light'];
@@ -35,6 +37,7 @@ const DateRange = ({
       fontSize: 13,
       fontWeight: '400',
       lineHeight: 19.5,
+      color: color || appColors.white,
     },
   });
 

@@ -9,6 +9,7 @@ import {
   ScreenContainer,
   Spacer,
   Text,
+  TripDiscoverySection,
 } from '@/components';
 import { AvatarGroup } from '@/components/ui/AvatarGroup';
 import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
@@ -225,9 +226,7 @@ const TripsDetailsScreen = () => {
         )}
         {activeTab === 'discover' && (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-              Discover content coming soon
-            </Text>
+            <TripDiscoverySection />
           </View>
         )}
         {activeTab === 'saved' && (

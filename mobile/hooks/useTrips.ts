@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-expo';
 
 import { getSupabaseClient } from '@/lib/supabase';
-import {
-  FeaturedTrip,
-  TripAttendee,
-  TripAttendeeRole,
-  TripItineraryItem,
-} from '@/types/trips.types';
+import { FeaturedTrip, TripAttendeeRole } from '@/types/trips.types';
 
 const useTrips = () => {
   const [trips, setTrips] = useState<any[]>([]);

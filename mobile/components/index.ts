@@ -17,6 +17,7 @@ import UserAvatar from './containers/UserAvatar';
 import WelcomeAvatar from './containers/WelcomeAvatar';
 import WideTripCard from './cards/WideTripCard';
 import HomeScreenSkeleton from './skeletons/HomeScreenSkeleton';
+import TripDiscoverySection from './containers/TripDiscoverySection';
 
 export {
   Spacer,
@@ -39,4 +40,5 @@ export {
   UserAvatar,
   WelcomeAvatar,
   WideTripCard,
+  TripDiscoverySection,
 };

@@ -17,9 +17,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import { useUser } from '@clerk/clerk-expo';
 import { City } from 'country-state-city';
 
 import { COLORS } from '@/constants';
+import { uploadImage } from '@/utils/uploadImage';
+import { useUploadImage } from '@/hooks/useUploadImage';
 
 const { width } = Dimensions.get('window');
 
@@ -392,6 +395,7 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
   colors,
   isDarkMode,
 }) => {
+  const { pickAndUpload } = useUploadImage();
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
       opacity: slideAnimation.value,
@@ -423,17 +427,23 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
       }
 
       // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [2, 1], // 800x400 aspect ratio (2:1)
-        quality: 0.8,
-        allowsMultipleSelection: false,
-      });
+      // const result = await ImagePicker.launchImageLibraryAsync({
+      //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      //   allowsEditing: true,
+      //   aspect: [2, 1],
+      //   quality: 0.8,
+      // });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0];
-        onUpdateData('headerImage', selectedImage.uri);
+      // if (!result.canceled && result.assets.length > 0) {
+      //   const uri = result.assets[0].uri;
+      //   const url = await uploadImage(
+      //     uri,
+      //     'trip-images',
+      //     user?.id || 'default'
+      //   );
+      const publicUrl = await pickAndUpload('trip-images');
+      if (publicUrl) {
+        onUpdateData('headerImage', publicUrl);
       }
     } catch (error) {
       console.error('Error picking image:', error);

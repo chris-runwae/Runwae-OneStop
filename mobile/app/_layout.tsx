@@ -1,8 +1,15 @@
+/* eslint-disable import/first */
+// Polyfill Buffer for React Native
+import 'react-native-get-random-values';
+import { Buffer } from 'buffer';
+global.Buffer = global.Buffer || Buffer;
+
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
 import { DMSans_400Regular } from '@expo-google-fonts/dm-sans';
 import { useEffect } from 'react';
+
 import {
   DarkTheme,
   DefaultTheme,

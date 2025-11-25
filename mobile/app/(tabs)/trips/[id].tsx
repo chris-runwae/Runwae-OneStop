@@ -224,11 +224,7 @@ const TripsDetailsScreen = () => {
             <Spacer size={14} vertical />
           </>
         )}
-        {activeTab === 'discover' && (
-          <View style={styles.emptyContainer}>
-            <TripDiscoverySection />
-          </View>
-        )}
+        {activeTab === 'discover' && <TripDiscoverySection />}
         {activeTab === 'saved' && (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
@@ -243,6 +239,8 @@ const TripsDetailsScreen = () => {
             </Text>
           </View>
         )}
+
+        <Spacer size={140} vertical />
       </ScrollView>
     </ScreenContainer>
   );

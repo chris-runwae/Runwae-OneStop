@@ -4,6 +4,7 @@ import CustomImage from './ui/CustomImage';
 import DateRange from './utils/DateRange';
 import ExpandLink, { ExpandLinkProps } from './headers/ExpandLink';
 import FeaturedTripCard from './cards/FeaturedTripCard';
+import FilterTabs from './ui/FilterTabs';
 import HorizontalCarousel from './containers/HorizontalCarousel';
 import HomeSkeleton from './containers/HomeSkeleton';
 import { IconSymbol } from './ui/icon-symbol';
@@ -26,6 +27,7 @@ export {
   DateRange,
   ExpandLink,
   FeaturedTripCard,
+  FilterTabs,
   HorizontalCarousel,
   HomeSkeleton,
   HomeScreenSkeleton,

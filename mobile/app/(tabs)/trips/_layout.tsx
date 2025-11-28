@@ -1,6 +1,11 @@
 import { Stack } from 'expo-router';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TripsLayout() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
   return (
     <Stack
       screenOptions={{
@@ -13,8 +18,9 @@ export default function TripsLayout() {
         name="itinerary/modal"
         options={{
           title: 'Create Itinerary',
-          presentation: 'modal',
-          headerShown: true,
+          presentation: 'formSheet',
+          sheetGrabberVisible: true,
+          sheetAllowedDetents: 'fitToContents',
         }}
       />
     </Stack>

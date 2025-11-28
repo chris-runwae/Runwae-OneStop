@@ -15,8 +15,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Spacer } from '@/components';
 import { Colors } from '@/constants/theme';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
+// const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
 
 const CreateItineraryScreen = () => {
   const insets = useSafeAreaInsets();
@@ -36,7 +36,7 @@ const CreateItineraryScreen = () => {
         style={[
           styles.modalContainer,
           {
-            height: MODAL_HEIGHT,
+            // height: MODAL_HEIGHT,
             backgroundColor: colors.backgroundColors.default,
             paddingBottom: insets.bottom,
           },
@@ -55,14 +55,14 @@ const CreateItineraryScreen = () => {
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    // justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    // ...StyleSheet.absoluteFillObject,
+    // backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
+    flex: 1,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,

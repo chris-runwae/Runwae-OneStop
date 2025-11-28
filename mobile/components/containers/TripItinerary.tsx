@@ -9,7 +9,7 @@ import useTrips from '@/hooks/useTrips';
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants/theme';
 import { PrimaryButton, Spacer, Text } from '..';
-import { useRouter } from 'expo-router';
+import { RelativePathString, useRouter } from 'expo-router';
 
 type ItinerarySection = {
   title: string; // date
@@ -137,7 +137,10 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
 
         <PrimaryButton
           title="Add Item"
-          onPress={() => router.push('/(tabs)/trips/itinerary/create')}
+          // onPress={() => router.push('/(tabs)/trips/itinerary/create')}
+          onPress={() =>
+            router.push('/(tabs)/trips/itinerary/modal' as RelativePathString)
+          }
         />
       </View>
     );

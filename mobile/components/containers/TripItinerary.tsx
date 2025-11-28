@@ -8,7 +8,8 @@ import { TripItineraryItem } from '@/types/trips.types';
 import useTrips from '@/hooks/useTrips';
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants/theme';
-import { Spacer, Text } from '..';
+import { PrimaryButton, Spacer, Text } from '..';
+import { useRouter } from 'expo-router';
 
 type ItinerarySection = {
   title: string; // date
@@ -22,6 +23,7 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
   const [itinerary, setItinerary] = useState<ItinerarySection[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetchItinerary();
@@ -126,6 +128,21 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
     );
   };
 
+  const EmptyItinerary = () => {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>No itinerary items found</Text>
+
+        <Spacer size={16} vertical />
+
+        <PrimaryButton
+          title="Add Item"
+          onPress={() => router.push('/(tabs)/trips/itinerary/create')}
+        />
+      </View>
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Date buttons */}
@@ -155,6 +172,7 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
             : undefined
         }
         renderItem={({ item }) => <ItineraryItem item={item} />}
+        ListEmptyComponent={<EmptyItinerary />}
       />
     </View>
   );

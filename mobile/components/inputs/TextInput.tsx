@@ -27,6 +27,7 @@ interface TextInputProps extends RNTextInputProps {
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   labelColor?: string;
+  isRequired?: boolean;
 }
 
 const TextInput: React.FC<TextInputProps> = ({
@@ -38,6 +39,7 @@ const TextInput: React.FC<TextInputProps> = ({
   containerStyle,
   inputStyle,
   labelColor,
+  isRequired = false,
   ...props
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
@@ -111,6 +113,12 @@ const TextInput: React.FC<TextInputProps> = ({
     width: '100%' as const,
   };
 
+  const requiredTextStyle = {
+    color: colors.primaryColors.default,
+    ...textStyles.body_Regular,
+    fontSize: 12,
+  };
+
   // TODO: Add error style that will use dark or light mode
   // const errorStyle = {
   //   color: 'red',
@@ -120,11 +128,14 @@ const TextInput: React.FC<TextInputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && (
-        <Text style={[styles.label, { color: labelColor ?? getTextColor() }]}>
-          {label}
-        </Text>
-      )}
+      <View style={styles.labelContainer}>
+        {label && (
+          <Text style={[styles.label, { color: labelColor ?? getTextColor() }]}>
+            {label}
+          </Text>
+        )}
+        {isRequired && <Text style={requiredTextStyle}>required</Text>}
+      </View>
       <View style={[getVariantStyle(variant), disabled && styles.disabled]}>
         <RNTextInput
           {...props}
@@ -145,6 +156,11 @@ const TextInput: React.FC<TextInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   label: {
     ...textStyles.bold_20,

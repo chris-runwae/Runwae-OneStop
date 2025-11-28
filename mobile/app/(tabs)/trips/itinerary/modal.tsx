@@ -15,7 +15,7 @@ const CreateItineraryScreen = () => {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() || 'light';
   const colors = Colors[colorScheme];
-  const { addTripItineraryItem } = useItinerary();
+  const { addTripItineraryItem, loading } = useItinerary();
   const { user } = useUser();
 
   const [title, setTitle] = useState<string | null>(null);
@@ -25,14 +25,10 @@ const CreateItineraryScreen = () => {
   const [time, setTime] = useState<string | null>(null);
   const [error, setError] = useState({
     title: null,
-    description: null,
-    location: null,
     date: null,
     time: null,
   } as {
     title: string | null;
-    description: string | null;
-    location: string | null;
     date: string | null;
     time: string | null;
   });
@@ -122,25 +118,25 @@ const CreateItineraryScreen = () => {
           placeholder="Enter title"
           variant="default"
           label="Title"
-          value={title}
+          value={title ?? undefined}
           onChangeText={setTitle}
           error={error?.title ?? undefined}
+          isRequired={true}
         />
         <Spacer size={16} vertical />
         <TextInput
           placeholder="Enter description"
           variant="default"
           label="Description"
-          value={description}
+          value={description ?? undefined}
           onChangeText={setDescription}
-          error={error?.description ?? undefined}
         />
         <Spacer size={16} vertical />
         <TextInput
           placeholder="Enter location"
           variant="default"
           label="Location"
-          value={location}
+          value={location ?? undefined}
           onChangeText={setLocation}
         />
         <Spacer size={16} vertical />
@@ -148,18 +144,20 @@ const CreateItineraryScreen = () => {
           placeholder="Enter date"
           variant="default"
           label="Date"
-          value={date}
+          value={date ?? undefined}
           onChangeText={setDate}
           error={error?.date ?? undefined}
+          isRequired={true}
         />
         <Spacer size={16} vertical />
         <TextInput
           placeholder="Enter time"
           variant="default"
           label="Time"
-          value={time}
+          value={time ?? undefined}
           onChangeText={setTime}
           error={error?.time ?? undefined}
+          isRequired={true}
         />
 
         <Spacer size={40} vertical />
@@ -174,6 +172,8 @@ const CreateItineraryScreen = () => {
         <PrimaryButton
           onPress={handleCreateItinerary}
           title="Create Itinerary"
+          // disabled={}
+          loading={loading}
           // width={200}
         />
         <Spacer size={40} vertical />

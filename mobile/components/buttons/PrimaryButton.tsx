@@ -4,11 +4,12 @@ import {
   useColorScheme,
   StyleProp,
   ViewStyle,
-} from "react-native";
-import React from "react";
+  ActivityIndicator,
+} from 'react-native';
+import React from 'react';
 
-import { Colors, COLORS } from "@/constants";
-import { Text } from "@/components";
+import { Colors, COLORS } from '@/constants';
+import { Text } from '@/components';
 
 type PrimaryButtonProps = {
   onPress: () => void;
@@ -16,6 +17,8 @@ type PrimaryButtonProps = {
   width?: number;
   style?: StyleProp<ViewStyle>;
   rounded?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
 const PrimaryButton = ({
@@ -24,8 +27,10 @@ const PrimaryButton = ({
   width,
   style,
   rounded,
+  disabled = false,
+  loading = false,
 }: PrimaryButtonProps) => {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   const styles = StyleSheet.create({
@@ -34,21 +39,28 @@ const PrimaryButton = ({
       paddingVertical: 12,
       paddingHorizontal: 24,
       borderRadius: rounded ? 100 : 8,
-      width: width ? width : "100%",
-      alignItems: "center",
-      justifyContent: "center",
+      width: width ? width : '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     buttonText: {
       color: COLORS.white.base,
       fontSize: 13,
       lineHeight: 19.5,
-      fontWeight: "bold",
+      fontWeight: 'bold',
     },
   });
 
   return (
-    <Pressable onPress={onPress} style={[styles.button, style]}>
-      <Text style={styles.buttonText}>{title}</Text>
+    <Pressable
+      onPress={onPress}
+      style={[styles.button, style]}
+      disabled={disabled}>
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.textColors.default} />
+      ) : (
+        <Text style={styles.buttonText}>{title}</Text>
+      )}
     </Pressable>
   );
 };

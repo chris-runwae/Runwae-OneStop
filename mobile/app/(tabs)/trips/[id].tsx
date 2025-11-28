@@ -1,24 +1,24 @@
 import {
+  Dimensions,
   Pressable,
-  ScrollView,
   StyleSheet,
   useColorScheme,
   View,
 } from 'react-native';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Link,
-  RelativePathString,
-  router,
-  useLocalSearchParams,
-} from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ImageBackground } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  interpolate,
+  useAnimatedRef,
+  useAnimatedStyle,
+  useScrollOffset,
+} from 'react-native-reanimated';
 
 import {
   DateRange,
   HomeScreenSkeleton,
-  ScreenContainer,
   Spacer,
   Text,
   TripDiscoverySection,
@@ -43,6 +43,13 @@ const TripsDetailsScreen = () => {
     fetchTripAttendees,
   } = useTrips();
   const insets = useSafeAreaInsets();
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollOffset = useScrollOffset(scrollRef);
+  const HEADER_HEIGHT = 350;
+  const TRANSITION_START = 100; // Start transitioning early when text approaches top
+  const TRANSITION_END = 250; // Complete transition at 250px
+  const TRANSITION_RANGE = TRANSITION_END - TRANSITION_START; // 150px smooth transition window
+
   // Helper function to convert hex to rgba
   const hexToRgba = (hex: string, opacity: number): string => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -98,6 +105,69 @@ const TripsDetailsScreen = () => {
     }
   }, [trip?.id, fetchTripAttendees]);
 
+  // Animated styles for large header - must be called before early return
+  const largeHeaderAnimatedStyle = useAnimatedStyle(() => {
+    // Calculate progress: 0 when scroll < TRANSITION_START, 1 when scroll >= TRANSITION_END
+    const scrollValue = scrollOffset.value;
+    const progress =
+      scrollValue < TRANSITION_START
+        ? 0
+        : scrollValue > TRANSITION_END
+          ? 1
+          : (scrollValue - TRANSITION_START) / TRANSITION_RANGE;
+
+    const headerHeight = interpolate(
+      progress,
+      [0, 1],
+      [HEADER_HEIGHT, 0],
+      'clamp'
+    );
+    const opacity = interpolate(
+      progress,
+      [0, 0.3, 0.7, 1],
+      [1, 0.8, 0.3, 0],
+      'clamp'
+    );
+    const translateY = interpolate(
+      progress,
+      [0, 1],
+      [0, -HEADER_HEIGHT / 2],
+      'clamp'
+    );
+
+    return {
+      height: headerHeight,
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  // Animated styles for compact header
+  const compactHeaderAnimatedStyle = useAnimatedStyle(() => {
+    // Calculate progress: 0 when scroll < TRANSITION_START, 1 when scroll >= TRANSITION_END
+    const scrollValue = scrollOffset.value;
+    const progress =
+      scrollValue < TRANSITION_START
+        ? 0
+        : scrollValue > TRANSITION_END
+          ? 1
+          : (scrollValue - TRANSITION_START) / TRANSITION_RANGE;
+
+    // Make it visible - ensure it shows up as soon as transition starts
+    const opacity = interpolate(
+      progress,
+      [0, 0.2, 0.6, 1],
+      [0, 0.6, 0.95, 1],
+      'clamp'
+    );
+    const translateY = interpolate(progress, [0, 1], [-10, 0], 'clamp');
+
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
       borderColor: colors.borderColors.default,
@@ -110,7 +180,7 @@ const TripsDetailsScreen = () => {
       backgroundColor: colors.backgroundColors.subtle,
     },
     iconContentContainer: {
-      position: 'absolute',
+      // position: 'absolute',
       top: 0 + insets.top,
       left: 0,
       right: 0,
@@ -186,17 +256,95 @@ const TripsDetailsScreen = () => {
     return <HomeScreenSkeleton />;
   }
 
-  const RenderMenuEllipsis = () => {
+  // Compact header component for Stack.Screen
+  const CompactHeader = () => {
     return (
-      <Link href={'/(tabs)/index' as RelativePathString}>
-        <Link.Trigger>
-          <Menu size={20} color={colors.headerIcon} />
-        </Link.Trigger>
-        <Link.Menu>
-          <Link.MenuAction title="Edit" onPress={() => {}} />
-          <Link.MenuAction title="Delete" onPress={() => {}} />
-        </Link.Menu>
-      </Link>
+      <Animated.View
+        style={[
+          styles.compactHeader,
+          compactHeaderAnimatedStyle,
+          {
+            backgroundColor: colors.backgroundColors.default,
+            paddingTop: insets.top,
+            minHeight: 44 + insets.top,
+          },
+        ]}>
+        <View style={styles.compactHeaderContent}>
+          <Pressable
+            onPress={() => router.back()}
+            style={[
+              styles.compactIconButton,
+              { backgroundColor: colors.backgroundColors.subtle },
+            ]}>
+            <ArrowLeftIcon size={20} color={colors.textColors.default} />
+          </Pressable>
+          <Text style={styles.compactTitle} numberOfLines={1}>
+            {trip?.title}
+          </Text>
+          <Pressable
+            onPress={() => {}}
+            style={[
+              styles.compactIconButton,
+              { backgroundColor: colors.backgroundColors.subtle },
+            ]}>
+            <Menu size={20} color={colors.textColors.default} />
+          </Pressable>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  // Large header component
+  const LargeHeader = () => {
+    return (
+      <Animated.View style={largeHeaderAnimatedStyle}>
+        <ImageBackground
+          source={{ uri: trip?.cover_image_url ?? '' }}
+          style={styles.imageBackground}
+          contentFit="cover"
+          transition={1000}>
+          <View
+            style={[
+              styles.iconContentContainer,
+              dynamicStyles.iconContentContainer,
+              { position: 'absolute' },
+            ]}>
+            <Pressable
+              onPress={() => router.back()}
+              style={[
+                styles.iconButton,
+                { backgroundColor: colors.backgroundColors.default },
+              ]}>
+              <ArrowLeftIcon size={20} color={colors.textColors.default} />
+            </Pressable>
+            <Pressable
+              onPress={() => {}}
+              style={[
+                styles.iconButton,
+                { backgroundColor: colors.backgroundColors.default },
+              ]}>
+              <Menu size={20} color={colors.textColors.default} />
+            </Pressable>
+          </View>
+          <LinearGradient
+            colors={[
+              'transparent',
+              hexToRgba(colors.backgroundColors.default, 0),
+              hexToRgba(colors.backgroundColors.default, 0.25),
+              hexToRgba(colors.backgroundColors.default, 0.6),
+              hexToRgba(colors.backgroundColors.default, 0.85),
+              colors.backgroundColors.default,
+            ]}
+            locations={[0, 0.2, 0.5, 0.75, 0.9, 1]}
+            style={styles.gradientOverlay}>
+            <View style={styles.gradientContent}>
+              <Spacer size={16} vertical />
+              <Text style={styles.title}>{trip?.title}</Text>
+              <Spacer size={8} vertical />
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </Animated.View>
     );
   };
 
@@ -206,11 +354,20 @@ const TripsDetailsScreen = () => {
     //   contentContainerStyle={styles.contentContainer}
     //   leftComponent
     //   header={{ rightComponent: <RenderMenuEllipsis /> }}> */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        // contentContainerStyle={styles.contentContainer}
-      >
-        <ImageBackground
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
+      <View
+        style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
+        <CompactHeader />
+        <Animated.ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}>
+          <LargeHeader />
+          {/* <ImageBackground
           source={{ uri: trip?.cover_image_url ?? '' }}
           style={styles.imageBackground}
           contentFit="cover"
@@ -254,77 +411,78 @@ const TripsDetailsScreen = () => {
               <Spacer size={8} vertical />
             </View>
           </LinearGradient>
-        </ImageBackground>
+        </ImageBackground> */}
 
-        <View
-          style={[
-            styles.contentContainer,
-            { backgroundColor: colors.backgroundColors.default },
-          ]}>
-          <Spacer size={16} vertical />
-          <View style={styles.locationTimeSpan}>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <Text style={styles.infoText} numberOfLines={1}>
-                📍 {trip?.destination}
-              </Text>
+          <View
+            style={[
+              styles.contentContainer,
+              { backgroundColor: colors.backgroundColors.default },
+            ]}>
+            <Spacer size={16} vertical />
+            <View style={styles.locationTimeSpan}>
+              <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+                <Text style={styles.infoText} numberOfLines={1}>
+                  📍 {trip?.destination}
+                </Text>
+              </View>
+              <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+                <DateRange
+                  startDate={trip?.start_date ?? ''}
+                  endDate={trip?.end_date ?? ''}
+                  emoji={true}
+                  color={colors.textColors.default}
+                />
+              </View>
             </View>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <DateRange
-                startDate={trip?.start_date ?? ''}
-                endDate={trip?.end_date ?? ''}
-                emoji={true}
-                color={colors.textColors.default}
-              />
-            </View>
+
+            <Spacer size={14} vertical />
+            <Text style={styles.description}>{trip?.description}</Text>
+            <Spacer size={14} vertical />
+            <AvatarGroup
+              attendees={dummyAttendees}
+              maxVisible={4}
+              size={30}
+              overlap={12}
+            />
+            <Spacer size={32} vertical />
+
+            <HorizontalTabs
+              tabs={[
+                { id: 'discover', label: 'Discover' },
+                { id: 'saved', label: 'Saved' },
+                { id: 'itinerary', label: 'Itinerary' },
+                { id: 'activity', label: 'Activity' },
+              ]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+            <Spacer size={24} vertical />
+
+            {activeTab === 'itinerary' && (
+              <>
+                <TripItinerary tripId={trip?.id as string} />
+                <Spacer size={14} vertical />
+              </>
+            )}
+            {activeTab === 'discover' && <TripDiscoverySection />}
+            {activeTab === 'saved' && (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+                  Saved content coming soon
+                </Text>
+              </View>
+            )}
+            {activeTab === 'activity' && (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+                  Activity content coming soon
+                </Text>
+              </View>
+            )}
+            <Spacer size={740} vertical />
           </View>
-
-          <Spacer size={14} vertical />
-          <Text style={styles.description}>{trip?.description}</Text>
-          <Spacer size={14} vertical />
-          <AvatarGroup
-            attendees={dummyAttendees}
-            maxVisible={4}
-            size={30}
-            overlap={12}
-          />
-          <Spacer size={32} vertical />
-
-          <HorizontalTabs
-            tabs={[
-              { id: 'discover', label: 'Discover' },
-              { id: 'saved', label: 'Saved' },
-              { id: 'itinerary', label: 'Itinerary' },
-              { id: 'activity', label: 'Activity' },
-            ]}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-          <Spacer size={24} vertical />
-
-          {activeTab === 'itinerary' && (
-            <>
-              <TripItinerary tripId={trip?.id as string} />
-              <Spacer size={14} vertical />
-            </>
-          )}
-          {activeTab === 'discover' && <TripDiscoverySection />}
-          {activeTab === 'saved' && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-                Saved content coming soon
-              </Text>
-            </View>
-          )}
-          {activeTab === 'activity' && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-                Activity content coming soon
-              </Text>
-            </View>
-          )}
-          <Spacer size={140} vertical />
-        </View>
-      </ScrollView>
+        </Animated.ScrollView>
+      </View>
       {/* </ScreenContainer> */}
     </>
   );
@@ -338,10 +496,9 @@ const styles = StyleSheet.create({
   },
   imageBackground: {
     width: '100%',
-    height: 350,
+    height: '100%',
     flex: 1,
     flexDirection: 'column',
-    // justifyContent: 'flex-end',
     position: 'relative',
   },
   gradientOverlay: {
@@ -408,5 +565,38 @@ const styles = StyleSheet.create({
     ...textStyles.subtitle_Regular,
     fontSize: 14,
     lineHeight: 19.5,
+  },
+  compactHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    width: Dimensions.get('window').width,
+    zIndex: 1000,
+    justifyContent: 'flex-end',
+  },
+  compactHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    height: 44,
+    width: '100%',
+  },
+  compactIconButton: {
+    padding: 8,
+    borderRadius: 99,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactTitle: {
+    ...textStyles.bold_20,
+    fontSize: 17,
+    lineHeight: 22,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
 });

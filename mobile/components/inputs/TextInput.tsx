@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Platform,
+  Pressable,
   View,
   ViewStyle,
   TextStyle,
@@ -28,6 +29,7 @@ interface TextInputProps extends RNTextInputProps {
   inputStyle?: TextStyle;
   labelColor?: string;
   isRequired?: boolean;
+  onPress?: () => void;
 }
 
 const TextInput: React.FC<TextInputProps> = ({
@@ -40,6 +42,7 @@ const TextInput: React.FC<TextInputProps> = ({
   inputStyle,
   labelColor,
   isRequired = false,
+  onPress,
   ...props
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
@@ -136,18 +139,37 @@ const TextInput: React.FC<TextInputProps> = ({
         )}
         {isRequired && <Text style={requiredTextStyle}>required</Text>}
       </View>
-      <View style={[getVariantStyle(variant), disabled && styles.disabled]}>
-        <RNTextInput
-          {...props}
-          style={[textInputStyle, inputStyle]}
-          placeholderTextColor={getTextColor()}
-          editable={!disabled}
-          onFocus={() => {
-            setIsFocused(true);
-          }}
-          onBlur={() => setIsFocused(false)}
-        />
-      </View>
+
+      {onPress ? (
+        <Pressable
+          onPress={onPress}
+          style={[getVariantStyle(variant), disabled && styles.disabled]}>
+          {/* <RNTextInput
+            {...props}
+            style={[textInputStyle, inputStyle]}
+            placeholderTextColor={getTextColor()}
+            editable={!disabled}
+            onFocus={() => {
+              setIsFocused(true);
+            }}
+            onBlur={() => setIsFocused(false)}
+          /> */}
+          <Text style={[textInputStyle, inputStyle]}>{props.value}</Text>
+        </Pressable>
+      ) : (
+        <View style={[getVariantStyle(variant), disabled && styles.disabled]}>
+          <RNTextInput
+            {...props}
+            style={[textInputStyle, inputStyle]}
+            placeholderTextColor={getTextColor()}
+            editable={!disabled}
+            onFocus={() => {
+              setIsFocused(true);
+            }}
+            onBlur={() => setIsFocused(false)}
+          />
+        </View>
+      )}
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );

@@ -163,6 +163,8 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
       <SectionList
         sections={filteredItinerary}
         keyExtractor={(item) => item.id}
+        // horizontal
+        // showsHorizontalScrollIndicator={false}
         renderSectionHeader={
           selectedDate === null
             ? ({ section }) => (

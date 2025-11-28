@@ -100,8 +100,8 @@ const TripDiscoverySection = () => {
           data={hotelsList}
           renderItem={({ item }: { item: any }) => <HotelItem hotel={item} />}
           keyExtractor={(item: any) => item.hotelId || `hotel-${item.id}`}
-          // horizontal
-          // showsHorizontalScrollIndicator={false}
+          horizontal
+          showsHorizontalScrollIndicator={false}
           ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
         />
       </>

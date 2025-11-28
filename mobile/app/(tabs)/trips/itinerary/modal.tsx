@@ -1,15 +1,17 @@
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeftIcon, X } from 'lucide-react-native';
 import { Link, router } from 'expo-router';
 import { useUser } from '@clerk/clerk-expo';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { PrimaryButton, Spacer, Text, TextInput } from '@/components';
 import useItinerary from '@/hooks/useItinerary';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
+import { formatDate, formatTime } from '@/utils/dateFunctions';
 
 const CreateItineraryScreen = () => {
   const insets = useSafeAreaInsets();
@@ -32,6 +34,9 @@ const CreateItineraryScreen = () => {
     date: string | null;
     time: string | null;
   });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const dynamicStyles = StyleSheet.create({
     modalContainer: {
@@ -58,30 +63,108 @@ const CreateItineraryScreen = () => {
     if (!user?.id) return;
 
     if (checkForErrors()) return;
-    // const data = await addTripItineraryItem({
-    //   title: title,
-    //   description: description,
-    //   location: location,
-    //   date: date,
-    //   time: time,
-    //   created_by: user?.id,
-    // });
-    console.log(
-      'Creating itinerary item: ',
-      JSON.stringify(
-        {
-          title: title,
-          description: description,
-          location: location,
-          date: date,
-          time: time,
-          created_by: user?.id,
-        },
-        null,
-        2
-      )
+
+    if (!title || !date || !time) return;
+
+    await addTripItineraryItem({
+      title: title,
+      description: description ?? undefined,
+      location: location ?? undefined,
+      date: date?.split('T')[0],
+      time: time?.split('T')[1]?.split('.')[0],
+      created_by: user?.id,
+    });
+
+    if (error) {
+      console.error('Error creating itinerary item: ', error);
+      return;
+    }
+    router.dismiss();
+
+    // console.log('Creating itinerary item: ', data);
+    //eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const DateButton = () => {
+    return (
+      <View className="mb-6">
+        <Text style={styles.pickerButtonText}>Date</Text>
+
+        <DateTimePicker
+          value={date ? new Date(date) : new Date()}
+          mode="date"
+          display="default"
+          minimumDate={new Date()}
+          onChange={(event, selectedDate) => {
+            if (selectedDate) {
+              setDate(selectedDate.toISOString());
+            }
+          }}
+        />
+      </View>
     );
-  }, [title, description, location, date, time]);
+  };
+
+  const TimeButton = () => {
+    return (
+      <View>
+        <Text style={styles.pickerButtonText}>Time</Text>
+        <DateTimePicker
+          value={time ? new Date(time) : new Date()}
+          mode="time"
+          display="default"
+          onChange={(_, selectedTime) => {
+            if (selectedTime) {
+              setTime(selectedTime.toISOString());
+            }
+          }}
+          style={{
+            width: '100%',
+          }}
+        />
+      </View>
+    );
+  };
+
+  const DateInput = () => {
+    return (
+      <View className="mb-6">
+        <Text style={styles.pickerButtonText}>Date</Text>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          className="rounded-xl px-4 py-4"
+          style={{
+            backgroundColor: colors.backgroundColors.subtle,
+            borderWidth: 1,
+            borderColor: colors.borderColors.default,
+          }}>
+          <Text
+            style={{
+              color: date
+                ? colors.textColors.default
+                : colors.textColors.subtle,
+            }}>
+            {date ? new Date(date).toLocaleDateString() : 'Select Date'}
+          </Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={date ? new Date(date) : new Date()}
+            mode="date"
+            display="default"
+            minimumDate={new Date()}
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                setDate(selectedDate.toISOString());
+              }
+            }}
+          />
+        )}
+      </View>
+    );
+  };
 
   return (
     <>
@@ -144,31 +227,51 @@ const CreateItineraryScreen = () => {
           placeholder="Enter date"
           variant="default"
           label="Date"
-          value={date ?? undefined}
+          value={date ? formatDate(new Date(date)) : undefined}
           onChangeText={setDate}
           error={error?.date ?? undefined}
           isRequired={true}
+          onPress={() => setShowDatePicker(true)}
         />
+        {showDatePicker && (
+          <DateTimePicker
+            value={date ? new Date(date) : new Date()}
+            mode="date"
+            display="default"
+            minimumDate={new Date()}
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                setDate(selectedDate.toISOString());
+              }
+            }}
+          />
+        )}
         <Spacer size={16} vertical />
+
         <TextInput
           placeholder="Enter time"
           variant="default"
           label="Time"
-          value={time ?? undefined}
+          value={time ? formatTime(new Date(time)) : undefined}
           onChangeText={setTime}
           error={error?.time ?? undefined}
           isRequired={true}
+          onPress={() => setShowTimePicker(true)}
         />
+        {showTimePicker && (
+          <DateTimePicker
+            value={time ? new Date(time) : new Date()}
+            mode="time"
+            display="default"
+            onChange={(_, selectedTime) => {
+              setShowTimePicker(false);
+              if (selectedTime) setTime(selectedTime.toISOString());
+            }}
+          />
+        )}
 
         <Spacer size={40} vertical />
-        {/* <Button variant="filled" size="md" onPress={() => router.dismiss()}>
-          Create Itinerary
-        </Button> */}
-        {/* <PrimaryButton
-          onPress={() => router.dismiss()}
-          title="Create Itinerary"
-          // width={200}
-        /> */}
         <PrimaryButton
           onPress={handleCreateItinerary}
           title="Create Itinerary"
@@ -202,6 +305,11 @@ const styles = StyleSheet.create({
     ...textStyles.bold_20,
     textAlign: 'center',
     width: '90%',
+  },
+  pickerButtonText: {
+    ...textStyles.bold_20,
+    fontSize: 16,
+    width: '100%',
   },
 });
 

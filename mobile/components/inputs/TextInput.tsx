@@ -43,7 +43,6 @@ const TextInput: React.FC<TextInputProps> = ({
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [isFocused, setIsFocused] = useState(false);
-  // const focused = ;
 
   const sizeStyle: Record<
     InputSize,
@@ -132,7 +131,9 @@ const TextInput: React.FC<TextInputProps> = ({
           style={[textInputStyle, inputStyle]}
           placeholderTextColor={getTextColor()}
           editable={!disabled}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true);
+          }}
           onBlur={() => setIsFocused(false)}
         />
       </View>

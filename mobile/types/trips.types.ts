@@ -202,7 +202,7 @@ export interface TripItineraryItem {
 }
 
 export interface CreateItineraryItemInput {
-  trip_id: string;
+  trip_id?: string;
   source_type?: ItinerarySourceType;
   source_id?: string;
   date: string;

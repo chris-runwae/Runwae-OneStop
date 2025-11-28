@@ -1,21 +1,41 @@
 import { Pressable, View, StyleSheet } from 'react-native';
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeftIcon, X } from 'lucide-react-native';
-import { router, Stack } from 'expo-router';
+import { Link, router } from 'expo-router';
+import { useUser } from '@clerk/clerk-expo';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Button, PrimaryButton, Spacer, Text, TextInput } from '@/components';
-import { Colors } from '@/constants/theme';
+import { PrimaryButton, Spacer, Text, TextInput } from '@/components';
+import useItinerary from '@/hooks/useItinerary';
+import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
-
-// const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-// const MODAL_HEIGHT = SCREEN_HEIGHT * 0.7;
 
 const CreateItineraryScreen = () => {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme() || 'light';
   const colors = Colors[colorScheme];
+  const { addTripItineraryItem } = useItinerary();
+  const { user } = useUser();
+
+  const [title, setTitle] = useState<string | null>(null);
+  const [description, setDescription] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(null);
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<string | null>(null);
+  const [error, setError] = useState({
+    title: null,
+    description: null,
+    location: null,
+    date: null,
+    time: null,
+  } as {
+    title: string | null;
+    description: string | null;
+    location: string | null;
+    date: string | null;
+    time: string | null;
+  });
 
   const dynamicStyles = StyleSheet.create({
     modalContainer: {
@@ -23,6 +43,49 @@ const CreateItineraryScreen = () => {
       // paddingBottom: insets.bottom,
     },
   });
+
+  const checkForErrors = useCallback(() => {
+    const newError = {
+      title: !title || title === null ? 'Title is required' : null,
+      description: !description ? 'Description is required' : null,
+      location: !location ? 'Location is required' : null,
+      date: !date ? 'Date is required' : null,
+      time: !time ? 'Time is required' : null,
+    };
+
+    setError(newError);
+
+    return Object.values(newError).some((value) => value !== null);
+  }, [title, description, location, date, time]);
+
+  const handleCreateItinerary = useCallback(async () => {
+    if (!user?.id) return;
+
+    if (checkForErrors()) return;
+    // const data = await addTripItineraryItem({
+    //   title: title,
+    //   description: description,
+    //   location: location,
+    //   date: date,
+    //   time: time,
+    //   created_by: user?.id,
+    // });
+    console.log(
+      'Creating itinerary item: ',
+      JSON.stringify(
+        {
+          title: title,
+          description: description,
+          location: location,
+          date: date,
+          time: time,
+          created_by: user?.id,
+        },
+        null,
+        2
+      )
+    );
+  }, [title, description, location, date, time]);
 
   return (
     <>
@@ -55,30 +118,61 @@ const CreateItineraryScreen = () => {
         </View>
 
         <Spacer size={32} vertical />
-        <TextInput placeholder="Enter title" variant="default" label="Title" />
+        <TextInput
+          placeholder="Enter title"
+          variant="default"
+          label="Title"
+          value={title}
+          onChangeText={setTitle}
+          error={error?.title ?? undefined}
+        />
         <Spacer size={16} vertical />
         <TextInput
           placeholder="Enter description"
           variant="default"
           label="Description"
+          value={description}
+          onChangeText={setDescription}
+          error={error?.description ?? undefined}
         />
         <Spacer size={16} vertical />
         <TextInput
           placeholder="Enter location"
           variant="default"
           label="Location"
+          value={location}
+          onChangeText={setLocation}
         />
         <Spacer size={16} vertical />
-        <TextInput placeholder="Enter date" variant="default" label="Date" />
+        <TextInput
+          placeholder="Enter date"
+          variant="default"
+          label="Date"
+          value={date}
+          onChangeText={setDate}
+          error={error?.date ?? undefined}
+        />
         <Spacer size={16} vertical />
-        <TextInput placeholder="Enter time" variant="default" label="Time" />
+        <TextInput
+          placeholder="Enter time"
+          variant="default"
+          label="Time"
+          value={time}
+          onChangeText={setTime}
+          error={error?.time ?? undefined}
+        />
 
         <Spacer size={40} vertical />
         {/* <Button variant="filled" size="md" onPress={() => router.dismiss()}>
           Create Itinerary
         </Button> */}
-        <PrimaryButton
+        {/* <PrimaryButton
           onPress={() => router.dismiss()}
+          title="Create Itinerary"
+          // width={200}
+        /> */}
+        <PrimaryButton
+          onPress={handleCreateItinerary}
           title="Create Itinerary"
           // width={200}
         />

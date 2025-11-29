@@ -19,6 +19,7 @@ import WelcomeAvatar from './containers/WelcomeAvatar';
 import WideTripCard from './cards/WideTripCard';
 import HomeScreenSkeleton from './skeletons/HomeScreenSkeleton';
 import TripDiscoverySection from './containers/TripDiscoverySection';
+import TripDiscoverySkeleton from './skeletons/TripDiscoverySkeleton';
 import TextInput from './inputs/TextInput';
 
 export {
@@ -45,4 +46,5 @@ export {
   WideTripCard,
   TripDiscoverySection,
   TextInput,
+  TripDiscoverySkeleton,
 };

@@ -7,7 +7,13 @@ import { FlashList } from '@shopify/flash-list';
 import { useHotels, useColorScheme } from '@/hooks';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
-import { Spacer, Text, FilterTabs, SectionHeader } from '@/components';
+import {
+  Spacer,
+  Text,
+  FilterTabs,
+  SectionHeader,
+  TripDiscoverySkeleton,
+} from '@/components';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
@@ -110,9 +116,7 @@ const TripDiscoverySection = () => {
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <ActivityIndicator size="large" color={colors.primaryColors.default} />
-      );
+      return <TripDiscoverySkeleton />;
     }
 
     if (selectedFilter === 'All') {

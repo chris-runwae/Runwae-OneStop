@@ -38,6 +38,7 @@ export interface Trip {
   user_id: string;
   title: string;
   destination: string;
+  join_code: string;
 
   // Dates
   start_date?: string | null;

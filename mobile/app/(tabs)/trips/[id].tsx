@@ -2,6 +2,7 @@ import {
   Dimensions,
   Pressable,
   StyleSheet,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
@@ -16,6 +17,9 @@ import Animated, {
   useScrollOffset,
 } from 'react-native-reanimated';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+// import BottomSheet from '@gorhom/bottom-sheet';
+import * as Clipboard from 'expo-clipboard';
+import Share from 'react-native-share';
 
 import {
   DateRange,
@@ -92,6 +96,8 @@ const TripsDetailsScreen = () => {
     fetchAttendees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip]);
+
+  const join_code = trip?.join_code ?? '';
 
   const fetchAttendees = useCallback(async () => {
     try {
@@ -267,9 +273,29 @@ const TripsDetailsScreen = () => {
     },
   ];
 
-  const handleShare = () => {
-    console.log('Share pressed');
-  };
+  //Share trip
+  const deepLink = `runwae://join/${id}/${join_code}`;
+
+  function openSheet() {
+    bottomSheetRef.current?.expand();
+  }
+
+  async function copyCode() {
+    await Clipboard.setStringAsync(join_code);
+  }
+
+  async function shareCode() {
+    await Share.open({
+      message: `Join my trip on Runwae! Code: ${join_code}`,
+    });
+  }
+
+  async function shareLink() {
+    await Share.open({
+      message: `Join my trip on Runwae: ${deepLink}`,
+      url: deepLink,
+    });
+  }
 
   if (loading || tripLoading) {
     return <HomeScreenSkeleton />;
@@ -500,13 +526,81 @@ const TripsDetailsScreen = () => {
           </View>
         </Animated.ScrollView>
 
+        {/* BOTTOM SHEET CONTENT */}
         <BottomSheet
           ref={bottomSheetRef}
-          index={0}
+          index={-1}
           snapPoints={['50%']}
+          detached={true}
+          backgroundStyle={{
+            backgroundColor: colors.backgroundColors.subtle,
+          }}
           enablePanDownToClose>
-          <BottomSheetView>
-            <Text>Hello</Text>
+          <BottomSheetView
+            style={{
+              flex: 1,
+              backgroundColor: colors.backgroundColors.subtle,
+              height: '100%',
+            }}>
+            <View style={{ padding: 20, gap: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600' }}>
+                Share Join Code
+              </Text>
+
+              {/* Join Code */}
+              <View
+                style={{
+                  padding: 16,
+                  backgroundColor: '#F2F2F2',
+                  borderRadius: 12,
+                  alignItems: 'center',
+                }}>
+                <Text
+                  style={{ fontSize: 22, fontWeight: '700', letterSpacing: 3 }}>
+                  {join_code}
+                </Text>
+              </View>
+
+              {/* COPY */}
+              <TouchableOpacity
+                onPress={copyCode}
+                style={{
+                  padding: 14,
+                  backgroundColor: '#EAEAEA',
+                  borderRadius: 10,
+                }}>
+                <Text style={{ textAlign: 'center', fontSize: 16 }}>
+                  Copy Code
+                </Text>
+              </TouchableOpacity>
+
+              {/* SHARE CODE */}
+              <TouchableOpacity
+                onPress={shareCode}
+                style={{
+                  padding: 14,
+                  backgroundColor: '#EAEAEA',
+                  borderRadius: 10,
+                }}>
+                <Text style={{ textAlign: 'center', fontSize: 16 }}>
+                  Share Code
+                </Text>
+              </TouchableOpacity>
+
+              {/* SHARE LINK */}
+              <TouchableOpacity
+                onPress={shareLink}
+                style={{
+                  padding: 14,
+                  backgroundColor: '#000',
+                  borderRadius: 10,
+                }}>
+                <Text
+                  style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
+                  Share Deep Link
+                </Text>
+              </TouchableOpacity>
+            </View>
           </BottomSheetView>
         </BottomSheet>
       </View>

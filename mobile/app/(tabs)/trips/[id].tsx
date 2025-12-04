@@ -27,7 +27,7 @@ import { AvatarGroup } from '@/components/ui/AvatarGroup';
 import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
 import useTrips from '@/hooks/useTrips';
 import { Trip, TripAttendee } from '@/types/trips.types';
-import { ArrowLeftIcon, Menu } from 'lucide-react-native';
+import { ArrowLeftIcon, ForwardIcon, Menu } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
 import { textStyles } from '@/utils/styles';
 import { TripItinerary } from '@/components/containers/TripItinerary';
@@ -264,6 +264,10 @@ const TripsDetailsScreen = () => {
     },
   ];
 
+  const handleShare = () => {
+    console.log('Share pressed');
+  };
+
   if (loading || tripLoading) {
     return <HomeScreenSkeleton />;
   }
@@ -296,14 +300,25 @@ const TripsDetailsScreen = () => {
           <Text style={styles.compactTitle} numberOfLines={1}>
             {trip?.title}
           </Text>
-          <Pressable
-            onPress={() => {}}
-            style={[
-              styles.compactIconButton,
-              { backgroundColor: colors.backgroundColors.subtle },
-            ]}>
-            <Menu size={20} color={colors.textColors.default} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+            <Pressable
+              onPress={() => {}}
+              style={[
+                styles.compactIconButton,
+                { backgroundColor: colors.backgroundColors.subtle },
+              ]}>
+              <ForwardIcon size={20} color={colors.textColors.default} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => {}}
+              style={[
+                styles.compactIconButton,
+                { backgroundColor: colors.backgroundColors.subtle },
+              ]}>
+              <Menu size={20} color={colors.textColors.default} />
+            </Pressable>
+          </View>
         </View>
       </Animated.View>
     );
@@ -331,18 +346,39 @@ const TripsDetailsScreen = () => {
               }}
               style={[
                 styles.iconButton,
-                { backgroundColor: colors.backgroundColors.default },
+                {
+                  backgroundColor: colors.backgroundColors.default,
+                  zIndex: 1000,
+                },
               ]}>
               <ArrowLeftIcon size={20} color={colors.textColors.default} />
             </Pressable>
-            <Pressable
-              onPress={() => {}}
-              style={[
-                styles.iconButton,
-                { backgroundColor: colors.backgroundColors.default },
-              ]}>
-              <Menu size={20} color={colors.textColors.default} />
-            </Pressable>
+            <View
+              style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+              <Pressable
+                onPress={() => {}}
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.backgroundColors.default,
+                    zIndex: 1000,
+                  },
+                ]}>
+                <ForwardIcon size={20} color={colors.textColors.default} />
+              </Pressable>
+
+              <Pressable
+                onPress={() => {}}
+                style={[
+                  styles.iconButton,
+                  {
+                    backgroundColor: colors.backgroundColors.default,
+                    zIndex: 1000,
+                  },
+                ]}>
+                <Menu size={20} color={colors.textColors.default} />
+              </Pressable>
+            </View>
           </View>
           <LinearGradient
             colors={[
@@ -368,10 +404,6 @@ const TripsDetailsScreen = () => {
 
   return (
     <>
-      {/* // <ScreenContainer 
-    //   contentContainerStyle={styles.contentContainer}
-    //   leftComponent
-    //   header={{ rightComponent: <RenderMenuEllipsis /> }}> */}
       <Stack.Screen
         options={{
           headerShown: false,
@@ -385,51 +417,6 @@ const TripsDetailsScreen = () => {
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}>
           <LargeHeader />
-          {/* <ImageBackground
-          source={{ uri: trip?.cover_image_url ?? '' }}
-          style={styles.imageBackground}
-          contentFit="cover"
-          transition={1000}>
-          <View
-            style={[
-              styles.iconContentContainer,
-              dynamicStyles.iconContentContainer,
-            ]}>
-            <Pressable
-              onPress={() => router.back()}
-              style={[
-                styles.iconButton,
-                { backgroundColor: colors.backgroundColors.default },
-              ]}>
-              <ArrowLeftIcon size={20} color={colors.textColors.default} />
-            </Pressable>
-            <Pressable
-              onPress={() => {}}
-              style={[
-                styles.iconButton,
-                { backgroundColor: colors.backgroundColors.default },
-              ]}>
-              <Menu size={20} color={colors.textColors.default} />
-            </Pressable>
-          </View>
-          <LinearGradient
-            colors={[
-              'transparent',
-              hexToRgba(colors.backgroundColors.default, 0),
-              hexToRgba(colors.backgroundColors.default, 0.25),
-              hexToRgba(colors.backgroundColors.default, 0.6),
-              hexToRgba(colors.backgroundColors.default, 0.85),
-              colors.backgroundColors.default,
-            ]}
-            locations={[0, 0.2, 0.5, 0.75, 0.9, 1]}
-            style={styles.gradientOverlay}>
-            <View style={styles.gradientContent}>
-              <Spacer size={16} vertical />
-              <Text style={styles.title}>{trip?.title}</Text>
-              <Spacer size={8} vertical />
-            </View>
-          </LinearGradient>
-        </ImageBackground> */}
 
           <View
             style={[

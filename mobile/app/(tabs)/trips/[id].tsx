@@ -189,6 +189,18 @@ const TripsDetailsScreen = () => {
     },
   });
 
+  const parseDestination = (destination: string | undefined) => {
+    if (!destination) return { city: '', countryCode: '' };
+
+    const parts = destination.split(',');
+    const countryCode = parts.pop()?.trim() ?? ''; // last section after comma
+    const city = parts.join(',').trim(); // everything before the last comma
+
+    return { city, countryCode };
+  };
+
+  const { city, countryCode } = parseDestination(trip?.destination);
+
   const dummyAttendees: TripAttendee[] = [
     {
       id: '1',
@@ -271,7 +283,10 @@ const TripsDetailsScreen = () => {
         ]}>
         <View style={styles.compactHeaderContent}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              console.log('Back pressed in CompactHeader');
+              router.back();
+            }}
             style={[
               styles.compactIconButton,
               { backgroundColor: colors.backgroundColors.subtle },
@@ -310,7 +325,10 @@ const TripsDetailsScreen = () => {
               { position: 'absolute' },
             ]}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                router.back();
+                console.log('Back pressed in LargeHeader');
+              }}
               style={[
                 styles.iconButton,
                 { backgroundColor: colors.backgroundColors.default },
@@ -464,7 +482,12 @@ const TripsDetailsScreen = () => {
                 <Spacer size={14} vertical />
               </>
             )}
-            {activeTab === 'discover' && <TripDiscoverySection />}
+            {activeTab === 'discover' && (
+              <TripDiscoverySection
+                countryCode={countryCode as string}
+                city={city as string}
+              />
+            )}
             {activeTab === 'saved' && (
               <View style={styles.emptyContainer}>
                 <Text style={[styles.emptyText, dynamicStyles.emptyText]}>

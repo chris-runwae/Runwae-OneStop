@@ -1,7 +1,7 @@
-import { ActivityIndicator, StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ImageBackground } from 'expo-image';
-import { RelativePathString } from 'expo-router';
+import { RelativePathString, router } from 'expo-router';
 
 import { FlashList } from '@shopify/flash-list';
 import { useHotels, useColorScheme } from '@/hooks';
@@ -13,11 +13,18 @@ import {
   FilterTabs,
   SectionHeader,
   TripDiscoverySkeleton,
+  ItineraryItemCard,
 } from '@/components';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
-const TripDiscoverySection = () => {
+const TripDiscoverySection = ({
+  countryCode,
+  city,
+}: {
+  countryCode?: string;
+  city?: string;
+}) => {
   const { hotels, loading, fetchHotels } = useHotels();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -43,13 +50,14 @@ const TripDiscoverySection = () => {
   });
 
   useEffect(() => {
-    fetchHotels();
+    fetchHotels(countryCode, city);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filterOptions: FilterOption[] = ['All', 'Stays 🏨', 'Do 🎨'];
 
   const HotelItem = ({ hotel }: { hotel: any }) => {
+    // console.log('Hotel: ', hotel);
     const coverImage = hotel.thumbnail
       ? { uri: hotel.thumbnail }
       : 'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
@@ -57,7 +65,7 @@ const TripDiscoverySection = () => {
     return (
       <Pressable
         style={styles.hotelItem}
-        onPress={() => console.log('Hotel pressed: ', hotel)}>
+        onPress={() => router.push(`/trips/hotels/${hotel.id}`)}>
         <View style={styles.hotelContentContainer}>
           <ImageBackground
             contentFit="cover"
@@ -105,6 +113,9 @@ const TripDiscoverySection = () => {
         <FlashList
           data={hotelsList}
           renderItem={({ item }: { item: any }) => <HotelItem hotel={item} />}
+          // renderItem={({ item }: { item: any }) => (
+          //   <ItineraryItemCard item={item} />
+          // )}
           keyExtractor={(item: any) => item.hotelId || `hotel-${item.id}`}
           horizontal
           showsHorizontalScrollIndicator={false}

@@ -21,6 +21,8 @@ import HomeScreenSkeleton from './skeletons/HomeScreenSkeleton';
 import TripDiscoverySection from './containers/TripDiscoverySection';
 import TripDiscoverySkeleton from './skeletons/TripDiscoverySkeleton';
 import TextInput from './inputs/TextInput';
+import ItineraryItemCard from './cards/ItineraryItemCard';
+import InfoPill from './pills/InfoPill';
 
 export {
   Spacer,
@@ -47,4 +49,6 @@ export {
   TripDiscoverySection,
   TextInput,
   TripDiscoverySkeleton,
+  ItineraryItemCard,
+  InfoPill,
 };

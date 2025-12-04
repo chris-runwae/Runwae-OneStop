@@ -9,8 +9,8 @@ import { useFonts } from 'expo-font';
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
 import { DMSans_400Regular } from '@expo-google-fonts/dm-sans';
 import { useEffect } from 'react';
-// import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+// import BottomSheet from '@gorhom/bottom-sheet';
 
 import {
   DarkTheme,
@@ -85,11 +85,10 @@ function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        {/* <GestureHandlerRootView style={{ flex: 1 }}> */}
-        <Slot />
-        <StatusBar style="auto" />
-
-        {/* </GestureHandlerRootView> */}
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Slot />
+          <StatusBar style="auto" />
+        </GestureHandlerRootView>
       </ThemeProvider>
     </ClerkProvider>
   );

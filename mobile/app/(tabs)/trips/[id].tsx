@@ -5,7 +5,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ImageBackground } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,7 @@ import Animated, {
   useAnimatedStyle,
   useScrollOffset,
 } from 'react-native-reanimated';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 
 import {
   DateRange,
@@ -63,6 +64,8 @@ const TripsDetailsScreen = () => {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [attendees, setAttendees] = useState<TripAttendee[]>([]);
   const [activeTab, setActiveTab] = useState<string>('discover');
+
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -302,7 +305,9 @@ const TripsDetailsScreen = () => {
           </Text>
           <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
             <Pressable
-              onPress={() => {}}
+              onPress={() => {
+                bottomSheetRef.current?.expand();
+              }}
               style={[
                 styles.compactIconButton,
                 { backgroundColor: colors.backgroundColors.subtle },
@@ -356,7 +361,9 @@ const TripsDetailsScreen = () => {
             <View
               style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
               <Pressable
-                onPress={() => {}}
+                onPress={() => {
+                  bottomSheetRef.current?.expand();
+                }}
                 style={[
                   styles.iconButton,
                   {
@@ -492,6 +499,16 @@ const TripsDetailsScreen = () => {
             <Spacer size={740} vertical />
           </View>
         </Animated.ScrollView>
+
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={0}
+          snapPoints={['50%']}
+          enablePanDownToClose>
+          <BottomSheetView>
+            <Text>Hello</Text>
+          </BottomSheetView>
+        </BottomSheet>
       </View>
       {/* </ScreenContainer> */}
     </>

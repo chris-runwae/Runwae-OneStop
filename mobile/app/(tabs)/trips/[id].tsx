@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -21,6 +22,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 // import BottomSheet from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
 import Share, { ShareOptions } from 'react-native-share';
+import { Asset } from 'expo-asset';
 
 import {
   DateRange,
@@ -292,10 +294,19 @@ const TripsDetailsScreen = () => {
   }
 
   async function shareLink() {
-    const title = 'Join my trip on Runwae';
+    const title = 'Join my trip on Runwae!';
     const message = 'Join my trip on Runwae';
     const url = deepLink;
-    const icon = require('@/assets/images/icon.png');
+    const icon = Image.resolveAssetSource(
+      require('@/assets/images/icon.png')
+    ).uri;
+
+    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
+    await asset.downloadAsync(); // ensures it's available locally
+
+    const fileUri = asset.localUri || asset.uri;
+
+    // console.log('icon: ', icon);
 
     const options = Platform.select({
       ios: {
@@ -312,8 +323,9 @@ const TripsDetailsScreen = () => {
               },
             },
             linkMetadata: {
-              title: title,
-              icon: icon,
+              title,
+              icon: fileUri,
+              image: fileUri,
             },
           },
         ],
@@ -325,7 +337,11 @@ const TripsDetailsScreen = () => {
       },
     });
 
-    await Share.open(options as ShareOptions);
+    try {
+      await Share.open(options as ShareOptions);
+    } catch (error) {
+      console.log('Error sharing link: ', error);
+    }
   }
 
   if (loading || tripLoading) {

@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Platform,
   Pressable,
   StyleSheet,
   TouchableOpacity,
@@ -19,7 +20,7 @@ import Animated, {
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 // import BottomSheet from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
-import Share from 'react-native-share';
+import Share, { ShareOptions } from 'react-native-share';
 
 import {
   DateRange,
@@ -291,10 +292,40 @@ const TripsDetailsScreen = () => {
   }
 
   async function shareLink() {
-    await Share.open({
-      message: `Join my trip on Runwae: ${deepLink}`,
-      url: deepLink,
+    const title = 'Join my trip on Runwae';
+    const message = 'Join my trip on Runwae';
+    const url = deepLink;
+    const icon = require('@/assets/images/icon.png');
+
+    const options = Platform.select({
+      ios: {
+        activityItemSources: [
+          {
+            placeholderItem: {
+              type: 'url',
+              content: icon,
+            },
+            item: {
+              default: {
+                type: 'text',
+                content: `${message} ${url}`,
+              },
+            },
+            linkMetadata: {
+              title: title,
+              icon: icon,
+            },
+          },
+        ],
+      },
+      default: {
+        title,
+        subject: title,
+        message: `${message} ${url}`,
+      },
     });
+
+    await Share.open(options as ShareOptions);
   }
 
   if (loading || tripLoading) {
@@ -551,7 +582,7 @@ const TripsDetailsScreen = () => {
               <View
                 style={{
                   padding: 16,
-                  backgroundColor: '#F2F2F2',
+                  backgroundColor: colors.backgroundColors.default,
                   borderRadius: 12,
                   alignItems: 'center',
                 }}>
@@ -566,10 +597,15 @@ const TripsDetailsScreen = () => {
                 onPress={copyCode}
                 style={{
                   padding: 14,
-                  backgroundColor: '#EAEAEA',
+                  backgroundColor: colors.primaryColors.default,
                   borderRadius: 10,
                 }}>
-                <Text style={{ textAlign: 'center', fontSize: 16 }}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 16,
+                    color: colors.textColors.default,
+                  }}>
                   Copy Code
                 </Text>
               </TouchableOpacity>
@@ -579,10 +615,15 @@ const TripsDetailsScreen = () => {
                 onPress={shareCode}
                 style={{
                   padding: 14,
-                  backgroundColor: '#EAEAEA',
+                  backgroundColor: colors.primaryColors.default,
                   borderRadius: 10,
                 }}>
-                <Text style={{ textAlign: 'center', fontSize: 16 }}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 16,
+                    color: colors.textColors.default,
+                  }}>
                   Share Code
                 </Text>
               </TouchableOpacity>
@@ -592,11 +633,15 @@ const TripsDetailsScreen = () => {
                 onPress={shareLink}
                 style={{
                   padding: 14,
-                  backgroundColor: '#000',
+                  backgroundColor: colors.backgroundColors.default,
                   borderRadius: 10,
                 }}>
                 <Text
-                  style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
+                  style={{
+                    textAlign: 'center',
+                    fontSize: 16,
+                    color: colors.textColors.default,
+                  }}>
                   Share Deep Link
                 </Text>
               </TouchableOpacity>

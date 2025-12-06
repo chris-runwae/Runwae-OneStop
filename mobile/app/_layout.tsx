@@ -17,7 +17,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
-import { Slot } from 'expo-router';
+import { router, Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -28,6 +28,7 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import '../global.css';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Linking from 'expo-linking';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -72,6 +73,21 @@ function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded, error]);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      const parsed = Linking.parse(url);
+
+      // Example: runwae://join/838493/ABCD1234
+      if (parsed.path?.startsWith('join')) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const [_, tripId, code] = parsed.path.split('/');
+        router.push(`/join/${tripId}/${code}`);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   if (!publishableKey) {
     Sentry.captureException(new Error('❌ Missing Clerk publishable key'));

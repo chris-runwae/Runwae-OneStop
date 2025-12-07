@@ -19,6 +19,8 @@ import Animated, {
   useScrollOffset,
 } from 'react-native-reanimated';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useUser } from '@clerk/clerk-expo';
+
 // import BottomSheet from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
 import Share, { ShareOptions } from 'react-native-share';
@@ -27,6 +29,7 @@ import { Asset } from 'expo-asset';
 import {
   DateRange,
   HomeScreenSkeleton,
+  MenuItem,
   Spacer,
   Text,
   TripDiscoverySection,
@@ -45,10 +48,12 @@ const TripsDetailsScreen = () => {
   const { id } = useLocalSearchParams();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { user } = useUser();
   const {
     fetchTripById,
     loading: tripLoading,
     fetchTripAttendees,
+    leaveTrip,
   } = useTrips();
   const insets = useSafeAreaInsets();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -345,6 +350,10 @@ const TripsDetailsScreen = () => {
     }
   }
 
+  const handleLeaveTrip = async () => {
+    await leaveTrip(trip?.id as string, user?.id as string);
+  };
+
   if (loading || tripLoading) {
     return <HomeScreenSkeleton />;
   }
@@ -627,7 +636,7 @@ const TripsDetailsScreen = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* SHARE CODE */}
+              {/* SHARE CODE
               <TouchableOpacity
                 onPress={shareCode}
                 style={{
@@ -643,7 +652,7 @@ const TripsDetailsScreen = () => {
                   }}>
                   Share Code
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* SHARE LINK */}
               <TouchableOpacity
@@ -662,6 +671,8 @@ const TripsDetailsScreen = () => {
                   Share Deep Link
                 </Text>
               </TouchableOpacity>
+
+              <MenuItem title="Leave Trip" onPress={handleLeaveTrip} />
             </View>
           </BottomSheetView>
         </BottomSheet>

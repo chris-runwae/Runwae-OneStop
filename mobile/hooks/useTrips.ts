@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 
 import { getSupabaseClient } from '@/lib/supabase';
 import { FeaturedTrip, TripAttendeeRole } from '@/types/trips.types';
+import { router } from 'expo-router';
 
 const useTrips = () => {
   const [trips, setTrips] = useState<any[]>([]);
@@ -291,6 +292,46 @@ const useTrips = () => {
     }
   };
 
+  const leaveTrip = async (tripId: string, userId: string) => {
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      Alert.alert(
+        'Leave Trip',
+        'Are you sure you want to leave this trip?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Leave',
+            style: 'destructive',
+            onPress: async () => {
+              const { data, error } = await supabase
+                .from('trip_attendees')
+                .delete()
+                .eq('trip_id', tripId)
+                .eq('user_id', userId);
+
+              if (error) {
+                console.log('Error leaving trip:', error);
+                Alert.alert(
+                  'Error',
+                  'Could not leave the trip. Please try again.'
+                );
+              }
+
+              console.log('Successfully left trip:', data);
+              Alert.alert('Success', 'You have left the trip.');
+              router.push('/trips');
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.log('Leave trip error:', error);
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -308,6 +349,7 @@ const useTrips = () => {
     getTripItinerary,
     createTrip,
     deleteTrip,
+    leaveTrip,
   };
 };
 

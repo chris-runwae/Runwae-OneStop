@@ -12,7 +12,13 @@ import { DateRange, Text } from '@/components';
 import { Colors } from '@/constants/theme';
 import { Trip } from '@/types/trips.types';
 import { toSentenceCase } from '@/utils/stringManipulation';
-import { Link, LinkMenu, LinkMenuAction, router } from 'expo-router';
+import {
+  Link,
+  LinkMenu,
+  LinkMenuAction,
+  RelativePathString,
+  router,
+} from 'expo-router';
 import useTrips from '@/hooks/useTrips';
 
 interface WideTripCardProps {
@@ -51,6 +57,19 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
       paddingHorizontal: 12,
     },
     contentContainer: {},
+
+    cardWrapper: {
+      width: '100%',
+      height: 200, // MUST set a height so the card is visible
+      marginBottom: 16,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    imageBackground: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+
     infoContainer: {
       width: '100%',
       height: 50,
@@ -99,8 +118,8 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
         onPress: async () => {
           const success = await deleteTrip(trip.id);
           if (success) {
+            await fetchTrips();
             Alert.alert('Trip deleted successfully');
-            fetchTrips();
           }
         },
       },
@@ -117,32 +136,33 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
   return (
     <Link href={`/trips/${trip.id}`} asChild>
       <Link.Trigger>
-        <ImageBackground
-          source={{ uri: coverImageUrl }}
-          style={styles.container}>
-          <View style={styles.cardContent}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>{trip.title}</Text>
-              <View style={styles.pillContainer}>
-                <Text style={styles.pillText}>
-                  {toSentenceCase(trip.category ?? '')}
-                </Text>
+        <Pressable style={styles.cardWrapper}>
+          <ImageBackground
+            source={{ uri: coverImageUrl }}
+            style={styles.imageBackground}
+            imageStyle={{ borderRadius: 12 }}>
+            <View style={styles.cardContent}>
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>{trip.title}</Text>
+                <View style={styles.pillContainer}>
+                  <Text style={styles.pillText}>
+                    {toSentenceCase(trip.category ?? '')}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.infoContainer}>
+                <Text style={styles.infoText}>📍 {trip.destination}</Text>
+                <DateRange
+                  startDate={trip?.start_date ?? ''}
+                  endDate={trip?.end_date ?? ''}
+                  emoji={true}
+                />
               </View>
             </View>
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoText}>📍 {trip.destination}</Text>
-              <DateRange
-                startDate={trip?.start_date ?? ''}
-                endDate={trip?.end_date ?? ''}
-                emoji={true}
-              />
-            </View>
-          </View>
-        </ImageBackground>
+          </ImageBackground>
+        </Pressable>
       </Link.Trigger>
-      <Link.Preview />
 
-      {/* Menu Actions */}
       <Link.Menu>
         <Link.MenuAction title="Edit Trip" icon="pencil" onPress={handleEdit} />
         <Link.MenuAction
@@ -152,6 +172,7 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
           destructive
         />
       </Link.Menu>
+      <Link.Preview />
     </Link>
   );
 };

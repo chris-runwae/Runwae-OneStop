@@ -64,7 +64,7 @@ export default function MenuItem({
       onPress={onPress}
       style={styles.menuItem}
       activeOpacity={0.7}>
-      <View style={styles.menuItemIcon}>{icon ? icon : null}</View>
+      {icon ? <View style={styles.menuItemIcon}>{icon}</View> : null}
       <View style={styles.menuItemText}>
         <Text style={styles.menuTitle}>{title}</Text>
         {subtitle ? <Text style={styles.menuSubtitle}>{subtitle}</Text> : null}

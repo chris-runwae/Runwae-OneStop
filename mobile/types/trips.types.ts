@@ -276,7 +276,7 @@ export interface TripAttendee {
   user_id: string;
   role: TripAttendeeRole;
   name: string | null;
-  profile_photo_url?: string | null;
+  image_url?: string | null;
   inserted_at: string;
   updated_at: string;
 }

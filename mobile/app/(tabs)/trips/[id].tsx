@@ -218,69 +218,6 @@ const TripsDetailsScreen = () => {
 
   const { city, countryCode } = parseDestination(trip?.destination);
 
-  const dummyAttendees: TripAttendee[] = [
-    {
-      id: '1',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_33wEUdT7FLSOj95DSJfpZYM2cKi',
-      role: 'owner',
-      name: 'Christopher',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=1',
-      inserted_at: '2025-11-22T20:00:00Z',
-      updated_at: '2025-11-22T20:00:00Z',
-    },
-    {
-      id: '2',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_2',
-      role: 'admin',
-      name: 'Alice',
-      profile_photo_url: null,
-      inserted_at: '2025-11-22T20:01:00Z',
-      updated_at: '2025-11-22T20:01:00Z',
-    },
-    {
-      id: '3',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_3',
-      role: 'member',
-      name: 'Bob',
-      profile_photo_url: null,
-      inserted_at: '2025-11-22T20:02:00Z',
-      updated_at: '2025-11-22T20:02:00Z',
-    },
-    {
-      id: '4',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_4',
-      role: 'member',
-      name: 'Diana',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=4',
-      inserted_at: '2025-11-22T20:03:00Z',
-      updated_at: '2025-11-22T20:03:00Z',
-    },
-    {
-      id: '5',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_5',
-      role: 'member',
-      name: 'Eve',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=5',
-      inserted_at: '2025-11-22T20:04:00Z',
-      updated_at: '2025-11-22T20:04:00Z',
-    },
-    {
-      id: '6',
-      trip_id: '09e7a393-3919-46cb-b16e-5ee45410abc1',
-      user_id: 'user_6',
-      role: 'member',
-      name: 'Frank',
-      profile_photo_url: 'https://i.pravatar.cc/150?img=6',
-      inserted_at: '2025-11-22T20:05:00Z',
-      updated_at: '2025-11-22T20:05:00Z',
-    },
-  ];
-
   //Share trip
   const deepLink = `runwae://join/${id}/${join_code}`;
 
@@ -534,7 +471,7 @@ const TripsDetailsScreen = () => {
             <Text style={styles.description}>{trip?.description}</Text>
             <Spacer size={14} vertical />
             <AvatarGroup
-              attendees={dummyAttendees}
+              attendees={attendees}
               maxVisible={4}
               size={30}
               overlap={12}

@@ -6,8 +6,8 @@ import {
   StyleSheet,
   useColorScheme,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useUser } from '@clerk/clerk-expo';
+import { RelativePathString, useRouter } from 'expo-router';
+import { useClerk, useUser } from '@clerk/clerk-expo';
 import { Image } from 'expo-image';
 import {
   Building2,
@@ -29,10 +29,25 @@ import { textStyles } from '@/utils/styles';
 // runs correctly in a standard Expo / React Native environment.
 
 export default function ProfileScreen() {
-  const router = useRouter();
   const { user } = useUser();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+
+  const { signOut } = useClerk();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      console.log('Signed out successfully');
+      // Redirect to your desired page
+      router.replace('/(auth)/sign-in' as RelativePathString);
+    } catch (err) {
+      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
+      // for more info on error handling
+      console.error(JSON.stringify(err, null, 2));
+    }
+  };
 
   const dynamicStyle = StyleSheet.create({
     cameraButton: {
@@ -109,6 +124,7 @@ export default function ProfileScreen() {
           <MenuItem
             title="Log out"
             icon={<LogOut size={20} color={colors.destructiveColors.default} />}
+            onPress={handleSignOut}
           />
         </View>
       </ScrollView>

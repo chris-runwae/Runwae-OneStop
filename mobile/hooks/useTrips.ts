@@ -29,9 +29,47 @@ const useTrips = () => {
     setLoading(true);
     try {
       const supabase = await getSupabaseClient(getToken);
-      const { data, error } = await supabase.from('trips').select('*');
+      // const { data, error } = await supabase.from('trips').select('*').eq('user_id', user?.id);
+
+      // // Get trips where user is creator OR attendee
+      // const { data, error } = await supabase
+      //   .from('trips')
+      //   .select('*')
+      //   .or(
+      //     `user_id.eq.${user?.id},id.in.(select trip_id from trip_attendees where user_id.eq.${user?.id})`
+      //   );
+
+      // Trips created by user
+      const { data: createdTrips, error: createdError } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      if (createdError) throw createdError;
+
+      // Trips user is attending
+      const { data: attendingTrips, error: attendingError } = await supabase
+        .from('trips')
+        .select('*')
+        .in(
+          'id',
+          (
+            await supabase
+              .from('trip_attendees')
+              .select('trip_id')
+              .eq('user_id', user?.id)
+          ).data?.map((row) => row.trip_id) || []
+        );
+
+      if (attendingError) throw attendingError;
+
+      // Merge without duplicates
+      const allTrips = [...createdTrips, ...attendingTrips].filter(
+        (v, i, a) => a.findIndex((t) => t.id === v.id) === i
+      );
+
       if (error) throw error;
-      setTrips(data || []);
+      setTrips(allTrips || []);
       setLoading(false);
     } catch (error) {
       setError(error as Error);

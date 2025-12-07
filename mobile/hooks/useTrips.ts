@@ -171,7 +171,7 @@ const useTrips = () => {
     userId: string,
     role: TripAttendeeRole,
     name: string,
-    profilePhotoUrl?: string | null
+    imageUrl?: string | null
   ) => {
     const supabase = await getSupabaseClient(getToken);
     const { data, error } = await supabase.from('trip_attendees').insert([
@@ -180,7 +180,7 @@ const useTrips = () => {
         user_id: userId,
         role: role || 'member',
         name: name,
-        profile_photo_url: profilePhotoUrl || null,
+        image_url: imageUrl || null,
       },
     ]);
 
@@ -239,6 +239,8 @@ const useTrips = () => {
             trip_id: trip.id,
             user_id: user?.id,
             role: 'owner',
+            name: user?.fullName,
+            image_url: user?.imageUrl,
           },
         ]);
 

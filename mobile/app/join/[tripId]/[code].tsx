@@ -13,6 +13,9 @@ export default function AutoJoinTrip() {
   const router = useRouter();
   const { user } = useUser();
   const userId = user?.id;
+  const userImageUrl = user?.imageUrl;
+  const name = user?.fullName;
+
   const { fetchNextTrip } = useTrips();
 
   useEffect(() => {
@@ -45,7 +48,12 @@ export default function AutoJoinTrip() {
 
       const { error: joinError } = await supabase
         .from('trip_attendees')
-        .insert({ trip_id: tripId, user_id: userId })
+        .insert({
+          trip_id: tripId,
+          user_id: userId,
+          name: name,
+          image_url: userImageUrl,
+        })
         .select()
         .single(); // ignore duplicate
 

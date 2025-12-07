@@ -4,6 +4,7 @@ import {
   View,
   ImageBackground,
   Pressable,
+  Alert,
 } from 'react-native';
 import React from 'react';
 
@@ -12,6 +13,7 @@ import { Colors } from '@/constants/theme';
 import { Trip } from '@/types/trips.types';
 import { toSentenceCase } from '@/utils/stringManipulation';
 import { router } from 'expo-router';
+import useTrips from '@/hooks/useTrips';
 
 interface WideTripCardProps {
   data: Trip[] | null;
@@ -20,6 +22,7 @@ interface WideTripCardProps {
 const WideTripCard = ({ data }: WideTripCardProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { deleteTrip } = useTrips();
 
   if (!data) {
     return null;
@@ -87,6 +90,22 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
     },
   });
 
+  const handleLongPress = () => {
+    Alert.alert('Delete Trip', 'Are you sure you want to delete this trip?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const success = await deleteTrip(trip.id);
+          if (success) {
+            Alert.alert('Trip deleted successfully');
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <ImageBackground source={{ uri: coverImageUrl }} style={styles.container}>
       <Pressable
@@ -96,6 +115,8 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
             params: { id: trip.id },
           });
         }}
+        onLongPress={handleLongPress}
+        delayLongPress={500}
         style={styles.cardContent}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{trip.title}</Text>

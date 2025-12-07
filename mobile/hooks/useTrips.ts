@@ -263,6 +263,34 @@ const useTrips = () => {
     }
   };
 
+  const deleteTrip = async (tripId: string) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { error } = await supabase.rpc('delete_trip_and_attendees', {
+        trip_uuid: tripId,
+      });
+
+      if (error) {
+        console.log('Error deleting trip and attendees:', error);
+        Alert.alert('Could not delete trip.', 'Please try again.');
+        return false;
+      }
+
+      console.log(`Trip ${tripId} and its attendees deleted successfully`);
+      return true;
+    } catch (error) {
+      console.log('Unexpected error deleting trip:', error);
+      Alert.alert('Unexpected error occurred.', 'Please try again.');
+      return false;
+    } finally {
+      setLoading(false);
+      fetchTrips();
+      fetchNextTrip();
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -279,6 +307,7 @@ const useTrips = () => {
     addTripAttendee,
     getTripItinerary,
     createTrip,
+    deleteTrip,
   };
 };
 

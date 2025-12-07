@@ -23,6 +23,7 @@ import TripDiscoverySkeleton from './skeletons/TripDiscoverySkeleton';
 import TextInput from './inputs/TextInput';
 import ItineraryItemCard from './cards/ItineraryItemCard';
 import InfoPill from './pills/InfoPill';
+import MenuItem from './buttons/MenuItem';
 
 export {
   Spacer,
@@ -51,4 +52,5 @@ export {
   TripDiscoverySkeleton,
   ItineraryItemCard,
   InfoPill,
+  MenuItem,
 };

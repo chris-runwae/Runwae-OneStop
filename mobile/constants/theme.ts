@@ -56,7 +56,7 @@ export const COLORS = {
   },
   red: {
     dark: '#4E1010',
-    light: '#F4C6C6',
+    light: '#FFE9EA',
     medium: '#C31D1D',
     bright: '#DA2020',
     base: '#FF0000',
@@ -122,6 +122,11 @@ export const Colors = {
       background: COLORS.pink.light,
       border: COLORS.pink.border,
     },
+    destructiveColors: {
+      default: COLORS.red.required,
+      background: COLORS.red.light,
+      border: COLORS.red.dangerBorder,
+    },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[700],
     border: COLORS.gray[400],
@@ -174,6 +179,11 @@ export const Colors = {
       default: COLORS.pink.dark,
       background: COLORS.pink.darkBackground,
       border: COLORS.pink.border,
+    },
+    destructiveColors: {
+      default: COLORS.red.dangerBorder,
+      background: COLORS.red.dark,
+      border: COLORS.red.dangerBorder,
     },
     primary: COLORS.red.medium,
     secondary: COLORS.gray[500],

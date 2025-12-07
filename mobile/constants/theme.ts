@@ -63,6 +63,7 @@ export const COLORS = {
     pale: '#FFB6B6',
     lighter: '#FFC5C5',
     dangerBorder: '#D30200',
+    required: '#F61801',
   },
   pink: {
     default: '#FF2E92',
@@ -126,6 +127,7 @@ export const Colors = {
     border: COLORS.gray[400],
     placeholder: COLORS.gray[500],
     notification: COLORS.red.bright,
+    required: COLORS.red.required,
   },
   dark: {
     tint: tintColorDark,
@@ -178,6 +180,7 @@ export const Colors = {
     border: COLORS.gray[750],
     placeholder: COLORS.gray[600],
     notification: COLORS.red.bright,
+    required: COLORS.red.required,
   },
 };
 

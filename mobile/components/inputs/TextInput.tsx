@@ -28,7 +28,9 @@ interface TextInputProps extends RNTextInputProps {
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   labelColor?: string;
+  labelStyle?: TextStyle;
   isRequired?: boolean;
+  requiredType?: 'asterisk' | 'text';
   onPress?: () => void;
 }
 
@@ -41,8 +43,10 @@ const TextInput: React.FC<TextInputProps> = ({
   containerStyle,
   inputStyle,
   labelColor,
+  labelStyle,
   isRequired = false,
   onPress,
+  requiredType = 'asterisk',
   ...props
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
@@ -117,9 +121,9 @@ const TextInput: React.FC<TextInputProps> = ({
   };
 
   const requiredTextStyle = {
-    color: colors.primaryColors.default,
-    ...textStyles.body_Regular,
-    fontSize: 12,
+    ...styles.label,
+    ...labelStyle,
+    color: colors.required,
   };
 
   // TODO: Add error style that will use dark or light mode
@@ -133,11 +137,21 @@ const TextInput: React.FC<TextInputProps> = ({
     <View style={[styles.container, containerStyle]}>
       <View style={styles.labelContainer}>
         {label && (
-          <Text style={[styles.label, { color: labelColor ?? getTextColor() }]}>
+          <Text
+            style={[
+              styles.label,
+              { color: labelColor ?? getTextColor() },
+              labelStyle,
+            ]}>
+            {isRequired && requiredType === 'asterisk' && (
+              <Text style={requiredTextStyle}>*</Text>
+            )}{' '}
             {label}
           </Text>
         )}
-        {isRequired && <Text style={requiredTextStyle}>required</Text>}
+        {isRequired && requiredType === 'text' && (
+          <Text style={requiredTextStyle}>required</Text>
+        )}
       </View>
 
       {onPress ? (
@@ -161,7 +175,8 @@ const TextInput: React.FC<TextInputProps> = ({
           <RNTextInput
             {...props}
             style={[textInputStyle, inputStyle]}
-            placeholderTextColor={getTextColor()}
+            // placeholderTextColor={getTextColor()}
+            placeholderTextColor={colors.textColors.subtitle}
             editable={!disabled}
             onFocus={() => {
               setIsFocused(true);

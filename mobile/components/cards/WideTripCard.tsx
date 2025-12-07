@@ -12,7 +12,7 @@ import { DateRange, Text } from '@/components';
 import { Colors } from '@/constants/theme';
 import { Trip } from '@/types/trips.types';
 import { toSentenceCase } from '@/utils/stringManipulation';
-import { router } from 'expo-router';
+import { Link, LinkMenu, LinkMenuAction, router } from 'expo-router';
 import useTrips from '@/hooks/useTrips';
 
 interface WideTripCardProps {
@@ -22,7 +22,7 @@ interface WideTripCardProps {
 const WideTripCard = ({ data }: WideTripCardProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { deleteTrip } = useTrips();
+  const { deleteTrip, fetchTrips } = useTrips();
 
   if (!data) {
     return null;
@@ -90,7 +90,7 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
     },
   });
 
-  const handleLongPress = () => {
+  const handleDelete = () => {
     Alert.alert('Delete Trip', 'Are you sure you want to delete this trip?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -100,42 +100,58 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
           const success = await deleteTrip(trip.id);
           if (success) {
             Alert.alert('Trip deleted successfully');
+            fetchTrips();
           }
         },
       },
     ]);
   };
 
+  const handleEdit = () => {
+    router.push({
+      pathname: '/trips/[id]',
+      params: { id: trip.id },
+    });
+  };
+
   return (
-    <ImageBackground source={{ uri: coverImageUrl }} style={styles.container}>
-      <Pressable
-        onPress={() => {
-          router.push({
-            pathname: '/trips/[id]',
-            params: { id: trip.id },
-          });
-        }}
-        onLongPress={handleLongPress}
-        delayLongPress={500}
-        style={styles.cardContent}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{trip.title}</Text>
-          <View style={styles.pillContainer}>
-            <Text style={styles.pillText}>
-              {toSentenceCase(trip.category ?? '')}
-            </Text>
+    <Link href={`/trips/${trip.id}`} asChild>
+      <Link.Trigger>
+        <ImageBackground
+          source={{ uri: coverImageUrl }}
+          style={styles.container}>
+          <View style={styles.cardContent}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>{trip.title}</Text>
+              <View style={styles.pillContainer}>
+                <Text style={styles.pillText}>
+                  {toSentenceCase(trip.category ?? '')}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoText}>📍 {trip.destination}</Text>
+              <DateRange
+                startDate={trip?.start_date ?? ''}
+                endDate={trip?.end_date ?? ''}
+                emoji={true}
+              />
+            </View>
           </View>
-        </View>
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>📍 {trip.destination}</Text>
-          <DateRange
-            startDate={trip?.start_date ?? ''}
-            endDate={trip?.end_date ?? ''}
-            emoji={true}
-          />
-        </View>
-      </Pressable>
-    </ImageBackground>
+        </ImageBackground>
+      </Link.Trigger>
+
+      {/* Menu Actions */}
+      <Link.Menu>
+        <Link.MenuAction title="Edit Trip" icon="pencil" onPress={handleEdit} />
+        <Link.MenuAction
+          title="Delete Trip"
+          icon="trash"
+          onPress={handleDelete}
+          destructive
+        />
+      </Link.Menu>
+    </Link>
   );
 };
 

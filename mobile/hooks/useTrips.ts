@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-expo';
+import { Alert } from 'react-native';
 
 import { getSupabaseClient } from '@/lib/supabase';
 import { FeaturedTrip, TripAttendeeRole } from '@/types/trips.types';
@@ -214,11 +215,49 @@ const useTrips = () => {
     setLoading(true);
     try {
       const supabase = await getSupabaseClient(getToken);
-      const { data, error } = await supabase.from('trips').insert(tripData);
-      if (error) throw error;
-      return data;
+
+      // 1️⃣ Insert the trip and return the inserted row
+      const { data: tripRows, error: createTripError } = await supabase
+        .from('trips')
+        .insert(tripData)
+        .select(); // ensures data is returned
+
+      if (createTripError || !tripRows || tripRows.length === 0) {
+        console.log('Error creating trip:', createTripError);
+        Alert.alert('Sorry, something went wrong.', 'Please try again.');
+        return null;
+      }
+
+      const trip = tripRows[0];
+
+      // 2️⃣ Insert the creator into trip_attendees
+      const { error: addTripAttendeeError } = await supabase
+        .from('trip_attendees')
+        .insert([
+          {
+            trip_id: trip.id,
+            user_id: user?.id,
+            role: 'owner',
+          },
+        ]);
+
+      if (addTripAttendeeError) {
+        console.log('Error adding trip attendee:', addTripAttendeeError);
+        Alert.alert(
+          'Trip created but could not add you as an attendee.',
+          'Please try again.'
+        );
+        console.log('addTripAttendeeError: ', addTripAttendeeError); //should probably take this out
+      } else {
+        console.log('Trip attendee added successfully');
+      }
+
+      return trip;
     } catch (error) {
+      console.log('Unexpected error:', error);
       setError(error as Error);
+      Alert.alert('Unexpected error occurred.', 'Please try again.');
+      return null;
     } finally {
       setLoading(false);
     }

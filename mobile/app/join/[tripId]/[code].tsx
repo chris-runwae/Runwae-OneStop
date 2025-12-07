@@ -1,18 +1,23 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, View, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 
 import { Text } from '@/components';
 import { getSupabaseClient } from '@/lib/supabase';
+import useTrips from '@/hooks/useTrips';
 
 export default function AutoJoinTrip() {
   const { getToken } = useAuth();
   const { tripId, code } = useLocalSearchParams();
   const router = useRouter();
+  const { user } = useUser();
+  const userId = user?.id;
+  const { fetchNextTrip } = useTrips();
 
   useEffect(() => {
     async function join() {
+      console.log('joining .. ', tripId, 'code: ', typeof code);
       // 1. Validate trip + code
       const supabase = await getSupabaseClient(getToken);
       const { data: trip, error: tripError } = await supabase
@@ -20,6 +25,9 @@ export default function AutoJoinTrip() {
         .select('id, join_code')
         .eq('id', tripId)
         .single();
+
+      console.log('trip: ', trip);
+      console.log('tripError: ', tripError);
 
       if (tripError || !trip) {
         Alert.alert('Error', 'Trip not found.');
@@ -34,7 +42,6 @@ export default function AutoJoinTrip() {
       }
 
       // 2. Insert attendee (ignore duplicate)
-      const userId = (await supabase.auth.getUser()).data.user?.id;
 
       const { error: joinError } = await supabase
         .from('trip_attendees')
@@ -44,12 +51,14 @@ export default function AutoJoinTrip() {
 
       if (joinError && joinError.code !== '23505') {
         Alert.alert('Error', 'Could not join trip.');
+        console.log('joinError: ', joinError);
         router.replace('/trips');
         return;
       }
 
       // 3. Redirect
       router.replace(`/trips/${tripId}`);
+      fetchNextTrip();
     }
 
     join();

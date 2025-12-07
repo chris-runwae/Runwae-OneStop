@@ -294,7 +294,7 @@ const TripsDetailsScreen = () => {
   }
 
   async function shareLink() {
-    const title = 'Join my trip on Runwae!';
+    const title = 'Join my trip on Runwae!!!';
     const message = 'Join my trip on Runwae';
     const url = deepLink;
     const icon = Image.resolveAssetSource(
@@ -305,6 +305,7 @@ const TripsDetailsScreen = () => {
     await asset.downloadAsync(); // ensures it's available locally
 
     const fileUri = asset.localUri || asset.uri;
+    const iconUri = trip?.cover_image_url ?? 'https://i.pravatar.cc/150?img=1';
 
     // console.log('icon: ', icon);
 
@@ -314,7 +315,7 @@ const TripsDetailsScreen = () => {
           {
             placeholderItem: {
               type: 'url',
-              content: icon,
+              content: iconUri,
             },
             item: {
               default: {
@@ -324,8 +325,8 @@ const TripsDetailsScreen = () => {
             },
             linkMetadata: {
               title,
-              icon: fileUri,
-              image: fileUri,
+              icon: iconUri,
+              image: iconUri,
             },
           },
         ],
@@ -365,7 +366,7 @@ const TripsDetailsScreen = () => {
           <Pressable
             onPress={() => {
               console.log('Back pressed in CompactHeader');
-              router.back();
+              router.push('/trips');
             }}
             style={[
               styles.compactIconButton,
@@ -419,7 +420,7 @@ const TripsDetailsScreen = () => {
             ]}>
             <Pressable
               onPress={() => {
-                router.back();
+                router.push('/trips');
                 console.log('Back pressed in LargeHeader');
               }}
               style={[

@@ -140,6 +140,7 @@ const WideTripCard = ({ data }: WideTripCardProps) => {
           </View>
         </ImageBackground>
       </Link.Trigger>
+      <Link.Preview />
 
       {/* Menu Actions */}
       <Link.Menu>

@@ -5,12 +5,13 @@ import {
   TouchableOpacity,
   Dimensions,
   TextInput,
-  Image,
   FlatList,
   Keyboard,
   Alert,
   Platform,
+  ViewStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   useAnimatedStyle,
   interpolate,
@@ -23,6 +24,7 @@ import { City } from 'country-state-city';
 import { COLORS } from '@/constants';
 import { uploadImage } from '@/utils/uploadImage';
 import { useUploadImage } from '@/hooks/useUploadImage';
+import { textStyles } from '@/utils/styles';
 
 const { width } = Dimensions.get('window');
 
@@ -99,6 +101,18 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     Keyboard.dismiss();
   };
 
+  const dropdownStyle: ViewStyle = {
+    backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
+    borderWidth: 1,
+    borderColor: isDarkMode ? '#333333' : COLORS.gray[400],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    top: '100%',
+  };
+
   return (
     <View style={{ width }} className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
@@ -152,6 +166,7 @@ export const DestinationSlide: React.FC<SlideProps> = ({
               className="flex-1 text-base"
               style={{
                 color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+                height: '100%',
               }}
             />
           </View>
@@ -159,17 +174,7 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           {showSuggestions && citySuggestions.length > 0 && (
             <View
               className="absolute left-0 right-0 z-50 mt-1 max-h-64 rounded-xl"
-              style={{
-                backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
-                borderWidth: 1,
-                borderColor: isDarkMode ? '#333333' : COLORS.gray[400],
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-                elevation: 5,
-                top: '100%',
-              }}>
+              style={dropdownStyle}>
               <FlatList
                 data={citySuggestions}
                 keyExtractor={(item) => item.id}
@@ -427,20 +432,6 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
       }
 
       // Launch image picker
-      // const result = await ImagePicker.launchImageLibraryAsync({
-      //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      //   allowsEditing: true,
-      //   aspect: [2, 1],
-      //   quality: 0.8,
-      // });
-
-      // if (!result.canceled && result.assets.length > 0) {
-      //   const uri = result.assets[0].uri;
-      //   const url = await uploadImage(
-      //     uri,
-      //     'trip-images',
-      //     user?.id || 'default'
-      //   );
       const publicUrl = await pickAndUpload('trip-images');
       if (publicUrl) {
         onUpdateData('headerImage', publicUrl);
@@ -481,29 +472,50 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
           </Text>
           <TouchableOpacity
             onPress={pickImage}
-            className="items-center justify-center rounded-xl border-2 border-dashed py-12"
             style={{
               borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
               backgroundColor: isDarkMode ? '#1a1a1a' : COLORS.gray[350],
+              height: 256,
+              aspectRatio: 1,
+              borderRadius: 9999,
+              overflow: 'hidden',
+              alignSelf: 'center',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
             {tripData.headerImage ? (
               <Image
                 source={{ uri: tripData.headerImage }}
-                className="h-32 w-full rounded-xl"
-                resizeMode="cover"
+                // className="h-32 w-full rounded-xl"
+                style={{
+                  height: '100%',
+                  width: '100%',
+                  borderRadius: 9999,
+                }}
+                contentFit="contain"
               />
             ) : (
               <>
-                <Text className="mb-2 text-4xl">🖼️</Text>
                 <Text
-                  className="mb-1 text-base font-medium"
-                  style={{ color: colors.primaryColors.default }}>
+                  style={{
+                    ...textStyles.regular_16,
+                    color: colors.primaryColors.default,
+                  }}>
+                  🖼️
+                </Text>
+                <Text
+                  style={{
+                    ...textStyles.regular_16,
+                    color: colors.primaryColors.default,
+                    textAlign: 'center',
+                  }}>
                   Tap to upload image
                 </Text>
                 <Text
-                  className="text-xs"
                   style={{
+                    ...textStyles.regular_12,
                     color: isDarkMode ? COLORS.gray[500] : COLORS.gray[400],
+                    textAlign: 'center',
                   }}>
                   png or jpg (max 800x400px)
                 </Text>

@@ -11,6 +11,10 @@ export default function ProfileLayout() {
         name="account/account-info"
         options={{ title: 'Account Info' }}
       />
+      <Stack.Screen
+        name="account/profile-details"
+        options={{ title: 'Profile Details' }}
+      />
     </Stack>
   );
 }

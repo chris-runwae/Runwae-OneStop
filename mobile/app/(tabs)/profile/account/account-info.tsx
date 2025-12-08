@@ -1,10 +1,10 @@
 import { View, StyleSheet } from 'react-native';
-// import { useRouter } from 'expo-router';
+import { RelativePathString, useRouter } from 'expo-router';
 
 import { MenuItem, ScreenContainer } from '@/components';
 
 export default function AccountInfoScreen() {
-  // const router = useRouter();
+  const router = useRouter();
 
   return (
     <ScreenContainer
@@ -12,7 +12,13 @@ export default function AccountInfoScreen() {
       contentContainerStyle={styles.accountContainer}>
       <View style={styles.accountContainer}>
         <View>
-          <MenuItem title="Profile Details" subtitle="Profile Details" />
+          <MenuItem
+            title="Profile Details"
+            subtitle="Profile Details"
+            onPress={() =>
+              router.push('/(tabs)/profile/account/profile-details')
+            }
+          />
           <MenuItem title="Travel Preference" subtitle="Profile Details" />
           <MenuItem title="Partner with Runwae" subtitle="Profile Details" />
           <MenuItem title="Notification Settings" subtitle="Profile Details" />

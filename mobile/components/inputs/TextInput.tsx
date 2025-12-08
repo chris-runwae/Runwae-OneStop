@@ -176,7 +176,9 @@ const TextInput: React.FC<TextInputProps> = ({
             {...props}
             style={[textInputStyle, inputStyle]}
             // placeholderTextColor={getTextColor()}
-            placeholderTextColor={colors.textColors.subtitle}
+            placeholderTextColor={
+              props.placeholderTextColor ?? colors.textColors.subtitle
+            }
             editable={!disabled}
             onFocus={() => {
               setIsFocused(true);

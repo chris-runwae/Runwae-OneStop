@@ -498,6 +498,7 @@ const TripsDetailsScreen = () => {
             )}
             {activeTab === 'discover' && (
               <TripDiscoverySection
+                tripId={trip?.id as string}
                 countryCode={countryCode as string}
                 city={city as string}
               />

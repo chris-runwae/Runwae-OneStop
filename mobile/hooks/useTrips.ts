@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-expo';
 import { Alert } from 'react-native';
+import { router } from 'expo-router';
 
 import { getSupabaseClient } from '@/lib/supabase';
-import { FeaturedTrip, TripAttendeeRole } from '@/types/trips.types';
-import { router } from 'expo-router';
+import { FeaturedTrip, TripAttendeeRole, SavedItem } from '@/types';
+import { Toasts } from '@/utils';
 
 const useTrips = () => {
   const [trips, setTrips] = useState<any[]>([]);
@@ -334,6 +335,29 @@ const useTrips = () => {
     }
   };
 
+  // SAVED ITEMS
+  const addSavedItem = async (tripId: string, savedItem: SavedItem) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { data, error } = await supabase.rpc('append_saved_item', {
+        trip_id: tripId,
+        new_item: savedItem,
+      });
+
+      if (error) throw error;
+      Toasts.showSuccessToast('Item added to saved items.');
+      return data;
+    } catch (error) {
+      Toasts.showErrorToast('Could not add item to saved items.');
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+      fetchTrips();
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -352,6 +376,7 @@ const useTrips = () => {
     createTrip,
     deleteTrip,
     leaveTrip,
+    addSavedItem,
   };
 };
 

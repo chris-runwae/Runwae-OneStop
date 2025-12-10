@@ -1,11 +1,11 @@
-import { StyleSheet, View, Pressable } from 'react-native';
 import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
 import { ImageBackground } from 'expo-image';
 import { RelativePathString, router } from 'expo-router';
 import { PlusIcon } from 'lucide-react-native';
 
 import { FlashList } from '@shopify/flash-list';
-import { useHotels, useColorScheme } from '@/hooks';
+import { useHotels, useColorScheme, useTrips } from '@/hooks';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
 import {
@@ -15,21 +15,27 @@ import {
   SectionHeader,
   TripDiscoverySkeleton,
 } from '@/components';
+import { SavedItem } from '@/types';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
-const TripDiscoverySection = ({
-  countryCode,
-  city,
-}: {
+type TripDiscoverySectionProps = {
+  tripId: string;
   countryCode?: string;
   city?: string;
-}) => {
+};
+const TripDiscoverySection = ({
+  tripId,
+  countryCode,
+  city,
+}: TripDiscoverySectionProps) => {
   const { hotels, loading, fetchHotels } = useHotels();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [selectedFilter, setSelectedFilter] = useState<FilterOption>('All');
+  const { addSavedItem } = useTrips();
 
+  const [addSavedItemLoading, setAddSavedItemLoading] = useState(false);
   const dynamicStyles = StyleSheet.create({
     emptyText: {
       color: colors.textColors.subtle,
@@ -53,49 +59,24 @@ const TripDiscoverySection = ({
   useEffect(() => {
     fetchHotels(countryCode, city);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [countryCode, city]);
 
   const filterOptions: FilterOption[] = ['All', 'Stays 🏨', 'Do 🎨'];
-
-  const HotelItem = ({ hotel }: { hotel: any }) => {
-    // console.log('Hotel: ', hotel);
-    const coverImage = hotel.thumbnail
-      ? { uri: hotel.thumbnail }
-      : 'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
-
-    return (
-      <Pressable
-        style={styles.hotelItem}
-        onPress={() => router.push(`/trips/hotels/${hotel.id}`)}>
-        <View style={styles.hotelContentContainer}>
-          <ImageBackground
-            contentFit="cover"
-            source={coverImage}
-            style={styles.hotelCoverImage}
-          />
-          <Text style={dynamicStyles.hotelItemTitle}>
-            {hotel.name || 'Hotel Name'}
-          </Text>
-          <Text style={dynamicStyles.hotelItemDescription}>
-            {hotel.address?.line1 || hotel.location || 'Location not available'}
-          </Text>
-          <Spacer size={16} vertical />
-          <Text style={dynamicStyles.viewMore}>View more</Text>
-        </View>
-      </Pressable>
-    );
-  };
 
   const DiscoveryItem = ({ item }: { item: any }) => {
     let coverImage =
       'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
     let title = 'No title';
     let description = 'No description';
+    let sourceType = 'hotel';
+    let location: string | undefined = undefined;
 
     if (item?.hotelDescription) {
+      sourceType = 'hotel';
       coverImage = item?.thumbnail;
       title = item.name || 'Hotel Name';
       description = item.hotelDescription || '';
+      location = `${item.city}, ${item.country}`;
     }
 
     return (
@@ -121,7 +102,15 @@ const TripDiscoverySection = ({
             View more
           </Text>
           <Pressable
-            onPress={() => console.log('Add to itinerary pressed')}
+            onPress={() =>
+              handleAddToSavedItems({
+                source_type: sourceType,
+                source_id: item.id,
+                title: title,
+                description: description,
+                location: location,
+              })
+            }
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -130,7 +119,13 @@ const TripDiscoverySection = ({
               padding: 8,
               borderRadius: 8,
             }}>
-            <PlusIcon size={20} color={colors.textColors.default} />
+            {addSavedItemLoading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <>
+                <PlusIcon size={20} color={colors.white} />
+              </>
+            )}
             <Text
               style={{
                 ...textStyles.regular_12,
@@ -150,10 +145,23 @@ const TripDiscoverySection = ({
     return Array.isArray(hotels) ? hotels : (hotels as any)?.data || [];
   };
 
+  const handleAddToSavedItems = async (item: SavedItem) => {
+    setAddSavedItemLoading(true);
+    const savedItem = {
+      source_type: item.source_type,
+      source_id: item.source_id,
+      title: item.title,
+      description: item.description,
+      location: item.location,
+    };
+
+    await addSavedItem(tripId, savedItem);
+    setAddSavedItemLoading(false);
+  };
+
+  // RENDERS
   const renderHotelsList = (showHeader: boolean = false) => {
     const hotelsList = getHotelsList();
-
-    console.log('Hotels List: ', JSON.stringify(hotelsList[0]));
 
     if (hotelsList.length === 0) {
       return (
@@ -254,7 +262,7 @@ const styles = StyleSheet.create({
   discoveryItem: {
     flex: 1,
     // marginHorizontal: 4,
-    // marginBottom: 16,
+    marginBottom: 32,
   },
   discoveryImage: {
     height: 200,

@@ -30,6 +30,7 @@ import {
   DateRange,
   HomeScreenSkeleton,
   MenuItem,
+  SavedItemsSection,
   Spacer,
   Text,
   TripDiscoverySection,
@@ -43,6 +44,7 @@ import { Colors } from '@/constants/theme';
 import { textStyles } from '@/utils/styles';
 import { TripItinerary } from '@/components/containers/TripItinerary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SavedItem } from '@/types/generic.types';
 
 const TripsDetailsScreen = () => {
   const { id } = useLocalSearchParams();
@@ -504,11 +506,10 @@ const TripsDetailsScreen = () => {
               />
             )}
             {activeTab === 'saved' && (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-                  Saved content coming soon
-                </Text>
-              </View>
+              <SavedItemsSection
+                tripId={trip?.id as string}
+                savedItems={trip?.saved_items as SavedItem[]}
+              />
             )}
             {activeTab === 'activity' && (
               <View style={styles.emptyContainer}>

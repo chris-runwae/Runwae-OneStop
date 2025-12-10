@@ -4,4 +4,6 @@ export interface SavedItem {
   title: string;
   description?: string | undefined | null;
   location?: string | undefined | null;
+  cover_image?: string | undefined | null;
+  id?: string;
 }

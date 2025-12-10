@@ -24,6 +24,8 @@ import TextInput from './inputs/TextInput';
 import ItineraryItemCard from './cards/ItineraryItemCard';
 import InfoPill from './pills/InfoPill';
 import MenuItem from './buttons/MenuItem';
+import TripItemCards from './cards/TripItemCards';
+import SavedItemsSection from './containers/SavedItemsSection';
 
 export {
   Spacer,
@@ -53,4 +55,6 @@ export {
   ItineraryItemCard,
   InfoPill,
   MenuItem,
+  TripItemCards,
+  SavedItemsSection,
 };

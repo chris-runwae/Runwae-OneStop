@@ -109,6 +109,7 @@ const TripDiscoverySection = ({
                 title: title,
                 description: description,
                 location: location,
+                cover_image: coverImage,
               })
             }
             style={{
@@ -153,6 +154,7 @@ const TripDiscoverySection = ({
       title: item.title,
       description: item.description,
       location: item.location,
+      cover_image: item.cover_image,
     };
 
     await addSavedItem(tripId, savedItem);
@@ -266,7 +268,8 @@ const styles = StyleSheet.create({
   },
   discoveryImage: {
     height: 200,
-    borderRadius: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     overflow: 'hidden',
     marginBottom: 8,
   },

@@ -358,6 +358,28 @@ const useTrips = () => {
     }
   };
 
+  const removeSavedItem = async (tripId: string, itemId: string) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { data, error } = await supabase.rpc('remove_saved_item', {
+        trip_id: tripId,
+        item_id: itemId,
+      });
+
+      if (error) throw error;
+      Toasts.showSuccessToast('Item removed from saved items.');
+      return data;
+    } catch (error) {
+      Toasts.showErrorToast('Could not remove item from saved items.');
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+      fetchTrips();
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -377,6 +399,7 @@ const useTrips = () => {
     deleteTrip,
     leaveTrip,
     addSavedItem,
+    removeSavedItem,
   };
 };
 

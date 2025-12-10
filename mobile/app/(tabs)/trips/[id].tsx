@@ -56,6 +56,7 @@ const TripsDetailsScreen = () => {
     loading: tripLoading,
     fetchTripAttendees,
     leaveTrip,
+    removeSavedItem,
   } = useTrips();
   const insets = useSafeAreaInsets();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -100,7 +101,7 @@ const TripsDetailsScreen = () => {
 
   useEffect(() => {
     fetchTrip();
-  }, [fetchTrip]);
+  }, [fetchTrip, activeTab]);
 
   useEffect(() => {
     fetchAttendees();
@@ -231,11 +232,17 @@ const TripsDetailsScreen = () => {
     await Clipboard.setStringAsync(join_code);
   }
 
-  async function shareCode() {
-    await Share.open({
-      message: `Join my trip on Runwae! Code: ${join_code}`,
-    });
-  }
+  const handleRemoveSavedItem = async (itemId: string) => {
+    setLoading(true);
+    try {
+      await removeSavedItem(trip?.id as string, itemId);
+    } catch (error) {
+      console.log('Error removing saved item: ', error);
+    } finally {
+      fetchTrip();
+      setLoading(false);
+    }
+  };
 
   async function shareLink() {
     const title = 'Join my trip on Runwae!!!';
@@ -509,6 +516,7 @@ const TripsDetailsScreen = () => {
               <SavedItemsSection
                 tripId={trip?.id as string}
                 savedItems={trip?.saved_items as SavedItem[]}
+                handleRemoveSavedItem={handleRemoveSavedItem}
               />
             )}
             {activeTab === 'activity' && (

@@ -105,7 +105,7 @@ const TripDiscoverySection = ({
             onPress={() =>
               handleAddToSavedItems({
                 source_type: sourceType,
-                source_id: item.id,
+                id: item.id,
                 title: title,
                 description: description,
                 location: location,
@@ -150,7 +150,7 @@ const TripDiscoverySection = ({
     setAddSavedItemLoading(true);
     const savedItem = {
       source_type: item.source_type,
-      source_id: item.source_id,
+      id: item.id,
       title: item.title,
       description: item.description,
       location: item.location,

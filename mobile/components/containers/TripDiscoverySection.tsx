@@ -2,6 +2,7 @@ import { StyleSheet, View, Pressable } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { ImageBackground } from 'expo-image';
 import { RelativePathString, router } from 'expo-router';
+import { PlusIcon } from 'lucide-react-native';
 
 import { FlashList } from '@shopify/flash-list';
 import { useHotels, useColorScheme } from '@/hooks';
@@ -13,7 +14,6 @@ import {
   FilterTabs,
   SectionHeader,
   TripDiscoverySkeleton,
-  ItineraryItemCard,
 } from '@/components';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
@@ -44,6 +44,7 @@ const TripDiscoverySection = ({
     },
     viewMore: {
       ...textStyles.regular_12,
+      fontSize: 14,
       color: colors.primaryColors.default,
       textDecorationLine: 'underline',
     },
@@ -85,6 +86,65 @@ const TripDiscoverySection = ({
     );
   };
 
+  const DiscoveryItem = ({ item }: { item: any }) => {
+    let coverImage =
+      'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
+    let title = 'No title';
+    let description = 'No description';
+
+    if (item?.hotelDescription) {
+      coverImage = item?.thumbnail;
+      title = item.name || 'Hotel Name';
+      description = item.hotelDescription || '';
+    }
+
+    return (
+      <Pressable
+        style={styles.discoveryItem}
+        onPress={() => router.push(`/trips/discovery/${item.id}`)}>
+        <ImageBackground
+          source={{ uri: coverImage }}
+          style={styles.discoveryImage}
+        />
+        <Text style={dynamicStyles.hotelItemTitle}>{title}</Text>
+        <Text style={dynamicStyles.hotelItemDescription} numberOfLines={3}>
+          {description}
+        </Text>
+        <Spacer size={16} vertical />
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            // alignItems: 'baseline',
+          }}>
+          <Text style={[dynamicStyles.viewMore, { alignSelf: 'flex-end' }]}>
+            View more
+          </Text>
+          <Pressable
+            onPress={() => console.log('Add to itinerary pressed')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: colors.primaryColors.default,
+              padding: 8,
+              borderRadius: 8,
+            }}>
+            <PlusIcon size={20} color={colors.textColors.default} />
+            <Text
+              style={{
+                ...textStyles.regular_12,
+                color: colors.white,
+                fontSize: 14,
+              }}>
+              Add
+            </Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    );
+  };
+
   const getHotelsList = () => {
     // Handle both array and object with data property
     return Array.isArray(hotels) ? hotels : (hotels as any)?.data || [];
@@ -92,6 +152,8 @@ const TripDiscoverySection = ({
 
   const renderHotelsList = (showHeader: boolean = false) => {
     const hotelsList = getHotelsList();
+
+    console.log('Hotels List: ', JSON.stringify(hotelsList[0]));
 
     if (hotelsList.length === 0) {
       return (
@@ -112,14 +174,20 @@ const TripDiscoverySection = ({
         )}
         <FlashList
           data={hotelsList}
-          renderItem={({ item }: { item: any }) => <HotelItem hotel={item} />}
-          // renderItem={({ item }: { item: any }) => (
-          //   <ItineraryItemCard item={item} />
-          // )}
+          renderItem={({ item, index }: { item: any; index: number }) => (
+            <View
+              style={{
+                flex: 1,
+                paddingLeft: index % 2 === 0 ? 0 : 4,
+                paddingRight: index % 2 === 0 ? 4 : 0,
+              }}>
+              <DiscoveryItem item={item} key={item.id} />
+            </View>
+          )}
           keyExtractor={(item: any) => item.hotelId || `hotel-${item.id}`}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
+          numColumns={2}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
         />
       </>
     );
@@ -182,5 +250,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 4,
     overflow: 'hidden',
+  },
+  discoveryItem: {
+    flex: 1,
+    // marginHorizontal: 4,
+    // marginBottom: 16,
+  },
+  discoveryImage: {
+    height: 200,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  listContent: {
+    // paddingHorizontal: 8,
+    // gap: 8,
   },
 });

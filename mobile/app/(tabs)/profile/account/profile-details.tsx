@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
 import * as Burnt from 'burnt';
 
 import {
@@ -15,7 +14,6 @@ import { Colors } from '@/constants';
 import { useUser } from '@clerk/clerk-expo';
 
 export default function ProfileDetailsScreen() {
-  const router = useRouter();
   const { user, isLoaded } = useUser();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];

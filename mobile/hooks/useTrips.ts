@@ -9,6 +9,7 @@ import {
   TripAttendeeRole,
   SavedItem,
   ItineraryItem,
+  CreateItineraryItemInput,
 } from '@/types';
 import { Toasts } from '@/utils';
 
@@ -393,6 +394,19 @@ const useTrips = () => {
     setLoading(true);
     try {
       const supabase = await getSupabaseClient(getToken);
+
+      // Get max order_index for this date
+      const dateFilter = itineraryItem.date || 'TBD';
+      const { data: existingItems } = await supabase
+        .from('trip_itinerary')
+        .select('order_index')
+        .eq('trip_id', tripId)
+        .eq('date', itineraryItem.date)
+        .order('order_index', { ascending: false })
+        .limit(1);
+
+      const maxOrder = existingItems?.[0]?.order_index ?? -1;
+
       const { id, ...rest } = itineraryItem;
 
       const { data, error } = await supabase
@@ -401,23 +415,24 @@ const useTrips = () => {
           {
             trip_id: tripId,
             source_id: id,
+            order_index: maxOrder + 1, // Increment from max
             ...rest,
-            created_by: user?.id,
           },
         ])
         .select();
 
       if (error) {
+        console.error('Error adding item to itinerary:', error);
         Toasts.showErrorToast('Could not add item to itinerary.');
+        setError(error as Error);
         return null;
       }
 
       Toasts.showSuccessToast('Item added to itinerary.');
       return data;
     } catch (error) {
-      Toasts.showErrorToast('Could not add item to itinerary.');
+      console.error('Caught error:', error);
       setError(error as Error);
-      return null;
     } finally {
       setLoading(false);
     }

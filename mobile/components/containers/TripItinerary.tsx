@@ -8,6 +8,12 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import { ImageBackground } from 'expo-image';
+import DraggableFlatList, {
+  ScaleDecorator,
+  RenderItemParams,
+} from 'react-native-draggable-flatlist';
+import { getSupabaseClient } from '@/lib/supabase';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Trip, TripItineraryItem } from '@/types/trips.types';
@@ -24,6 +30,7 @@ interface TripItineraryProps {
 }
 
 export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
+  const { getToken } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { getTripItinerary } = useTrips();
@@ -126,7 +133,6 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
   ): ItinerarySection[] => {
     if (!startDate || !endDate) return [];
 
-    // Separate dated and undated items
     const undated: TripItineraryItem[] = [];
     const itemsByDate: Record<string, TripItineraryItem[]> = {};
 
@@ -139,17 +145,23 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
       }
     });
 
-    // Create sections for all dates in range
+    // Sort items within each date by order_index
+    Object.keys(itemsByDate).forEach((date) => {
+      itemsByDate[date].sort(
+        (a, b) => (a.order_index || 0) - (b.order_index || 0)
+      );
+    });
+    undated.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
     const dateRange = generateDateRange(startDate, endDate);
     const sections: ItinerarySection[] = dateRange.map((date) => ({
       title: date,
       dayNumber: getDayNumber(date, startDate),
-      data: itemsByDate[date] || [], // Empty array if no items for this date
+      data: itemsByDate[date] || [],
     }));
 
-    // Add undated section at the top
     sections.unshift({
-      title: 'Undated',
+      title: 'TBD',
       dayNumber: null,
       data: undated,
     });
@@ -169,6 +181,46 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
     if (selectedDate === null) return itinerary;
     return itinerary.filter((section) => section.title === selectedDate);
   }, [itinerary, selectedDate]);
+
+  const handleReorder = async (
+    sectionDate: string,
+    reorderedData: TripItineraryItem[]
+  ) => {
+    // Update local state immediately
+    setItinerary((prev) =>
+      prev.map((section) =>
+        section.title === sectionDate
+          ? { ...section, data: reorderedData }
+          : section
+      )
+    );
+
+    // Update order_index in Supabase
+    try {
+      const updates = reorderedData.map((item, index) => ({
+        id: item.id,
+        order_index: index,
+      }));
+
+      await updateItemsOrder(updates);
+    } catch (error) {
+      console.error('Failed to update order:', error);
+      // Optionally revert local state on error
+    }
+  };
+
+  const updateItemsOrder = async (
+    updates: { id: string; order_index: number }[]
+  ) => {
+    const supabase = await getSupabaseClient(getToken);
+
+    // Batch update using RPC function (more efficient)
+    const { error } = await supabase.rpc('update_itinerary_order', {
+      updates: updates,
+    });
+
+    if (error) throw error;
+  };
 
   // Updated RenderDateButton component
   const RenderDateButton = ({ date }: { date: string }) => {
@@ -263,9 +315,48 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
     );
   };
 
+  // Draggable item component
+  const DraggableItineraryItem = ({
+    item,
+    drag,
+    isActive,
+  }: RenderItemParams<TripItineraryItem>) => {
+    const coverImage = item.cover_image
+      ? { uri: item.cover_image }
+      : 'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
+
+    const time = item.time
+      ? dayjs(`${item.date} ${item.time}`).format('h:mm A')
+      : 'TBD';
+
+    return (
+      <ScaleDecorator>
+        <Pressable
+          style={[styles.item, isActive && styles.itemActive]}
+          onLongPress={drag}
+          disabled={isActive}
+          onPress={() => console.log('Item pressed: ', item)}>
+          <GripVertical size={16} color={colors.textColors.subtle} />
+          <View style={styles.contentContainer}>
+            <ImageBackground
+              contentFit="cover"
+              source={coverImage}
+              style={styles.coverImage}
+            />
+            <Text style={styles.itemTitle}>{item.title}</Text>
+            <Text style={styles.itemDescription}>{item.location}</Text>
+            <Spacer size={16} vertical />
+            <Text style={dynamicStyles.viewMore}>View more</Text>
+            <Text style={dynamicStyles.itemTime}>{time}</Text>
+          </View>
+        </Pressable>
+      </ScaleDecorator>
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      {/* Date buttons - always show all dates */}
+      {/* Date buttons */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -277,92 +368,31 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
 
       <Spacer size={24} vertical />
 
-      <SectionList
-        sections={filteredItinerary}
-        keyExtractor={(item) => item.id}
-        renderSectionHeader={({ section }) => {
-          // Don't show header if filtering to single date
-          if (selectedDate !== null) {
-            return section.dayNumber ? (
-              <View style={styles.sectionHeaderContainer}>
-                <Text style={styles.sectionHeader}>
-                  Day {section.dayNumber}
-                </Text>
-
-                <Pressable
-                  onPress={() =>
-                    router.push(
-                      '/(tabs)/trips/itinerary/modal' as RelativePathString
-                    )
-                  }
-                  style={dynamicStyles.addPlaceButton}>
-                  <PlusIcon size={12} color={colors.primaryColors.default} />
-                  <Text style={dynamicStyles.addPlaceText}>Add place</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.sectionHeaderContainer}>
-                <Text style={styles.sectionHeader}>Undated Items</Text>
-
-                <Pressable
-                  onPress={() =>
-                    router.push(
-                      '/(tabs)/trips/itinerary/modal' as RelativePathString
-                    )
-                  }
-                  style={dynamicStyles.addPlaceButton}>
-                  <PlusIcon size={12} color={colors.primaryColors.default} />
-                  <Text style={dynamicStyles.addPlaceText}>Add place</Text>
-                </Pressable>
-              </View>
-            );
-          }
-
-          // Show full date when viewing all
-          return section.title === 'Undated' ? (
-            <View style={styles.sectionHeaderContainer}>
-              <Text style={styles.sectionHeader}>Undated Items</Text>
-              <Pressable
-                onPress={() =>
-                  router.push(
-                    '/(tabs)/trips/itinerary/modal' as RelativePathString
-                  )
-                }
-                style={dynamicStyles.addPlaceButton}>
-                <PlusIcon size={12} color={colors.primaryColors.default} />
-                <Text style={dynamicStyles.addPlaceText}>Add place</Text>
-              </Pressable>
-            </View>
-          ) : (
+      <ScrollView>
+        {filteredItinerary.map((section) => (
+          <View key={section.title}>
+            {/* Section Header */}
             <View style={styles.sectionHeaderContainer}>
               <Text style={styles.sectionHeader}>
-                Day {section.dayNumber} •{' '}
-                {dayjs(section.title).format('MMMM DD, YYYY')}
+                {section.dayNumber ? `Day ${section.dayNumber}` : 'TBD Items'}
               </Text>
-
-              <Pressable
-                onPress={() =>
-                  router.push(
-                    '/(tabs)/trips/itinerary/modal' as RelativePathString
-                  )
-                }
-                style={dynamicStyles.addPlaceButton}>
-                <PlusIcon size={12} color={colors.primaryColors.default} />
-                <Text style={dynamicStyles.addPlaceText}>Add place</Text>
-              </Pressable>
             </View>
-          );
-        }}
-        renderItem={({ item }) => <ItineraryItem item={item} />}
-        renderSectionFooter={({ section }) => {
-          // Show empty state if section has no items
-          if (section.data.length === 0) {
-            return <EmptyItinerary />;
-          }
-          return null;
-        }}
-        ListEmptyComponent={<EmptyItinerary />}
-      />
+
+            {/* Draggable Items */}
+            {section.data.length === 0 ? (
+              <EmptyItinerary />
+            ) : (
+              <DraggableFlatList
+                data={section.data}
+                onDragEnd={({ data }) => handleReorder(section.title, data)}
+                keyExtractor={(item) => item.id}
+                renderItem={(params) => <DraggableItineraryItem {...params} />}
+                scrollEnabled={false} // Disable since parent ScrollView handles it
+              />
+            )}
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -382,6 +412,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 4,
     overflow: 'hidden',
+  },
+  itemActive: {
+    opacity: 0.8,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   dateButton: {
     paddingHorizontal: 8,

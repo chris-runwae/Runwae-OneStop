@@ -16,6 +16,7 @@ import { textStyles } from '@/utils/styles';
 import { Colors, addOpacity } from '@/constants/theme';
 import { PrimaryButton, Spacer, Text } from '..';
 import { RelativePathString, useRouter } from 'expo-router';
+import { PlusIcon, GripVertical } from 'lucide-react-native';
 
 interface TripItineraryProps {
   tripId: string;
@@ -57,10 +58,20 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
       color: colors.primaryColors.default,
     },
 
+    addPlaceButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+
     viewMore: {
-      ...textStyles.regular_12,
+      ...textStyles.subtitle_Regular,
       color: colors.primaryColors.default,
       textDecorationLine: 'underline',
+    },
+    addPlaceText: {
+      ...textStyles.subtitle_Regular,
+      color: colors.primaryColors.default,
     },
 
     itemTime: {
@@ -103,6 +114,7 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
         trip?.end_date as string
       );
       setItinerary(sections);
+      setSelectedDate(sections[0].title);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId, getTripItinerary, trip?.start_date, trip?.end_date]);
@@ -182,12 +194,7 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
           </View>
         ) : (
           <>
-            <Text
-              style={[
-                styles.dateButtonText,
-                { fontWeight: '300' },
-                isActive && dynamicStyles.dateButtonTextActive,
-              ]}>
+            <Text style={[styles.dateButtonText, { fontWeight: '300' }]}>
               {dayjs(date).format('ddd').toUpperCase()}
             </Text>
             <View
@@ -222,7 +229,7 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
       <Pressable
         style={styles.item}
         onPress={() => console.log('Item pressed: ', item)}>
-        <Text style={dynamicStyles.itemTime}>{time}</Text>
+        <GripVertical size={16} color={colors.textColors.subtle} />
         <View style={styles.contentContainer}>
           <ImageBackground
             contentFit="cover"
@@ -232,6 +239,7 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
           <Text style={styles.itemDescription}>{item.location}</Text>
           <Spacer size={16} vertical />
           <Text style={dynamicStyles.viewMore}>View more</Text>
+          <Text style={dynamicStyles.itemTime}>{time}</Text>
         </View>
       </Pressable>
     );
@@ -272,8 +280,6 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
       <SectionList
         sections={filteredItinerary}
         keyExtractor={(item) => item.id}
-        // horizontal
-        // showsHorizontalScrollIndicator={false}
         renderSectionHeader={({ section }) => {
           // Don't show header if filtering to single date
           if (selectedDate !== null) {
@@ -282,10 +288,32 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
                 <Text style={styles.sectionHeader}>
                   Day {section.dayNumber}
                 </Text>
+
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      '/(tabs)/trips/itinerary/modal' as RelativePathString
+                    )
+                  }
+                  style={dynamicStyles.addPlaceButton}>
+                  <PlusIcon size={12} color={colors.primaryColors.default} />
+                  <Text style={dynamicStyles.addPlaceText}>Add place</Text>
+                </Pressable>
               </View>
             ) : (
               <View style={styles.sectionHeaderContainer}>
                 <Text style={styles.sectionHeader}>Undated Items</Text>
+
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      '/(tabs)/trips/itinerary/modal' as RelativePathString
+                    )
+                  }
+                  style={dynamicStyles.addPlaceButton}>
+                  <PlusIcon size={12} color={colors.primaryColors.default} />
+                  <Text style={dynamicStyles.addPlaceText}>Add place</Text>
+                </Pressable>
               </View>
             );
           }
@@ -294,6 +322,16 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
           return section.title === 'Undated' ? (
             <View style={styles.sectionHeaderContainer}>
               <Text style={styles.sectionHeader}>Undated Items</Text>
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    '/(tabs)/trips/itinerary/modal' as RelativePathString
+                  )
+                }
+                style={dynamicStyles.addPlaceButton}>
+                <PlusIcon size={12} color={colors.primaryColors.default} />
+                <Text style={dynamicStyles.addPlaceText}>Add place</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={styles.sectionHeaderContainer}>
@@ -301,10 +339,28 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
                 Day {section.dayNumber} •{' '}
                 {dayjs(section.title).format('MMMM DD, YYYY')}
               </Text>
+
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    '/(tabs)/trips/itinerary/modal' as RelativePathString
+                  )
+                }
+                style={dynamicStyles.addPlaceButton}>
+                <PlusIcon size={12} color={colors.primaryColors.default} />
+                <Text style={dynamicStyles.addPlaceText}>Add place</Text>
+              </Pressable>
             </View>
           );
         }}
         renderItem={({ item }) => <ItineraryItem item={item} />}
+        renderSectionFooter={({ section }) => {
+          // Show empty state if section has no items
+          if (section.data.length === 0) {
+            return <EmptyItinerary />;
+          }
+          return null;
+        }}
         ListEmptyComponent={<EmptyItinerary />}
       />
     </View>
@@ -337,7 +393,7 @@ const styles = StyleSheet.create({
     position: 'relative', // Add this
   },
   dateButtonText: {
-    ...textStyles.regular_12,
+    ...textStyles.subtitle_Regular,
     textAlign: 'center',
     lineHeight: 20,
     fontSize: 14,
@@ -352,6 +408,9 @@ const styles = StyleSheet.create({
 
   sectionHeaderContainer: {
     paddingBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionHeader: {
     ...textStyles.bold_20,

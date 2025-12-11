@@ -523,7 +523,10 @@ const TripsDetailsScreen = () => {
 
             {activeTab === 'itinerary' && (
               <>
-                <TripItinerary tripId={trip?.id as string} />
+                <TripItinerary
+                  tripId={trip?.id as string}
+                  trip={trip as Trip}
+                />
                 <Spacer size={14} vertical />
               </>
             )}

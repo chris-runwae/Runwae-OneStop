@@ -68,11 +68,19 @@ export const COLORS = {
   pink: {
     default: '#FF2E92',
     light: '#FFF0F4',
+    lightForDark: '#FF96BA',
     border: '#FF96BA',
     dark: '#FF48A0',
     darkBackground: '#FFF0F4',
     // darkBorder: "#FF96BA",
   },
+};
+
+export const addOpacity = (hex: string, opacity: number): string => {
+  const alpha = Math.round(opacity * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${alpha}`;
 };
 
 export const Colors = {
@@ -177,7 +185,7 @@ export const Colors = {
     },
     primaryColors: {
       default: COLORS.pink.dark,
-      background: COLORS.pink.darkBackground,
+      background: addOpacity(COLORS.pink.light, 0.3),
       border: COLORS.pink.border,
     },
     destructiveColors: {

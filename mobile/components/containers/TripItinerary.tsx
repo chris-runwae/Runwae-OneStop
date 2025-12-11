@@ -1,22 +1,28 @@
-import React, { useCallback, useState, useEffect } from 'react';
-import { View, SectionList, Pressable, StyleSheet } from 'react-native';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  SectionList,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import dayjs from 'dayjs';
 import { ImageBackground } from 'expo-image';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { TripItineraryItem } from '@/types/trips.types';
+import { Trip, TripItineraryItem } from '@/types/trips.types';
 import useTrips from '@/hooks/useTrips';
 import { textStyles } from '@/utils/styles';
-import { Colors } from '@/constants/theme';
+import { Colors, addOpacity } from '@/constants/theme';
 import { PrimaryButton, Spacer, Text } from '..';
 import { RelativePathString, useRouter } from 'expo-router';
 
-type ItinerarySection = {
-  title: string; // date
-  data: TripItineraryItem[];
-};
+interface TripItineraryProps {
+  tripId: string;
+  trip: Trip;
+}
 
-export const TripItinerary = ({ tripId }: { tripId: string }) => {
+export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { getTripItinerary } = useTrips();
@@ -27,46 +33,28 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
 
   useEffect(() => {
     fetchItinerary();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
-
-  const fetchItinerary = useCallback(async () => {
-    const data = await getTripItinerary(tripId);
-    if (data) {
-      // group by date
-      const grouped: Record<string, TripItineraryItem[]> = {};
-      data.forEach((item) => {
-        if (!grouped[item.date]) grouped[item.date] = [];
-        grouped[item.date].push(item);
-      });
-      const sections: ItinerarySection[] = Object.keys(grouped)
-        .sort()
-        .map((date) => ({ title: date, data: grouped[date] }));
-      setItinerary(sections);
-      setDates(Object.keys(grouped).sort());
-    }
-  }, [tripId, getTripItinerary]);
 
   const scrollToDate = (date: string) => {
     // Toggle: if same date is clicked, deselect (show all)
     setSelectedDate(selectedDate === date ? null : date);
   };
 
-  // Filter itinerary sections based on selected date
-  const filteredItinerary = selectedDate
-    ? itinerary.filter((section) => section.title === selectedDate)
-    : itinerary;
-
   const dynamicStyles = StyleSheet.create({
-    dateButton: {
-      backgroundColor: colors.backgroundColors.subtle,
-      borderWidth: 1,
-      borderColor: colors.borderColors.default,
+    dateNumberContainer: {
+      height: 40,
+      width: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    dateButtonActive: {
-      backgroundColor: colors.primaryColors.default,
-      borderWidth: 1,
-      borderColor: colors.primaryColors.border,
+    dateNumberContainerActive: {
+      backgroundColor: addOpacity(colors.primaryColors.default, 0.3),
+    },
+    dateButtonTextActive: {
+      color: colors.primaryColors.default,
     },
 
     viewMore: {
@@ -81,22 +69,143 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
     },
   });
 
-  const RenderDateButton = ({ date, key }: { date: string; key: number }) => {
+  // Generate all dates between start and end
+  const generateDateRange = (startDate: string, endDate: string): string[] => {
+    const dates: string[] = [];
+    let current = dayjs(startDate);
+    const end = dayjs(endDate);
+
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
+      dates.push(current.format('YYYY-MM-DD'));
+      current = current.add(1, 'day');
+    }
+
+    return dates;
+  };
+
+  // Get day number for a date
+  const getDayNumber = (date: string, startDate: string): number => {
+    return dayjs(date).diff(dayjs(startDate), 'day') + 1;
+  };
+
+  // In your component
+  const allDates = useMemo(() => {
+    if (!trip?.start_date || !trip?.end_date) return [];
+    return ['Undated', ...generateDateRange(trip.start_date, trip.end_date)];
+  }, [trip?.start_date, trip?.end_date]);
+
+  const fetchItinerary = useCallback(async () => {
+    const data = await getTripItinerary(tripId);
+    if (data) {
+      const sections = organizeItineraryByDate(
+        data,
+        trip?.start_date as string,
+        trip?.end_date as string
+      );
+      setItinerary(sections);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripId, getTripItinerary, trip?.start_date, trip?.end_date]);
+
+  const organizeItineraryByDate = (
+    items: TripItineraryItem[],
+    startDate?: string,
+    endDate?: string
+  ): ItinerarySection[] => {
+    if (!startDate || !endDate) return [];
+
+    // Separate dated and undated items
+    const undated: TripItineraryItem[] = [];
+    const itemsByDate: Record<string, TripItineraryItem[]> = {};
+
+    items.forEach((item) => {
+      if (item.date) {
+        if (!itemsByDate[item.date]) itemsByDate[item.date] = [];
+        itemsByDate[item.date].push(item);
+      } else {
+        undated.push(item);
+      }
+    });
+
+    // Create sections for all dates in range
+    const dateRange = generateDateRange(startDate, endDate);
+    const sections: ItinerarySection[] = dateRange.map((date) => ({
+      title: date,
+      dayNumber: getDayNumber(date, startDate),
+      data: itemsByDate[date] || [], // Empty array if no items for this date
+    }));
+
+    // Add undated section at the top
+    sections.unshift({
+      title: 'Undated',
+      dayNumber: null,
+      data: undated,
+    });
+
+    return sections;
+  };
+
+  // Update your type
+  type ItinerarySection = {
+    title: string;
+    dayNumber: number | null;
+    data: TripItineraryItem[];
+  };
+
+  // Filter based on selected date
+  const filteredItinerary = useMemo(() => {
+    if (selectedDate === null) return itinerary;
+    return itinerary.filter((section) => section.title === selectedDate);
+  }, [itinerary, selectedDate]);
+
+  // Updated RenderDateButton component
+  const RenderDateButton = ({ date }: { date: string }) => {
     const isActive = selectedDate === date;
+    const isUndated = date === 'Undated';
+
     return (
-      <Pressable
-        key={key}
-        onPress={() => scrollToDate(date)}
-        style={[
-          styles.dateButton,
-          isActive ? dynamicStyles.dateButtonActive : dynamicStyles.dateButton,
-        ]}>
-        <Text style={[styles.dateButtonText, { fontWeight: '300' }]}>
-          {dayjs(date).format('ddd').toUpperCase()}
-        </Text>
-        <Text style={[styles.dateButtonText, { fontWeight: '600' }]}>
-          {dayjs(date).format('DD')}
-        </Text>
+      <Pressable onPress={() => scrollToDate(date)} style={styles.dateButton}>
+        {isUndated ? (
+          <View
+            style={[
+              dynamicStyles.dateNumberContainer,
+              isActive && dynamicStyles.dateNumberContainerActive,
+            ]}>
+            <Text
+              style={[
+                styles.dateButtonText,
+                { fontWeight: '600' },
+                isActive && dynamicStyles.dateButtonTextActive,
+              ]}>
+              TBD
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text
+              style={[
+                styles.dateButtonText,
+                { fontWeight: '300' },
+                isActive && dynamicStyles.dateButtonTextActive,
+              ]}>
+              {dayjs(date).format('ddd').toUpperCase()}
+            </Text>
+            <View
+              style={[
+                dynamicStyles.dateNumberContainer,
+                isActive && dynamicStyles.dateNumberContainerActive,
+              ]}>
+              <Text
+                style={[
+                  styles.dateButtonText,
+                  { fontWeight: '600' },
+                  isActive && dynamicStyles.dateButtonTextActive,
+                ]}>
+                {dayjs(date).format('DD')}
+              </Text>
+            </View>
+          </>
+        )}
       </Pressable>
     );
   };
@@ -148,16 +257,16 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Date buttons */}
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 8,
-        }}>
-        {dates.map((date, index) => (
+      {/* Date buttons - always show all dates */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}>
+        {allDates.map((date, index) => (
           <RenderDateButton date={date} key={index} />
         ))}
-      </View>
+      </ScrollView>
+
       <Spacer size={24} vertical />
 
       <SectionList
@@ -165,17 +274,36 @@ export const TripItinerary = ({ tripId }: { tripId: string }) => {
         keyExtractor={(item) => item.id}
         // horizontal
         // showsHorizontalScrollIndicator={false}
-        renderSectionHeader={
-          selectedDate === null
-            ? ({ section }) => (
-                <View style={styles.sectionHeaderContainer}>
-                  <Text style={styles.sectionHeader}>
-                    {dayjs(section.title).format('MMMM DD, YYYY')}
-                  </Text>
-                </View>
-              )
-            : undefined
-        }
+        renderSectionHeader={({ section }) => {
+          // Don't show header if filtering to single date
+          if (selectedDate !== null) {
+            return section.dayNumber ? (
+              <View style={styles.sectionHeaderContainer}>
+                <Text style={styles.sectionHeader}>
+                  Day {section.dayNumber}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.sectionHeaderContainer}>
+                <Text style={styles.sectionHeader}>Undated Items</Text>
+              </View>
+            );
+          }
+
+          // Show full date when viewing all
+          return section.title === 'Undated' ? (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeader}>Undated Items</Text>
+            </View>
+          ) : (
+            <View style={styles.sectionHeaderContainer}>
+              <Text style={styles.sectionHeader}>
+                Day {section.dayNumber} •{' '}
+                {dayjs(section.title).format('MMMM DD, YYYY')}
+              </Text>
+            </View>
+          );
+        }}
         renderItem={({ item }) => <ItineraryItem item={item} />}
         ListEmptyComponent={<EmptyItinerary />}
       />
@@ -202,11 +330,11 @@ const styles = StyleSheet.create({
   dateButton: {
     paddingHorizontal: 8,
     paddingVertical: 10,
-    height: 70,
     width: 52,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative', // Add this
   },
   dateButtonText: {
     ...textStyles.regular_12,
@@ -214,7 +342,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontSize: 14,
   },
-
   itemTitle: {
     ...textStyles.bold_20,
     fontSize: 16,

@@ -15,7 +15,7 @@ import {
   SectionHeader,
   TripDiscoverySkeleton,
 } from '@/components';
-import { SavedItem } from '@/types';
+import { ItinerarySourceType, SavedItem } from '@/types';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
@@ -68,11 +68,11 @@ const TripDiscoverySection = ({
       'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
     let title = 'No title';
     let description = 'No description';
-    let sourceType = 'hotel';
+    let sourceType = 'accommodation';
     let location: string | undefined = undefined;
 
     if (item?.hotelDescription) {
-      sourceType = 'hotel';
+      sourceType = 'accommodation';
       coverImage = item?.thumbnail;
       title = item.name || 'Hotel Name';
       description = item.hotelDescription || '';
@@ -104,7 +104,7 @@ const TripDiscoverySection = ({
           <Pressable
             onPress={() =>
               handleAddToSavedItems({
-                source_type: sourceType,
+                source_type: sourceType as unknown as ItinerarySourceType,
                 id: item.id,
                 title: title,
                 description: description,

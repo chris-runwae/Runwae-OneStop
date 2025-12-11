@@ -1,5 +1,7 @@
+import { ItinerarySourceType } from './trips.types';
+
 export interface SavedItem {
-  source_type: string;
+  source_type: ItinerarySourceType;
   title: string;
   description?: string | undefined | null;
   location?: string | undefined | null;

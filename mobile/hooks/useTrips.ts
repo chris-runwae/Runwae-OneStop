@@ -4,7 +4,12 @@ import { Alert } from 'react-native';
 import { router } from 'expo-router';
 
 import { getSupabaseClient } from '@/lib/supabase';
-import { FeaturedTrip, TripAttendeeRole, SavedItem } from '@/types';
+import {
+  FeaturedTrip,
+  TripAttendeeRole,
+  SavedItem,
+  ItineraryItem,
+} from '@/types';
 import { Toasts } from '@/utils';
 
 const useTrips = () => {
@@ -380,6 +385,108 @@ const useTrips = () => {
     }
   };
 
+  // ITINERARY
+  const addToItinerary = async (
+    tripId: string,
+    itineraryItem: ItineraryItem
+  ) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+      const { id, ...rest } = itineraryItem;
+
+      const { data, error } = await supabase
+        .from('trip_itinerary')
+        .insert([
+          {
+            trip_id: tripId,
+            source_id: id,
+            ...rest,
+            created_by: user?.id,
+          },
+        ])
+        .select();
+
+      if (error) {
+        Toasts.showErrorToast('Could not add item to itinerary.');
+        return null;
+      }
+
+      Toasts.showSuccessToast('Item added to itinerary.');
+      return data;
+    } catch (error) {
+      Toasts.showErrorToast('Could not add item to itinerary.');
+      setError(error as Error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeFromItinerary = async (itineraryId: string) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { data, error } = await supabase
+        .from('trip_itinerary')
+        .delete()
+        .eq('id', itineraryId)
+        .select();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateItineraryItem = async (
+    itineraryId: string,
+    updates: Partial<ItineraryItem>
+  ) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { data, error } = await supabase
+        .from('trip_itinerary')
+        .update(updates)
+        .eq('id', itineraryId)
+        .select();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get all itinerary items for a trip (sorted by date):
+  const getItinerary = async (tripId: string) => {
+    setLoading(true);
+    try {
+      const supabase = await getSupabaseClient(getToken);
+
+      const { data, error } = await supabase
+        .from('trip_itinerary')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('date', { ascending: true }); // or whatever order you prefer
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      setError(error as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     trips,
     nextTrip,
@@ -400,6 +507,12 @@ const useTrips = () => {
     leaveTrip,
     addSavedItem,
     removeSavedItem,
+
+    // ITINERARY
+    addToItinerary,
+    removeFromItinerary,
+    updateItineraryItem,
+    getItinerary,
   };
 };
 

@@ -1,19 +1,18 @@
 import {
   ActivityIndicator,
   StyleSheet,
-  Text,
   View,
   Pressable,
   useColorScheme,
 } from 'react-native';
 import React from 'react';
 import { ImageBackground } from 'expo-image';
-import { router } from 'expo-router';
+import { RelativePathString, router } from 'expo-router';
 import { PlusIcon } from 'lucide-react-native';
 
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants';
-import { Spacer } from '@/components';
+import { Spacer, Text } from '@/components';
 import { SavedItem } from '@/types';
 
 type TripItemCardsProps = {
@@ -28,7 +27,6 @@ const TripItemCards = ({ item, onPress, loading }: TripItemCardsProps) => {
 
   const dynamicStyles = StyleSheet.create({
     discoveryItem: {
-      backgroundColor: colors.background,
       overflow: 'hidden',
       marginBottom: 32,
     },
@@ -66,7 +64,9 @@ const TripItemCards = ({ item, onPress, loading }: TripItemCardsProps) => {
   return (
     <Pressable
       style={dynamicStyles.discoveryItem}
-      onPress={() => router.push(`/trips/discovery/${item.id}`)}>
+      onPress={() =>
+        router.push(`/(tabs)/trips/hotels/${item.id}` as RelativePathString)
+      }>
       <ImageBackground
         source={{ uri: coverImage }}
         style={dynamicStyles.discoveryImage}
@@ -92,7 +92,7 @@ const TripItemCards = ({ item, onPress, loading }: TripItemCardsProps) => {
           onPress={() =>
             onPress?.({
               source_type: sourceType,
-              source_id: item.id,
+              id: item.id,
               title: title,
               description: description,
               location: location,

@@ -202,6 +202,62 @@ export interface TripItineraryItem {
   updated_at: string;
 }
 
+// Used this more itinerary
+export interface ItineraryItem {
+  id: string;
+  trip_id?: string;
+  source_type?: ItinerarySourceType | null;
+  source_id?: string | null;
+  date?: string;
+  time?: string | null;
+  title?: string;
+  description?: string | null;
+  location?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  duration_minutes?: number | null;
+  cost?: number | null;
+  currency?: string;
+  booking_reference?: string | null;
+  notes?: string | null;
+  order_index?: number;
+  is_completed?: boolean;
+  completed_at?: string | null;
+  created_by?: string;
+  cover_image?: string | null;
+  images?: string[] | null;
+  can_be_updated_by?: string[];
+  can_be_deleted_by?: ItineraryDeletePermission;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateItineraryItem {
+  title: string;
+  trip_id?: string;
+  source_type?: ItinerarySourceType | null;
+  source_id?: string | null;
+  date?: string;
+  time?: string | null;
+  description?: string | null;
+  location?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  duration_minutes?: number | null;
+  cost?: number | null;
+  currency?: string;
+  booking_reference?: string | null;
+  notes?: string | null;
+  order_index?: number;
+  is_completed?: boolean;
+  completed_at?: string | null;
+  created_by?: string;
+  cover_image?: string | null;
+  images?: string[] | null;
+  can_be_updated_by?: string[];
+  can_be_deleted_by?: ItineraryDeletePermission;
+}
+
 export interface CreateItineraryItemInput {
   trip_id?: string;
   source_type?: ItinerarySourceType;

@@ -57,6 +57,8 @@ const TripsDetailsScreen = () => {
     fetchTripAttendees,
     leaveTrip,
     removeSavedItem,
+    trips,
+    addToItinerary,
   } = useTrips();
   const insets = useSafeAreaInsets();
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -81,6 +83,13 @@ const TripsDetailsScreen = () => {
   const [activeTab, setActiveTab] = useState<string>('discover');
 
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const saveToItineraryRef = useRef<BottomSheet>(null);
+  const [selectedItem, setSelectedItem] = useState<SavedItem | null>(null);
+
+  function openSaveToItinerarySheet(value: any) {
+    saveToItineraryRef.current?.expand();
+    setSelectedItem(value);
+  }
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -101,7 +110,7 @@ const TripsDetailsScreen = () => {
 
   useEffect(() => {
     fetchTrip();
-  }, [fetchTrip, activeTab]);
+  }, [fetchTrip]);
 
   useEffect(() => {
     fetchAttendees();
@@ -224,10 +233,6 @@ const TripsDetailsScreen = () => {
   //Share trip
   const deepLink = `runwae://join/${id}/${join_code}`;
 
-  function openSheet() {
-    bottomSheetRef.current?.expand();
-  }
-
   async function copyCode() {
     await Clipboard.setStringAsync(join_code);
   }
@@ -298,6 +303,23 @@ const TripsDetailsScreen = () => {
 
   const handleLeaveTrip = async () => {
     await leaveTrip(trip?.id as string, user?.id as string);
+  };
+
+  const handleAddToItinerary = async (tripId: string) => {
+    if (!selectedItem) return;
+    if (!user?.id) return;
+
+    try {
+      const result = await addToItinerary(tripId, {
+        ...selectedItem,
+        created_by: user?.id as string,
+      });
+    } catch (error) {
+      console.log('Error adding to itinerary: ', error);
+    } finally {
+      setSelectedItem(null);
+      saveToItineraryRef.current?.close();
+    }
   };
 
   if (loading || tripLoading) {
@@ -517,6 +539,7 @@ const TripsDetailsScreen = () => {
                 tripId={trip?.id as string}
                 savedItems={trip?.saved_items as SavedItem[]}
                 handleRemoveSavedItem={handleRemoveSavedItem}
+                openSaveToItinerarySheet={openSaveToItinerarySheet}
               />
             )}
             {activeTab === 'activity' && (
@@ -621,6 +644,32 @@ const TripsDetailsScreen = () => {
 
               <MenuItem title="Leave Trip" onPress={handleLeaveTrip} />
             </View>
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* ADD SAVED ITEM TO ITINERARY */}
+        <BottomSheet
+          ref={saveToItineraryRef}
+          index={-1}
+          snapPoints={['30%']}
+          detached={true}
+          backgroundStyle={{
+            backgroundColor: colors.backgroundColors.subtle,
+          }}
+          enablePanDownToClose>
+          <BottomSheetView
+            style={{
+              flex: 1,
+              backgroundColor: colors.backgroundColors.subtle,
+              height: '100%',
+            }}>
+            {trips.map((trip) => (
+              <Pressable
+                key={trip.id}
+                onPress={() => handleAddToItinerary(trip.id)}>
+                <Text>{trip.title}</Text>
+              </Pressable>
+            ))}
           </BottomSheetView>
         </BottomSheet>
       </View>

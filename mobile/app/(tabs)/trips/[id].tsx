@@ -260,10 +260,7 @@ const TripsDetailsScreen = () => {
     const asset = Asset.fromModule(require('@/assets/images/icon.png'));
     await asset.downloadAsync(); // ensures it's available locally
 
-    const fileUri = asset.localUri || asset.uri;
     const iconUri = trip?.cover_image_url ?? 'https://i.pravatar.cc/150?img=1';
-
-    // console.log('icon: ', icon);
 
     const options = Platform.select({
       ios: {
@@ -281,7 +278,7 @@ const TripsDetailsScreen = () => {
             },
             linkMetadata: {
               title,
-              icon: iconUri,
+              icon: icon,
               image: iconUri,
             },
           },
@@ -310,7 +307,7 @@ const TripsDetailsScreen = () => {
     if (!user?.id) return;
 
     try {
-      const result = await addToItinerary(tripId, {
+      await addToItinerary(tripId, {
         ...selectedItem,
         created_by: user?.id as string,
       });

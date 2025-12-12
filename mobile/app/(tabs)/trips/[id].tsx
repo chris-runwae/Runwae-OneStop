@@ -498,9 +498,16 @@ const TripsDetailsScreen = () => {
               </View>
             </View>
 
+            {/* Description */}
+            {trip?.description && (
+              <>
+                <Spacer size={14} vertical />
+                <Text style={styles.description}>{trip?.description}</Text>
+              </>
+            )}
+
             <Spacer size={14} vertical />
-            <Text style={styles.description}>{trip?.description}</Text>
-            <Spacer size={14} vertical />
+            {/* Attendees */}
             <AvatarGroup
               attendees={attendees}
               maxVisible={4}

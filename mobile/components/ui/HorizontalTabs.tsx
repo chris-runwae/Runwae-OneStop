@@ -66,7 +66,7 @@ export const HorizontalTabs = ({
                     ? dynamicStyles.tabTextActive
                     : dynamicStyles.tabText,
                 ]}>
-                {tab.label}
+                {tab.label.toUpperCase()}
               </Text>
             </Pressable>
           );

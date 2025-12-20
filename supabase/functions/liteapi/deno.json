@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@supabase/functions": "jsr:@supabase/functions"
+  }
+}

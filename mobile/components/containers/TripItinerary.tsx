@@ -368,7 +368,7 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
 
       <Spacer size={24} vertical />
 
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {filteredItinerary.map((section) => (
           <View key={section.title}>
             {/* Section Header */}
@@ -387,7 +387,9 @@ export const TripItinerary = ({ tripId, trip }: TripItineraryProps) => {
                 onDragEnd={({ data }) => handleReorder(section.title, data)}
                 keyExtractor={(item) => item.id}
                 renderItem={(params) => <DraggableItineraryItem {...params} />}
-                scrollEnabled={false} // Disable since parent ScrollView handles it
+                scrollEnabled={true} // Disable since parent ScrollView handles it
+                activationDistance={10}
+                containerStyle={{ flex: 0 }}
               />
             )}
           </View>

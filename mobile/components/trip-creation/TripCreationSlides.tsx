@@ -19,11 +19,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import {
+  Calendar,
+  toDateId,
+  useDateRange,
+} from '@marceloterreiro/flash-calendar';
 import { useUser } from '@clerk/clerk-expo';
 
 import { COLORS } from '@/constants';
 import { uploadImage } from '@/utils/uploadImage';
 import { useUploadImage } from '@/hooks/useUploadImage';
+import { Spacer } from '@/components';
 import { textStyles } from '@/utils/styles';
 import { searchPlaces } from '@/services/liteapi';
 import type { LiteAPIPlace } from '@/types/liteapi.types';
@@ -245,8 +251,20 @@ export const DateSlide: React.FC<SlideProps> = ({
   colors,
   isDarkMode,
 }) => {
+  const today = toDateId(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const {
+    calendarActiveDateRanges,
+    onCalendarDayPress,
+    // Also available for your convenience:
+    // dateRange, // { startId?: string, endId?: string }
+    // isDateRangeValid, // boolean
+    // onClearDateRange, // () => void
+  } = useDateRange();
+
+  const [selectedDate, setSelectedDate] = useState(today);
 
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
@@ -304,117 +322,23 @@ export const DateSlide: React.FC<SlideProps> = ({
           </Text>
         )}
 
-        <View className="mb-6">
-          <Text
-            className="mb-3 text-base font-semibold"
-            style={{
-              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-            }}>
-            Start Date
-          </Text>
-          <TouchableOpacity
-            onPress={() => setShowStartPicker(true)}
-            className="rounded-xl px-4 py-4"
-            style={{
-              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
-              borderWidth: 1,
-              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
-            }}>
-            <Text
-              className="text-base"
-              style={{
-                color: tripData.startDate
-                  ? isDarkMode
-                    ? COLORS.white.base
-                    : COLORS.gray[750]
-                  : isDarkMode
-                    ? COLORS.gray[500]
-                    : COLORS.gray[400],
-              }}>
-              {formatDate(
-                tripData.startDate ? new Date(tripData.startDate) : null
-              )}
-            </Text>
-          </TouchableOpacity>
-
-          {showStartPicker && (
-            <DateTimePicker
-              value={
-                tripData.startDate ? new Date(tripData.startDate) : new Date()
-              }
-              mode="date"
-              display="default"
-              minimumDate={new Date()}
-              onChange={(event, selectedDate) => {
-                setShowStartPicker(false);
-                if (selectedDate) {
-                  onUpdateData('startDate', selectedDate.toISOString());
-                }
-              }}
-            />
-          )}
+        <View
+          style={{
+            flex: 1,
+            width: '100%',
+            height: 'auto',
+            paddingVertical: 16,
+            backgroundColor: colors.backgroundColors.subtle,
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}>
+          <Calendar.List
+            calendarActiveDateRanges={calendarActiveDateRanges}
+            calendarMinDateId={today}
+            onCalendarDayPress={onCalendarDayPress}
+          />
         </View>
-
-        <View className="mb-6">
-          <Text
-            className="mb-3 text-base font-semibold"
-            style={{
-              color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-            }}>
-            End Date
-          </Text>
-          <TouchableOpacity
-            onPress={() => setShowEndPicker(true)}
-            className="rounded-xl px-4 py-4"
-            style={{
-              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
-              borderWidth: 1,
-              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
-            }}>
-            <Text
-              className="text-base"
-              style={{
-                color: tripData.endDate
-                  ? isDarkMode
-                    ? COLORS.white.base
-                    : COLORS.gray[750]
-                  : isDarkMode
-                    ? COLORS.gray[500]
-                    : COLORS.gray[400],
-              }}>
-              {formatDate(tripData.endDate ? new Date(tripData.endDate) : null)}
-            </Text>
-          </TouchableOpacity>
-
-          {showEndPicker && (
-            <DateTimePicker
-              value={tripData.endDate ? new Date(tripData.endDate) : new Date()}
-              mode="date"
-              display="default"
-              minimumDate={
-                tripData.startDate ? new Date(tripData.startDate) : new Date()
-              }
-              onChange={(event, selectedDate) => {
-                setShowEndPicker(false);
-                if (selectedDate) {
-                  onUpdateData('endDate', selectedDate.toISOString());
-                }
-              }}
-            />
-          )}
-        </View>
-
-        {tripData.startDate && tripData.endDate && (
-          <View
-            className="mt-4 rounded-xl px-4 py-3"
-            style={{ backgroundColor: colors.primaryColors.background }}>
-            <Text
-              className="text-center text-sm font-medium"
-              style={{ color: colors.primaryColors.default }}>
-              Selected: {formatDateRange()}
-            </Text>
-          </View>
-        )}
+        <Spacer vertical size={48} />
       </Animated.View>
     </View>
   );

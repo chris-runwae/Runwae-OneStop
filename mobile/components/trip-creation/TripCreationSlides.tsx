@@ -259,8 +259,8 @@ export const DateSlide: React.FC<SlideProps> = ({
     onCalendarDayPress,
     // Also available for your convenience:
     dateRange, // { startId?: string, endId?: string }
-    isDateRangeValid, // boolean
-    onClearDateRange, // () => void
+    // isDateRangeValid, // boolean
+    // onClearDateRange, // () => void
   } = useDateRange();
 
   // console.log('calendarActiveDateRanges: ', calendarActiveDateRanges);
@@ -293,6 +293,14 @@ export const DateSlide: React.FC<SlideProps> = ({
   const primaryColor = colors.primaryColors.default;
 
   const calendarTheme: CalendarTheme = {
+    rowMonth: {
+      content: {
+        // textAlign: 'left',
+        color: colors.textColors.default,
+        ...textStyles.bold_20,
+        fontSize: 14,
+      },
+    },
     rowWeek: {
       container: {},
     },
@@ -355,10 +363,6 @@ export const DateSlide: React.FC<SlideProps> = ({
           <Calendar.List
             calendarActiveDateRanges={calendarActiveDateRanges}
             calendarMinDateId={today}
-            // onCalendarDayPress={(dateId) => {
-            //   onCalendarDayPress(dateId);
-            //   handleUpdateData();
-            // }}
             onCalendarDayPress={onCalendarDayPress}
             theme={calendarTheme}
           />

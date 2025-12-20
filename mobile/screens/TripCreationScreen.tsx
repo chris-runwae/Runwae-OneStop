@@ -87,7 +87,7 @@ export default function TripCreationScreen() {
   });
 
   const handleUpdateData = (key: string, value: any) => {
-    setTripData({ ...tripData, [key]: value });
+    setTripData((prev) => ({ ...prev, [key]: value }));
   };
 
   const isCurrentStepValid = () => {
@@ -95,6 +95,7 @@ export default function TripCreationScreen() {
       case 'destination':
         return tripData.destination && tripData.destination.trim().length > 0;
       case 'dates':
+        console.log('tripData.startDate: ', tripData);
         return tripData.startDate && tripData.endDate;
       case 'personalization':
         return tripData.name && tripData.name.trim().length > 0;

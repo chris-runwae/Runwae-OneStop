@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,13 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
 import * as ImagePicker from 'expo-image-picker';
 import {
   Calendar,
   toDateId,
   useDateRange,
+  CalendarTheme,
 } from '@marceloterreiro/flash-calendar';
 import { useUser } from '@clerk/clerk-expo';
 
@@ -252,19 +253,17 @@ export const DateSlide: React.FC<SlideProps> = ({
   isDarkMode,
 }) => {
   const today = toDateId(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
 
   const {
     calendarActiveDateRanges,
     onCalendarDayPress,
     // Also available for your convenience:
-    // dateRange, // { startId?: string, endId?: string }
-    // isDateRangeValid, // boolean
-    // onClearDateRange, // () => void
+    dateRange, // { startId?: string, endId?: string }
+    isDateRangeValid, // boolean
+    onClearDateRange, // () => void
   } = useDateRange();
 
-  const [selectedDate, setSelectedDate] = useState(today);
+  // console.log('calendarActiveDateRanges: ', calendarActiveDateRanges);
 
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
@@ -281,26 +280,47 @@ export const DateSlide: React.FC<SlideProps> = ({
     };
   });
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'Select date';
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  useEffect(() => {
+    // Update or clear startDate based on dateRange
+    onUpdateData('startDate', dateRange?.startId || null);
 
-  const formatDateRange = () => {
-    if (!tripData.startDate || !tripData.endDate) return '';
-    const start = new Date(tripData.startDate).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-    });
-    const end = new Date(tripData.endDate).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-    });
-    return `${start} - ${end}`;
+    // Update or clear endDate based on dateRange
+    onUpdateData('endDate', dateRange?.endId || null);
+
+    //eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange]);
+
+  const primaryColor = colors.primaryColors.default;
+
+  const calendarTheme: CalendarTheme = {
+    rowWeek: {
+      container: {},
+    },
+    itemDayContainer: {
+      activeDayFiller: {
+        backgroundColor: primaryColor,
+      },
+    },
+    itemDay: {
+      idle: ({ isPressed, isWeekend }) => ({
+        container: {
+          backgroundColor: isPressed ? primaryColor : 'transparent',
+          borderRadius: 9999,
+        },
+        content: {
+          color:
+            isWeekend && !isPressed ? 'rgba(255, 255, 255, 0.5)' : '#ffffff',
+        },
+      }),
+      active: () => ({
+        container: {
+          backgroundColor: colors.primaryColors.default,
+        },
+        content: {
+          color: colors.textColors.default,
+        },
+      }),
+    },
   };
 
   return (
@@ -335,7 +355,12 @@ export const DateSlide: React.FC<SlideProps> = ({
           <Calendar.List
             calendarActiveDateRanges={calendarActiveDateRanges}
             calendarMinDateId={today}
+            // onCalendarDayPress={(dateId) => {
+            //   onCalendarDayPress(dateId);
+            //   handleUpdateData();
+            // }}
             onCalendarDayPress={onCalendarDayPress}
+            theme={calendarTheme}
           />
         </View>
         <Spacer vertical size={48} />

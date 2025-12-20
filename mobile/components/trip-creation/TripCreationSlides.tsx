@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   Dimensions,
   TextInput,
   FlatList,
@@ -11,6 +12,8 @@ import {
   Platform,
   ViewStyle,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -59,6 +62,8 @@ export const DestinationSlide: React.FC<SlideProps> = ({
   const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<LiteAPIPlace | null>(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isPressingSuggestionRef = useRef(false);
 
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
@@ -80,6 +85,12 @@ export const DestinationSlide: React.FC<SlideProps> = ({
       console.error('Invalid place selected:', place);
       return;
     }
+    // Clear any pending blur timeout
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    isPressingSuggestionRef.current = false;
     setSelectedPlace(place);
     setSearchText(`${place.displayName}, ${place.formattedAddress}`);
     console.log('place: ', place);
@@ -97,7 +108,8 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5,
+    elevation: 10,
+    zIndex: 9999,
     top: '100%',
   };
 
@@ -130,6 +142,15 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     }
   };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <View style={{ width }} className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
@@ -149,7 +170,7 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           </Text>
         )}
 
-        <View className="relative">
+        <View className="relative" collapsable={false}>
           <View
             className="flex-row items-center rounded-xl px-4 py-3"
             style={{
@@ -171,11 +192,19 @@ export const DestinationSlide: React.FC<SlideProps> = ({
               onChangeText={(text) => {
                 setSearchText(text);
                 handleSearchPlaces(text);
+                if (text.length === 0) {
+                  setShowSuggestions(false);
+                }
               }}
               onFocus={() => {
+                // Clear any pending blur timeout
+                if (blurTimeoutRef.current) {
+                  clearTimeout(blurTimeoutRef.current);
+                  blurTimeoutRef.current = null;
+                }
                 if (places.length > 0) setShowSuggestions(true);
               }}
-              onBlur={() => setShowSuggestions(false)}
+              blurOnSubmit={false}
               className="flex-1 text-base"
               style={{
                 color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
@@ -184,59 +213,82 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           </View>
 
           {showSuggestions && places.length > 0 && (
-            <View
-              className="absolute left-0 right-0 z-50 mt-1 max-h-64 rounded-xl"
-              style={dropdownStyle}>
-              {loadingPlaces && (
-                <View style={{ padding: 16, alignItems: 'center' }}>
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.primaryColors.default}
-                  />
-                </View>
-              )}
-              {!loadingPlaces && (
-                <FlatList
-                  data={places.filter(
-                    (place) => place && place.placeId && place.displayName
-                  )}
-                  keyExtractor={(item) => item.placeId}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => handleSelectCity(item)}
-                      className="border-b px-4 py-3"
-                      style={{
-                        borderBottomColor: isDarkMode
-                          ? '#333333'
-                          : COLORS.gray[400],
-                      }}>
-                      <Text
-                        className="text-base"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.white.base
-                            : COLORS.gray[750],
-                        }}>
-                        {item.displayName}
-                      </Text>
-                      {item.formattedAddress && (
+            <>
+              <TouchableWithoutFeedback
+                onPress={() => setShowSuggestions(false)}>
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: -200,
+                    zIndex: 998,
+                  }}
+                />
+              </TouchableWithoutFeedback>
+              <View
+                className="absolute left-0 right-0 mt-1 max-h-64 rounded-xl"
+                style={dropdownStyle}>
+                {loadingPlaces && (
+                  <View style={{ padding: 16, alignItems: 'center' }}>
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primaryColors.default}
+                    />
+                  </View>
+                )}
+                {!loadingPlaces && (
+                  <FlatList
+                    data={places.filter(
+                      (place) => place && place.placeId && place.displayName
+                    )}
+                    keyExtractor={(item) => item.placeId}
+                    renderItem={({ item }) => (
+                      <Pressable
+                        onPress={() => {
+                          handleSelectCity(item);
+                        }}
+                        className="border-b px-4 py-3"
+                        style={({ pressed }) => ({
+                          borderBottomColor: isDarkMode
+                            ? '#333333'
+                            : COLORS.gray[400],
+                          backgroundColor: pressed
+                            ? isDarkMode
+                              ? '#2a2a2a'
+                              : COLORS.gray[300]
+                            : 'transparent',
+                        })}>
                         <Text
-                          className="mt-1 text-sm"
+                          className="text-base"
                           style={{
                             color: isDarkMode
-                              ? COLORS.gray[500]
-                              : COLORS.gray[400],
+                              ? COLORS.white.base
+                              : COLORS.gray[750],
                           }}>
-                          {item.formattedAddress}
+                          {item.displayName}
                         </Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                  nestedScrollEnabled
-                  keyboardShouldPersistTaps="handled"
-                />
-              )}
-            </View>
+                        {item.formattedAddress && (
+                          <Text
+                            className="mt-1 text-sm"
+                            style={{
+                              color: isDarkMode
+                                ? COLORS.gray[500]
+                                : COLORS.gray[400],
+                            }}>
+                            {item.formattedAddress}
+                          </Text>
+                        )}
+                      </Pressable>
+                    )}
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="none"
+                  />
+                )}
+              </View>
+            </>
           )}
         </View>
       </Animated.View>

@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Modal,
+  ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -213,82 +215,67 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           </View>
 
           {showSuggestions && places.length > 0 && (
-            <>
-              <TouchableWithoutFeedback
-                onPress={() => setShowSuggestions(false)}>
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: -200,
-                    zIndex: 998,
-                  }}
-                />
-              </TouchableWithoutFeedback>
-              <View
-                className="absolute left-0 right-0 mt-1 max-h-64 rounded-xl"
-                style={dropdownStyle}>
-                {loadingPlaces && (
-                  <View style={{ padding: 16, alignItems: 'center' }}>
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.primaryColors.default}
-                    />
-                  </View>
-                )}
-                {!loadingPlaces && (
-                  <FlatList
-                    data={places.filter(
-                      (place) => place && place.placeId && place.displayName
-                    )}
-                    keyExtractor={(item) => item.placeId}
-                    renderItem={({ item }) => (
-                      <Pressable
-                        onPress={() => {
-                          handleSelectCity(item);
-                        }}
-                        className="border-b px-4 py-3"
-                        style={({ pressed }) => ({
-                          borderBottomColor: isDarkMode
-                            ? '#333333'
-                            : COLORS.gray[400],
-                          backgroundColor: pressed
-                            ? isDarkMode
-                              ? '#2a2a2a'
-                              : COLORS.gray[300]
-                            : 'transparent',
-                        })}>
+            <View
+              className="absolute left-0 right-0 mt-1 max-h-64 rounded-xl"
+              style={dropdownStyle}>
+              {loadingPlaces && (
+                <View style={{ padding: 16, alignItems: 'center' }}>
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.primaryColors.default}
+                  />
+                </View>
+              )}
+              {!loadingPlaces && (
+                <FlatList
+                  data={places.filter(
+                    (place) => place && place.placeId && place.displayName
+                  )}
+                  keyExtractor={(item) => item.placeId}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      onPress={() => {
+                        handleSelectCity(item);
+                      }}
+                      className="border-b px-4 py-3"
+                      style={({ pressed }) => ({
+                        borderBottomColor: isDarkMode
+                          ? '#333333'
+                          : COLORS.gray[400],
+                        backgroundColor: pressed
+                          ? isDarkMode
+                            ? '#2a2a2a'
+                            : COLORS.gray[300]
+                          : 'transparent',
+                      })}>
+                      <Text
+                        className="text-base"
+                        style={{
+                          color: isDarkMode
+                            ? COLORS.white.base
+                            : COLORS.gray[750],
+                        }}>
+                        {item.displayName}
+                      </Text>
+                      {item.formattedAddress && (
                         <Text
-                          className="text-base"
+                          className="mt-1 text-sm"
                           style={{
                             color: isDarkMode
-                              ? COLORS.white.base
-                              : COLORS.gray[750],
+                              ? COLORS.gray[500]
+                              : COLORS.gray[400],
                           }}>
-                          {item.displayName}
+                          {item.formattedAddress}
                         </Text>
-                        {item.formattedAddress && (
-                          <Text
-                            className="mt-1 text-sm"
-                            style={{
-                              color: isDarkMode
-                                ? COLORS.gray[500]
-                                : COLORS.gray[400],
-                            }}>
-                            {item.formattedAddress}
-                          </Text>
-                        )}
-                      </Pressable>
-                    )}
-                    nestedScrollEnabled
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="none"
-                  />
-                )}
-              </View>
-            </>
+                      )}
+                    </Pressable>
+                  )}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="none"
+                />
+              )}
+            </View>
           )}
         </View>
       </Animated.View>
@@ -338,8 +325,6 @@ export const DateSlide: React.FC<SlideProps> = ({
 
     // Update or clear endDate based on dateRange
     onUpdateData('endDate', dateRange?.endId || null);
-
-    //eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
   const primaryColor = colors.primaryColors.default;
@@ -476,7 +461,10 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
   };
 
   return (
-    <View style={{ width }} className="flex-1 px-6 pt-6">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      style={{ width }}
+      className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
           className="mb-2 text-3xl font-bold"
@@ -584,7 +572,9 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
         </View>
 
         {/* Trip Description */}
-        <View className="mb-6">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="mb-6 flex-1">
           <View className="mb-3 flex-row items-center">
             <Text
               className="text-base font-semibold"
@@ -620,8 +610,9 @@ export const PersonalizationSlide: React.FC<SlideProps> = ({
               height: 100,
             }}
           />
-        </View>
+        </KeyboardAvoidingView>
       </Animated.View>
-    </View>
+      <Spacer vertical size={148} />
+    </ScrollView>
   );
 };

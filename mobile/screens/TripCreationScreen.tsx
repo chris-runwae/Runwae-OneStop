@@ -1,6 +1,6 @@
 import { RelativePathString, router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -86,9 +86,9 @@ export default function TripCreationScreen() {
     };
   });
 
-  const handleUpdateData = (key: string, value: any) => {
+  const handleUpdateData = useCallback((key: string, value: any) => {
     setTripData((prev) => ({ ...prev, [key]: value }));
-  };
+  }, []);
 
   const isCurrentStepValid = () => {
     switch (currentSlide.type) {

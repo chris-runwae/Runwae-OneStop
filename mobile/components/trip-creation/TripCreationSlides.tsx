@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   ViewStyle,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Animated, {
@@ -19,12 +20,13 @@ import Animated, {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useUser } from '@clerk/clerk-expo';
-import { City } from 'country-state-city';
 
 import { COLORS } from '@/constants';
 import { uploadImage } from '@/utils/uploadImage';
 import { useUploadImage } from '@/hooks/useUploadImage';
 import { textStyles } from '@/utils/styles';
+import { searchPlaces } from '@/services/liteapi';
+import type { LiteAPIPlace } from '@/types/liteapi.types';
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +49,9 @@ export const DestinationSlide: React.FC<SlideProps> = ({
 }) => {
   const [searchText, setSearchText] = useState(tripData.destination || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
+  const [selectedPlace, setSelectedPlace] = useState<LiteAPIPlace | null>(null);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
 
   const slideAnimStyle = useAnimatedStyle(() => {
     return {
@@ -63,40 +68,16 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     };
   });
 
-  // Get all cities and filter based on search text
-  const citySuggestions = useMemo(() => {
-    if (!searchText || searchText.length < 2) {
-      return [];
+  const handleSelectCity = (place: LiteAPIPlace) => {
+    if (!place || !place.displayName) {
+      console.error('Invalid place selected:', place);
+      return;
     }
-
-    const allCities = City.getAllCities();
-    const searchLower = searchText.toLowerCase().trim();
-
-    return allCities
-      .filter((city) => {
-        const cityName = city.name?.toLowerCase() || '';
-        return cityName.includes(searchLower);
-      })
-      .slice(0, 10) // Limit to 10 suggestions for performance
-      .map((city) => ({
-        id: `${city.name}-${city.countryCode}-${city.stateCode}`,
-        name: city.name || '',
-        state: city.stateCode || '',
-        country: city.countryCode || '',
-        // displayName: `${city.name}${city.stateCode ? `, ${city.stateCode}` : ''}, ${city.countryCode}`,
-        displayName: `${city.name}, ${city.countryCode}`,
-      }));
-  }, [searchText]);
-
-  const handleTextChange = (text: string) => {
-    setSearchText(text);
-    onUpdateData('destination', text);
-    setShowSuggestions(text.length >= 2);
-  };
-
-  const handleSelectCity = (city: { name: string; displayName: string }) => {
-    setSearchText(city.displayName);
-    onUpdateData('destination', city.displayName);
+    setSelectedPlace(place);
+    setSearchText(`${place.displayName}, ${place.formattedAddress}`);
+    console.log('place: ', place);
+    onUpdateData('destination', place.displayName);
+    // onUpdateData('placeId', place.placeId);
     setShowSuggestions(false);
     Keyboard.dismiss();
   };
@@ -111,6 +92,35 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     shadowRadius: 3.84,
     elevation: 5,
     top: '100%',
+  };
+
+  const handleSearchPlaces = async (query: string) => {
+    if (query.length < 2) {
+      setShowSuggestions(false);
+      setPlaces([]);
+      return;
+    }
+
+    setLoadingPlaces(true);
+    try {
+      const response = await searchPlaces(query);
+      // Filter out any undefined/null places and ensure they have required properties
+      const validPlaces = (response.data || []).filter(
+        (place): place is LiteAPIPlace =>
+          place != null &&
+          typeof place === 'object' &&
+          typeof place.placeId === 'string' &&
+          typeof place.displayName === 'string'
+      );
+      setPlaces(validPlaces);
+      setShowSuggestions(validPlaces.length > 0);
+    } catch (error) {
+      console.error('Error searching places:', error);
+      setPlaces([]);
+      setShowSuggestions(false);
+    } finally {
+      setLoadingPlaces(false);
+    }
   };
 
   return (
@@ -147,60 +157,78 @@ export const DestinationSlide: React.FC<SlideProps> = ({
               }}>
               🔍
             </Text>
+
             <TextInput
-              placeholder={slide.placeholder}
-              placeholderTextColor={
-                isDarkMode ? COLORS.gray[500] : COLORS.gray[400]
-              }
+              placeholder="Search for a city"
               value={searchText}
-              onChangeText={handleTextChange}
+              onChangeText={(text) => {
+                setSearchText(text);
+                handleSearchPlaces(text);
+              }}
               onFocus={() => {
-                if (searchText.length >= 2) {
-                  setShowSuggestions(true);
-                }
+                if (places.length > 0) setShowSuggestions(true);
               }}
-              onBlur={() => {
-                // Delay hiding suggestions to allow selection
-                setTimeout(() => setShowSuggestions(false), 200);
-              }}
+              onBlur={() => setShowSuggestions(false)}
               className="flex-1 text-base"
               style={{
                 color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-                height: '100%',
               }}
             />
           </View>
 
-          {showSuggestions && citySuggestions.length > 0 && (
+          {showSuggestions && places.length > 0 && (
             <View
               className="absolute left-0 right-0 z-50 mt-1 max-h-64 rounded-xl"
               style={dropdownStyle}>
-              <FlatList
-                data={citySuggestions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => handleSelectCity(item)}
-                    className="border-b px-4 py-3"
-                    style={{
-                      borderBottomColor: isDarkMode
-                        ? '#333333'
-                        : COLORS.gray[400],
-                    }}>
-                    <Text
-                      className="text-base"
+              {loadingPlaces && (
+                <View style={{ padding: 16, alignItems: 'center' }}>
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.primaryColors.default}
+                  />
+                </View>
+              )}
+              {!loadingPlaces && (
+                <FlatList
+                  data={places.filter(
+                    (place) => place && place.placeId && place.displayName
+                  )}
+                  keyExtractor={(item) => item.placeId}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => handleSelectCity(item)}
+                      className="border-b px-4 py-3"
                       style={{
-                        color: isDarkMode
-                          ? COLORS.white.base
-                          : COLORS.gray[750],
+                        borderBottomColor: isDarkMode
+                          ? '#333333'
+                          : COLORS.gray[400],
                       }}>
-                      {item.displayName}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-              />
+                      <Text
+                        className="text-base"
+                        style={{
+                          color: isDarkMode
+                            ? COLORS.white.base
+                            : COLORS.gray[750],
+                        }}>
+                        {item.displayName}
+                      </Text>
+                      {item.formattedAddress && (
+                        <Text
+                          className="mt-1 text-sm"
+                          style={{
+                            color: isDarkMode
+                              ? COLORS.gray[500]
+                              : COLORS.gray[400],
+                          }}>
+                          {item.formattedAddress}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                />
+              )}
             </View>
           )}
         </View>

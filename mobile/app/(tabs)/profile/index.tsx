@@ -53,6 +53,11 @@ export default function ProfileScreen() {
     cameraButton: {
       backgroundColor: colors.primaryColors.default,
     },
+    versionText: {
+      ...textStyles.subtitle_Regular,
+      color: colors.textColors.subtitle,
+      textAlign: 'center',
+    },
   });
 
   return (
@@ -127,6 +132,9 @@ export default function ProfileScreen() {
             onPress={handleSignOut}
           />
         </View>
+
+        <Spacer size={24} vertical />
+        <Text style={dynamicStyle.versionText}>Version 0.1.1</Text>
       </ScrollView>
     </ScreenContainer>
   );

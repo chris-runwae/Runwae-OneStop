@@ -4,6 +4,7 @@ import endpoints from '@/services/endpoints/liteApi';
 
 const useHotels = () => {
   const [hotels, setHotels] = useState<any[]>([]);
+  const [tripsHotels, setTripsHotels] = useState<any[]>([]);
   const [hotel, setHotel] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -43,13 +44,25 @@ const useHotels = () => {
     return data?.data;
   };
 
+  const fetchHotelsByPlaceId = async (placeId: string) => {
+    setLoading(true);
+    const url = endpoints.getHotelsByPlaceId(placeId);
+    const response = await fetch(url, options);
+    const data = await response.json();
+    setTripsHotels(data?.data);
+    setLoading(false);
+    return data?.data;
+  };
+
   return {
     hotels,
+    tripsHotels,
     hotel,
     loading,
     error,
     fetchHotels,
     fetchHotelById,
+    fetchHotelsByPlaceId,
   };
 };
 

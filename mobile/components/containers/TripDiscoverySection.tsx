@@ -23,13 +23,17 @@ type TripDiscoverySectionProps = {
   tripId: string;
   countryCode?: string;
   city?: string;
+  tripsHotels?: any[];
+  loading?: boolean;
 };
 const TripDiscoverySection = ({
   tripId,
   countryCode,
   city,
+  tripsHotels,
+  loading = false,
 }: TripDiscoverySectionProps) => {
-  const { hotels, loading, fetchHotels } = useHotels();
+  const { hotels, loading: hotelsLoading, fetchHotels } = useHotels();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [selectedFilter, setSelectedFilter] = useState<FilterOption>('All');
@@ -57,9 +61,15 @@ const TripDiscoverySection = ({
   });
 
   useEffect(() => {
-    fetchHotels(countryCode, city);
+    // Only fetch hotels if tripsHotels prop is not provided (undefined)
+    // If tripsHotels is provided (even if empty array), parent component handles fetching
+    if (tripsHotels === undefined) {
+      fetchHotels(countryCode, city);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [countryCode, city]);
+  }, [countryCode, city, tripsHotels]);
+
+  // console.log('tripsHotels: ', JSON.stringify(tripsHotels));
 
   const filterOptions: FilterOption[] = ['All', 'Stays 🏨', 'Do 🎨'];
 
@@ -142,7 +152,14 @@ const TripDiscoverySection = ({
   };
 
   const getHotelsList = () => {
-    // Handle both array and object with data property
+    // If tripsHotels prop is provided, use it (parent controls the data source)
+    // This prevents switching between data sources during re-renders
+    if (tripsHotels !== undefined) {
+      return Array.isArray(tripsHotels)
+        ? tripsHotels
+        : (tripsHotels as any)?.data || [];
+    }
+    // Fallback to hotels (only when tripsHotels prop is not provided)
     return Array.isArray(hotels) ? hotels : (hotels as any)?.data || [];
   };
 
@@ -164,6 +181,7 @@ const TripDiscoverySection = ({
   // RENDERS
   const renderHotelsList = (showHeader: boolean = false) => {
     const hotelsList = getHotelsList();
+    // console.log('hotelsList: ', hotelsList);
 
     if (hotelsList.length === 0) {
       return (
@@ -204,7 +222,7 @@ const TripDiscoverySection = ({
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (loading || hotelsLoading) {
       return <TripDiscoverySkeleton />;
     }
 
@@ -213,7 +231,7 @@ const TripDiscoverySection = ({
     }
 
     if (selectedFilter === 'Stays 🏨') {
-      return renderHotelsList(false);
+      return renderHotelsList(true);
     }
 
     if (selectedFilter === 'Do 🎨') {

@@ -20,11 +20,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useUser } from '@clerk/clerk-expo';
-
-// import BottomSheet from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
 import Share, { ShareOptions } from 'react-native-share';
 import { Asset } from 'expo-asset';
+// import BottomSheet from '@gorhom/bottom-sheet';
 
 import {
   DateRange,
@@ -37,7 +36,7 @@ import {
 } from '@/components';
 import { AvatarGroup } from '@/components/ui/AvatarGroup';
 import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
-import useTrips from '@/hooks/useTrips';
+import { useHotels, useTrips } from '@/hooks';
 import { Trip, TripAttendee } from '@/types/trips.types';
 import { ArrowLeftIcon, ForwardIcon, Menu } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
@@ -48,6 +47,7 @@ import { SavedItem } from '@/types/generic.types';
 
 const TripsDetailsScreen = () => {
   const { id } = useLocalSearchParams();
+  const { fetchHotelsByPlaceId, tripsHotels } = useHotels();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { user } = useUser();
@@ -116,6 +116,14 @@ const TripsDetailsScreen = () => {
     fetchAttendees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip]);
+
+  useEffect(() => {
+    if (trip?.place) {
+      fetchHotelsByPlaceId(trip.place.placeId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip]);
+  // console.log('fetching hotels by place id: ', tripsHotels);
 
   const join_code = trip?.join_code ?? '';
 
@@ -541,6 +549,7 @@ const TripsDetailsScreen = () => {
                 tripId={trip?.id as string}
                 countryCode={countryCode as string}
                 city={city as string}
+                tripsHotels={tripsHotels}
               />
             )}
             {activeTab === 'saved' && (

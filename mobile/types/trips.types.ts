@@ -33,12 +33,20 @@ export type TripCategory =
   | 'romantic'
   | 'other';
 
+export interface Place {
+  type: string[] | string;
+  placeId: string;
+  displayName: string;
+  formattedAddress: string;
+}
+
 export interface Trip {
   id: string;
   user_id: string;
   title: string;
   destination: string;
   join_code: string;
+  place?: Place;
 
   // Dates
   start_date?: string | null;

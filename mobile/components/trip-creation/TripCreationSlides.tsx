@@ -95,9 +95,8 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     isPressingSuggestionRef.current = false;
     setSelectedPlace(place);
     setSearchText(`${place.displayName}, ${place.formattedAddress}`);
-    console.log('place: ', place);
     onUpdateData('destination', place.displayName);
-    // onUpdateData('placeId', place.placeId);
+    onUpdateData('place', place);
     setShowSuggestions(false);
     Keyboard.dismiss();
   };

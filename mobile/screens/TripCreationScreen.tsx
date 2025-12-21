@@ -30,6 +30,14 @@ import { useTrips } from '@/hooks';
 
 const { width } = Dimensions.get('window');
 
+const defaultCoverImages = [
+  'https://unsplash.com/photos/a-white-building-with-a-balcony-and-balconies-M5G5hA1krBk',
+  'https://unsplash.com/photos/an-aerial-view-of-a-beach-with-boats-in-the-water-bS6bgSp1f64',
+  'https://unsplash.com/photos/manarola-italy-rknrvCrfS1k',
+  'https://unsplash.com/photos/assorted-hot-air-balloons-flying-at-high-altitude-during-daytime-hpTH5b6mo2s',
+  'https://unsplash.com/photos/person-riding-airplane-photography-jv15x2Gs5F8',
+];
+
 export default function TripCreationScreen() {
   const { createTrip } = useTrips();
   const { user } = useUser();
@@ -144,13 +152,17 @@ export default function TripCreationScreen() {
       end_date: tripData.endDate,
       description: tripData.description,
       title: tripData.name,
-      cover_image_url: tripData.headerImage ?? 'https://placehold.co/600x400',
+      cover_image_url:
+        tripData.headerImage ??
+        defaultCoverImages[
+          Math.floor(Math.random() * defaultCoverImages.length)
+        ],
       destination: tripData.destination,
+      place: tripData.place,
     });
 
-    console.log('Saving trip:', JSON.stringify(trip, null, 2));
     // Navigate back to trips screen
-    router.replace('/(tabs)/trips' as RelativePathString);
+    router.replace('/(tabs)/trips/index' as RelativePathString);
   };
 
   const renderSlide = () => {

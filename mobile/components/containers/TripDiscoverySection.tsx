@@ -131,6 +131,7 @@ const TripDiscoverySection = ({
     if (
       selectedFilter === 'Do 🎨' &&
       placeDisplayName &&
+      destinations &&
       destinations.length > 0
     ) {
       setActivitiesLoading(true);
@@ -149,13 +150,7 @@ const TripDiscoverySection = ({
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedFilter,
-    placeDisplayName,
-    destinations.length,
-    startDate,
-    endDate,
-  ]);
+  }, [selectedFilter, placeDisplayName, destinations, startDate, endDate]);
 
   // console.log('tripsHotels: ', JSON.stringify(tripsHotels));
 

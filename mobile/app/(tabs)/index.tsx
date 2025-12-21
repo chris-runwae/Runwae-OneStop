@@ -19,8 +19,8 @@ import { ICON_NAMES } from '@/constants';
 export default function HomeScreen() {
   const { isSignedIn } = useAuth();
   const { featuredTrips, loading } = useTrips();
-  const { getDestinations } = useViator();
-  const { destinations } = useViatorStore();
+  const { getDestinations, getTags } = useViator();
+  const { destinations, tags } = useViatorStore();
 
   if (!isSignedIn) {
     return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
@@ -30,8 +30,11 @@ export default function HomeScreen() {
     return <HomeScreenSkeleton />;
   }
 
-  if (destinations.length === 0) {
+  if (!destinations || destinations.length === 0) {
     getDestinations();
+  }
+  if (!tags || tags.length === 0) {
+    getTags();
   }
 
   return (

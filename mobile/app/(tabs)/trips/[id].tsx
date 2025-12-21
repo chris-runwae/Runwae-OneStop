@@ -36,7 +36,7 @@ import {
 } from '@/components';
 import { AvatarGroup } from '@/components/ui/AvatarGroup';
 import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
-import { useHotels, useTrips, useViator } from '@/hooks';
+import { useHotels, useTrips } from '@/hooks';
 import { Trip, TripAttendee } from '@/types/trips.types';
 import { ArrowLeftIcon, ForwardIcon, Menu } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
@@ -48,7 +48,6 @@ import { SavedItem } from '@/types/generic.types';
 const TripsDetailsScreen = () => {
   const { id } = useLocalSearchParams();
   const { fetchHotelsByPlaceId, tripsHotels } = useHotels();
-  const { getDestinations } = useViator();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { user } = useUser();
@@ -108,10 +107,6 @@ const TripsDetailsScreen = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
-  useEffect(() => {
-    getDestinations();
-  }, [getDestinations]);
 
   useEffect(() => {
     fetchTrip();
@@ -555,6 +550,9 @@ const TripsDetailsScreen = () => {
                 countryCode={countryCode as string}
                 city={city as string}
                 tripsHotels={tripsHotels}
+                placeDisplayName={trip?.place?.displayName}
+                startDate={trip?.start_date || undefined}
+                endDate={trip?.end_date || undefined}
               />
             )}
             {activeTab === 'saved' && (

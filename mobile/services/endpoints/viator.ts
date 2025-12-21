@@ -8,6 +8,7 @@ const endpoints = {
   },
   getDestinations: `${baseUrl}/destinations?campaign-value=string`,
   getTags: `${baseUrl}/products/tags`,
+  productsSearch: `${baseUrl}/products/search`,
 };
 
 export default endpoints;

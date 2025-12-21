@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import endpoints from '@/services/endpoints/liteApi';
+import { Toasts } from '@/utils';
 
 const useHotels = () => {
   const [hotels, setHotels] = useState<any[]>([]);
@@ -37,21 +38,39 @@ const useHotels = () => {
   const fetchHotelById = async (id: string) => {
     setLoading(true);
     const url = endpoints.getHotelById(id);
-    const response = await fetch(url, options);
-    const data = await response.json();
-    setHotel(data?.data);
-    setLoading(false);
-    return data?.data;
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      setHotel(data?.data);
+      setLoading(false);
+      return data?.data;
+    } catch (error) {
+      Toasts.showErrorToast(
+        'We could not get the hotel. Please try again later.'
+      );
+      setError(error as Error);
+      setLoading(false);
+      return null;
+    }
   };
 
   const fetchHotelsByPlaceId = async (placeId: string) => {
     setLoading(true);
     const url = endpoints.getHotelsByPlaceId(placeId);
-    const response = await fetch(url, options);
-    const data = await response.json();
-    setTripsHotels(data?.data);
-    setLoading(false);
-    return data?.data;
+    try {
+      const response = await fetch(url, options);
+      const data = await response.json();
+      setTripsHotels(data?.data);
+      setLoading(false);
+      return data?.data;
+    } catch (error) {
+      Toasts.showErrorToast(
+        'We could not get the hotels. Please try again later.'
+      );
+      setError(error as Error);
+      setLoading(false);
+      return null;
+    }
   };
 
   return {

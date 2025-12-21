@@ -5,17 +5,45 @@ import {
   StyleSheet,
   View,
   useColorScheme,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import RenderHtml from 'react-native-render-html';
+import RenderHtml, {
+  defaultSystemFonts,
+  type MixedStyleRecord,
+} from 'react-native-render-html';
+import {
+  useFonts,
+  DMSans_400Regular,
+  DMSans_600SemiBold,
+} from '@expo-google-fonts/dm-sans';
 
-import { InfoPill, ScreenContainer, Spacer, Text } from '@/components';
+import {
+  InfoPill,
+  HomeScreenSkeleton,
+  ScreenContainer,
+  Spacer,
+  Text,
+} from '@/components';
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants';
 import { useHotels } from '@/hooks';
 import { facilityIconMap } from '@/utils/facilityIconMap';
+
+function FontLoader({ children }: { children: React.ReactNode }) {
+  const [fontsLoaded] = useFonts({
+    'dm-sans': DMSans_400Regular,
+    'dm-sans-bold': DMSans_600SemiBold,
+  });
+  if (!fontsLoaded) {
+    return null;
+  }
+  return <>{children}</>;
+}
+
+const systemFonts = ['dm-sans', ...defaultSystemFonts];
 
 const HotelDetailScreen = () => {
   const { id } = useLocalSearchParams();
@@ -23,7 +51,7 @@ const HotelDetailScreen = () => {
   const colors = Colors[colorScheme];
   const { hotel, loading, fetchHotelById } = useHotels();
   const [hotelData, setHotelData] = useState<any>(null);
-
+  const { width } = useWindowDimensions();
   const dynamicStyles = StyleSheet.create({
     title: {
       color: colors.textColors.default,
@@ -108,6 +136,26 @@ const HotelDetailScreen = () => {
     );
   };
 
+  const tagStyles: MixedStyleRecord = {
+    body: {
+      whiteSpace: 'normal',
+      // fontFamily: 'dm-sans',
+      color: colors.textColors.subtle,
+      // textAlign: 'center',
+    },
+    p: {
+      marginBottom: 16,
+    },
+    strong: {
+      fontWeight: 'bold' as const,
+      fontFamily: 'dm-sans-bold',
+    },
+  };
+
+  // if (loading) {
+  //   return <HomeScreenSkeleton />;
+  // }
+
   return (
     <ScreenContainer
       leftComponent
@@ -127,34 +175,18 @@ const HotelDetailScreen = () => {
           <InfoPill type="rating" value={hotel?.starRating} />
         </View>
         <Spacer size={12} vertical />
-        {/* <Text style={styles.description}>{hotel?.description}</Text> */}
-        {/* <FlashList
-        data={hotel?.hotelFacilities}
-        keyExtractor={(item, index) => `${item}-${index}`}
-        contentContainerStyle={styles.container}
-        renderItem={({ item }: { item: string }) => {
-          const Icon = facilityIconMap[item]; // <--- GET ICON HERE
 
-          return (
-            <View style={styles.row}>
-              {Icon ? <Icon size={20} color="#333" /> : null}
-              <Text style={styles.label}>{item}</Text>
-            </View>
-          );
-        }}
-      /> */}
         <FacilitiesList />
         <Spacer size={32} vertical />
-        <View style={dynamicStyles.descriptionContainer}>
-          <Text style={dynamicStyles.descriptionText}>
-            {hotel?.hotelDescription}
-          </Text>
-
-          {/* <Spacer size={16} vertical /> */}
-          {/* <RenderHtml
-          // contentWidth={width}
-          source={{ html: hotel?.hotelDescription }}
-        /> */}
+        <View style={[dynamicStyles.descriptionContainer]}>
+          <FontLoader>
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: hotel?.hotelDescription }}
+              systemFonts={systemFonts}
+              tagsStyles={tagStyles}
+            />
+          </FontLoader>
         </View>
         <Spacer size={16} vertical />
 

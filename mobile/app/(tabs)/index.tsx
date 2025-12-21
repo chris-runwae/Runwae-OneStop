@@ -12,13 +12,15 @@ import {
   UpcomingTripContainer,
   HomeScreenSkeleton,
 } from '@/components';
-import useTrips from '@/hooks/useTrips';
+import { useTrips, useViator } from '@/hooks';
+import { useViatorStore } from '@/stores/useViatorStore';
 import { ICON_NAMES } from '@/constants';
 
 export default function HomeScreen() {
-  const { featuredTrips, loading } = useTrips();
   const { isSignedIn } = useAuth();
-  // const [loading, setLoading] = useState(true);
+  const { featuredTrips, loading } = useTrips();
+  const { getDestinations } = useViator();
+  const { destinations } = useViatorStore();
 
   if (!isSignedIn) {
     return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
@@ -26,6 +28,10 @@ export default function HomeScreen() {
 
   if (loading) {
     return <HomeScreenSkeleton />;
+  }
+
+  if (destinations.length === 0) {
+    getDestinations();
   }
 
   return (

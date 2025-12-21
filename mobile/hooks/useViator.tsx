@@ -1,43 +1,42 @@
-import { useEffect, useState } from 'react';
-import { useUser, useAuth } from '@clerk/clerk-expo';
+import { useCallback, useMemo } from 'react';
 
-import { getSupabaseClient } from '@/lib/supabase';
-import { FeaturedTrip, TripAttendeeRole } from '@/types/trips.types';
+import { Toasts } from '@/utils';
+import endpoints from '@/services/endpoints/viator';
+import { useViatorStore } from '@/stores/useViatorStore';
 
-const useHotels = () => {
-  const [hotels, setHotels] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+const useViator = () => {
+  // const [destinations, setDestinations] = useState<Destination[]>([]);
+  const { setDestinations } = useViatorStore();
+  // const viatorApiKey = process.env.EXPO_PUBLIC_VIATOR_API_KEY;
 
-  const fetchHotels = async (countryCode?: string, city?: string) => {
-    setLoading(true);
-    const options = {
-      method: 'GET',
+  const options = useMemo(
+    () => ({
+      method: 'GET' as const,
       headers: {
-        accept: 'application/json',
-        'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
+        'Accept-Language': 'en-US',
+        Accept: 'application/json;version=2.0',
+        'exp-api-key': 'c6eb1e0b-45be-40d3-a855-513d36bd361e',
       },
-    };
+    }),
+    []
+  );
 
-    fetch(
-      'https://api.liteapi.travel/v3.0/data/hotels?countryCode=US&cityName=New%20York',
-      options
-    )
-      .then((res) => res.json())
-      .then((res) => setHotels(res))
-      .catch((err) => {
-        setError(err as Error);
-        console.error(err);
-      })
-      .finally(() => setLoading(false));
-  };
+  const getDestinations = useCallback(async () => {
+    try {
+      const response = await fetch(endpoints.getDestinations, options);
+      const data = await response.json();
+      setDestinations(data?.destinations);
+    } catch (error) {
+      Toasts.showErrorToast(
+        'We could not get the destinations. Please try again later.'
+      );
+      console.log('Error fetching destinations: ', error);
+    }
+  }, [options, setDestinations]);
 
   return {
-    hotels,
-    loading,
-    error,
-    fetchHotels,
+    getDestinations,
   };
 };
 
-export default useHotels;
+export default useViator;

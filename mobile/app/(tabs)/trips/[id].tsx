@@ -457,6 +457,8 @@ const TripsDetailsScreen = () => {
     );
   };
 
+  // console.log('trip: ', trip?.cover_image_url);
+
   return (
     <>
       <Stack.Screen

@@ -31,11 +31,10 @@ import { useTrips } from '@/hooks';
 const { width } = Dimensions.get('window');
 
 const defaultCoverImages = [
-  'https://unsplash.com/photos/a-white-building-with-a-balcony-and-balconies-M5G5hA1krBk',
-  'https://unsplash.com/photos/an-aerial-view-of-a-beach-with-boats-in-the-water-bS6bgSp1f64',
-  'https://unsplash.com/photos/manarola-italy-rknrvCrfS1k',
-  'https://unsplash.com/photos/assorted-hot-air-balloons-flying-at-high-altitude-during-daytime-hpTH5b6mo2s',
-  'https://unsplash.com/photos/person-riding-airplane-photography-jv15x2Gs5F8',
+  'https://plus.unsplash.com/premium_photo-1719843013722-c2f4d69db940?q=80&w=3024&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1476900543704-4312b78632f8?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1711195662184-167579f85e82?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
 ];
 
 export default function TripCreationScreen() {
@@ -146,7 +145,7 @@ export default function TripCreationScreen() {
 
   const handleSaveTrip = async () => {
     // TODO: Implement actual trip saving logic
-    const trip = await createTrip({
+    await createTrip({
       user_id: user?.id,
       start_date: tripData.startDate,
       end_date: tripData.endDate,

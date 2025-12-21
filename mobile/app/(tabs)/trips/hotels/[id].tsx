@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -92,8 +92,8 @@ const HotelDetailScreen = () => {
         {hotel?.hotelFacilities
           .slice(0, 4)
           .map((item: string, index: number) => (
-            <>
-              <FacilityItem key={item} item={item} />
+            <Fragment key={item}>
+              <FacilityItem item={item} />
               {index < hotel?.hotelFacilities.slice(0, 4).length - 1 && (
                 <View
                   style={[
@@ -102,7 +102,7 @@ const HotelDetailScreen = () => {
                   ]}
                 />
               )}
-            </>
+            </Fragment>
           ))}
       </Pressable>
     );

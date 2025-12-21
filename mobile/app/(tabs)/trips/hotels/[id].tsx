@@ -48,8 +48,11 @@ const HotelDetailScreen = () => {
   });
 
   useEffect(() => {
-    const hotel = fetchHotelById(id as string);
-    setHotelData(hotel);
+    const loadHotel = async () => {
+      const hotelData = await fetchHotelById(id as string);
+      setHotelData(hotelData);
+    };
+    loadHotel();
   }, [fetchHotelById, id]);
 
   const ImageContainer = () => {

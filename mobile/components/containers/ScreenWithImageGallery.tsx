@@ -521,7 +521,6 @@ const ScreenWithImageGallery = ({
       .filter((img) => img?.url || img?.urlHD);
 
     const borderStyle = (index: number) => {
-      console.log('index: ', index);
       return {
         borderBottomLeftRadius: index === 0 ? 8 : 0,
         borderBottomRightRadius: index === helperImages.length - 1 ? 8 : 0,

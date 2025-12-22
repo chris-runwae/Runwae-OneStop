@@ -206,18 +206,22 @@ const HotelDetailScreen = () => {
 
       <FacilitiesList />
       <Spacer size={16} vertical />
-      <View style={[dynamicStyles.divider]} />
+      {/* <View style={[dynamicStyles.divider]} />
+      <Spacer size={16} vertical /> */}
+
+      <Collapsible title="Description" iconPosition="right">
+        <View style={[dynamicStyles.descriptionContainer]}>
+          <FontLoader>
+            <RenderHtml
+              contentWidth={width}
+              source={{ html: hotel?.hotelDescription }}
+              systemFonts={systemFonts}
+              tagsStyles={tagStyles}
+            />
+          </FontLoader>
+        </View>
+      </Collapsible>
       <Spacer size={16} vertical />
-      <View style={[dynamicStyles.descriptionContainer]}>
-        <FontLoader>
-          <RenderHtml
-            contentWidth={width}
-            source={{ html: hotel?.hotelDescription }}
-            systemFonts={systemFonts}
-            tagsStyles={tagStyles}
-          />
-        </FontLoader>
-      </View>
       <View style={[dynamicStyles.divider]} />
 
       <Spacer size={16} vertical />
@@ -249,8 +253,8 @@ const HotelDetailScreen = () => {
             contentContainerStyle={{ paddingHorizontal: 8 }}
           />
           <Spacer size={16} vertical />
-          <View style={[dynamicStyles.divider]} />
-          <Spacer size={16} vertical />
+          {/* <View style={[dynamicStyles.divider]} />
+          <Spacer size={16} vertical /> */}
         </>
       )}
 

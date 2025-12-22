@@ -24,6 +24,7 @@ import {
   Collapsible,
   InfoPill,
   HomeScreenSkeleton,
+  HotelReviewCard,
   ScreenContainer,
   SectionHeader,
   Spacer,
@@ -241,6 +242,15 @@ const HotelDetailScreen = () => {
               title="Reviews"
               linkText="More"
               linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
+            />
+            <FlashList
+              data={hotelReviews}
+              renderItem={({ item }) => <HotelReviewCard {...item} />}
+              keyExtractor={(item) => `${item.name}-${item.date}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
+              contentContainerStyle={{ paddingHorizontal: 8 }}
             />
           </>
         )}

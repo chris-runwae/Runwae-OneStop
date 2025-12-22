@@ -27,6 +27,8 @@ import MenuItem from './buttons/MenuItem';
 import TripItemCards from './cards/TripItemCards';
 import SavedItemsSection from './containers/SavedItemsSection';
 import { Collapsible } from './ui/collapsible';
+import HotelReviewCard from './cards/HotelReviewCard';
+import StarRating from './ui/StarRating';
 
 export {
   Collapsible,
@@ -59,4 +61,6 @@ export {
   MenuItem,
   TripItemCards,
   SavedItemsSection,
+  HotelReviewCard,
+  StarRating,
 };

@@ -1,13 +1,14 @@
-import { StyleSheet, View } from "react-native";
-import React from "react";
-import { useUser } from "@clerk/clerk-expo";
-import { Image } from "expo-image";
+import { StyleSheet, View } from 'react-native';
+import React from 'react';
+import { useUser } from '@clerk/clerk-expo';
+import { Image } from 'expo-image';
 
 type UserAvatarProps = {
   size?: number;
+  userImage?: string;
 };
 
-const UserAvatar = ({ size = 40 }: UserAvatarProps) => {
+const UserAvatar = ({ size = 40, userImage }: UserAvatarProps) => {
   const { user } = useUser();
 
   const styles = StyleSheet.create({
@@ -27,7 +28,11 @@ const UserAvatar = ({ size = 40 }: UserAvatarProps) => {
 
   return (
     <View style={styles.container}>
-      <Image source={user?.imageUrl} style={styles.image} contentFit="cover" />
+      <Image
+        source={userImage || user?.imageUrl}
+        style={styles.image}
+        contentFit="cover"
+      />
     </View>
   );
 };

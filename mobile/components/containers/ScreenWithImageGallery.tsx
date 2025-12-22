@@ -240,7 +240,7 @@ const ScreenWithImageGallery = ({
     helperImagesContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'stretch',
       gap: 6,
       overflow: 'hidden',
     },
@@ -506,28 +506,58 @@ const ScreenWithImageGallery = ({
             </LinearGradient>
           </View>
         </TouchableOpacity>
-        {images && images.length > 1 && (
-          <>
-            <Spacer size={8} vertical />
-            <View style={styles.helperImagesContainer}>
-              {images.slice(1, 5).map((image: ImageType, index: number) => (
-                <TouchableOpacity
-                  key={image?.url || index}
-                  activeOpacity={0.9}
-                  onPress={() => handleImagePress(index + 1)}
-                  style={styles.helperImageWrapper}>
-                  <Image
-                    source={{ uri: image?.url }}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="cover"
-                  />
-                  <View style={styles.imageOverlay} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
       </Animated.View>
+    );
+  };
+
+  // Helper images component (separate from animated header)
+  const HelperImages = () => {
+    if (!images || images.length <= 1) {
+      return null;
+    }
+
+    const helperImages = images
+      .slice(1, 5)
+      .filter((img) => img?.url || img?.urlHD);
+
+    const borderStyle = (index: number) => {
+      console.log('index: ', index);
+      return {
+        borderBottomLeftRadius: index === 0 ? 8 : 0,
+        borderBottomRightRadius: index === helperImages.length - 1 ? 8 : 0,
+      };
+    };
+
+    if (helperImages.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        <Spacer size={8} vertical />
+        <View style={styles.helperImagesContainer}>
+          {helperImages.map((image: ImageType, index: number) => {
+            const imageUrl = image?.url || image?.urlHD;
+            if (!imageUrl) return null;
+
+            return (
+              <TouchableOpacity
+                key={`${imageUrl}-${index}`}
+                activeOpacity={0.9}
+                onPress={() => handleImagePress(index + 1)}
+                style={[styles.helperImageWrapper, borderStyle(index)]}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <View style={styles.imageOverlay} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </>
     );
   };
 
@@ -541,6 +571,7 @@ const ScreenWithImageGallery = ({
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}>
           <LargeHeader />
+          <HelperImages />
 
           <Spacer size={16} vertical />
           <View style={styles.content}>{children}</View>

@@ -182,8 +182,6 @@ const HotelDetailScreen = () => {
     },
   };
 
-  console.log('hotelReviews', JSON.stringify(hotelReviews, null, 2));
-
   if (loading) {
     return <HomeScreenSkeleton />;
   }
@@ -252,8 +250,15 @@ const HotelDetailScreen = () => {
               ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
               contentContainerStyle={{ paddingHorizontal: 8 }}
             />
+            <Spacer size={16} vertical />
+            <View style={[dynamicStyles.divider]} />
+            <Spacer size={16} vertical />
           </>
         )}
+
+        {/* {hotel?.rooms.length > 0 && (
+         
+        )} */}
 
         <Spacer size={132} vertical />
       </ScrollView>

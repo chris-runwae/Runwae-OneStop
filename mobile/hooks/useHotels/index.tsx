@@ -87,7 +87,6 @@ const useHotels = () => {
       try {
         const response = await fetch(url, options);
         const data = await response.json();
-        console.log('data ->> ', JSON.stringify(data, null, 2));
         setHotelReviews(data?.data);
         setLoading(false);
         return data?.data;

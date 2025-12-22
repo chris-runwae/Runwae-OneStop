@@ -7,7 +7,7 @@ import {
   useColorScheme,
   useWindowDimensions,
 } from 'react-native';
-import { RelativePathString, useLocalSearchParams } from 'expo-router';
+import { RelativePathString, useLocalSearchParams, router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import RenderHtml, {
@@ -29,6 +29,7 @@ import {
   SectionHeader,
   Spacer,
   Text,
+  PrimaryButton,
 } from '@/components';
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants';
@@ -256,9 +257,20 @@ const HotelDetailScreen = () => {
           </>
         )}
 
-        {/* {hotel?.rooms.length > 0 && (
-         
-        )} */}
+        {hotel?.rooms && hotel.rooms.length > 0 && (
+          <>
+            <PrimaryButton
+              title="Select Rooms"
+              onPress={() => {
+                router.push({
+                  pathname: '/trips/hotels/room/list' as RelativePathString,
+                  params: { hotelId: id as string },
+                });
+              }}
+            />
+            <Spacer size={16} vertical />
+          </>
+        )}
 
         <Spacer size={132} vertical />
       </ScrollView>

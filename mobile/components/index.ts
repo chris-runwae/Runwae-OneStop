@@ -26,8 +26,10 @@ import InfoPill from './pills/InfoPill';
 import MenuItem from './buttons/MenuItem';
 import TripItemCards from './cards/TripItemCards';
 import SavedItemsSection from './containers/SavedItemsSection';
+import { Collapsible } from './ui/collapsible';
 
 export {
+  Collapsible,
   Spacer,
   Button,
   CustomImage,

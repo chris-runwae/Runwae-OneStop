@@ -7,7 +7,7 @@ import {
   useColorScheme,
   useWindowDimensions,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { RelativePathString, useLocalSearchParams } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import RenderHtml, {
@@ -21,9 +21,11 @@ import {
 } from '@expo-google-fonts/dm-sans';
 
 import {
+  Collapsible,
   InfoPill,
   HomeScreenSkeleton,
   ScreenContainer,
+  SectionHeader,
   Spacer,
   Text,
 } from '@/components';
@@ -53,25 +55,42 @@ const HotelDetailScreen = () => {
   const [hotelData, setHotelData] = useState<any>(null);
   const { width } = useWindowDimensions();
   const dynamicStyles = StyleSheet.create({
+    //Containers
+    descriptionContainer: {},
+    importantInformationContainer: {
+      backgroundColor: colors.backgroundColors.subtle,
+      paddingVertical: 16,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.borderColors.subtle,
+    },
+
+    //Text styles
     title: {
       color: colors.textColors.default,
+    },
+    subHeader: {
+      ...textStyles.bold_20,
+      fontSize: 16,
+      lineHeight: 20,
+      letterSpacing: 0,
+      color: colors.textColors.default,
+      marginBottom: 8,
     },
     facilityRowSeparator: {
       backgroundColor: colors.borderColors.default,
     },
     divider: {
-      height: 1,
-      backgroundColor: colors.borderColors.default,
-    },
-    descriptionContainer: {
-      borderTopWidth: 2,
-      borderBottomWidth: 2,
-      borderColor: colors.borderColors.default,
-      paddingVertical: 20,
+      height: 2,
+      backgroundColor: colors.borderColors.subtle,
     },
     descriptionText: {
-      ...textStyles.regular_14,
-      color: colors.borderColors.default,
+      ...textStyles.subtitle_Regular,
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: 0,
+      color: colors.textColors.subtle,
     },
   });
 
@@ -139,9 +158,8 @@ const HotelDetailScreen = () => {
   const tagStyles: MixedStyleRecord = {
     body: {
       whiteSpace: 'normal',
-      // fontFamily: 'dm-sans',
-      color: colors.textColors.subtle,
-      // textAlign: 'center',
+      fontFamily: 'dm-sans',
+      color: colors.textColors.subtitle,
     },
     p: {
       marginBottom: 16,
@@ -149,12 +167,13 @@ const HotelDetailScreen = () => {
     strong: {
       fontWeight: 'bold' as const,
       fontFamily: 'dm-sans-bold',
+      color: colors.textColors.default,
     },
   };
 
-  // if (loading) {
-  //   return <HomeScreenSkeleton />;
-  // }
+  if (loading) {
+    return <HomeScreenSkeleton />;
+  }
 
   return (
     <ScreenContainer
@@ -177,7 +196,9 @@ const HotelDetailScreen = () => {
         <Spacer size={12} vertical />
 
         <FacilitiesList />
-        <Spacer size={32} vertical />
+        <Spacer size={16} vertical />
+        <View style={[dynamicStyles.divider]} />
+        <Spacer size={16} vertical />
         <View style={[dynamicStyles.descriptionContainer]}>
           <FontLoader>
             <RenderHtml
@@ -188,7 +209,26 @@ const HotelDetailScreen = () => {
             />
           </FontLoader>
         </View>
+        <View style={[dynamicStyles.divider]} />
+
         <Spacer size={16} vertical />
+        <Collapsible title="Important Information">
+          <View style={[dynamicStyles.importantInformationContainer]}>
+            <Text style={[dynamicStyles.descriptionText]}>
+              {hotel?.hotelImportantInformation}
+            </Text>
+          </View>
+        </Collapsible>
+
+        <Spacer size={16} vertical />
+        <View style={[dynamicStyles.divider]} />
+        <Spacer size={16} vertical />
+
+        <SectionHeader
+          title="Reviews"
+          linkText="More"
+          linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
+        />
 
         <Spacer size={132} vertical />
       </ScrollView>
@@ -219,15 +259,12 @@ const styles = StyleSheet.create({
   },
 
   image: {
-    // width: '100%',
     flex: 1,
     height: 95,
-    // borderRadius: 16,
   },
   mainPhoto: {
     width: '100%',
     height: 186,
-    // borderRadius: 16,
   },
 
   title: {

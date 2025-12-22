@@ -37,7 +37,7 @@ export const COLORS = {
     380: '#EDEDED',
     360: '#F0F0F0',
     350: '#FAFAFA',
-    300: '#F5F5F5',
+    300: '#F8F9FA',
     200: '#E5E5E5',
     100: '#D4D4D4',
     50: '#C4C4C4',
@@ -114,7 +114,7 @@ export const Colors = {
     text: COLORS.black.default,
     backgroundColors: {
       default: COLORS.white.default,
-      subtle: COLORS.gray[350],
+      subtle: COLORS.gray[300],
     },
     textColors: {
       default: COLORS.black.default,

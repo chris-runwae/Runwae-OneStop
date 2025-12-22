@@ -134,7 +134,7 @@ export default function ProfileScreen() {
         </View>
 
         <Spacer size={24} vertical />
-        <Text style={dynamicStyle.versionText}>Version 0.1.1</Text>
+        <Text style={dynamicStyle.versionText}>Version 0.1.2</Text>
       </ScrollView>
     </ScreenContainer>
   );

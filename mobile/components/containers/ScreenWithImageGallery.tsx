@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ImageBackground, Image } from 'expo-image';
+import { Image } from 'expo-image';
 import {
   ArrowLeftIcon,
   ForwardIcon,
@@ -245,8 +245,14 @@ const ScreenWithImageGallery = ({
       overflow: 'hidden',
     },
     image: {
+      width: '100%',
+      height: '100%',
+    },
+    helperImageWrapper: {
       flex: 1,
       height: 95,
+      overflow: 'hidden',
+      position: 'relative',
     },
     contentContainer: {
       paddingHorizontal: 12,
@@ -509,13 +515,13 @@ const ScreenWithImageGallery = ({
                   key={image?.url || index}
                   activeOpacity={0.9}
                   onPress={() => handleImagePress(index + 1)}
-                  style={[styles.imageWrapper, { flex: 1 }]}>
+                  style={styles.helperImageWrapper}>
                   <Image
                     source={{ uri: image?.url }}
-                    style={styles.image}
+                    style={StyleSheet.absoluteFill}
                     contentFit="cover"
                   />
-                  <View style={[styles.imageOverlay, { borderRadius: 0 }]} />
+                  <View style={styles.imageOverlay} />
                 </TouchableOpacity>
               ))}
             </View>

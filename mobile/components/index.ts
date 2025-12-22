@@ -29,6 +29,10 @@ import SavedItemsSection from './containers/SavedItemsSection';
 import { Collapsible } from './ui/collapsible';
 import HotelReviewCard from './cards/HotelReviewCard';
 import StarRating from './ui/StarRating';
+import ScreenWithImageGallery from './containers/ScreenWithImageGallery';
+import { ImageGallery } from './containers/ImageGallery';
+import { MenuModal, MenuOption } from './containers/MenuModal';
+import { ShareBottomSheet } from './containers/ShareBottomSheet';
 
 export {
   Collapsible,
@@ -63,4 +67,9 @@ export {
   SavedItemsSection,
   HotelReviewCard,
   StarRating,
+  ScreenWithImageGallery,
+  ImageGallery,
+  MenuModal,
+  MenuOption,
+  ShareBottomSheet,
 };

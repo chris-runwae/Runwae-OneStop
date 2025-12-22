@@ -1,14 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  useColorScheme,
-  useWindowDimensions,
-} from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { FlashList } from '@shopify/flash-list';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, useColorScheme } from 'react-native';
+import { RelativePathString, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 
 import {
@@ -18,7 +10,6 @@ import {
   PrimaryButton,
   HomeScreenSkeleton,
   InfoPill,
-  Collapsible,
 } from '@/components';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
@@ -37,91 +28,96 @@ const RoomDetailScreen = () => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { hotel, loading, fetchHotelById } = useHotels();
-  const { width } = useWindowDimensions();
 
   const [rate, setRate] = useState<any>(null);
+  const [rateLoading, setRateLoading] = useState(false);
 
-  const dynamicStyles = StyleSheet.create({
-    image: {
-      width: '100%',
-      height: 300,
-      borderRadius: 16,
-      marginBottom: 16,
-    },
-    title: {
-      ...textStyles.bold_20,
-      fontSize: 24,
-      color: colors.textColors.default,
-      marginBottom: 8,
-    },
-    description: {
-      ...textStyles.regular_14,
-      fontSize: 14,
-      lineHeight: 20,
-      color: colors.textColors.subtle,
-      marginBottom: 16,
-    },
-    infoRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-      marginBottom: 16,
-    },
-    sectionTitle: {
-      ...textStyles.bold_20,
-      fontSize: 18,
-      color: colors.textColors.default,
-      marginBottom: 12,
-    },
-    amenityItem: {
-      padding: 8,
-      borderRadius: 8,
-      backgroundColor: colors.backgroundColors.subtle,
-      marginRight: 8,
-      marginBottom: 8,
-    },
-    amenityText: {
-      ...textStyles.regular_14,
-      fontSize: 12,
-      color: colors.textColors.default,
-    },
-    rateContainer: {
-      backgroundColor: colors.backgroundColors.subtle,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: colors.borderColors.default,
-    },
-    ratePrice: {
-      ...textStyles.bold_20,
-      fontSize: 28,
-      color: colors.primaryColors.default,
-      marginBottom: 4,
-    },
-    rateInfo: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 12,
-      color: colors.textColors.subtle,
-      marginBottom: 2,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: colors.borderColors.subtle,
-      marginVertical: 16,
-    },
-    bedTypeContainer: {
-      padding: 12,
-      backgroundColor: colors.backgroundColors.subtle,
-      borderRadius: 8,
-      marginBottom: 8,
-    },
-    bedTypeText: {
-      ...textStyles.regular_14,
-      fontSize: 14,
-      color: colors.textColors.default,
-    },
-  });
+  // Memoize styles to prevent recreation on every render
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        image: {
+          width: '100%',
+          height: 300,
+          borderRadius: 16,
+          marginBottom: 16,
+        },
+        title: {
+          ...textStyles.bold_20,
+          fontSize: 24,
+          color: colors.textColors.default,
+          marginBottom: 8,
+        },
+        description: {
+          ...textStyles.regular_14,
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textColors.subtle,
+          marginBottom: 16,
+        },
+        infoRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: 8,
+          marginBottom: 16,
+        },
+        sectionTitle: {
+          ...textStyles.bold_20,
+          fontSize: 18,
+          color: colors.textColors.default,
+          marginBottom: 12,
+        },
+        amenityItem: {
+          padding: 8,
+          borderRadius: 8,
+          backgroundColor: colors.backgroundColors.subtle,
+          marginRight: 8,
+          marginBottom: 8,
+        },
+        amenityText: {
+          ...textStyles.regular_14,
+          fontSize: 12,
+          color: colors.textColors.default,
+        },
+        rateContainer: {
+          backgroundColor: colors.backgroundColors.subtle,
+          padding: 16,
+          borderRadius: 12,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: colors.borderColors.default,
+        },
+        ratePrice: {
+          ...textStyles.bold_20,
+          fontSize: 28,
+          color: colors.primaryColors.default,
+          marginBottom: 4,
+        },
+        rateInfo: {
+          ...textStyles.subtitle_Regular,
+          fontSize: 12,
+          color: colors.textColors.subtle,
+          marginBottom: 2,
+        },
+        divider: {
+          height: 1,
+          backgroundColor: colors.borderColors.subtle,
+          marginVertical: 16,
+        },
+        bedTypeContainer: {
+          padding: 12,
+          backgroundColor: colors.backgroundColors.subtle,
+          borderRadius: 8,
+          marginBottom: 8,
+        },
+        bedTypeText: {
+          ...textStyles.regular_14,
+          fontSize: 14,
+          color: colors.textColors.default,
+        },
+      }),
+    [colors]
+  );
 
   // Find the room from hotel data
   const room = useMemo(() => {
@@ -129,74 +125,91 @@ const RoomDetailScreen = () => {
     return hotel.rooms.find((r: any) => r.id === parseInt(roomId));
   }, [hotel?.rooms, roomId]);
 
-  // Fetch hotel data
-  useEffect(() => {
-    const loadHotel = async () => {
-      if (hotelId) {
-        await fetchHotelById(hotelId);
-      }
-    };
-    loadHotel();
+  // Memoize photo URLs to prevent recalculation - must be before early return
+  const mainPhoto = useMemo(
+    () =>
+      room?.photos && room.photos.length > 0
+        ? room.photos[0].url
+        : hotel?.main_photo,
+    [room?.photos, hotel?.main_photo]
+  );
+
+  const additionalPhotos = useMemo(
+    () =>
+      room?.photos && room.photos.length > 1 ? room.photos.slice(1, 5) : [],
+    [room?.photos]
+  );
+
+  // Fetch hotel data - use useCallback to prevent infinite loops
+  const loadHotel = useCallback(async () => {
+    if (hotelId) {
+      await fetchHotelById(hotelId);
+    }
   }, [hotelId, fetchHotelById]);
 
-  // Fetch rate if offerId is provided
   useEffect(() => {
-    const loadRate = async () => {
-      if (!hotelId || !offerId || !checkin || !checkout) return;
+    loadHotel();
+  }, [loadHotel]);
 
-      try {
-        const options = {
-          method: 'POST',
-          headers: {
-            accept: 'application/json',
-            'content-type': 'application/json',
-            'X-API-Key': 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9',
-          },
-          body: JSON.stringify({
-            hotelIds: [hotelId],
-            occupancies: [{ adults: parseInt(adults || '1') }],
-            currency: 'USD',
-            guestNationality: 'US',
-            checkin,
-            checkout,
-            roomMapping: true,
-          }),
-        };
+  // Fetch rate if offerId is provided - memoize to prevent unnecessary calls
+  const loadRate = useCallback(async () => {
+    if (!hotelId || !offerId || !checkin || !checkout) return;
 
-        const response = await fetch(
-          'https://api.liteapi.travel/v3.0/hotels/rates',
-          options
-        );
-        const data = await response.json();
+    setRateLoading(true);
+    try {
+      const options = {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'X-API-Key': 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9',
+        },
+        body: JSON.stringify({
+          hotelIds: [hotelId],
+          occupancies: [{ adults: parseInt(adults || '1') }],
+          currency: 'USD',
+          guestNationality: 'US',
+          checkin,
+          checkout,
+          roomMapping: true,
+        }),
+      };
 
-        if (data.data) {
-          const hotelRate = data.data.find((r: any) => r.hotelId === hotelId);
-          if (hotelRate) {
-            // Find the specific rate by offerId
-            for (const roomType of hotelRate.roomTypes) {
-              if (roomType.offerId === offerId) {
-                setRate(roomType.rates[0]); // Get first rate
-                break;
-              }
+      const response = await fetch(
+        'https://api.liteapi.travel/v3.0/hotels/rates',
+        options
+      );
+      const data = await response.json();
+
+      if (data.data) {
+        const hotelRate = data.data.find((r: any) => r.hotelId === hotelId);
+        if (hotelRate) {
+          // Find the specific rate by offerId
+          for (const roomType of hotelRate.roomTypes) {
+            if (roomType.offerId === offerId) {
+              setRate(roomType.rates[0]); // Get first rate
+              break;
             }
           }
         }
-      } catch (error) {
-        console.error('Error fetching rate:', error);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching rate:', error);
+    } finally {
+      setRateLoading(false);
+    }
+  }, [hotelId, offerId, checkin, checkout, adults]);
 
-    loadRate();
+  useEffect(() => {
+    if (!rateLoading) {
+      loadRate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelId, offerId, checkin, checkout, adults]);
 
   if (loading || !room) {
     return <HomeScreenSkeleton />;
   }
-
-  const mainPhoto =
-    room.photos && room.photos.length > 0
-      ? room.photos[0].url
-      : hotel?.main_photo;
 
   return (
     <ScreenContainer
@@ -211,28 +224,28 @@ const RoomDetailScreen = () => {
             source={{ uri: mainPhoto }}
             style={dynamicStyles.image}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
           />
         )}
 
-        {room.photos && room.photos.length > 1 && (
+        {additionalPhotos.length > 0 && (
           <>
-            <FlashList
-              data={room.photos.slice(1, 5)}
-              renderItem={({ item }: { item: any }) => (
-                <Image
-                  source={{ uri: item.url }}
-                  style={[dynamicStyles.image, { height: 200 }]}
-                  contentFit="cover"
-                />
-              )}
-              keyExtractor={(item: any, index: number) =>
-                `${item.url}-${index}`
-              }
+            <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <Spacer size={8} horizontal />}
-              estimatedItemSize={200}
-            />
+              contentContainerStyle={{ gap: 8 }}>
+              {additionalPhotos.map((photo: any, index: number) => (
+                <Image
+                  key={`${photo.url}-${index}`}
+                  source={{ uri: photo.url }}
+                  style={[dynamicStyles.image, { height: 200, width: 300 }]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  priority="normal"
+                />
+              ))}
+            </ScrollView>
             <Spacer size={16} vertical />
           </>
         )}
@@ -348,12 +361,22 @@ const RoomDetailScreen = () => {
         <PrimaryButton
           title="Book Room"
           onPress={() => {
-            // Non-functional for now
-            console.log('Book room pressed');
+            // Only pass essential data, not the entire photos array
+            router.push({
+              pathname: '/trips/hotels/room/booking' as RelativePathString,
+              params: {
+                roomId: roomId as string,
+                hotelId: hotelId as string,
+                offerId: offerId || '',
+                checkin: checkin || '',
+                checkout: checkout || '',
+                adults: adults || '1',
+              },
+            });
           }}
         />
 
-        <Spacer size={32} vertical />
+        <Spacer size={132} vertical />
       </ScrollView>
     </ScreenContainer>
   );

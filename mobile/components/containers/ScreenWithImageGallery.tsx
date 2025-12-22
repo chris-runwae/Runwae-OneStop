@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   StyleProp,
   StyleSheet,
@@ -6,20 +6,20 @@ import {
   View,
   ViewStyle,
   useColorScheme,
-  TouchableOpacity,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ImageBackground, Image } from 'expo-image';
-
 import {
   ArrowLeftIcon,
-  BellIcon,
   ForwardIcon,
   Menu,
+  Edit,
+  Trash2,
 } from 'lucide-react-native';
 import { Colors } from '@/constants';
-import { MenuItem, Spacer, Text } from '@/components';
+import { Spacer, Text } from '@/components';
 import { router } from 'expo-router';
 import Animated, {
   interpolate,
@@ -29,7 +29,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { textStyles } from '@/utils/styles';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { ImageGallery } from './ImageGallery';
+import { MenuModal, MenuOption } from './MenuModal';
+import { ShareBottomSheet } from './ShareBottomSheet';
+import BottomSheet from '@gorhom/bottom-sheet';
 
 type ImageType = {
   url?: string;
@@ -51,18 +54,37 @@ type ScreenContainerProps = {
   rightComponent?: boolean;
   className?: string;
   images?: ImageType[];
+  menuOptions?: MenuOption[];
+  shareData?: {
+    title?: string;
+    message?: string;
+    url?: string;
+    imageUrl?: string;
+  };
+  onShare?: () => void;
+  shareAdditionalOptions?: {
+    title: string;
+    onPress: () => void;
+  }[];
 };
 
 const ScreenWithImageGallery = ({
   images,
   children,
   header,
+  menuOptions,
+  shareData,
+  onShare,
+  shareAdditionalOptions,
 }: ScreenContainerProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
+  const [menuModalVisible, setMenuModalVisible] = useState(false);
 
   const coverImage =
     typeof images === 'string'
@@ -72,23 +94,33 @@ const ScreenWithImageGallery = ({
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollOffset(scrollRef);
   const HEADER_HEIGHT = 350;
-  const TRANSITION_START = 100; // Start transitioning early when text approaches top
-  const TRANSITION_END = 250; // Complete transition at 250px
-  const TRANSITION_RANGE = TRANSITION_END - TRANSITION_START; // 150px smooth transition window
+  const TRANSITION_START = 100;
+  const TRANSITION_END = 250;
+  const TRANSITION_RANGE = TRANSITION_END - TRANSITION_START;
 
-  // Helper function to convert hex to rgba
-  const hexToRgba = (hex: string, opacity: number): string => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return hex;
-    const r = parseInt(result[1], 16);
-    const g = parseInt(result[2], 16);
-    const b = parseInt(result[3], 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
+  // Default menu options if none provided
+  const defaultMenuOptions: MenuOption[] = menuOptions || [
+    {
+      id: 'edit',
+      label: 'Edit',
+      icon: Edit,
+      onPress: () => {
+        console.log('Edit pressed');
+      },
+    },
+    {
+      id: 'delete',
+      label: 'Delete',
+      icon: Trash2,
+      onPress: () => {
+        console.log('Delete pressed');
+      },
+      destructive: true,
+    },
+  ];
 
-  // Animated styles for large header - must be called before early return
+  // Animated styles for large header
   const largeHeaderAnimatedStyle = useAnimatedStyle(() => {
-    // Calculate progress: 0 when scroll < TRANSITION_START, 1 when scroll >= TRANSITION_END
     const scrollValue = scrollOffset.value;
     const progress =
       scrollValue < TRANSITION_START
@@ -120,12 +152,12 @@ const ScreenWithImageGallery = ({
       height: headerHeight,
       opacity,
       transform: [{ translateY }],
+      overflow: 'hidden',
     };
   });
 
   // Animated styles for compact header
   const compactHeaderAnimatedStyle = useAnimatedStyle(() => {
-    // Calculate progress: 0 when scroll < TRANSITION_START, 1 when scroll >= TRANSITION_END
     const scrollValue = scrollOffset.value;
     const progress =
       scrollValue < TRANSITION_START
@@ -134,7 +166,6 @@ const ScreenWithImageGallery = ({
           ? 1
           : (scrollValue - TRANSITION_START) / TRANSITION_RANGE;
 
-    // Make it visible - ensure it shows up as soon as transition starts
     const opacity = interpolate(
       progress,
       [0, 0.2, 0.6, 1],
@@ -149,38 +180,17 @@ const ScreenWithImageGallery = ({
     };
   });
 
-  // STYLES
-
-  const dynamicStyles = StyleSheet.create({
-    infoContainer: {
-      borderColor: colors.borderColors.default,
-      maxWidth: 200,
-    },
-    emptyText: {
-      color: colors.textColors.subtle,
-    },
-    iconButton: {
-      backgroundColor: colors.backgroundColors.subtle,
-    },
-    iconContentContainer: {
-      // position: 'absolute',
-      top: 0 + insets.top,
-      left: 0,
-      right: 0,
-      // bottom: 0,
-      // paddingTop: insets.top + 12,
-    },
-  });
+  const handleImagePress = (index: number) => {
+    setGalleryInitialIndex(index);
+    setGalleryVisible(true);
+  };
 
   const styles = StyleSheet.create({
-    //Container
     container: {
       flex: 1,
       backgroundColor: colors.backgroundColors.default,
       paddingTop: insets.top + 10,
     },
-
-    //Header
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -215,17 +225,11 @@ const ScreenWithImageGallery = ({
       alignItems: 'center',
       justifyContent: 'center',
     },
-
-    //Content
     content: {
       flex: 1,
       paddingHorizontal: 12,
-      // backgroundColor: colors.backgroundColors.default,
-      // backgroundColor: 'red',
       height: '100%',
     },
-
-    //Cover Image
     coverImage: {
       width: '100%',
       height: 350,
@@ -233,8 +237,6 @@ const ScreenWithImageGallery = ({
       marginBottom: 16,
       overflow: 'hidden',
     },
-
-    //HEADER STYLES
     helperImagesContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -250,19 +252,13 @@ const ScreenWithImageGallery = ({
       paddingHorizontal: 12,
     },
     imageBackground: {
-      backgroundColor: colors.imageOverlay,
       width: '100%',
-      // height: '100%',
       height: 350,
-      flex: 1,
       flexDirection: 'column',
       position: 'relative',
+      backgroundColor: '#000',
     },
     gradientOverlay: {
-      // position: 'absolute',
-      // bottom: 0,
-      // left: 0,
-      // right: 0,
       height: '100%',
       justifyContent: 'flex-end',
     },
@@ -270,14 +266,16 @@ const ScreenWithImageGallery = ({
       width: '100%',
       justifyContent: 'flex-end',
       paddingHorizontal: 12,
-      // alignItems: 'center',
-      // paddingBottom: 16,
     },
     iconContentContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: 12,
+      position: 'absolute',
+      top: 0 + insets.top,
+      left: 0,
+      right: 0,
     },
     iconButton: {
       padding: 8,
@@ -301,8 +299,6 @@ const ScreenWithImageGallery = ({
       fontSize: 13,
       lineHeight: 19.5,
     },
-
-    //Text styles
     title: {
       ...textStyles.bold_20,
       fontSize: 32,
@@ -356,22 +352,24 @@ const ScreenWithImageGallery = ({
       textAlign: 'center',
       marginHorizontal: 8,
     },
+    imageOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.15)',
+      zIndex: 1,
+      pointerEvents: 'none',
+    },
+    imageWrapper: {
+      width: '100%',
+      height: 350,
+      overflow: 'hidden',
+    },
   });
 
-  // RENDERERS
-  const defaultRightComponent = (
-    <View style={styles.svgContainer}>
-      <BellIcon size={20} color={colors.headerIcon} />
-    </View>
-  );
-
-  const defaultLeftComponent = (
-    <Pressable onPress={() => router.back()} style={styles.svgContainer}>
-      <ArrowLeftIcon size={20} color={colors.headerIcon} />
-    </Pressable>
-  );
-
-  // Compact header component for Stack.Screen
+  // Compact header component
   const CompactHeader = () => {
     return (
       <Animated.View
@@ -386,10 +384,7 @@ const ScreenWithImageGallery = ({
         ]}>
         <View style={styles.compactHeaderContent}>
           <Pressable
-            onPress={() => {
-              console.log('Back pressed in CompactHeader');
-              router.back();
-            }}
+            onPress={() => router.back()}
             style={[
               styles.compactIconButton,
               { backgroundColor: colors.backgroundColors.subtle },
@@ -412,7 +407,7 @@ const ScreenWithImageGallery = ({
             </Pressable>
 
             <Pressable
-              onPress={() => {}}
+              onPress={() => setMenuModalVisible(true)}
               style={[
                 styles.compactIconButton,
                 { backgroundColor: colors.backgroundColors.subtle },
@@ -427,92 +422,111 @@ const ScreenWithImageGallery = ({
 
   // Large header component
   const LargeHeader = () => {
+    if (!coverImage) {
+      return null;
+    }
+
     return (
       <Animated.View style={largeHeaderAnimatedStyle}>
-        <ImageBackground
-          source={{ uri: coverImage ?? '' }}
-          style={styles.imageBackground}
-          // imageStyle={{ flex: 1, backgroundColor: colors.imageOverlay35 }}
-          contentFit="cover"
-          transition={1000}>
-          <View
-            style={[
-              styles.iconContentContainer,
-              dynamicStyles.iconContentContainer,
-              { position: 'absolute' },
-            ]}>
-            <Pressable
-              onPress={() => {
-                router.back();
-                console.log('Back pressed in LargeHeader');
-              }}
-              style={[
-                styles.iconButton,
-                {
-                  backgroundColor: colors.backgroundColors.default,
-                  zIndex: 1000,
-                },
-              ]}>
-              <ArrowLeftIcon size={20} color={colors.textColors.default} />
-            </Pressable>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {header?.title}
-            </Text>
-            <View
-              style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-              <Pressable
-                onPress={() => {
-                  bottomSheetRef.current?.expand();
-                }}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.backgroundColors.default,
-                    zIndex: 1000,
-                  },
-                ]}>
-                <ForwardIcon size={20} color={colors.textColors.default} />
-              </Pressable>
-
-              <Pressable
-                onPress={() => {}}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.backgroundColors.default,
-                    zIndex: 1000,
-                  },
-                ]}>
-                <Menu size={20} color={colors.textColors.default} />
-              </Pressable>
-            </View>
-          </View>
-        </ImageBackground>
-        <Spacer size={8} vertical />
-        <View style={styles.helperImagesContainer}>
-          {images?.slice(1, 5).map((image: any) => (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => images && images.length > 0 && handleImagePress(0)}
+          style={styles.imageWrapper}>
+          <View style={styles.imageBackground}>
             <Image
-              key={image?.url}
-              source={{ uri: image?.url }}
-              style={styles.image}
+              source={{ uri: coverImage }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={1000}
+              cachePolicy="memory-disk"
             />
-          ))}
-        </View>
+            {/* Darker overlay for better text readability */}
+            <View style={styles.imageOverlay} />
+            <LinearGradient
+              colors={['transparent', 'rgba(0, 0, 0, 0.5)']}
+              style={[styles.gradientOverlay, { zIndex: 2 }]}>
+              <View
+                style={[
+                  styles.iconContentContainer,
+                  { position: 'absolute', top: insets.top, zIndex: 10 },
+                ]}>
+                <Pressable
+                  onPress={() => router.back()}
+                  style={[
+                    styles.iconButton,
+                    {
+                      backgroundColor: colors.backgroundColors.default,
+                      zIndex: 1000,
+                    },
+                  ]}>
+                  <ArrowLeftIcon size={20} color={colors.textColors.default} />
+                </Pressable>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                  {header?.title}
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 4,
+                    alignItems: 'center',
+                  }}>
+                  <Pressable
+                    onPress={() => {
+                      bottomSheetRef.current?.expand();
+                    }}
+                    style={[
+                      styles.iconButton,
+                      {
+                        backgroundColor: colors.backgroundColors.default,
+                        zIndex: 1000,
+                      },
+                    ]}>
+                    <ForwardIcon size={20} color={colors.textColors.default} />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setMenuModalVisible(true)}
+                    style={[
+                      styles.iconButton,
+                      {
+                        backgroundColor: colors.backgroundColors.default,
+                        zIndex: 1000,
+                      },
+                    ]}>
+                    <Menu size={20} color={colors.textColors.default} />
+                  </Pressable>
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+        </TouchableOpacity>
+        {images && images.length > 1 && (
+          <>
+            <Spacer size={8} vertical />
+            <View style={styles.helperImagesContainer}>
+              {images.slice(1, 5).map((image: ImageType, index: number) => (
+                <TouchableOpacity
+                  key={image?.url || index}
+                  activeOpacity={0.9}
+                  onPress={() => handleImagePress(index + 1)}
+                  style={[styles.imageWrapper, { flex: 1 }]}>
+                  <Image
+                    source={{ uri: image?.url }}
+                    style={styles.image}
+                    contentFit="cover"
+                  />
+                  <View style={[styles.imageOverlay, { borderRadius: 0 }]} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
       </Animated.View>
     );
   };
 
   return (
     <>
-      {/* <View>
-        <Pressable onPress={() => router.back()}>
-          <ImageBackground
-            source={{ uri: coverImage }}
-            style={styles.coverImage}></ImageBackground>
-        </Pressable>
-        <View style={styles.content}>{children}</View>
-      </View> */}
-
       <View
         style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
         <CompactHeader />
@@ -527,49 +541,30 @@ const ScreenWithImageGallery = ({
         </Animated.ScrollView>
       </View>
 
-      {/* BOTTOM SHEET CONTENT */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={['50%']}
-        detached={true}
-        backgroundStyle={{
-          backgroundColor: colors.backgroundColors.subtle,
-        }}
-        enablePanDownToClose>
-        <BottomSheetView
-          style={{
-            flex: 1,
-            backgroundColor: colors.backgroundColors.subtle,
-            height: '100%',
-          }}>
-          <View style={{ padding: 20, gap: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600' }}>
-              Share Join Code
-            </Text>
+      {/* Image Gallery Modal */}
+      {images && images.length > 0 && (
+        <ImageGallery
+          images={images}
+          initialIndex={galleryInitialIndex}
+          visible={galleryVisible}
+          onClose={() => setGalleryVisible(false)}
+        />
+      )}
 
-            {/* SHARE LINK */}
-            <TouchableOpacity
-              onPress={() => {}}
-              style={{
-                padding: 14,
-                backgroundColor: colors.backgroundColors.default,
-                borderRadius: 10,
-              }}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: 16,
-                  color: colors.textColors.default,
-                }}>
-                Share Deep Link
-              </Text>
-            </TouchableOpacity>
+      {/* Menu Modal */}
+      <MenuModal
+        visible={menuModalVisible}
+        onClose={() => setMenuModalVisible(false)}
+        options={defaultMenuOptions}
+      />
 
-            <MenuItem title="Leave Trip" onPress={() => {}} />
-          </View>
-        </BottomSheetView>
-      </BottomSheet>
+      {/* Share Bottom Sheet */}
+      <ShareBottomSheet
+        bottomSheetRef={bottomSheetRef}
+        shareData={shareData}
+        onShare={onShare}
+        additionalOptions={shareAdditionalOptions}
+      />
     </>
   );
 };

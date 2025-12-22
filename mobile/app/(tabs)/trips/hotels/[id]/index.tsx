@@ -30,6 +30,7 @@ import {
   Spacer,
   Text,
   PrimaryButton,
+  ScreenWithImageGallery,
 } from '@/components';
 import { textStyles } from '@/utils/styles';
 import { Colors } from '@/constants';
@@ -188,93 +189,175 @@ const HotelDetailScreen = () => {
   }
 
   return (
-    <ScreenContainer
-      leftComponent
-      contentContainerStyle={{ paddingHorizontal: 8 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Spacer size={8} vertical />
-        <ImageContainer />
-        <Spacer size={8} vertical />
-        <Text style={[styles.title, dynamicStyles.title]}>{hotel?.name}</Text>
+    // <ScreenContainer
+    //   leftComponent
+    //   contentContainerStyle={{ paddingHorizontal: 8 }}>
+    //   <ScrollView showsVerticalScrollIndicator={false}>
+    //     <Spacer size={8} vertical />
+    //     <ImageContainer />
+    //     <Spacer size={8} vertical />
+    //     <Text style={[styles.title, dynamicStyles.title]}>{hotel?.name}</Text>
 
-        <Spacer size={4} vertical />
-        <View style={styles.locationTimeSpan}>
-          <InfoPill
-            type="destination"
-            value={`${hotel?.city}, ${hotel?.country}`}
+    //     <Spacer size={4} vertical />
+    //     <View style={styles.locationTimeSpan}>
+    //       <InfoPill
+    //         type="destination"
+    //         value={`${hotel?.city}, ${hotel?.country}`}
+    //       />
+    //       <InfoPill type="rating" value={hotel?.starRating} />
+    //     </View>
+    //     <Spacer size={12} vertical />
+
+    //     <FacilitiesList />
+    //     <Spacer size={16} vertical />
+    //     <View style={[dynamicStyles.divider]} />
+    //     <Spacer size={16} vertical />
+    //     <View style={[dynamicStyles.descriptionContainer]}>
+    //       <FontLoader>
+    //         <RenderHtml
+    //           contentWidth={width}
+    //           source={{ html: hotel?.hotelDescription }}
+    //           systemFonts={systemFonts}
+    //           tagsStyles={tagStyles}
+    //         />
+    //       </FontLoader>
+    //     </View>
+    //     <View style={[dynamicStyles.divider]} />
+
+    //     <Spacer size={16} vertical />
+    //     <Collapsible title="Important Information">
+    //       <View style={[dynamicStyles.importantInformationContainer]}>
+    //         <Text style={[dynamicStyles.descriptionText]}>
+    //           {hotel?.hotelImportantInformation}
+    //         </Text>
+    //       </View>
+    //     </Collapsible>
+
+    //     <Spacer size={16} vertical />
+    //     <View style={[dynamicStyles.divider]} />
+    //     <Spacer size={16} vertical />
+    //     {hotelReviews.length > 0 && (
+    //       <>
+    //         <SectionHeader
+    //           title="Reviews"
+    //           linkText="More"
+    //           linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
+    //         />
+    //         <FlashList
+    //           data={hotelReviews}
+    //           renderItem={({ item }) => <HotelReviewCard {...item} />}
+    //           keyExtractor={(item) => `${item.name}-${item.date}`}
+    //           horizontal
+    //           showsHorizontalScrollIndicator={false}
+    //           ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
+    //           contentContainerStyle={{ paddingHorizontal: 8 }}
+    //         />
+    //         <Spacer size={16} vertical />
+    //         <View style={[dynamicStyles.divider]} />
+    //         <Spacer size={16} vertical />
+    //       </>
+    //     )}
+
+    //     {hotel?.rooms && hotel.rooms.length > 0 && (
+    //       <>
+    //         <PrimaryButton
+    //           title="Select Rooms"
+    //           onPress={() => {
+    //             router.push({
+    //               pathname: '/trips/hotels/room/list' as RelativePathString,
+    //               params: { hotelId: id as string },
+    //             });
+    //           }}
+    //         />
+    //         <Spacer size={16} vertical />
+    //       </>
+    //     )}
+
+    //     <Spacer size={132} vertical />
+    //   </ScrollView>
+    // </ScreenContainer>
+    <ScreenWithImageGallery
+      images={hotel?.hotelImages}
+      header={{ title: hotel?.name }}>
+      <Text style={[styles.title, dynamicStyles.title]}>{hotel?.name}</Text>
+
+      <Spacer size={4} vertical />
+      <View style={styles.locationTimeSpan}>
+        <InfoPill
+          type="destination"
+          value={`${hotel?.city}, ${hotel?.country}`}
+        />
+        <InfoPill type="rating" value={hotel?.starRating} />
+      </View>
+      <Spacer size={12} vertical />
+
+      <FacilitiesList />
+      <Spacer size={16} vertical />
+      <View style={[dynamicStyles.divider]} />
+      <Spacer size={16} vertical />
+      <View style={[dynamicStyles.descriptionContainer]}>
+        <FontLoader>
+          <RenderHtml
+            contentWidth={width}
+            source={{ html: hotel?.hotelDescription }}
+            systemFonts={systemFonts}
+            tagsStyles={tagStyles}
           />
-          <InfoPill type="rating" value={hotel?.starRating} />
+        </FontLoader>
+      </View>
+      <View style={[dynamicStyles.divider]} />
+
+      <Spacer size={16} vertical />
+      <Collapsible title="Important Information">
+        <View style={[dynamicStyles.importantInformationContainer]}>
+          <Text style={[dynamicStyles.descriptionText]}>
+            {hotel?.hotelImportantInformation}
+          </Text>
         </View>
-        <Spacer size={12} vertical />
+      </Collapsible>
 
-        <FacilitiesList />
-        <Spacer size={16} vertical />
-        <View style={[dynamicStyles.divider]} />
-        <Spacer size={16} vertical />
-        <View style={[dynamicStyles.descriptionContainer]}>
-          <FontLoader>
-            <RenderHtml
-              contentWidth={width}
-              source={{ html: hotel?.hotelDescription }}
-              systemFonts={systemFonts}
-              tagsStyles={tagStyles}
-            />
-          </FontLoader>
-        </View>
-        <View style={[dynamicStyles.divider]} />
+      <Spacer size={16} vertical />
+      <View style={[dynamicStyles.divider]} />
+      <Spacer size={16} vertical />
+      {hotelReviews.length > 0 && (
+        <>
+          <SectionHeader
+            title="Reviews"
+            linkText="More"
+            linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
+          />
+          <FlashList
+            data={hotelReviews}
+            renderItem={({ item }) => <HotelReviewCard {...item} />}
+            keyExtractor={(item) => `${item.name}-${item.date}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
+            contentContainerStyle={{ paddingHorizontal: 8 }}
+          />
+          <Spacer size={16} vertical />
+          <View style={[dynamicStyles.divider]} />
+          <Spacer size={16} vertical />
+        </>
+      )}
 
-        <Spacer size={16} vertical />
-        <Collapsible title="Important Information">
-          <View style={[dynamicStyles.importantInformationContainer]}>
-            <Text style={[dynamicStyles.descriptionText]}>
-              {hotel?.hotelImportantInformation}
-            </Text>
-          </View>
-        </Collapsible>
+      {hotel?.rooms && hotel.rooms.length > 0 && (
+        <>
+          <PrimaryButton
+            title="Select Rooms"
+            onPress={() => {
+              router.push({
+                pathname: '/trips/hotels/room/list' as RelativePathString,
+                params: { hotelId: id as string },
+              });
+            }}
+          />
+          <Spacer size={16} vertical />
+        </>
+      )}
 
-        <Spacer size={16} vertical />
-        <View style={[dynamicStyles.divider]} />
-        <Spacer size={16} vertical />
-        {hotelReviews.length > 0 && (
-          <>
-            <SectionHeader
-              title="Reviews"
-              linkText="More"
-              linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
-            />
-            <FlashList
-              data={hotelReviews}
-              renderItem={({ item }) => <HotelReviewCard {...item} />}
-              keyExtractor={(item) => `${item.name}-${item.date}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              ItemSeparatorComponent={() => <Spacer size={16} horizontal />}
-              contentContainerStyle={{ paddingHorizontal: 8 }}
-            />
-            <Spacer size={16} vertical />
-            <View style={[dynamicStyles.divider]} />
-            <Spacer size={16} vertical />
-          </>
-        )}
-
-        {hotel?.rooms && hotel.rooms.length > 0 && (
-          <>
-            <PrimaryButton
-              title="Select Rooms"
-              onPress={() => {
-                router.push({
-                  pathname: '/trips/hotels/room/list' as RelativePathString,
-                  params: { hotelId: id as string },
-                });
-              }}
-            />
-            <Spacer size={16} vertical />
-          </>
-        )}
-
-        <Spacer size={132} vertical />
-      </ScrollView>
-    </ScreenContainer>
+      <Spacer size={132} vertical />
+    </ScreenWithImageGallery>
   );
 };
 

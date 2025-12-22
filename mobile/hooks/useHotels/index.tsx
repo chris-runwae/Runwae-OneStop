@@ -7,6 +7,7 @@ const useHotels = () => {
   const [hotels, setHotels] = useState<any[]>([]);
   const [tripsHotels, setTripsHotels] = useState<any[]>([]);
   const [hotel, setHotel] = useState<any>(null);
+  const [hotelReviews, setHotelReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -79,15 +80,38 @@ const useHotels = () => {
     }
   };
 
+  const fetchHotelReviews = useCallback(
+    async (hotelId: string) => {
+      setLoading(true);
+      const url = endpoints.getHotelReviews(hotelId);
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        console.log('data ->> ', JSON.stringify(data, null, 2));
+        setHotelReviews(data?.data);
+        setLoading(false);
+        return data?.data;
+      } catch (error) {
+        Toasts.showErrorToast(
+          'We could not get the hotel reviews. Please try again later.'
+        );
+        setError(error as Error);
+      }
+    },
+    [options]
+  );
+
   return {
     hotels,
     tripsHotels,
     hotel,
+    hotelReviews,
     loading,
     error,
     fetchHotels,
     fetchHotelById,
     fetchHotelsByPlaceId,
+    fetchHotelReviews,
   };
 };
 

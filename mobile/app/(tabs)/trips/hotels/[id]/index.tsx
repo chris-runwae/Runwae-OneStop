@@ -51,8 +51,9 @@ const HotelDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { hotel, loading, fetchHotelById } = useHotels();
-  const [hotelData, setHotelData] = useState<any>(null);
+  const { hotel, loading, fetchHotelById, fetchHotelReviews, hotelReviews } =
+    useHotels();
+  // const [hotelData, setHotelData] = useState<any>(null);
   const { width } = useWindowDimensions();
   const dynamicStyles = StyleSheet.create({
     //Containers
@@ -94,10 +95,19 @@ const HotelDetailScreen = () => {
     },
   });
 
+  //EFFECTS
+
+  useEffect(() => {
+    const loadHotelReviews = async () => {
+      await fetchHotelReviews(id as string);
+    };
+    loadHotelReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   useEffect(() => {
     const loadHotel = async () => {
-      const hotelData = await fetchHotelById(id as string);
-      setHotelData(hotelData);
+      await fetchHotelById(id as string);
     };
     loadHotel();
   }, [fetchHotelById, id]);
@@ -171,6 +181,8 @@ const HotelDetailScreen = () => {
     },
   };
 
+  console.log('hotelReviews', JSON.stringify(hotelReviews, null, 2));
+
   if (loading) {
     return <HomeScreenSkeleton />;
   }
@@ -223,12 +235,15 @@ const HotelDetailScreen = () => {
         <Spacer size={16} vertical />
         <View style={[dynamicStyles.divider]} />
         <Spacer size={16} vertical />
-
-        <SectionHeader
-          title="Reviews"
-          linkText="More"
-          linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
-        />
+        {hotelReviews.length > 0 && (
+          <>
+            <SectionHeader
+              title="Reviews"
+              linkText="More"
+              linkTo={'/trips/hotels/[id]/reviews' as RelativePathString}
+            />
+          </>
+        )}
 
         <Spacer size={132} vertical />
       </ScrollView>

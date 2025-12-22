@@ -10,6 +10,9 @@ const endpoints = {
   getHotelsByPlaceId: (placeId: string) => {
     return `${baseUrl}/data/hotels?placeId=${placeId}`;
   },
+  getHotelReviews: (hotelId: string) => {
+    return `${baseUrl}/data/reviews?hotelId=${hotelId}&timeout=4`;
+  },
 };
 
 export default endpoints;

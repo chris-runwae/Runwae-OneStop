@@ -2,16 +2,25 @@ import { StyleSheet, View } from 'react-native';
 import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
-import { ScreenWithImageGallery, Text } from '@/components';
+import { ScreenContainer, Text } from '@/components';
 
 const BookingScreen = () => {
-  const { images } = useLocalSearchParams<{ images: string[] | string }>();
-  console.log('images: ', JSON.parse(images as string));
+  const { roomId } = useLocalSearchParams<{
+    roomId: string;
+    hotelId?: string;
+    offerId?: string;
+    checkin?: string;
+    checkout?: string;
+    adults?: string;
+  }>();
+  console.log('roomId: ', roomId);
 
   return (
-    <ScreenWithImageGallery images={images}>
+    <ScreenContainer
+      leftComponent
+      contentContainerStyle={{ paddingHorizontal: 16 }}>
       <Text>Booking</Text>
-    </ScreenWithImageGallery>
+    </ScreenContainer>
   );
 };
 

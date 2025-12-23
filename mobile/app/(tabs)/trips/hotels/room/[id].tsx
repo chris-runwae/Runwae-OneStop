@@ -29,6 +29,15 @@ const RoomDetailScreen = () => {
   const colors = Colors[colorScheme];
   const { hotel, loading, fetchHotelById } = useHotels();
 
+  const { params } = useLocalSearchParams();
+  console.log('params: ', JSON.stringify(params));
+  console.log('roomId: ', roomId);
+  console.log('hotelId: ', hotelId);
+  console.log('offerId: ', offerId);
+  console.log('checkin: ', checkin);
+  console.log('checkout: ', checkout);
+  console.log('adults: ', adults);
+
   const [rate, setRate] = useState<any>(null);
   const [rateLoading, setRateLoading] = useState(false);
 
@@ -145,11 +154,14 @@ const RoomDetailScreen = () => {
     if (hotelId) {
       await fetchHotelById(hotelId);
     }
-  }, [hotelId, fetchHotelById]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotelId]);
 
   useEffect(() => {
     loadHotel();
-  }, [loadHotel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch rate if offerId is provided - memoize to prevent unnecessary calls
   const loadRate = useCallback(async () => {

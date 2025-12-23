@@ -17,10 +17,8 @@ import {
 } from '@/components';
 import { ItinerarySourceType, SavedItem } from '@/types';
 import { useViatorStore } from '@/stores/useViatorStore';
-import {
-  VIATOR_CATEGORIES,
-  getFullCategoryName,
-} from '@/utils/viatorCategories';
+import { VIATOR_CATEGORIES } from '@/utils/viatorCategories';
+import { useActivityStore } from '@/stores/activityStore';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
@@ -51,6 +49,7 @@ const TripDiscoverySection = ({
   const { addSavedItem } = useTrips();
   const { getLifetimeExperiences } = useViator();
   const { destinations } = useViatorStore();
+  const { setCurrentActivity } = useActivityStore();
 
   const [addSavedItemLoading, setAddSavedItemLoading] = useState(false);
   const [lifetimeExperiences, setLifetimeExperiences] = useState<any[]>([]);
@@ -210,10 +209,6 @@ const TripDiscoverySection = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilter, placeDisplayName, destinations, startDate, endDate]);
 
-  // console.log('tripsHotels: ', JSON.stringify(tripsHotels));
-
-  const filterOptions: FilterOption[] = ['All', 'Stays 🏨', 'Do 🎨'];
-
   const DiscoveryItem = ({ item }: { item: any }) => {
     let coverImage =
       'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
@@ -231,7 +226,6 @@ const TripDiscoverySection = ({
       location = `${item.city}, ${item.country}`;
       itemId = item.id;
     } else if (item?.productCode) {
-      console.log('item: ', JSON.stringify(item));
       // Activity item
       sourceType = 'activity';
       coverImage =
@@ -245,7 +239,8 @@ const TripDiscoverySection = ({
 
     const handlePress = () => {
       if (sourceType === 'activity') {
-        router.push(`/(tabs)/trips/activity/${itemId}` as RelativePathString);
+        setCurrentActivity(item);
+        router.push(`/(tabs)/trips/activity` as RelativePathString);
       } else if (sourceType === 'accommodation') {
         router.push(`/(tabs)/trips/hotels/${itemId}` as RelativePathString);
       } else {

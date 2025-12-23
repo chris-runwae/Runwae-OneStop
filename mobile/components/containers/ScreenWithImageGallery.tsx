@@ -520,20 +520,13 @@ const ScreenWithImageGallery = ({
       .slice(1, 5)
       .filter((img) => img?.url || img?.urlHD);
 
-    const borderStyle = (index: number) => {
-      return {
-        borderBottomLeftRadius: index === 0 ? 8 : 0,
-        borderBottomRightRadius: index === helperImages.length - 1 ? 8 : 0,
-      };
-    };
-
     if (helperImages.length === 0) {
       return null;
     }
 
     return (
       <>
-        <Spacer size={8} vertical />
+        <Spacer size={6} vertical />
         <View style={styles.helperImagesContainer}>
           {helperImages.map((image: ImageType, index: number) => {
             const imageUrl = image?.url || image?.urlHD;
@@ -544,7 +537,7 @@ const ScreenWithImageGallery = ({
                 key={`${imageUrl}-${index}`}
                 activeOpacity={0.9}
                 onPress={() => handleImagePress(index + 1)}
-                style={[styles.helperImageWrapper, borderStyle(index)]}>
+                style={[styles.helperImageWrapper]}>
                 <Image
                   source={{ uri: imageUrl }}
                   style={StyleSheet.absoluteFill}

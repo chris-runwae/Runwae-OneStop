@@ -10,6 +10,7 @@ import {
   PrimaryButton,
   HomeScreenSkeleton,
   InfoPill,
+  ScreenWithImageGallery,
 } from '@/components';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
@@ -224,173 +225,140 @@ const RoomDetailScreen = () => {
   }
 
   return (
-    <ScreenContainer
-      leftComponent
-      contentContainerStyle={{ paddingHorizontal: 16 }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Spacer size={16} vertical />
+    // <ScreenContainer
+    //   leftComponent
+    //   contentContainerStyle={{ paddingHorizontal: 16 }}>
+    <ScreenWithImageGallery
+      images={room?.photos}
+      header={{ title: room.roomName }}
+      leftComponent>
+      {/* Room Name */}
+      <Text style={dynamicStyles.title}>{room.roomName}</Text>
 
-        {/* Room Images */}
-        {mainPhoto && (
-          <Image
-            source={{ uri: mainPhoto }}
-            style={dynamicStyles.image}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            priority="high"
+      {/* Room Info */}
+      <View style={dynamicStyles.infoRow}>
+        {room.maxAdults && (
+          <InfoPill
+            type="destination"
+            value={`${room.maxAdults} Adult${room.maxAdults > 1 ? 's' : ''}`}
           />
         )}
-
-        {additionalPhotos.length > 0 && (
-          <>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}>
-              {additionalPhotos.map((photo: any, index: number) => (
-                <Image
-                  key={`${photo.url}-${index}`}
-                  source={{ uri: photo.url }}
-                  style={[dynamicStyles.image, { height: 200, width: 300 }]}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  priority="normal"
-                />
-              ))}
-            </ScrollView>
-            <Spacer size={16} vertical />
-          </>
+        {room.maxChildren !== undefined && room.maxChildren > 0 && (
+          <InfoPill
+            type="destination"
+            value={`${room.maxChildren} Child${room.maxChildren > 1 ? 'ren' : ''}`}
+          />
         )}
+        {room.roomSizeSquare && (
+          <InfoPill
+            type="destination"
+            value={`${room.roomSizeSquare} ${room.roomSizeUnit || 'm²'}`}
+          />
+        )}
+      </View>
 
-        {/* Room Name */}
-        <Text style={dynamicStyles.title}>{room.roomName}</Text>
+      <Spacer size={16} vertical />
 
-        {/* Room Info */}
-        <View style={dynamicStyles.infoRow}>
-          {room.maxAdults && (
-            <InfoPill
-              type="destination"
-              value={`${room.maxAdults} Adult${room.maxAdults > 1 ? 's' : ''}`}
-            />
-          )}
-          {room.maxChildren !== undefined && room.maxChildren > 0 && (
-            <InfoPill
-              type="destination"
-              value={`${room.maxChildren} Child${room.maxChildren > 1 ? 'ren' : ''}`}
-            />
-          )}
-          {room.roomSizeSquare && (
-            <InfoPill
-              type="destination"
-              value={`${room.roomSizeSquare} ${room.roomSizeUnit || 'm²'}`}
-            />
+      {/* Rate Information */}
+      {rate && (
+        <View style={dynamicStyles.rateContainer}>
+          <Text style={dynamicStyles.ratePrice}>
+            ${rate.retailRate.total[0]?.amount?.toFixed(2) || '0.00'}
+          </Text>
+          <Text style={dynamicStyles.rateInfo}>
+            {rate.cancellationPolicies.refundableTag === 'RFN'
+              ? 'Refundable'
+              : 'Non-refundable'}
+          </Text>
+          <Text style={dynamicStyles.rateInfo}>
+            {rate.boardName || 'Room only'}
+          </Text>
+          {checkin && checkout && (
+            <Text style={dynamicStyles.rateInfo}>
+              {new Date(checkin).toLocaleDateString()} -{' '}
+              {new Date(checkout).toLocaleDateString()}
+            </Text>
           )}
         </View>
+      )}
 
-        <Spacer size={16} vertical />
+      {/* Description */}
+      {room.description && (
+        <>
+          <Text style={dynamicStyles.sectionTitle}>Description</Text>
+          <Text style={dynamicStyles.description}>{room.description}</Text>
+          <View style={dynamicStyles.divider} />
+        </>
+      )}
 
-        {/* Rate Information */}
-        {rate && (
-          <View style={dynamicStyles.rateContainer}>
-            <Text style={dynamicStyles.ratePrice}>
-              ${rate.retailRate.total[0]?.amount?.toFixed(2) || '0.00'}
-            </Text>
-            <Text style={dynamicStyles.rateInfo}>
-              {rate.cancellationPolicies.refundableTag === 'RFN'
-                ? 'Refundable'
-                : 'Non-refundable'}
-            </Text>
-            <Text style={dynamicStyles.rateInfo}>
-              {rate.boardName || 'Room only'}
-            </Text>
-            {checkin && checkout && (
-              <Text style={dynamicStyles.rateInfo}>
-                {new Date(checkin).toLocaleDateString()} -{' '}
-                {new Date(checkout).toLocaleDateString()}
+      {/* Bed Types */}
+      {room.bedTypes && room.bedTypes.length > 0 && (
+        <>
+          <Text style={dynamicStyles.sectionTitle}>Bed Types</Text>
+          {room.bedTypes.map((bed: any, index: number) => (
+            <View key={index} style={dynamicStyles.bedTypeContainer}>
+              <Text style={dynamicStyles.bedTypeText}>
+                {bed.quantity}x {bed.bedType}
+                {bed.bedSize && ` (${bed.bedSize})`}
               </Text>
-            )}
-          </View>
-        )}
+            </View>
+          ))}
+          <View style={dynamicStyles.divider} />
+        </>
+      )}
 
-        {/* Description */}
-        {room.description && (
-          <>
-            <Text style={dynamicStyles.sectionTitle}>Description</Text>
-            <Text style={dynamicStyles.description}>{room.description}</Text>
-            <View style={dynamicStyles.divider} />
-          </>
-        )}
-
-        {/* Bed Types */}
-        {room.bedTypes && room.bedTypes.length > 0 && (
-          <>
-            <Text style={dynamicStyles.sectionTitle}>Bed Types</Text>
-            {room.bedTypes.map((bed: any, index: number) => (
-              <View key={index} style={dynamicStyles.bedTypeContainer}>
-                <Text style={dynamicStyles.bedTypeText}>
-                  {bed.quantity}x {bed.bedType}
-                  {bed.bedSize && ` (${bed.bedSize})`}
-                </Text>
+      {/* Room Amenities */}
+      {room.roomAmenities && room.roomAmenities.length > 0 && (
+        <>
+          <Text style={dynamicStyles.sectionTitle}>Amenities</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            {room.roomAmenities.map((amenity: any) => (
+              <View key={amenity.amenitiesId} style={dynamicStyles.amenityItem}>
+                <Text style={dynamicStyles.amenityText}>{amenity.name}</Text>
               </View>
             ))}
-            <View style={dynamicStyles.divider} />
-          </>
-        )}
+          </View>
+          <View style={dynamicStyles.divider} />
+        </>
+      )}
 
-        {/* Room Amenities */}
-        {room.roomAmenities && room.roomAmenities.length > 0 && (
-          <>
-            <Text style={dynamicStyles.sectionTitle}>Amenities</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {room.roomAmenities.map((amenity: any) => (
-                <View
-                  key={amenity.amenitiesId}
-                  style={dynamicStyles.amenityItem}>
-                  <Text style={dynamicStyles.amenityText}>{amenity.name}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={dynamicStyles.divider} />
-          </>
-        )}
+      {/* Views */}
+      {room.views && room.views.length > 0 && (
+        <>
+          <Text style={dynamicStyles.sectionTitle}>Views</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            {room.views.map((view: any, index: number) => (
+              <View key={index} style={dynamicStyles.amenityItem}>
+                <Text style={dynamicStyles.amenityText}>{view}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={dynamicStyles.divider} />
+        </>
+      )}
 
-        {/* Views */}
-        {room.views && room.views.length > 0 && (
-          <>
-            <Text style={dynamicStyles.sectionTitle}>Views</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {room.views.map((view: any, index: number) => (
-                <View key={index} style={dynamicStyles.amenityItem}>
-                  <Text style={dynamicStyles.amenityText}>{view}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={dynamicStyles.divider} />
-          </>
-        )}
+      {/* Booking Button */}
+      <PrimaryButton
+        title="Book Room"
+        onPress={() => {
+          // Only pass essential data, not the entire photos array
+          router.push({
+            pathname: '/trips/hotels/room/booking' as RelativePathString,
+            params: {
+              roomId: roomId as string,
+              hotelId: hotelId as string,
+              offerId: offerId || '',
+              checkin: checkin || '',
+              checkout: checkout || '',
+              adults: adults || '1',
+            },
+          });
+        }}
+      />
 
-        {/* Booking Button */}
-        <PrimaryButton
-          title="Book Room"
-          onPress={() => {
-            // Only pass essential data, not the entire photos array
-            router.push({
-              pathname: '/trips/hotels/room/booking' as RelativePathString,
-              params: {
-                roomId: roomId as string,
-                hotelId: hotelId as string,
-                offerId: offerId || '',
-                checkin: checkin || '',
-                checkout: checkout || '',
-                adults: adults || '1',
-              },
-            });
-          }}
-        />
-
-        <Spacer size={132} vertical />
-      </ScrollView>
-    </ScreenContainer>
+      <Spacer size={132} vertical />
+      {/* </ScrollView> */}
+    </ScreenWithImageGallery>
   );
 };
 

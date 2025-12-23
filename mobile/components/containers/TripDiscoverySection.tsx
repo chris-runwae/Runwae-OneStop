@@ -231,10 +231,12 @@ const TripDiscoverySection = ({
       location = `${item.city}, ${item.country}`;
       itemId = item.id;
     } else if (item?.productCode) {
+      console.log('item: ', JSON.stringify(item));
       // Activity item
       sourceType = 'activity';
       coverImage =
-        item?.images?.[0]?.variants?.[0]?.url ||
+        item?.images?.[0]?.variants?.[6]?.url ||
+        item?.images?.[0]?.url ||
         'https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1200&q=80';
       title = item.title || 'Activity Name';
       description = item.description || '';

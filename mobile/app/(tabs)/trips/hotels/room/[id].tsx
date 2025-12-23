@@ -1,16 +1,15 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, useColorScheme } from 'react-native';
+import { View, StyleSheet, useColorScheme } from 'react-native';
 import { RelativePathString, router, useLocalSearchParams } from 'expo-router';
-import { Image } from 'expo-image';
 
 import {
-  ScreenContainer,
   Text,
   Spacer,
   PrimaryButton,
   HomeScreenSkeleton,
   InfoPill,
   ScreenWithImageGallery,
+  Collapsible,
 } from '@/components';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
@@ -29,15 +28,6 @@ const RoomDetailScreen = () => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { hotel, loading, fetchHotelById } = useHotels();
-
-  const { params } = useLocalSearchParams();
-  console.log('params: ', JSON.stringify(params));
-  console.log('roomId: ', roomId);
-  console.log('hotelId: ', hotelId);
-  console.log('offerId: ', offerId);
-  console.log('checkin: ', checkin);
-  console.log('checkout: ', checkout);
-  console.log('adults: ', adults);
 
   const [rate, setRate] = useState<any>(null);
   const [rateLoading, setRateLoading] = useState(false);
@@ -135,21 +125,6 @@ const RoomDetailScreen = () => {
     return hotel.rooms.find((r: any) => r.id === parseInt(roomId));
   }, [hotel?.rooms, roomId]);
 
-  // Memoize photo URLs to prevent recalculation - must be before early return
-  const mainPhoto = useMemo(
-    () =>
-      room?.photos && room.photos.length > 0
-        ? room.photos[0].url
-        : hotel?.main_photo,
-    [room?.photos, hotel?.main_photo]
-  );
-
-  const additionalPhotos = useMemo(
-    () =>
-      room?.photos && room.photos.length > 1 ? room.photos.slice(1, 5) : [],
-    [room?.photos]
-  );
-
   // Fetch hotel data - use useCallback to prevent infinite loops
   const loadHotel = useCallback(async () => {
     if (hotelId) {
@@ -225,9 +200,6 @@ const RoomDetailScreen = () => {
   }
 
   return (
-    // <ScreenContainer
-    //   leftComponent
-    //   contentContainerStyle={{ paddingHorizontal: 16 }}>
     <ScreenWithImageGallery
       images={room?.photos}
       header={{ title: room.roomName }}
@@ -257,11 +229,10 @@ const RoomDetailScreen = () => {
         )}
       </View>
 
-      <Spacer size={16} vertical />
-
       {/* Rate Information */}
       {rate && (
         <View style={dynamicStyles.rateContainer}>
+          <Spacer size={16} vertical />
           <Text style={dynamicStyles.ratePrice}>
             ${rate.retailRate.total[0]?.amount?.toFixed(2) || '0.00'}
           </Text>
@@ -285,40 +256,43 @@ const RoomDetailScreen = () => {
       {/* Description */}
       {room.description && (
         <>
-          <Text style={dynamicStyles.sectionTitle}>Description</Text>
           <Text style={dynamicStyles.description}>{room.description}</Text>
-          <View style={dynamicStyles.divider} />
+          <Spacer size={16} vertical />
         </>
       )}
 
       {/* Bed Types */}
       {room.bedTypes && room.bedTypes.length > 0 && (
         <>
-          <Text style={dynamicStyles.sectionTitle}>Bed Types</Text>
-          {room.bedTypes.map((bed: any, index: number) => (
-            <View key={index} style={dynamicStyles.bedTypeContainer}>
-              <Text style={dynamicStyles.bedTypeText}>
-                {bed.quantity}x {bed.bedType}
-                {bed.bedSize && ` (${bed.bedSize})`}
-              </Text>
-            </View>
-          ))}
-          <View style={dynamicStyles.divider} />
+          <Collapsible title="Bed Types" iconPosition="right">
+            {room.bedTypes.map((bed: any, index: number) => (
+              <View key={index} style={dynamicStyles.bedTypeContainer}>
+                <Text style={dynamicStyles.bedTypeText}>
+                  {bed.quantity}x {bed.bedType}
+                  {bed.bedSize && ` (${bed.bedSize})`}
+                </Text>
+              </View>
+            ))}
+          </Collapsible>
+          <Spacer size={16} vertical />
         </>
       )}
 
       {/* Room Amenities */}
       {room.roomAmenities && room.roomAmenities.length > 0 && (
         <>
-          <Text style={dynamicStyles.sectionTitle}>Amenities</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-            {room.roomAmenities.map((amenity: any) => (
-              <View key={amenity.amenitiesId} style={dynamicStyles.amenityItem}>
-                <Text style={dynamicStyles.amenityText}>{amenity.name}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={dynamicStyles.divider} />
+          <Collapsible title="Amenities" iconPosition="right">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {room.roomAmenities.map((amenity: any) => (
+                <View
+                  key={amenity.amenitiesId}
+                  style={dynamicStyles.amenityItem}>
+                  <Text style={dynamicStyles.amenityText}>{amenity.name}</Text>
+                </View>
+              ))}
+            </View>
+          </Collapsible>
+          <Spacer size={16} vertical />
         </>
       )}
 
@@ -338,6 +312,7 @@ const RoomDetailScreen = () => {
       )}
 
       {/* Booking Button */}
+      <Spacer size={16} vertical />
       <PrimaryButton
         title="Book Room"
         onPress={() => {
@@ -356,8 +331,7 @@ const RoomDetailScreen = () => {
         }}
       />
 
-      <Spacer size={132} vertical />
-      {/* </ScrollView> */}
+      <Spacer size={150} vertical />
     </ScreenWithImageGallery>
   );
 };

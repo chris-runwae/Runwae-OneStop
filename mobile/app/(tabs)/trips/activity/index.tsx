@@ -155,12 +155,12 @@ export default function ActivityDetailScreen() {
             <Text style={styles.description}>{activity.description}</Text>
           </View>
 
-          <Spacer size={16} vertical />
+          {/* <Spacer size={16} vertical />
           <ExternalLink
             href={activity.productUrl as Href & string}
             style={[styles.button, styles.bookButton]}>
             <Text style={styles.buttonText}>Book Now</Text>
-          </ExternalLink>
+          </ExternalLink> */}
 
           {/* Review Breakdown */}
           <View style={styles.section}>

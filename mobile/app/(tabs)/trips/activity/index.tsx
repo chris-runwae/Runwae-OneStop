@@ -2,19 +2,23 @@
 import React, { useRef, useMemo } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Image,
   TouchableOpacity,
   Linking,
   StyleSheet,
   Dimensions,
+  useColorScheme,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useActivityStore } from '@/stores/activityStore';
+import { Button, ScreenWithImage, Spacer, Text } from '@/components';
+import { textStyles } from '@/utils/styles';
+import { Colors } from '@/constants';
+import { ExternalLink } from '@/components/external-link';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +28,8 @@ export default function ActivityDetailScreen() {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%', '75%'], []);
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
   const dynamicStyles = StyleSheet.create({
     bottomButtons: {
@@ -34,6 +40,18 @@ export default function ActivityDetailScreen() {
       flexDirection: 'row',
       padding: 16,
       gap: 12,
+    },
+    addToTripButton: {
+      backgroundColor: colors.backgroundColors.subtle,
+      borderWidth: 2,
+      borderColor: '#2e7d32',
+    },
+    tripPlaceholder: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.borderColors.subtle,
+      borderRadius: 8,
     },
   });
 
@@ -69,11 +87,14 @@ export default function ActivityDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWithImage
+      image={imageUrl || ''}
+      leftComponent
+      header={{ title: activity.title || '' }}>
       <ScrollView style={styles.scrollView}>
-        {imageUrl && (
+        {/* {imageUrl && (
           <Image source={{ uri: imageUrl }} style={styles.coverImage} />
-        )}
+        )} */}
 
         <View style={styles.content}>
           {/* Title */}
@@ -134,6 +155,13 @@ export default function ActivityDetailScreen() {
             <Text style={styles.description}>{activity.description}</Text>
           </View>
 
+          <Spacer size={16} vertical />
+          <ExternalLink
+            href={activity.productUrl as Href & string}
+            style={[styles.button, styles.bookButton]}>
+            <Text style={styles.buttonText}>Book Now</Text>
+          </ExternalLink>
+
           {/* Review Breakdown */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Reviews</Text>
@@ -148,42 +176,55 @@ export default function ActivityDetailScreen() {
             ))}
           </View>
         </View>
+        <Spacer size={insets.bottom + 24} vertical />
       </ScrollView>
 
       {/* Fixed Bottom Buttons */}
       <View style={dynamicStyles.bottomButtons}>
         <TouchableOpacity
-          style={[styles.button, styles.addToTripButton]}
+          style={[styles.button, dynamicStyles.addToTripButton]}
           onPress={handleAddToTrip}>
           <Text style={styles.addToTripText}>Add to Trip</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.button, styles.bookButton]}
           onPress={handleBook}>
           <Text style={styles.buttonText}>Book Now</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        <ExternalLink
+          href={activity.productUrl as Href & string}
+          style={[styles.button, styles.bookButton, { alignItems: 'center' }]}>
+          <Text style={[styles.buttonText, { textAlign: 'center' }]}>
+            Book Now
+          </Text>
+        </ExternalLink>
       </View>
 
       {/* Bottom Sheet for Trip Selection */}
-      <BottomSheet
+      {/* <BottomSheet
         ref={bottomSheetRef}
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose>
         <View style={styles.bottomSheetContent}>
           <Text style={styles.bottomSheetTitle}>Add to Trip</Text>
+          <Button
+            variant="filled"
+            onPress={() => bottomSheetRef.current?.close()}>
+            <Text>Close</Text>
+          </Button>
           <Text style={styles.bottomSheetSubtitle}>
             Select a trip to add this activity to
           </Text>
-          {/* Placeholder for trip list */}
-          <View style={styles.tripPlaceholder}>
+
+          <View style={dynamicStyles.tripPlaceholder}>
             <Text style={styles.placeholderText}>
               Trip list will be displayed here
             </Text>
           </View>
         </View>
-      </BottomSheet>
-    </View>
+      </BottomSheet> */}
+    </ScreenWithImage>
   );
 }
 
@@ -205,9 +246,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   title: {
+    ...textStyles.bold_20,
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    lineHeight: 28.8,
     marginBottom: 12,
   },
   ratingContainer: {
@@ -216,14 +257,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   rating: {
+    ...textStyles.subtitle_Regular,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
     marginRight: 8,
   },
   reviewCount: {
+    ...textStyles.subtitle_Regular,
     fontSize: 14,
-    color: '#666',
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -273,15 +313,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
+    ...textStyles.bold_20,
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 12,
   },
   description: {
+    ...textStyles.regular_14,
     fontSize: 14,
     lineHeight: 22,
-    color: '#444',
   },
   reviewSource: {
     flexDirection: 'row',
@@ -291,13 +330,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   reviewProvider: {
+    ...textStyles.subtitle_Regular,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
   },
   reviewStats: {
+    ...textStyles.subtitle_Regular,
     fontSize: 14,
-    color: '#666',
   },
   button: {
     flex: 1,
@@ -306,11 +344,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addToTripButton: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#2e7d32',
-  },
+
   addToTripText: {
     fontSize: 16,
     fontWeight: '600',
@@ -341,25 +375,15 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   bottomSheetTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    ...textStyles.bold_20,
     marginBottom: 8,
   },
   bottomSheetSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    ...textStyles.regular_14,
     marginBottom: 24,
   },
-  tripPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-  },
+
   placeholderText: {
-    fontSize: 14,
-    color: '#999',
+    ...textStyles.regular_14,
   },
 });

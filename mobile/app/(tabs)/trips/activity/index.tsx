@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useActivityStore } from '@/stores/activityStore';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +23,19 @@ export default function ActivityDetailScreen() {
   const activity = useActivityStore((state) => state.currentActivity);
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%', '75%'], []);
+  const insets = useSafeAreaInsets();
+
+  const dynamicStyles = StyleSheet.create({
+    bottomButtons: {
+      position: 'absolute',
+      bottom: insets.bottom + 60,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      padding: 16,
+      gap: 12,
+    },
+  });
 
   if (!activity) {
     return (
@@ -136,7 +151,7 @@ export default function ActivityDetailScreen() {
       </ScrollView>
 
       {/* Fixed Bottom Buttons */}
-      <View style={styles.bottomButtons}>
+      <View style={dynamicStyles.bottomButtons}>
         <TouchableOpacity
           style={[styles.button, styles.addToTripButton]}
           onPress={handleAddToTrip}>
@@ -283,18 +298,6 @@ const styles = StyleSheet.create({
   reviewStats: {
     fontSize: 14,
     color: '#666',
-  },
-  bottomButtons: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    gap: 12,
   },
   button: {
     flex: 1,

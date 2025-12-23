@@ -33,6 +33,7 @@ import ScreenWithImageGallery from './containers/ScreenWithImageGallery';
 import { ImageGallery } from './containers/ImageGallery';
 import { MenuModal, MenuOption } from './containers/MenuModal';
 import { ShareBottomSheet } from './containers/ShareBottomSheet';
+import ScreenWithImage from './containers/ScreenWithImage';
 
 export {
   Collapsible,
@@ -72,4 +73,5 @@ export {
   MenuModal,
   MenuOption,
   ShareBottomSheet,
+  ScreenWithImage,
 };

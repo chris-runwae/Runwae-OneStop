@@ -242,7 +242,8 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingTop: 12,
     paddingBottom: 100,
   },
   title: {

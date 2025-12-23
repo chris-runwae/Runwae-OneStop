@@ -17,6 +17,10 @@ import {
 } from '@/components';
 import { ItinerarySourceType, SavedItem } from '@/types';
 import { useViatorStore } from '@/stores/useViatorStore';
+import {
+  VIATOR_CATEGORIES,
+  getFullCategoryName,
+} from '@/utils/viatorCategories';
 
 type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
 
@@ -43,7 +47,7 @@ const TripDiscoverySection = ({
   const { hotels, loading: hotelsLoading, fetchHotels } = useHotels();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const [selectedFilter, setSelectedFilter] = useState<FilterOption>('All');
+  // const [selectedFilter, setSelectedFilter] = useState<FilterOption>('All');
   const { addSavedItem } = useTrips();
   const { getLifetimeExperiences } = useViator();
   const { destinations } = useViatorStore();
@@ -52,7 +56,61 @@ const TripDiscoverySection = ({
   const [lifetimeExperiences, setLifetimeExperiences] = useState<any[]>([]);
   const [uniqueExperiences, setUniqueExperiences] = useState<any[]>([]);
   const [adventureTours, setAdventureTours] = useState<any[]>([]);
+  // const [activitiesLoading, setActivitiesLoading] = useState(false);
+
+  // State for each category's data
+  const [categoryData, setCategoryData] = useState<Record<number, any[]>>({});
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+
+  // Available filters - including All, Stays, and all activity categories
+  const filters = [
+    'All',
+    'Stays 🏨',
+    ...VIATOR_CATEGORIES.map((cat) => `${cat.displayName} ${cat.emoji}`),
+  ];
+
+  const [selectedFilter, setSelectedFilter] = useState('All');
+
+  // Get the current category object based on selected filter
+  const getCurrentCategory = () => {
+    return VIATOR_CATEGORIES.find(
+      (cat) => selectedFilter === `${cat.displayName} ${cat.emoji}`
+    );
+  };
+
+  // Fetch activities for a specific category
+  useEffect(() => {
+    const currentCategory = getCurrentCategory();
+
+    if (
+      currentCategory &&
+      placeDisplayName &&
+      destinations &&
+      destinations.length > 0
+    ) {
+      setActivitiesLoading(true);
+
+      // Fetch data for all subcategories of the selected main category
+      const subcategoryPromises = currentCategory.subcategories.map((sub) =>
+        fetchActivitiesByTag(sub.id).then((data) => ({ id: sub.id, data }))
+      );
+
+      Promise.all(subcategoryPromises)
+        .then((results) => {
+          const newData: Record<number, any[]> = {};
+          results.forEach(({ id, data }) => {
+            newData[id] = data;
+          });
+          setCategoryData(newData);
+        })
+        .finally(() => {
+          setActivitiesLoading(false);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilter, placeDisplayName, destinations, startDate, endDate]);
+
+  //STYLE
   const dynamicStyles = StyleSheet.create({
     emptyText: {
       color: colors.textColors.subtle,
@@ -279,75 +337,161 @@ const TripDiscoverySection = ({
     setAddSavedItemLoading(false);
   };
 
-  // RENDERS
+  // // RENDERS
+  // const renderActivitiesSection = () => {
+  //   if (activitiesLoading) {
+  //     return <TripDiscoverySkeleton />;
+  //   }
+
+  //   const renderActivitySection = (
+  //     title: string,
+  //     data: any[],
+  //     keyPrefix: string
+  //   ) => {
+  //     if (data.length === 0) return null;
+
+  //     return (
+  //       <View key={keyPrefix} style={{ marginBottom: 32 }}>
+  //         <SectionHeader
+  //           title={title}
+  //           linkText="More"
+  //           linkTo={'/explore' as RelativePathString}
+  //         />
+  //         <Spacer size={16} vertical />
+  //         <FlashList
+  //           data={data}
+  //           renderItem={({ item, index }: { item: any; index: number }) => (
+  //             <View
+  //               style={{
+  //                 width: 280,
+  //                 marginRight: index < data.length - 1 ? 16 : 0,
+  //               }}>
+  //               <DiscoveryItem item={item} key={item.productCode} />
+  //             </View>
+  //           )}
+  //           keyExtractor={(item: any) =>
+  //             `activity-${keyPrefix}-${item.productCode}`
+  //           }
+  //           horizontal
+  //           showsHorizontalScrollIndicator={false}
+  //           contentContainerStyle={styles.horizontalListContent}
+  //         />
+  //       </View>
+  //     );
+  //   };
+
+  //   const hasAnyData =
+  //     lifetimeExperiences.length > 0 ||
+  //     uniqueExperiences.length > 0 ||
+  //     adventureTours.length > 0;
+
+  //   if (!hasAnyData) {
+  //     return (
+  //       <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
+  //         No activities available
+  //       </Text>
+  //     );
+  //   }
+
+  //   return (
+  //     <>
+  //       {renderActivitySection(
+  //         'Lifetime experiences',
+  //         lifetimeExperiences,
+  //         'lifetime'
+  //       )}
+  //       {renderActivitySection(
+  //         'Unique experiences',
+  //         uniqueExperiences,
+  //         'unique'
+  //       )}
+  //       {renderActivitySection('Adventure tours', adventureTours, 'adventure')}
+  //     </>
+  //   );
+  // };
+
+  // Render a single activity section (subcategory)
+  const renderActivitySection = (
+    title: string,
+    data: any[],
+    keyPrefix: string
+  ) => {
+    if (data.length === 0) return null;
+
+    return (
+      <View key={keyPrefix} style={{ marginBottom: 32 }}>
+        <SectionHeader
+          title={title}
+          linkText="More"
+          linkTo={'/explore' as RelativePathString}
+        />
+        <Spacer size={16} vertical />
+        <FlashList
+          data={data}
+          renderItem={({ item, index }: { item: any; index: number }) => (
+            <View
+              style={{
+                width: 280,
+                marginRight: index < data.length - 1 ? 16 : 0,
+              }}>
+              <DiscoveryItem item={item} key={item.productCode} />
+            </View>
+          )}
+          keyExtractor={(item: any) =>
+            `activity-${keyPrefix}-${item.productCode}`
+          }
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalListContent}
+        />
+      </View>
+    );
+  };
+
+  // Render all subcategories for the current main category
   const renderActivitiesSection = () => {
     if (activitiesLoading) {
       return <TripDiscoverySkeleton />;
     }
 
-    const renderActivitySection = (
-      title: string,
-      data: any[],
-      keyPrefix: string
-    ) => {
-      if (data.length === 0) return null;
+    const currentCategory = getCurrentCategory();
+    if (!currentCategory) return null;
 
-      return (
-        <View key={keyPrefix} style={{ marginBottom: 32 }}>
-          <SectionHeader
-            title={title}
-            linkText="More"
-            linkTo={'/explore' as RelativePathString}
-          />
-          <Spacer size={16} vertical />
-          <FlashList
-            data={data}
-            renderItem={({ item, index }: { item: any; index: number }) => (
-              <View
-                style={{
-                  width: 280,
-                  marginRight: index < data.length - 1 ? 16 : 0,
-                }}>
-                <DiscoveryItem item={item} key={item.productCode} />
-              </View>
-            )}
-            keyExtractor={(item: any) =>
-              `activity-${keyPrefix}-${item.productCode}`
-            }
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListContent}
-          />
-        </View>
-      );
-    };
-
-    const hasAnyData =
-      lifetimeExperiences.length > 0 ||
-      uniqueExperiences.length > 0 ||
-      adventureTours.length > 0;
+    // Check if we have any data
+    const hasAnyData = Object.values(categoryData).some(
+      (data) => data.length > 0
+    );
 
     if (!hasAnyData) {
       return (
         <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-          No activities available
+          No activities available for {currentCategory.displayName}
         </Text>
       );
     }
 
+    // Render all subcategories that have data
     return (
       <>
-        {renderActivitySection(
-          'Lifetime experiences',
-          lifetimeExperiences,
-          'lifetime'
-        )}
-        {renderActivitySection(
-          'Unique experiences',
-          uniqueExperiences,
-          'unique'
-        )}
-        {renderActivitySection('Adventure tours', adventureTours, 'adventure')}
+        {currentCategory.subcategories.map((subcategory) => {
+          const data = categoryData[subcategory.id] || [];
+          return renderActivitySection(
+            subcategory.displayName,
+            data,
+            `${currentCategory.name}-${subcategory.name}`
+          );
+        })}
+
+        {/* "More" section for the entire main category */}
+        <View style={{ marginTop: 16, marginBottom: 32 }}>
+          <SectionHeader
+            title={`More ${currentCategory.displayName}`}
+            linkText="See All"
+            linkTo={
+              `/explore?category=${currentCategory.id}` as RelativePathString
+            }
+          />
+        </View>
       </>
     );
   };
@@ -407,7 +551,13 @@ const TripDiscoverySection = ({
       return renderHotelsList(true);
     }
 
-    if (selectedFilter === 'Do 🎨') {
+    // if (selectedFilter === 'Do 🎨') {
+    //   return renderActivitiesSection();
+    // }
+
+    // Check if it's any of the activity categories
+    const currentCategory = getCurrentCategory();
+    if (currentCategory) {
       return renderActivitiesSection();
     }
 
@@ -417,7 +567,8 @@ const TripDiscoverySection = ({
   return (
     <View style={{ flex: 1 }}>
       <FilterTabs
-        options={filterOptions}
+        // options={filterOptions}
+        options={filters}
         selectedOption={selectedFilter}
         onOptionChange={setSelectedFilter}
       />

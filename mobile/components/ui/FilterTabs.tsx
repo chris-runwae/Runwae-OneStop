@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Pressable, View } from 'react-native';
+import { StyleSheet, Pressable } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   useSharedValue,
   interpolate,
 } from 'react-native-reanimated';
+import { FlashList } from '@shopify/flash-list';
 
 import { useColorScheme } from '@/hooks';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
-import { Text } from '@/components';
+import { Spacer, Text } from '@/components';
 
 export type FilterTabsProps<T extends string> = {
   options: T[];
@@ -99,11 +100,16 @@ const FilterTabs = <T extends string>({
   };
 
   return (
-    <View style={[styles.filterButtonsContainer, containerStyle]}>
-      {options.map((option, index) => (
-        <RenderFilterButton key={option} option={option} index={index} />
-      ))}
-    </View>
+    <FlashList
+      data={options}
+      renderItem={({ item, index }: { item: T; index: number }) => (
+        <RenderFilterButton option={item} index={index} />
+      )}
+      keyExtractor={(item: T) => item}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      ItemSeparatorComponent={() => <Spacer size={8} horizontal />}
+    />
   );
 };
 

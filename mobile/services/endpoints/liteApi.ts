@@ -13,6 +13,7 @@ const endpoints = {
   getHotelReviews: (hotelId: string) => {
     return `${baseUrl}/data/reviews?hotelId=${hotelId}&timeout=4`;
   },
+  roomRates: `${baseUrl}/hotels/rates`,
 };
 
 export default endpoints;

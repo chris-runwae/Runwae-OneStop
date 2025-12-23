@@ -215,10 +215,10 @@ const RoomListScreen = () => {
           const tripData = await fetchTripById(tripId);
           if (tripData && !Array.isArray(tripData)) {
             setTrip(tripData);
-            if (tripData.start_date) {
-              setCheckin(new Date(tripData.start_date));
+            if (tripData?.start_date) {
+              setCheckin(new Date(tripData?.start_date));
             }
-            if (tripData.end_date) {
+            if (tripData?.end_date) {
               setCheckout(new Date(tripData.end_date));
             }
           }

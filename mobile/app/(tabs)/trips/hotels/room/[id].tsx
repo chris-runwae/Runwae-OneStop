@@ -27,10 +27,13 @@ const RoomDetailScreen = () => {
     }>();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { hotel, loading, fetchHotelById } = useHotels();
+  const { hotel, loading, fetchHotelById, fetchRoomRates, roomRates } =
+    useHotels();
 
   const [rate, setRate] = useState<any>(null);
   const [rateLoading, setRateLoading] = useState(false);
+
+  console.log('roomRates: ', JSON.stringify(roomId));
 
   // Memoize styles to prevent recreation on every render
   const dynamicStyles = useMemo(
@@ -163,29 +166,42 @@ const RoomDetailScreen = () => {
         }),
       };
 
-      const response = await fetch(
-        'https://api.liteapi.travel/v3.0/hotels/rates',
-        options
-      );
-      const data = await response.json();
+      const body = {
+        hotelIds: [hotelId],
+        occupancies: [{ adults: parseInt(adults || '1') }],
+        currency: 'USD',
+        guestNationality: 'US',
+        checkin,
+        checkout,
+        roomMapping: true,
+      };
 
-      if (data.data) {
-        const hotelRate = data.data.find((r: any) => r.hotelId === hotelId);
-        if (hotelRate) {
-          // Find the specific rate by offerId
-          for (const roomType of hotelRate.roomTypes) {
-            if (roomType.offerId === offerId) {
-              setRate(roomType.rates[0]); // Get first rate
-              break;
-            }
-          }
-        }
+      const response = await fetchRoomRates(body);
+
+      //W
+      if (response?.data) {
+        console.log('This was successful');
+        //We need to find the the rates
+        // const hotelRate = response?.data?.find(
+        //   (r: any) => r.hotelId === hotelId
+        // );
+        // console.log('hotelRate: ', JSON.stringify(hotelRate));
+        // if (hotelRate) {
+        //   // Find the specific rate by offerId
+        //   for (const roomType of hotelRate.roomTypes) {
+        //     if (roomType.offerId === offerId) {
+        //       setRate(roomType.rates[0]); // Get first rate
+        //       break;
+        //     }
+        //   }
+        // }
       }
     } catch (error) {
       console.error('Error fetching rate:', error);
     } finally {
       setRateLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotelId, offerId, checkin, checkout, adults]);
 
   useEffect(() => {

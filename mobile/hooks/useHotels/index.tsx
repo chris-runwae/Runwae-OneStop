@@ -8,6 +8,7 @@ const useHotels = () => {
   const [tripsHotels, setTripsHotels] = useState<any[]>([]);
   const [hotel, setHotel] = useState<any>(null);
   const [hotelReviews, setHotelReviews] = useState<any[]>([]);
+  const [roomRates, setRoomRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -18,6 +19,20 @@ const useHotels = () => {
         accept: 'application/json',
         'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
       },
+    }),
+    []
+  );
+
+  const getOptions = useCallback(
+    (method: 'GET' | 'POST' = 'GET', body?: any) => ({
+      method,
+      headers: {
+        'Accept-Language': 'en-US',
+        accept: 'application/json',
+        'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
+        ...(method === 'POST' && { 'Content-Type': 'application/json' }),
+      },
+      ...(body && { body: JSON.stringify(body) }),
     }),
     []
   );
@@ -100,17 +115,38 @@ const useHotels = () => {
     [options]
   );
 
+  const fetchRoomRates = useCallback(
+    async (body: any) => {
+      setLoading(true);
+      const url = endpoints.roomRates;
+      try {
+        const response = await fetch(url, getOptions('POST', body));
+        const data = await response.json();
+        setRoomRates(data?.data);
+        setLoading(false);
+        return data?.data;
+      } catch (error) {
+        setError(error as Error);
+        setLoading(false);
+        return null;
+      }
+    },
+    [getOptions]
+  );
+
   return {
     hotels,
     tripsHotels,
     hotel,
     hotelReviews,
+    roomRates,
     loading,
     error,
     fetchHotels,
     fetchHotelById,
     fetchHotelsByPlaceId,
     fetchHotelReviews,
+    fetchRoomRates,
   };
 };
 

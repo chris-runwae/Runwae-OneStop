@@ -134,7 +134,19 @@ export default function ProfileScreen() {
         </View>
 
         <Spacer size={24} vertical />
-        <Text style={dynamicStyle.versionText}>Version 0.1.2</Text>
+        <Text style={dynamicStyle.versionText}>Version 0.1.4</Text>
+        <Spacer size={4} vertical />
+        <Text style={dynamicStyle.versionText}>What&apos;s new?</Text>
+        <Text style={dynamicStyle.versionText}>
+          - Fixed room details bug, Fiyin you can now tap on the pink button (it
+          will not do anything for now)
+        </Text>
+        <Text style={dynamicStyle.versionText}>
+          - Added much more activity data, you can now see the activity details
+          and book it, redirects to Viator website or app if available
+        </Text>
+
+        <Spacer size={160} vertical />
       </ScrollView>
     </ScreenContainer>
   );

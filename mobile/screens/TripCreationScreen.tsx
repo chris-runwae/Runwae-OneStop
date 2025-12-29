@@ -18,10 +18,10 @@ import Animated, {
 import { useUser } from '@clerk/clerk-expo';
 
 import {
-  DestinationSlide,
   DateSlide,
   PersonalizationSlide,
 } from '@/components/trip-creation/TripCreationSlides';
+import { DestinationSlide } from '@/components/trip-creation/DestinationSlide';
 import { tripCreationData } from '@/components/trip-creation/tripCreationData';
 import { Colors, COLORS } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -139,6 +139,7 @@ export default function TripCreationScreen() {
       });
     } else {
       // Go back to previous screen
+      console.log('router -> ', router.canGoBack());
       router.back();
     }
   };

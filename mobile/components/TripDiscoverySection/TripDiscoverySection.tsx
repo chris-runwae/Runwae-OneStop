@@ -1,5 +1,3 @@
-// Save as: @/components/TripDiscoverySection/TripDiscoverySection.tsx
-
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useColorScheme } from '@/hooks';
@@ -83,6 +81,7 @@ const TripDiscoverySection = ({
           addSavedItemLoading={addSavedItemLoading}
           onAddToSavedItems={handleAddToSavedItems}
           showHeader={true}
+          loading={hotelsLoading}
         />
       );
     }

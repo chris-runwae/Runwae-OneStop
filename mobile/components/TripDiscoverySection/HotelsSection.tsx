@@ -1,5 +1,3 @@
-// Save as: @/components/TripDiscoverySection/HotelsSection.tsx
-
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { RelativePathString } from 'expo-router';
@@ -8,6 +6,8 @@ import { Text, SectionHeader } from '@/components';
 import { textStyles } from '@/utils/styles';
 import { SavedItem } from '@/types';
 import { DiscoveryItem } from './DiscoveryItem';
+import { HotelsSectionSkeleton } from './HotelsSectionSkeleton';
+import { HotelIcon } from 'lucide-react-native';
 
 type HotelsSectionProps = {
   hotels: any[];
@@ -16,6 +16,7 @@ type HotelsSectionProps = {
   addSavedItemLoading: boolean;
   onAddToSavedItems: (item: SavedItem) => void;
   showHeader?: boolean;
+  loading?: boolean;
 };
 
 export const HotelsSection = ({
@@ -24,11 +25,55 @@ export const HotelsSection = ({
   addSavedItemLoading,
   onAddToSavedItems,
   showHeader = false,
+  loading = false,
 }: HotelsSectionProps) => {
   const styles = createStyles(colors);
 
+  // Show skeleton while loading
+  if (loading) {
+    return (
+      <>
+        {showHeader && (
+          <SectionHeader
+            title="Hotels"
+            linkText="More"
+            linkTo={'/explore' as RelativePathString}
+          />
+        )}
+        <HotelsSectionSkeleton />
+      </>
+    );
+  }
+
+  // Show empty state when no hotels
   if (hotels.length === 0) {
-    return <Text style={styles.emptyText}>No hotels available</Text>;
+    return (
+      <>
+        {showHeader && (
+          <SectionHeader
+            title="Hotels"
+            linkText="More"
+            linkTo={'/explore' as RelativePathString}
+          />
+        )}
+        <View style={localStyles.emptyContainer}>
+          <View
+            style={[
+              localStyles.emptyIconContainer,
+              { backgroundColor: colors.backgroundColors.subtle },
+            ]}>
+            <HotelIcon size={40} color={colors.textColors.subtle} />
+          </View>
+          <Text style={[styles.emptyText, localStyles.emptyTitle]}>
+            No hotels found
+          </Text>
+          <Text style={[styles.emptyText, localStyles.emptySubtitle]}>
+            We couldn&apos;t find any hotels for this destination. Try searching
+            in the Explore tab.
+          </Text>
+        </View>
+      </>
+    );
   }
 
   return (
@@ -78,4 +123,29 @@ const createStyles = (colors: any) =>
 
 const localStyles = StyleSheet.create({
   listContent: {},
+  emptyContainer: {
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
 });

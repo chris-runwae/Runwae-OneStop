@@ -74,6 +74,8 @@ export default function TripCreationScreen() {
       slideAnimation.value = 0;
       buttonAnimation.value = 0;
     };
+
+    //  eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
   const progressStyle = useAnimatedStyle(() => {

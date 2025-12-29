@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,6 @@ import {
   Platform,
   ViewStyle,
   ActivityIndicator,
-  TouchableWithoutFeedback,
-  Modal,
   ScrollView,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -30,10 +28,8 @@ import {
   useDateRange,
   CalendarTheme,
 } from '@marceloterreiro/flash-calendar';
-import { useUser } from '@clerk/clerk-expo';
 
 import { COLORS } from '@/constants';
-import { uploadImage } from '@/utils/uploadImage';
 import { useUploadImage } from '@/hooks/useUploadImage';
 import { Spacer } from '@/components';
 import { textStyles } from '@/utils/styles';
@@ -62,7 +58,6 @@ export const DestinationSlide: React.FC<SlideProps> = ({
   const [searchText, setSearchText] = useState(tripData.destination || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<LiteAPIPlace | null>(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPressingSuggestionRef = useRef(false);
@@ -93,7 +88,6 @@ export const DestinationSlide: React.FC<SlideProps> = ({
       blurTimeoutRef.current = null;
     }
     isPressingSuggestionRef.current = false;
-    setSelectedPlace(place);
     setSearchText(`${place.displayName}, ${place.formattedAddress}`);
     onUpdateData('destination', place.displayName);
     onUpdateData('place', place);
@@ -324,6 +318,8 @@ export const DateSlide: React.FC<SlideProps> = ({
 
     // Update or clear endDate based on dateRange
     onUpdateData('endDate', dateRange?.endId || null);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
   const primaryColor = colors.primaryColors.default;

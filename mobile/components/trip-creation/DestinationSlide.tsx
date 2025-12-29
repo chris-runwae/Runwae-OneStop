@@ -1,6 +1,6 @@
 // DestinationSlide.tsx
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,

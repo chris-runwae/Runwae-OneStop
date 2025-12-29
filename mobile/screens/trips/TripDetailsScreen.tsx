@@ -1,5 +1,3 @@
-// Save as: @/screens/TripDetailsScreen.tsx (Replace existing)
-
 import {
   Dimensions,
   Image,

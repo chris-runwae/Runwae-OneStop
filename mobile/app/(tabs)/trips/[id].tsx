@@ -32,8 +32,9 @@ import {
   SavedItemsSection,
   Spacer,
   Text,
-  TripDiscoverySection,
+  // TripDiscoverySection,
 } from '@/components';
+import { TripDiscoverySection } from '@/components/TripDiscoverySection';
 import { AvatarGroup } from '@/components/ui/AvatarGroup';
 import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
 import { useHotels, useTrips } from '@/hooks';
@@ -713,10 +714,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   gradientOverlay: {
-    // position: 'absolute',
-    // bottom: 0,
-    // left: 0,
-    // right: 0,
     height: '100%',
     justifyContent: 'flex-end',
   },

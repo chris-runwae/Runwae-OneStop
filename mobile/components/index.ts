@@ -18,7 +18,7 @@ import UserAvatar from './containers/UserAvatar';
 import WelcomeAvatar from './containers/WelcomeAvatar';
 import WideTripCard from './cards/WideTripCard';
 import HomeScreenSkeleton from './skeletons/HomeScreenSkeleton';
-import TripDiscoverySection from './containers/TripDiscoverySection';
+// import TripDiscoverySection from './containers/TripDiscoverySection';
 import TripDiscoverySkeleton from './skeletons/TripDiscoverySkeleton';
 import TextInput from './inputs/TextInput';
 import ItineraryItemCard from './cards/ItineraryItemCard';
@@ -58,7 +58,7 @@ export {
   UserAvatar,
   WelcomeAvatar,
   WideTripCard,
-  TripDiscoverySection,
+  // TripDiscoverySection,
   TextInput,
   TripDiscoverySkeleton,
   ItineraryItemCard,

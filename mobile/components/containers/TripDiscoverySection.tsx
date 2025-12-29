@@ -20,8 +20,6 @@ import { useViatorStore } from '@/stores/useViatorStore';
 import { VIATOR_CATEGORIES } from '@/utils/viatorCategories';
 import { useActivityStore } from '@/stores/activityStore';
 
-type FilterOption = 'All' | 'Stays 🏨' | 'Do 🎨';
-
 type TripDiscoverySectionProps = {
   tripId: string;
   countryCode?: string;
@@ -52,9 +50,6 @@ const TripDiscoverySection = ({
   const { setCurrentActivity } = useActivityStore();
 
   const [addSavedItemLoading, setAddSavedItemLoading] = useState(false);
-  const [lifetimeExperiences, setLifetimeExperiences] = useState<any[]>([]);
-  const [uniqueExperiences, setUniqueExperiences] = useState<any[]>([]);
-  const [adventureTours, setAdventureTours] = useState<any[]>([]);
   // const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   // State for each category's data
@@ -196,15 +191,9 @@ const TripDiscoverySection = ({
         fetchActivitiesByTag(11940), // Lifetime experiences
         fetchActivitiesByTag(21074), // Unique experiences
         fetchActivitiesByTag(22046), // Adventure tours
-      ])
-        .then(([lifetime, unique, adventure]) => {
-          setLifetimeExperiences(lifetime);
-          setUniqueExperiences(unique);
-          setAdventureTours(adventure);
-        })
-        .finally(() => {
-          setActivitiesLoading(false);
-        });
+      ]).finally(() => {
+        setActivitiesLoading(false);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilter, placeDisplayName, destinations, startDate, endDate]);
@@ -335,78 +324,6 @@ const TripDiscoverySection = ({
   };
 
   // // RENDERS
-  // const renderActivitiesSection = () => {
-  //   if (activitiesLoading) {
-  //     return <TripDiscoverySkeleton />;
-  //   }
-
-  //   const renderActivitySection = (
-  //     title: string,
-  //     data: any[],
-  //     keyPrefix: string
-  //   ) => {
-  //     if (data.length === 0) return null;
-
-  //     return (
-  //       <View key={keyPrefix} style={{ marginBottom: 32 }}>
-  //         <SectionHeader
-  //           title={title}
-  //           linkText="More"
-  //           linkTo={'/explore' as RelativePathString}
-  //         />
-  //         <Spacer size={16} vertical />
-  //         <FlashList
-  //           data={data}
-  //           renderItem={({ item, index }: { item: any; index: number }) => (
-  //             <View
-  //               style={{
-  //                 width: 280,
-  //                 marginRight: index < data.length - 1 ? 16 : 0,
-  //               }}>
-  //               <DiscoveryItem item={item} key={item.productCode} />
-  //             </View>
-  //           )}
-  //           keyExtractor={(item: any) =>
-  //             `activity-${keyPrefix}-${item.productCode}`
-  //           }
-  //           horizontal
-  //           showsHorizontalScrollIndicator={false}
-  //           contentContainerStyle={styles.horizontalListContent}
-  //         />
-  //       </View>
-  //     );
-  //   };
-
-  //   const hasAnyData =
-  //     lifetimeExperiences.length > 0 ||
-  //     uniqueExperiences.length > 0 ||
-  //     adventureTours.length > 0;
-
-  //   if (!hasAnyData) {
-  //     return (
-  //       <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-  //         No activities available
-  //       </Text>
-  //     );
-  //   }
-
-  //   return (
-  //     <>
-  //       {renderActivitySection(
-  //         'Lifetime experiences',
-  //         lifetimeExperiences,
-  //         'lifetime'
-  //       )}
-  //       {renderActivitySection(
-  //         'Unique experiences',
-  //         uniqueExperiences,
-  //         'unique'
-  //       )}
-  //       {renderActivitySection('Adventure tours', adventureTours, 'adventure')}
-  //     </>
-  //   );
-  // };
-
   // Render a single activity section (subcategory)
   const renderActivitySection = (
     title: string,

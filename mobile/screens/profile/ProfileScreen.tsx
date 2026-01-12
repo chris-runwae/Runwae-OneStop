@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   useColorScheme,
+  Pressable,
 } from 'react-native';
 import { RelativePathString, useRouter } from 'expo-router';
 import { useClerk, useUser } from '@clerk/clerk-expo';
@@ -16,11 +17,13 @@ import {
   MessageCircleQuestionMarkIcon,
   ShieldIcon,
   UserIcon,
+  Cog,
 } from 'lucide-react-native';
 
 import { MenuItem, ScreenContainer, Spacer, Text } from '@/components';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
+import { useIOSMenu, IOSMenuSheet } from '@/components/buttons/IOSMenuButton';
 
 // NOTE:
 // The previous implementation used `className` (Tailwind-style) which will
@@ -32,6 +35,8 @@ export function ProfileScreen() {
   const { user } = useUser();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+
+  const menu = useIOSMenu();
 
   const { signOut } = useClerk();
   const router = useRouter();
@@ -60,8 +65,44 @@ export function ProfileScreen() {
     },
   });
 
+  const options = [
+    {
+      label: 'Share Trip',
+      onPress: () => console.log('Share pressed'),
+      icon: <Building2 size={18} color={colors.textColors.default} />,
+    },
+    {
+      label: 'Edit Trip',
+      onPress: () => console.log('Edit pressed'),
+      icon: <CameraIcon size={18} color={colors.textColors.default} />,
+    },
+    {
+      label: 'Security',
+      onPress: () => console.log('Delete pressed'),
+      icon: <ShieldIcon size={18} color={colors.destructiveColors.default} />,
+      destructive: true,
+    },
+  ];
+
+  const MenuButton = () => {
+    return (
+      <Pressable
+        // onPress={() => router.push('/(tabs)/profile/account/account-info')}
+        onPress={menu.open}>
+        <Cog color={colors.textColors.default} />
+      </Pressable>
+    );
+  };
+
   return (
-    <ScreenContainer header={{ title: 'Profile' }}>
+    <ScreenContainer
+      header={{ title: 'Profile', rightComponent: <MenuButton /> }}>
+      <IOSMenuSheet
+        visible={menu.visible}
+        onClose={menu.close}
+        options={options}
+        // title="Trip Actions"
+      />
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>

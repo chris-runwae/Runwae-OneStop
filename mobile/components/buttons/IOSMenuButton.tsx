@@ -158,42 +158,24 @@ export const IOSMenuSheet: React.FC<IOSMenuSheetProps> = ({
                 </React.Fragment>
               ))}
 
-              {/* <View style={dynamicStyles.separator} /> */}
+              <View style={dynamicStyles.separator} />
 
-              {/* <Pressable
-                style={({ pressed }) => [
-                  styles.option,
-                  // styles.cancelOption,
-                  pressed && styles.optionPressed,
-                ]}
+              <Pressable
+                style={({ pressed }) => [pressed && styles.optionPressed]}
                 onPress={onClose}>
-                <View style={styles.iconContainer}>
-                  <XIcon size={24} color={colors.textColors.default} />
+                <View
+                  style={[
+                    styles.option,
+                    { paddingBottom: Platform.OS === 'ios' ? 34 : 16 },
+                  ]}>
+                  <View style={styles.iconContainer}>
+                    <XIcon size={24} color={colors.textColors.default} />
+                  </View>
+                  <Text style={[dynamicStyles.optionText]}>{cancelLabel}</Text>
                 </View>
-                <Text style={[styles.optionText, styles.destructiveText]}>
-                  {cancelLabel}
-                </Text>
-              </Pressable> */}
+              </Pressable>
             </View>
           </BlurView>
-
-          {/* Cancel button - separate group */}
-          {/* <BlurView
-            intensity={80}
-            tint="systemChromeMaterialLight"
-            style={styles.blurContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.option,
-                styles.cancelOption,
-                pressed && styles.optionPressed,
-              ]}
-              onPress={onClose}>
-              <Text style={[styles.optionText, styles.cancelText]}>
-                {cancelLabel}
-              </Text>
-            </Pressable>
-          </BlurView> */}
         </View>
       </Animated.View>
     </Modal>
@@ -230,7 +212,7 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     paddingHorizontal: 8,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16, // Account for home indicator
+    // paddingBottom: Platform.OS === 'ios' ? 34 : 16, // Account for home indicator
     gap: 8,
   },
   blurContainer: {
@@ -255,7 +237,7 @@ const styles = StyleSheet.create({
   },
   option: {
     flexDirection: 'row',
-    // alignItems: 'center',
+    alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
   },

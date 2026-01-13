@@ -79,7 +79,7 @@ export default function TabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="explore" options={{ title: 'Explore' }}>
         <Icon
-          sf={'paperplane.fill'}
+          sf={'magnifyingglass'}
           drawable="ic_explore"
           selectedColor={colors.primaryColors.border}
         />

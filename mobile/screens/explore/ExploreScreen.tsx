@@ -409,7 +409,7 @@ export default function ExploreScreen() {
       <View style={styles.highlightContent}>
         <Text style={styles.highlightLocation}>{item.location}</Text>
         <Text style={styles.highlightTitle}>{item.title}</Text>
-        <Text style={styles.highlightDescription} numberOfLines={3}>
+        <Text style={styles.highlightDescription} numberOfLines={2}>
           {item.description}
         </Text>
         <Text style={styles.highlightPrice}>
@@ -455,6 +455,7 @@ export default function ExploreScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}>
+        <Spacer size={16} vertical />
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>

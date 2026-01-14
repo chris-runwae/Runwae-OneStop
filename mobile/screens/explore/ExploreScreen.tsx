@@ -8,6 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Search, Filter, Heart } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { format, parseISO } from 'date-fns';
@@ -21,6 +22,7 @@ import type { Experience, Destination, FeaturedEvent } from '@/types/explore';
 type Category = 'all' | 'romantic-getaway' | 'sports' | 'relax';
 
 export default function ExploreScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
@@ -287,8 +289,7 @@ export default function ExploreScreen() {
     <Pressable
       style={styles.itineraryCard}
       onPress={() => {
-        // Navigate to itinerary detail
-        console.log('Navigate to itinerary:', item.id);
+        router.push(`/(tabs)/explore/itineraries/${item.id}`);
       }}>
       <View style={{ position: 'relative' }}>
         <Image
@@ -355,8 +356,7 @@ export default function ExploreScreen() {
       <Pressable
         style={styles.eventCard}
         onPress={() => {
-          // Navigate to event detail
-          console.log('Navigate to event:', item.id);
+          router.push(`/(tabs)/explore/events/${item.id}`);
         }}>
         <Image
           source={{ uri: item.heroImage }}
@@ -398,8 +398,7 @@ export default function ExploreScreen() {
     <Pressable
       style={styles.highlightCard}
       onPress={() => {
-        // Navigate to highlight detail
-        console.log('Navigate to highlight:', item.id);
+        router.push(`/(tabs)/explore/experiences/${item.id}`);
       }}>
       <Image
         source={{ uri: item.heroImage }}
@@ -432,8 +431,7 @@ export default function ExploreScreen() {
     <Pressable
       style={styles.destinationCard}
       onPress={() => {
-        // Navigate to destination detail
-        console.log('Navigate to destination:', item.id);
+        router.push(`/(tabs)/explore/destinations/${item.id}`);
       }}>
       <Image
         source={{ uri: item.heroImage || item.thumbnailImage }}
@@ -516,7 +514,7 @@ export default function ExploreScreen() {
             <SectionHeader
               title="Featured Itineraries"
               linkText="More →"
-              linkTo={'/explore/itineraries' as any}
+              linkTo={'/(tabs)/explore/itineraries' as any}
             />
             <Spacer size={16} vertical />
             <FlashList
@@ -535,7 +533,7 @@ export default function ExploreScreen() {
             <SectionHeader
               title="Featured Events"
               linkText="More →"
-              linkTo={'/explore/events' as any}
+              linkTo={'/(tabs)/explore/events' as any}
             />
             <Spacer size={16} vertical />
             <FlatList
@@ -553,7 +551,7 @@ export default function ExploreScreen() {
             <SectionHeader
               title="Experience Highlights"
               linkText="More →"
-              linkTo={'/explore/experiences' as any}
+              linkTo={'/(tabs)/explore/experiences' as any}
             />
             <Spacer size={16} vertical />
             <FlashList
@@ -572,7 +570,7 @@ export default function ExploreScreen() {
             <SectionHeader
               title="Popular Destinations"
               linkText="More →"
-              linkTo={'/explore/destinations' as any}
+              linkTo={'/(tabs)/explore/destinations' as any}
             />
             <Spacer size={16} vertical />
             <FlashList

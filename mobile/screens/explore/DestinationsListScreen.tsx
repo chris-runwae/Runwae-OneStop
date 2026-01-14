@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Pressable,
-  useColorScheme,
-} from 'react-native';
+import { StyleSheet, View, Pressable, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Heart } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -156,8 +151,8 @@ export default function DestinationsListScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.contentContainer}
-        estimatedItemSize={320}
         ItemSeparatorComponent={() => <Spacer size={16} vertical />}
+        ListFooterComponent={() => <Spacer size={120} vertical />}
       />
     </ScreenContainer>
   );

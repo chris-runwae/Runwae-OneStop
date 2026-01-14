@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Pressable,
-  useColorScheme,
-} from 'react-native';
+import { StyleSheet, View, Pressable, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar, Heart } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -113,7 +108,11 @@ export default function ItinerariesListScreen() {
           router.push(`/(tabs)/explore/itineraries/${item.id}`);
         }}>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: item.heroImage }} style={styles.image} contentFit="cover" />
+          <Image
+            source={{ uri: item.heroImage }}
+            style={styles.image}
+            contentFit="cover"
+          />
           <Pressable
             style={styles.heartButton}
             onPress={(e) => {
@@ -163,6 +162,7 @@ export default function ItinerariesListScreen() {
         contentContainerStyle={styles.contentContainer}
         estimatedItemSize={320}
         ItemSeparatorComponent={() => <Spacer size={16} vertical />}
+        ListFooterComponent={() => <Spacer size={120} vertical />}
       />
     </ScreenContainer>
   );

@@ -60,15 +60,9 @@ export default function DestinationDetailScreen() {
     );
   }, [destination, experiences]);
 
-  if (!destination) {
-    return (
-      <View style={styles.container}>
-        <Text>Destination not found</Text>
-      </View>
-    );
-  }
-
-  const descriptionText = `Welcome to ${destination.name}, ${destination.country}! ${destination.shortDescription} Embark on a culinary adventure through the bustling markets. Savor flavorful local cuisine, discover the secrets of traditional drinks, and connect with local vendors. Immerse yourself in local hospitality as you explore the cultural heritage, lively music, and unforgettable flavors. Join us on this adventure, where every dish tells a story and every moment is a celebration of life, culture, and community.`;
+  const descriptionText = destination
+    ? `Welcome to ${destination.name}, ${destination.country}! ${destination.shortDescription} Embark on a culinary adventure through the bustling markets. Savor flavorful local cuisine, discover the secrets of traditional drinks, and connect with local vendors. Immerse yourself in local hospitality as you explore the cultural heritage, lively music, and unforgettable flavors. Join us on this adventure, where every dish tells a story and every moment is a celebration of life, culture, and community.`
+    : '';
 
   const filters: { id: FilterType; label: string; icon?: string }[] = [
     { id: 'all', label: 'All' },
@@ -78,19 +72,12 @@ export default function DestinationDetailScreen() {
     { id: 'shop', label: 'Shop', icon: '🛍️' },
   ];
 
-  const filteredExperiences = useMemo(() => {
-    if (selectedFilter === 'all') return experiences;
-    // Simple filtering - in real app, you'd check experience categories/tags
-    return experiences;
-  }, [experiences, selectedFilter]);
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.backgroundColors.default,
     },
     content: {
-      // paddingHorizontal: 8,
       paddingBottom: 32,
     },
     title: {
@@ -312,7 +299,27 @@ export default function DestinationDetailScreen() {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    sectionTitle: {
+      ...textStyles.bold_20,
+      fontSize: 20,
+      color: colors.textColors.default,
+      marginBottom: 16,
+    },
   });
+
+  const filteredExperiences = useMemo(() => {
+    if (selectedFilter === 'all') return experiences;
+    // Simple filtering - in real app, you'd check experience categories/tags
+    return experiences;
+  }, [experiences, selectedFilter]);
+
+  if (!destination) {
+    return (
+      <View style={styles.container}>
+        <Text>Destination not found</Text>
+      </View>
+    );
+  }
 
   const renderRecommendationCard = ({ item }: { item: Experience }) => (
     <View style={styles.recommendationCard}>
@@ -456,7 +463,6 @@ export default function DestinationDetailScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              estimatedItemSize={280}
             />
           </View>
         )}
@@ -503,7 +509,6 @@ export default function DestinationDetailScreen() {
               renderItem={renderRecommendationCard}
               keyExtractor={(item) => item.id}
               numColumns={2}
-              estimatedItemSize={200}
             />
           </View>
         )}
@@ -555,10 +560,10 @@ export default function DestinationDetailScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              estimatedItemSize={240}
             />
           </View>
         )}
+        <Spacer size={120} vertical />
       </View>
     </ScreenWithImage>
   );

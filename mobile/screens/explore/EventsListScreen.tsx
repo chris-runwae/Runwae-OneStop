@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Pressable,
-  useColorScheme,
-} from 'react-native';
+import { StyleSheet, View, Pressable, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Calendar, Clock } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -40,8 +35,10 @@ export default function EventsListScreen() {
       try {
         const startDate = parseISO(start);
         const endDate = parseISO(end);
-        if (startDate.getFullYear() === endDate.getFullYear() &&
-            startDate.getMonth() === endDate.getMonth()) {
+        if (
+          startDate.getFullYear() === endDate.getFullYear() &&
+          startDate.getMonth() === endDate.getMonth()
+        ) {
           return `${format(startDate, 'MMM d')} - ${format(endDate, 'd, yyyy')}`;
         }
         return `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
@@ -141,7 +138,11 @@ export default function EventsListScreen() {
       onPress={() => {
         router.push(`/(tabs)/explore/events/${item.id}`);
       }}>
-      <Image source={{ uri: item.heroImage }} style={styles.image} contentFit="cover" />
+      <Image
+        source={{ uri: item.heroImage }}
+        style={styles.image}
+        contentFit="cover"
+      />
       <View style={styles.content}>
         <View>
           <Text style={styles.title}>{item.title}</Text>
@@ -187,6 +188,7 @@ export default function EventsListScreen() {
         contentContainerStyle={styles.contentContainer}
         estimatedItemSize={140}
         ItemSeparatorComponent={() => <Spacer size={16} vertical />}
+        ListFooterComponent={() => <Spacer size={120} vertical />}
       />
     </ScreenContainer>
   );

@@ -1,10 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Pressable,
-  useColorScheme,
-} from 'react-native';
+import { StyleSheet, View, Pressable, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Star, Heart } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -127,7 +122,11 @@ export default function ExperiencesListScreen() {
         router.push(`/(tabs)/explore/experiences/${item.id}`);
       }}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: item.heroImage }} style={styles.image} contentFit="cover" />
+        <Image
+          source={{ uri: item.heroImage }}
+          style={styles.image}
+          contentFit="cover"
+        />
         <Pressable
           style={styles.heartButton}
           onPress={(e) => {
@@ -178,6 +177,7 @@ export default function ExperiencesListScreen() {
         contentContainerStyle={styles.contentContainer}
         estimatedItemSize={350}
         ItemSeparatorComponent={() => <Spacer size={16} vertical />}
+        ListFooterComponent={() => <Spacer size={120} vertical />}
       />
     </ScreenContainer>
   );

@@ -67,7 +67,6 @@ export default function ExperienceDetailScreen() {
       backgroundColor: colors.backgroundColors.default,
     },
     content: {
-      paddingHorizontal: 16,
       paddingBottom: 32,
     },
     title: {
@@ -434,6 +433,7 @@ export default function ExperienceDetailScreen() {
             ))}
           </View>
         )}
+        <Spacer size={120} vertical />
       </View>
     </ScreenWithImageGallery>
   );

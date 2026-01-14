@@ -85,7 +85,6 @@ export default function ItineraryDetailScreen() {
       alignItems: 'center',
     },
     content: {
-      paddingHorizontal: 16,
       paddingBottom: 32,
     },
     title: {
@@ -348,10 +347,10 @@ export default function ItineraryDetailScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              estimatedItemSize={280}
             />
           </View>
         )}
+        <Spacer size={120} vertical />
       </View>
     </ScreenWithImage>
   );

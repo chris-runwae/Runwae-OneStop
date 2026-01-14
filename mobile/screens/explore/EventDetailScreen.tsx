@@ -81,7 +81,6 @@ export default function EventDetailScreen() {
       alignItems: 'center',
     },
     content: {
-      paddingHorizontal: 16,
       paddingBottom: 32,
     },
     title: {
@@ -176,6 +175,7 @@ export default function EventDetailScreen() {
             </Text>
           </View>
         )}
+        <Spacer size={120} vertical />
       </View>
     </ScreenWithImage>
   );

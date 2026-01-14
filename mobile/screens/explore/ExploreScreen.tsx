@@ -1,49 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
   ScrollView,
   Pressable,
   useColorScheme,
-  ActivityIndicator,
   FlatList,
 } from 'react-native';
 import { Search, Filter, Heart } from 'lucide-react-native';
-import { useAuth } from '@clerk/clerk-expo';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
+import { format, parseISO } from 'date-fns';
 
 import { ScreenContainer, SectionHeader, Spacer, Text } from '@/components';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
-import { getSupabaseClient } from '@/lib/supabase';
+import { exploreDummyData } from '@/stores/exploreStore';
+import type { Experience, Destination, FeaturedEvent } from '@/types/explore';
 
 type Category = 'all' | 'romantic-getaway' | 'sports' | 'relax';
-
-interface TableExists {
-  featured_itineraries: boolean;
-  featured_events: boolean;
-  experience_highlights: boolean;
-  popular_destinations: boolean;
-}
 
 export default function ExploreScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { getToken } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
-  const [tableExists, setTableExists] = useState<TableExists>({
-    featured_itineraries: false,
-    featured_events: false,
-    experience_highlights: false,
-    popular_destinations: false,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const [featuredItineraries, setFeaturedItineraries] = useState<any[]>([]);
-  const [featuredEvents, setFeaturedEvents] = useState<any[]>([]);
-  const [experienceHighlights, setExperienceHighlights] = useState<any[]>([]);
-  const [popularDestinations, setPopularDestinations] = useState<any[]>([]);
 
   const categories = [
     { id: 'all' as Category, label: 'All', emoji: '' },
@@ -56,70 +36,33 @@ export default function ExploreScreen() {
     { id: 'relax' as Category, label: 'Relax', emoji: '🧘' },
   ];
 
-  // Check table existence and fetch data
-  useEffect(() => {
-    const checkTablesAndFetch = async () => {
-      setLoading(true);
-      try {
-        const supabase = await getSupabaseClient(getToken);
+  // Get data from store
+  const featuredItineraries = useMemo(() => {
+    // Use featured experiences as itinerary cards
+    return exploreDummyData.experiences
+      .filter((exp) => exp.isFeatured)
+      .slice(0, 5)
+      .map((exp) => ({
+        id: exp.id,
+        title: exp.title,
+        image_url: exp.heroImage,
+        activity_count: exploreDummyData.itineraries.filter(
+          (it) => it.experienceId === exp.id
+        ).length,
+        duration_days: Math.ceil(exp.durationMinutes / (60 * 24)),
+      }));
+  }, []);
 
-        // Check each table and fetch data if it exists
-        const tables: (keyof TableExists)[] = [
-          'featured_itineraries',
-          'featured_events',
-          'experience_highlights',
-          'popular_destinations',
-        ];
+  const featuredEvents = useMemo(() => {
+    return exploreDummyData.featuredEvents;
+  }, []);
 
-        const exists: TableExists = {
-          featured_itineraries: false,
-          featured_events: false,
-          experience_highlights: false,
-          popular_destinations: false,
-        };
+  const experienceHighlights = useMemo(() => {
+    return exploreDummyData.experiences.filter((exp) => exp.isFeatured);
+  }, []);
 
-        // Check and fetch for each table
-        for (const table of tables) {
-          try {
-            const { data, error } = await supabase
-              .from(table)
-              .select('*')
-              .limit(10);
-
-            if (!error && data) {
-              exists[table] = true;
-
-              // Set data based on table
-              switch (table) {
-                case 'featured_itineraries':
-                  setFeaturedItineraries(data || []);
-                  break;
-                case 'featured_events':
-                  setFeaturedEvents(data || []);
-                  break;
-                case 'experience_highlights':
-                  setExperienceHighlights(data || []);
-                  break;
-                case 'popular_destinations':
-                  setPopularDestinations(data || []);
-                  break;
-              }
-            }
-          } catch (err) {
-            // Table doesn't exist or error, continue
-            console.log(`Table ${table} does not exist or error:`, err);
-          }
-        }
-
-        setTableExists(exists);
-      } catch (error) {
-        console.error('Error checking tables:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkTablesAndFetch();
+  const popularDestinations = useMemo(() => {
+    return exploreDummyData.destinations.filter((dest) => dest.isFeatured);
   }, []);
 
   const styles = StyleSheet.create({
@@ -350,10 +293,7 @@ export default function ExploreScreen() {
       <View style={{ position: 'relative' }}>
         <Image
           source={{
-            uri:
-              item.image_url ||
-              item.cover_image ||
-              'https://via.placeholder.com/300x200',
+            uri: item.image_url || 'https://via.placeholder.com/300x200',
           }}
           style={styles.itineraryImage}
           contentFit="cover"
@@ -363,73 +303,98 @@ export default function ExploreScreen() {
         </View>
       </View>
       <View style={styles.itineraryContent}>
-        <Text style={styles.itineraryTitle}>{item.title || 'Itinerary'}</Text>
+        <Text style={styles.itineraryTitle}>{item.title}</Text>
         <Text style={styles.itineraryMeta}>
-          {item.activity_count || 0} activities • {item.duration_days || 0} days
+          {item.activity_count || 0} activities • {item.duration_days || 0}{' '}
+          {item.duration_days === 1 ? 'day' : 'days'}
         </Text>
       </View>
     </Pressable>
   );
 
-  const renderEventCard = ({ item }: { item: any }) => (
-    <Pressable
-      style={styles.eventCard}
-      onPress={() => {
-        // Navigate to event detail
-        console.log('Navigate to event:', item.id);
-      }}>
-      <Image
-        source={{
-          uri:
-            item.image_url ||
-            item.cover_image ||
-            'https://via.placeholder.com/120x120',
-        }}
-        style={styles.eventImage}
-        contentFit="cover"
-      />
-      <View style={styles.eventContent}>
-        <View>
-          <Text style={styles.eventTitle}>
-            {item.title || item.name || 'Event'}
-          </Text>
-          <Text style={styles.eventLocation}>
-            {item.location || 'Location'}
-          </Text>
-          <Text style={styles.eventDate}>
-            {item.date || item.event_date || 'Date'}{' '}
-            {item.time ? `| ${item.time}` : ''}
-          </Text>
-          {item.category && (
-            <View
-              style={[
-                styles.eventTag,
-                {
-                  backgroundColor:
-                    item.category === 'MUSIC FEST'
-                      ? '#10B981'
-                      : item.category === 'CULTURAL'
-                        ? '#A855F7'
-                        : item.category === 'FOOD'
-                          ? '#3B82F6'
-                          : colors.primaryColors.background,
-                },
-              ]}>
-              <Text
-                style={[
-                  styles.categoryText,
-                  { fontSize: 10, color: colors.textColors.default },
-                ]}>
-                {item.category}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </Pressable>
-  );
+  const renderEventCard = ({ item }: { item: FeaturedEvent }) => {
+    const formatDate = (dateString: string) => {
+      try {
+        const date = parseISO(dateString);
+        return format(date, 'MMM d');
+      } catch {
+        return dateString;
+      }
+    };
 
-  const renderHighlightCard = ({ item }: { item: any }) => (
+    const formatDateRange = (start: string, end?: string) => {
+      if (end) {
+        try {
+          const startDate = parseISO(start);
+          const endDate = parseISO(end);
+          const startFormatted = format(startDate, 'MMM d');
+          const endFormatted = format(endDate, 'MMM d, yyyy');
+          return `${startFormatted} - ${endFormatted}`;
+        } catch {
+          return `${start} - ${end}`;
+        }
+      }
+      return formatDate(start);
+    };
+
+    const getCategoryColor = (category: string) => {
+      const upperCategory = category.toUpperCase();
+      if (upperCategory.includes('MUSIC') || upperCategory.includes('FEST')) {
+        return '#10B981';
+      }
+      if (upperCategory.includes('CULTURAL')) {
+        return '#A855F7';
+      }
+      if (upperCategory.includes('FOOD')) {
+        return '#3B82F6';
+      }
+      return colors.primaryColors.background;
+    };
+
+    return (
+      <Pressable
+        style={styles.eventCard}
+        onPress={() => {
+          // Navigate to event detail
+          console.log('Navigate to event:', item.id);
+        }}>
+        <Image
+          source={{ uri: item.heroImage }}
+          style={styles.eventImage}
+          contentFit="cover"
+        />
+        <View style={styles.eventContent}>
+          <View>
+            <Text style={styles.eventTitle}>{item.title}</Text>
+            <Text style={styles.eventLocation}>{item.location}</Text>
+            <Text style={styles.eventDate}>
+              {formatDateRange(item.startDate, item.endDate)}
+              {item.time ? ` | ${item.time}` : ''}
+            </Text>
+            {item.category && (
+              <View
+                style={[
+                  styles.eventTag,
+                  {
+                    backgroundColor: getCategoryColor(item.category),
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { fontSize: 10, color: colors.textColors.default },
+                  ]}>
+                  {item.category.toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Pressable>
+    );
+  };
+
+  const renderHighlightCard = ({ item }: { item: Experience }) => (
     <Pressable
       style={styles.highlightCard}
       onPress={() => {
@@ -437,27 +402,18 @@ export default function ExploreScreen() {
         console.log('Navigate to highlight:', item.id);
       }}>
       <Image
-        source={{
-          uri:
-            item.image_url ||
-            item.cover_image ||
-            'https://via.placeholder.com/320x200',
-        }}
+        source={{ uri: item.heroImage }}
         style={styles.highlightImage}
         contentFit="cover"
       />
       <View style={styles.highlightContent}>
-        <Text style={styles.highlightLocation}>
-          {item.location || 'Location'}
-        </Text>
-        <Text style={styles.highlightTitle}>
-          {item.title || item.name || 'Experience'}
-        </Text>
+        <Text style={styles.highlightLocation}>{item.location}</Text>
+        <Text style={styles.highlightTitle}>{item.title}</Text>
         <Text style={styles.highlightDescription} numberOfLines={3}>
-          {item.description || 'Experience description...'}
+          {item.description}
         </Text>
         <Text style={styles.highlightPrice}>
-          from ${item.price || item.starting_price || '0'}
+          from ${item.priceFrom} {item.currency}
         </Text>
         <Pressable
           style={styles.highlightButton}
@@ -472,7 +428,7 @@ export default function ExploreScreen() {
     </Pressable>
   );
 
-  const renderDestinationCard = ({ item }: { item: any }) => (
+  const renderDestinationCard = ({ item }: { item: Destination }) => (
     <Pressable
       style={styles.destinationCard}
       onPress={() => {
@@ -480,42 +436,18 @@ export default function ExploreScreen() {
         console.log('Navigate to destination:', item.id);
       }}>
       <Image
-        source={{
-          uri:
-            item.image_url ||
-            item.cover_image ||
-            'https://via.placeholder.com/280x200',
-        }}
+        source={{ uri: item.heroImage || item.thumbnailImage }}
         style={styles.destinationImage}
         contentFit="cover"
       />
       <View style={styles.destinationContent}>
-        <Text style={styles.destinationTitle}>
-          {item.title || item.name || 'Destination'}
-        </Text>
+        <Text style={styles.destinationTitle}>{item.name}</Text>
         <Text style={styles.destinationLocation}>
-          {item.location || item.city || 'Location'}
+          {item.city}, {item.country}
         </Text>
       </View>
     </Pressable>
   );
-
-  if (loading) {
-    return (
-      <ScreenContainer header={{ title: 'Explore' }}>
-        <View
-          style={[
-            styles.container,
-            { alignItems: 'center', justifyContent: 'center', flex: 1 },
-          ]}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primaryColors.default}
-          />
-        </View>
-      </ScreenContainer>
-    );
-  }
 
   return (
     <ScreenContainer header={{ title: 'Explore' }}>
@@ -578,7 +510,7 @@ export default function ExploreScreen() {
         </ScrollView>
 
         {/* Featured Itineraries */}
-        {tableExists.featured_itineraries && (
+        {featuredItineraries.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
               title="Featured Itineraries"
@@ -586,26 +518,18 @@ export default function ExploreScreen() {
               linkTo={'/explore/itineraries' as any}
             />
             <Spacer size={16} vertical />
-            {featuredItineraries.length > 0 ? (
-              <FlashList
-                data={featuredItineraries}
-                renderItem={renderItineraryCard}
-                keyExtractor={(item) =>
-                  item.id?.toString() || Math.random().toString()
-                }
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
-            ) : (
-              <Text style={{ color: colors.textColors.subtle }}>
-                No itineraries available
-              </Text>
-            )}
+            <FlashList
+              data={featuredItineraries}
+              renderItem={renderItineraryCard}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
           </View>
         )}
 
         {/* Featured Events */}
-        {tableExists.featured_events && (
+        {featuredEvents.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
               title="Featured Events"
@@ -613,30 +537,17 @@ export default function ExploreScreen() {
               linkTo={'/explore/events' as any}
             />
             <Spacer size={16} vertical />
-            {featuredEvents.length > 0 ? (
-              <FlatList
-                data={featuredEvents}
-                renderItem={renderEventCard}
-                keyExtractor={(item) =>
-                  item.id?.toString() || Math.random().toString()
-                }
-                scrollEnabled={false}
-                ListEmptyComponent={
-                  <Text style={{ color: colors.textColors.subtle }}>
-                    No events available
-                  </Text>
-                }
-              />
-            ) : (
-              <Text style={{ color: colors.textColors.subtle }}>
-                No events available
-              </Text>
-            )}
+            <FlatList
+              data={featuredEvents}
+              renderItem={renderEventCard}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
           </View>
         )}
 
         {/* Experience Highlights */}
-        {tableExists.experience_highlights && (
+        {experienceHighlights.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
               title="Experience Highlights"
@@ -644,26 +555,18 @@ export default function ExploreScreen() {
               linkTo={'/explore/experiences' as any}
             />
             <Spacer size={16} vertical />
-            {experienceHighlights.length > 0 ? (
-              <FlashList
-                data={experienceHighlights}
-                renderItem={renderHighlightCard}
-                keyExtractor={(item) =>
-                  item.id?.toString() || Math.random().toString()
-                }
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
-            ) : (
-              <Text style={{ color: colors.textColors.subtle }}>
-                No highlights available
-              </Text>
-            )}
+            <FlashList
+              data={experienceHighlights}
+              renderItem={renderHighlightCard}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
           </View>
         )}
 
         {/* Popular Destinations */}
-        {tableExists.popular_destinations && (
+        {popularDestinations.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
               title="Popular Destinations"
@@ -671,21 +574,13 @@ export default function ExploreScreen() {
               linkTo={'/explore/destinations' as any}
             />
             <Spacer size={16} vertical />
-            {popularDestinations.length > 0 ? (
-              <FlashList
-                data={popularDestinations}
-                renderItem={renderDestinationCard}
-                keyExtractor={(item) =>
-                  item.id?.toString() || Math.random().toString()
-                }
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
-            ) : (
-              <Text style={{ color: colors.textColors.subtle }}>
-                No destinations available
-              </Text>
-            )}
+            <FlashList
+              data={popularDestinations}
+              renderItem={renderDestinationCard}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
           </View>
         )}
       </ScrollView>

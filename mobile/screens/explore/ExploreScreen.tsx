@@ -455,7 +455,7 @@ export default function ExploreScreen() {
         showsVerticalScrollIndicator={false}>
         <Spacer size={16} vertical />
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        {/* <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <Search size={20} color={colors.textColors.subtle} />
             <Text
@@ -475,7 +475,7 @@ export default function ExploreScreen() {
             }}>
             <Filter size={20} color={colors.textColors.default} />
           </Pressable>
-        </View>
+        </View> */}
 
         {/* Category Buttons */}
         <ScrollView

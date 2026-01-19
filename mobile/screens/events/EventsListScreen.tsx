@@ -126,7 +126,7 @@ export default function EventsListScreen() {
           
           <View style={styles.eventContent}>
             <View style={styles.eventHeader}>
-              <Text style={styles.eventCategory}>{item?.category?.toUpperCase()}</Text>
+              <Text style={styles.eventCategory}>{item?.category?.toUpperCase() ?? ''}</Text>
               <Text style={styles.eventDate}>
                 {new Date(item.start_date).toLocaleDateString('en-US', {
                   month: 'short',

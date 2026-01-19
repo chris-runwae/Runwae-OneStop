@@ -26,6 +26,7 @@ import Constants from 'expo-constants';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 // If using Expo Router, import your CSS file in the app/_layout.tsx file
 import '../global.css';
+import { SupabaseProvider } from '@/lib/SupabaseProvider';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Linking from 'expo-linking';
@@ -100,12 +101,14 @@ function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <SupabaseProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Slot />
           <StatusBar style="auto" />
         </GestureHandlerRootView>
       </ThemeProvider>
+      </SupabaseProvider>
     </ClerkProvider>
   );
 }

@@ -42,6 +42,7 @@ import { textStyles } from '@/utils/styles';
 import { TripItinerary } from '@/components/containers/TripItinerary';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SavedItem } from '@/types/generic.types';
+import ActivityTab from '../activity/ActivityTab';
 
 type TripDetailsScreenProps = {
   tripId: string;
@@ -579,11 +580,7 @@ const TripDetailsScreen = ({ tripId }: TripDetailsScreenProps) => {
             />
           )}
           {activeTab === 'activity' && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, dynamicStyles.emptyText]}>
-                Activity content coming soon
-              </Text>
-            </View>
+            <ActivityTab tripId={trip?.id ?? ''} userId={user?.id ?? ''} isAdmin={false} />
           )}
           <Spacer size={740} vertical />
         </View>

@@ -26,7 +26,7 @@ import AnnouncementsList from './announcements/AnnouncementsList';
 
 import type { ActivitySection } from './types';
 import { Colors } from '@/constants';
-import { Text } from '@/components';
+import { Spacer, Text } from '@/components';
 import { textStyles } from '@/utils/styles';
 
 // Enable LayoutAnimation on Android
@@ -35,8 +35,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 } 
 
 const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
-  { key: 'expenses', label: 'Expenses', icon: '💰' },
   { key: 'polls', label: 'Polls', icon: '📊' },
+  { key: 'expenses', label: 'Expenses', icon: '💰' },
   { key: 'checklists', label: 'Checklist', icon: '✓' },
   { key: 'announcements', label: 'News', icon: '📢' },
 ];
@@ -88,10 +88,10 @@ export default function ActivityTab({ tripId, userId, isAdmin }: ActivityTabProp
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'expenses':
-        return <ExpensesList tripId={tripId} userId={userId} />;
       case 'polls':
         return <PollsList tripId={tripId} userId={userId} />;
+      case 'expenses':
+        return <ExpensesList tripId={tripId} userId={userId} />;
       case 'checklists':
         return <ChecklistsList tripId={tripId} userId={userId} />;
       case 'announcements':
@@ -132,6 +132,7 @@ export default function ActivityTab({ tripId, userId, isAdmin }: ActivityTabProp
       </ScrollView>
 
       {/* Content Area */}
+      <Spacer size={16} vertical />
       <View style={styles.content}>{renderContent()}</View>
     </View>
   );
@@ -142,8 +143,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   segmentControl: {
-    paddingTop: 16,
-    paddingBottom: 12,
+
   },
   segmentWrapper: {
     position: 'relative',

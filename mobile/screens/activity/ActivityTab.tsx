@@ -7,19 +7,15 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
-  LayoutAnimation,
   Platform,
+  ScrollView,
   UIManager,
+  useColorScheme,
+  ViewStyle,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+
 import * as Haptics from 'expo-haptics';
 
 // Feature modules
@@ -29,11 +25,14 @@ import ChecklistsList from './checklists/ChecklistsList';
 import AnnouncementsList from './announcements/AnnouncementsList';
 
 import type { ActivitySection } from './types';
+import { Colors } from '@/constants';
+import { Text } from '@/components';
+import { textStyles } from '@/utils/styles';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+} 
 
 const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
   { key: 'expenses', label: 'Expenses', icon: '💰' },
@@ -50,27 +49,40 @@ interface ActivityTabProps {
 
 export default function ActivityTab({ tripId, userId, isAdmin }: ActivityTabProps) {
   const [activeSection, setActiveSection] = useState<ActivitySection>('expenses');
-  const { width } = Dimensions.get('window');
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
-  // Animated indicator
-  const indicatorX = useSharedValue(0);
-  const segmentWidth = (width - 32) / SEGMENTS.length; // 16px padding each side
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorX.value }],
-  }));
+  const dynamicStyles = {
+    segment: (isActive: boolean) => ({
+      borderRadius: 100,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 6,
+      zIndex: 1,
+      ...(!isActive && {
+        backgroundColor: colors.backgroundColors.subtle,
+        borderColor: colors.borderColors.subtle,
+        borderWidth: 0.5,
+      }),
+      ...(isActive && {
+        backgroundColor: colors.primaryColors.default,
+      }),
+    }),
+    segmentLabel: {
+      color: colors.textColors.subtle,
+      ...textStyles.subtitle_Regular,
+    },
+    segmentLabelActive: {
+      color: colors.white,
+    },
+  };
 
-  const handleSegmentPress = (section: ActivitySection, index: number) => {
+  const handleSegmentPress = (section: ActivitySection, ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    // Animate indicator
-    indicatorX.value = withSpring(index * segmentWidth, {
-      damping: 20,
-      stiffness: 200,
-    });
-
-    // Animate content change
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveSection(section);
   };
 
@@ -92,41 +104,32 @@ export default function ActivityTab({ tripId, userId, isAdmin }: ActivityTabProp
   return (
     <View style={styles.container}>
       {/* Segment Control */}
-      <View style={styles.segmentControl}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.segmentControl}>
         <View style={styles.segmentWrapper}>
-          {/* Animated indicator background */}
-          <Animated.View
-            style={[
-              styles.activeIndicator,
-              { width: segmentWidth },
-              indicatorStyle,
-            ]}
-          />
-
           {/* Segments */}
           {SEGMENTS.map((segment, index) => {
             const isActive = activeSection === segment.key;
             return (
               <TouchableOpacity
                 key={segment.key}
-                style={[styles.segment, { width: segmentWidth }]}
-                onPress={() => handleSegmentPress(segment.key, index)}
+                style={[styles.segment, dynamicStyles.segment(isActive) as ViewStyle]}
+                onPress={() => handleSegmentPress(segment.key)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.segmentIcon}>{segment.icon}</Text>
                 <Text
                   style={[
                     styles.segmentLabel,
-                    isActive && styles.segmentLabelActive,
+                    dynamicStyles.segmentLabel,
+                    isActive && dynamicStyles.segmentLabelActive,
                   ]}
                 >
-                  {segment.label}
+                  {segment.icon} {segment.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
-      </View>
+      </ScrollView>
 
       {/* Content Area */}
       <View style={styles.content}>{renderContent()}</View>
@@ -137,35 +140,17 @@ export default function ActivityTab({ tripId, userId, isAdmin }: ActivityTabProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   segmentControl: {
-    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   segmentWrapper: {
     position: 'relative',
-    backgroundColor: '#F3F4F6',
     borderRadius: 12,
-    padding: 4,
+    gap: 4,
     flexDirection: 'row',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    width: '100%',
   },
   segment: {
     paddingVertical: 10,
@@ -184,7 +169,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   segmentLabelActive: {
-    color: '#111827',
   },
   content: {
     flex: 1,

@@ -16,6 +16,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'io.runwae.app',
+    associatedDomains: ['applinks:runwae.io'],
   },
 
   android: {

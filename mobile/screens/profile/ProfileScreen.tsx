@@ -161,6 +161,7 @@ export function ProfileScreen() {
                 color={colors.textColors.default}
               />
             }
+            onPress={() => router.push('/events')}
           />
           <MenuItem
             title="About"

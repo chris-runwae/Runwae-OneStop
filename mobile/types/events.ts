@@ -32,7 +32,8 @@ export type EventCategory =
   | 'outdoor'
   | 'nightlife'
   | 'wellness'
-  | 'other';
+  | 'other'
+  | null;
 
 export interface EventItineraryItem {
   id: string;

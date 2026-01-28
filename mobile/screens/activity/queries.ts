@@ -1,9 +1,10 @@
 // =====================================================
 // ACTIVITY & COLLABORATION QUERIES
+// All queries use useSupabase hook for authenticated access
 // =====================================================
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState, useCallback } from 'react';
+import { useSupabase } from '@/lib/SupabaseProvider';
 import type {
   Expense,
   CreateExpenseInput,
@@ -22,79 +23,157 @@ import type {
 } from './types';
 
 // =====================================================
-// EXPENSES
+// EXPENSES HOOKS
 // =====================================================
 
 /**
- * Fetch all expenses for a trip with participants
+ * Hook to fetch and subscribe to trip expenses
  */
-export async function fetchTripExpenses(tripId: string): Promise<Expense[]> {
-  const { data, error } = await supabase
-    .from('expenses')
-    .select(`
-      *,
-      creator:created_by(id, email, full_name, avatar_url),
-      participants:expense_participants(
-        id,
-        user_id,
-        share_amount,
-        user:user_id(id, email, full_name, avatar_url)
+export function useTripExpenses(tripId: string) {
+  const { supabase, isReady } = useSupabase();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const loadExpenses = useCallback(async () => {
+    if (!supabase || !isReady) return;
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('expenses')
+        .select(`
+          *,
+          participants:expense_participants(
+            id,
+            user_id,
+            share_amount
+          )
+        `)
+        .eq('trip_id', tripId)
+        .order('expense_date', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      setExpenses(data || []);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+      setLoading(false);
+    }
+  }, [supabase, isReady, tripId]);
+
+  useEffect(() => {
+    if (!supabase || !isReady) return;
+    
+    let cancelled = false;
+
+    async function initialLoad() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('expenses')
+          .select(`
+            *,
+            participants:expense_participants(
+              id,
+              user_id,
+              share_amount
+            )
+          `)
+          .eq('trip_id', tripId)
+          .order('expense_date', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        
+        if (!cancelled) {
+          setExpenses(data || []);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err as Error);
+          setLoading(false);
+        }
+      }
+    }
+
+    initialLoad();
+
+    // Real-time subscription
+    const subscription = supabase
+      .channel(`expenses:${tripId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses',
+          filter: `trip_id=eq.${tripId}`,
+        },
+        () => {
+          if (!cancelled) loadExpenses();
+        }
       )
-    `)
-    .eq('trip_id', tripId)
-    .order('expense_date', { ascending: false });
+      .subscribe();
 
-  if (error) throw error;
-  return data || [];
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [supabase, isReady, tripId, loadExpenses]);
+
+  return { expenses, loading, error, refetch: loadExpenses };
 }
 
 /**
- * Create expense with equal split among participants
+ * Hook to create expense
  */
-export async function createExpense(input: CreateExpenseInput): Promise<Expense> {
-  const { participant_ids, ...expenseData } = input;
+export function useCreateExpense() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
 
-  // Calculate equal split
-  const shareAmount = Number((input.amount / participant_ids.length).toFixed(2));
+  const createExpense = useCallback(async (input: CreateExpenseInput) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const { participant_ids, ...expenseData } = input;
 
-  // Insert expense
-  const { data: expense, error: expenseError } = await supabase
-    .from('expenses')
-    .insert({
-      ...expenseData,
-      expense_date: expenseData.expense_date || new Date().toISOString(),
-    })
-    .select()
-    .single();
+      // Calculate equal split
+      const shareAmount = Number((input.amount / participant_ids.length).toFixed(2));
 
-  if (expenseError) throw expenseError;
+      // Insert expense
+      const { data: expense, error: expenseError } = await supabase
+        .from('expenses')
+        .insert({
+          ...expenseData,
+          expense_date: expenseData.expense_date || new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-  // Insert participants
-  const participants = participant_ids.map(user_id => ({
-    expense_id: expense.id,
-    user_id,
-    share_amount: shareAmount,
-  }));
+      if (expenseError) throw expenseError;
 
-  const { error: participantsError } = await supabase
-    .from('expense_participants')
-    .insert(participants);
+      // Insert participants
+      const participants = participant_ids.map(user_id => ({
+        expense_id: expense.id,
+        user_id,
+        share_amount: shareAmount,
+      }));
 
-  if (participantsError) throw participantsError;
+      const { error: participantsError } = await supabase
+        .from('expense_participants')
+        .insert(participants);
 
-  return expense;
-}
+      if (participantsError) throw participantsError;
 
-/**
- * Delete expense (cascade deletes participants)
- */
-export async function deleteExpense(expenseId: string): Promise<void> {
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('id', expenseId);
+      return expense;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
-  if (error) throw error;
+  return { createExpense, loading };
 }
 
 /**
@@ -120,11 +199,9 @@ export function calculateExpenseSummary(
 
     if (userParticipant) {
       if (isPaidByUser) {
-        // You paid, others owe you their shares
         const othersOwed = expense.amount - userParticipant.share_amount;
         youAreOwed += othersOwed;
       } else {
-        // Someone else paid, you owe your share
         youOwe += userParticipant.share_amount;
       }
     }
@@ -134,26 +211,79 @@ export function calculateExpenseSummary(
     totalSpent: Number(totalSpent.toFixed(2)),
     youOwe: Number(youOwe.toFixed(2)),
     youAreOwed: Number(youAreOwed.toFixed(2)),
-    balances: new Map(), // Can be extended for per-person balances
+    balances: new Map(),
   };
 }
 
+// =====================================================
+// POLLS HOOKS
+// =====================================================
+
 /**
- * Hook to fetch and subscribe to trip expenses
+ * Hook to fetch and subscribe to trip polls
  */
-export function useTripExpenses(tripId: string) {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+export function useTripPolls(tripId: string) {
+  const { supabase, isReady } = useSupabase();
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const loadPolls = useCallback(async () => {
+    if (!supabase || !isReady) return;
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('polls')
+        .select(`
+          *,
+          options:poll_options(*),
+          votes:poll_votes(
+            id,
+            option_id,
+            user_id,
+            created_at
+          )
+        `)
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      setPolls(data || []);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+      setLoading(false);
+    }
+  }, [supabase, isReady, tripId]);
+
   useEffect(() => {
+    if (!supabase || !isReady) return;
+    
     let cancelled = false;
 
-    async function loadExpenses() {
+    async function initialLoad() {
       try {
-        const data = await fetchTripExpenses(tripId);
+        const { data, error: fetchError } = await supabase
+          .from('polls')
+          .select(`
+            *,
+            options:poll_options(*),
+            votes:poll_votes(
+              id,
+              option_id,
+              user_id,
+              created_at
+            )
+          `)
+          .eq('trip_id', tripId)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        
         if (!cancelled) {
-          setExpenses(data);
+          setPolls(data || []);
           setLoading(false);
         }
       } catch (err) {
@@ -164,21 +294,32 @@ export function useTripExpenses(tripId: string) {
       }
     }
 
-    loadExpenses();
+    initialLoad();
 
     // Real-time subscription
     const subscription = supabase
-      .channel(`expenses:${tripId}`)
+      .channel(`polls:${tripId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'expenses',
+          table: 'polls',
           filter: `trip_id=eq.${tripId}`,
         },
         () => {
-          loadExpenses();
+          if (!cancelled) loadPolls();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'poll_votes',
+        },
+        () => {
+          if (!cancelled) loadPolls();
         }
       )
       .subscribe();
@@ -187,93 +328,92 @@ export function useTripExpenses(tripId: string) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [tripId]);
+  }, [supabase, isReady, tripId, loadPolls]);
 
-  return { expenses, loading, error };
-}
-
-// =====================================================
-// POLLS
-// =====================================================
-
-/**
- * Fetch all polls for a trip with options and votes
- */
-export async function fetchTripPolls(tripId: string): Promise<Poll[]> {
-  const { data, error } = await supabase
-    .from('polls')
-    .select(`
-      *,
-      creator:created_by(id, email, full_name, avatar_url),
-      options:poll_options(*),
-      votes:poll_votes(
-        id,
-        option_id,
-        user_id,
-        created_at,
-        user:user_id(id, email, full_name, avatar_url)
-      )
-    `)
-    .eq('trip_id', tripId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+  return { polls, loading, error, refetch: loadPolls };
 }
 
 /**
- * Create a new poll with options
+ * Hook to create poll
  */
-export async function createPoll(input: CreatePollInput): Promise<Poll> {
-  const { options, ...pollData } = input;
+export function useCreatePoll() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
 
-  // Insert poll
-  const { data: poll, error: pollError } = await supabase
-    .from('polls')
-    .insert(pollData)
-    .select()
-    .single();
+  const createPoll = useCallback(async (input: CreatePollInput) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const { options, ...pollData } = input;
 
-  if (pollError) throw pollError;
+      // Insert poll
+      const { data: poll, error: pollError } = await supabase
+        .from('polls')
+        .insert(pollData)
+        .select()
+        .single();
 
-  // Insert options
-  const pollOptions = options.map((text, index) => ({
-    poll_id: poll.id,
-    option_text: text,
-    position: index,
-  }));
+      if (pollError) throw pollError;
 
-  const { error: optionsError } = await supabase
-    .from('poll_options')
-    .insert(pollOptions);
+      // Insert options
+      const pollOptions = options.map((text, index) => ({
+        poll_id: poll.id,
+        option_text: text,
+        position: index,
+      }));
 
-  if (optionsError) throw optionsError;
+      const { error: optionsError } = await supabase
+        .from('poll_options')
+        .insert(pollOptions);
 
-  return poll;
+      if (optionsError) throw optionsError;
+
+      return poll;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return { createPoll, loading };
 }
 
 /**
- * Vote on a poll (upsert to handle revotes)
+ * Hook to vote on poll
  */
-export async function votePoll(
-  pollId: string,
-  optionId: string,
-  userId: string
-): Promise<void> {
-  const { error } = await supabase
-    .from('poll_votes')
-    .upsert(
-      {
-        poll_id: pollId,
-        option_id: optionId,
-        user_id: userId,
-      },
-      {
-        onConflict: 'poll_id,user_id',
-      }
-    );
+export function useVotePoll() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
 
-  if (error) throw error;
+  const votePoll = useCallback(async (
+    pollId: string,
+    optionId: string,
+    userId: string
+  ) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('poll_votes')
+        .upsert(
+          {
+            poll_id: pollId,
+            option_id: optionId,
+            user_id: userId,
+          },
+          {
+            onConflict: 'poll_id,user_id',
+          }
+        );
+
+      if (error) throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return { votePoll, loading };
 }
 
 /**
@@ -295,8 +435,8 @@ export function calculatePollResults(poll: Poll, currentUserId: string): PollRes
       percentage: Number(percentage.toFixed(1)),
       voters: optionVotes.map(v => ({
         id: v.user_id,
-        full_name: v.user?.full_name,
-        avatar_url: v.user?.avatar_url,
+        full_name: undefined,
+        avatar_url: undefined,
       })),
     };
   });
@@ -310,189 +450,73 @@ export function calculatePollResults(poll: Poll, currentUserId: string): PollRes
   };
 }
 
-/**
- * Hook to fetch and subscribe to trip polls
- */
-export function useTripPolls(tripId: string) {
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPolls() {
-      try {
-        const data = await fetchTripPolls(tripId);
-        if (!cancelled) {
-          setPolls(data);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err as Error);
-          setLoading(false);
-        }
-      }
-    }
-
-    loadPolls();
-
-    // Real-time subscription
-    const subscription = supabase
-      .channel(`polls:${tripId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'polls',
-          filter: `trip_id=eq.${tripId}`,
-        },
-        () => {
-          loadPolls();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'poll_votes',
-        },
-        () => {
-          loadPolls();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
-  }, [tripId]);
-
-  return { polls, loading, error };
-}
-
 // =====================================================
-// CHECKLISTS
+// CHECKLISTS HOOKS
 // =====================================================
-
-/**
- * Fetch all checklists for a trip with items
- */
-export async function fetchTripChecklists(tripId: string): Promise<Checklist[]> {
-  const { data, error } = await supabase
-    .from('checklists')
-    .select(`
-      *,
-      creator:created_by(id, email, full_name, avatar_url),
-      items:checklist_items(
-        *,
-        completer:completed_by(id, email, full_name, avatar_url)
-      )
-    `)
-    .eq('trip_id', tripId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-
-  // Sort items by position
-  return (data || []).map(checklist => ({
-    ...checklist,
-    items: checklist.items?.sort((a: ChecklistItem, b: ChecklistItem) => a.position - b.position) || [],
-  }));
-}
-
-/**
- * Create a new checklist
- */
-export async function createChecklist(input: CreateChecklistInput): Promise<Checklist> {
-  const { data, error } = await supabase
-    .from('checklists')
-    .insert(input)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Add item to checklist
- */
-export async function createChecklistItem(
-  input: CreateChecklistItemInput
-): Promise<ChecklistItem> {
-  const { data, error } = await supabase
-    .from('checklist_items')
-    .insert(input)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Toggle checklist item completion
- */
-export async function updateChecklistItem(
-  input: UpdateChecklistItemInput,
-  userId: string
-): Promise<ChecklistItem> {
-  const updateData = input.is_completed
-    ? {
-        is_completed: true,
-        completed_by: userId,
-        completed_at: new Date().toISOString(),
-      }
-    : {
-        is_completed: false,
-        completed_by: null,
-        completed_at: null,
-      };
-
-  const { data, error } = await supabase
-    .from('checklist_items')
-    .update(updateData)
-    .eq('id', input.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Delete checklist item
- */
-export async function deleteChecklistItem(itemId: string): Promise<void> {
-  const { error } = await supabase
-    .from('checklist_items')
-    .delete()
-    .eq('id', itemId);
-
-  if (error) throw error;
-}
 
 /**
  * Hook to fetch and subscribe to trip checklists
  */
 export function useTripChecklists(tripId: string) {
+  const { supabase, isReady } = useSupabase();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const loadChecklists = useCallback(async () => {
+    if (!supabase || !isReady) return;
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('checklists')
+        .select(`
+          *,
+          items:checklist_items(*)
+        `)
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      // Sort items by position
+      const sortedData = (data || []).map(checklist => ({
+        ...checklist,
+        items: checklist.items?.sort((a, b) => a.position - b.position) || [],
+      }));
+      
+      setChecklists(sortedData);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+      setLoading(false);
+    }
+  }, [supabase, isReady, tripId]);
+
   useEffect(() => {
+    if (!supabase || !isReady) return;
+    
     let cancelled = false;
 
-    async function loadChecklists() {
+    async function initialLoad() {
       try {
-        const data = await fetchTripChecklists(tripId);
+        const { data, error: fetchError } = await supabase
+          .from('checklists')
+          .select(`
+            *,
+            items:checklist_items(*)
+          `)
+          .eq('trip_id', tripId)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        
         if (!cancelled) {
-          setChecklists(data);
+          const sortedData = (data || []).map(checklist => ({
+            ...checklist,
+            items: checklist.items?.sort((a, b) => a.position - b.position) || [],
+          }));
+          setChecklists(sortedData);
           setLoading(false);
         }
       } catch (err) {
@@ -503,7 +527,7 @@ export function useTripChecklists(tripId: string) {
       }
     }
 
-    loadChecklists();
+    initialLoad();
 
     // Real-time subscription
     const subscription = supabase
@@ -517,7 +541,7 @@ export function useTripChecklists(tripId: string) {
           filter: `trip_id=eq.${tripId}`,
         },
         () => {
-          loadChecklists();
+          if (!cancelled) loadChecklists();
         }
       )
       .on(
@@ -528,7 +552,7 @@ export function useTripChecklists(tripId: string) {
           table: 'checklist_items',
         },
         () => {
-          loadChecklists();
+          if (!cancelled) loadChecklists();
         }
       )
       .subscribe();
@@ -537,117 +561,170 @@ export function useTripChecklists(tripId: string) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [tripId]);
+  }, [supabase, isReady, tripId, loadChecklists]);
 
-  return { checklists, loading, error };
-}
-
-// =====================================================
-// ANNOUNCEMENTS
-// =====================================================
-
-/**
- * Fetch all announcements for a trip with read status
- */
-export async function fetchTripAnnouncements(
-  tripId: string,
-  userId: string
-): Promise<Announcement[]> {
-  const { data, error } = await supabase
-    .from('announcements')
-    .select(`
-      *,
-      creator:created_by(id, email, full_name, avatar_url),
-      reads:announcement_reads!announcement_reads_announcement_id_fkey(
-        read_at
-      )
-    `)
-    .eq('trip_id', tripId)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-
-  // Map read status for current user
-  return (data || []).map(announcement => {
-    const userRead = announcement.reads?.find((r: any) => r.user_id === userId);
-    return {
-      ...announcement,
-      is_read: !!userRead,
-      read_at: userRead?.read_at || null,
-    };
-  });
+  return { checklists, loading, error, refetch: loadChecklists };
 }
 
 /**
- * Create announcement (admin only)
+ * Hook to create checklist with items
  */
-export async function createAnnouncement(
-  input: CreateAnnouncementInput
-): Promise<Announcement> {
-  const { data, error } = await supabase
-    .from('announcements')
-    .insert(input)
-    .select()
-    .single();
+export function useCreateChecklist() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
 
-  if (error) throw error;
-  return data;
-}
+  const createChecklist = useCallback(async (
+    input: CreateChecklistInput,
+    items: string[]
+  ) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      // Create checklist
+      const { data: checklist, error: checklistError } = await supabase
+        .from('checklists')
+        .insert(input)
+        .select()
+        .single();
 
-/**
- * Mark announcement as read
- */
-export async function markAnnouncementRead(
-  announcementId: string,
-  userId: string
-): Promise<void> {
-  const { error } = await supabase.from('announcement_reads').upsert(
-    {
-      announcement_id: announcementId,
-      user_id: userId,
-    },
-    {
-      onConflict: 'announcement_id,user_id',
+      if (checklistError) throw checklistError;
+
+      // Create items
+      const checklistItems = items.map((text, index) => ({
+        checklist_id: checklist.id,
+        text,
+        position: index,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('checklist_items')
+        .insert(checklistItems);
+
+      if (itemsError) throw itemsError;
+
+      return checklist;
+    } finally {
+      setLoading(false);
     }
-  );
+  }, [supabase]);
 
-  if (error) throw error;
+  return { createChecklist, loading };
 }
 
 /**
- * Get unread announcement count
+ * Hook to toggle checklist item
  */
-export async function getUnreadAnnouncementCount(
-  tripId: string,
-  userId: string
-): Promise<AnnouncementBadge> {
-  const announcements = await fetchTripAnnouncements(tripId, userId);
-  const unreadCount = announcements.filter(a => !a.is_read).length;
-  const hasPinned = announcements.some(a => a.is_pinned);
+export function useToggleChecklistItem() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
 
-  return {
-    unread_count: unreadCount,
-    has_pinned: hasPinned,
-  };
+  const toggleItem = useCallback(async (
+    itemId: string,
+    isCompleted: boolean,
+    userId: string
+  ) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const updateData = isCompleted
+        ? {
+            is_completed: true,
+            completed_by: userId,
+            completed_at: new Date().toISOString(),
+          }
+        : {
+            is_completed: false,
+            completed_by: null,
+            completed_at: null,
+          };
+
+      const { error } = await supabase
+        .from('checklist_items')
+        .update(updateData)
+        .eq('id', itemId);
+
+      if (error) throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return { toggleItem, loading };
 }
+
+// =====================================================
+// ANNOUNCEMENTS HOOKS
+// =====================================================
 
 /**
  * Hook to fetch and subscribe to trip announcements
  */
 export function useTripAnnouncements(tripId: string, userId: string) {
+  const { supabase, isReady } = useSupabase();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const loadAnnouncements = useCallback(async () => {
+    if (!supabase || !isReady) return;
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('announcements')
+        .select(`
+          *,
+          reads:announcement_reads!announcement_reads_announcement_id_fkey(read_at)
+        `)
+        .eq('trip_id', tripId)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      
+      // Map read status
+      const mappedData = (data || []).map(announcement => ({
+        ...announcement,
+        is_read: announcement.reads?.some((r: any) => r.user_id === userId) || false,
+        read_at: announcement.reads?.find((r: any) => r.user_id === userId)?.read_at || null,
+      }));
+      
+      setAnnouncements(mappedData);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+      setLoading(false);
+    }
+  }, [supabase, isReady, tripId, userId]);
+
   useEffect(() => {
+    if (!supabase || !isReady) return;
+    
     let cancelled = false;
 
-    async function loadAnnouncements() {
+    async function initialLoad() {
       try {
-        const data = await fetchTripAnnouncements(tripId, userId);
+        const { data, error: fetchError } = await supabase
+          .from('announcements')
+          .select(`
+            *,
+            reads:announcement_reads!announcement_reads_announcement_id_fkey(read_at)
+          `)
+          .eq('trip_id', tripId)
+          .order('is_pinned', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        
         if (!cancelled) {
-          setAnnouncements(data);
+          const mappedData = (data || []).map(announcement => ({
+            ...announcement,
+            is_read: announcement.reads?.some((r: any) => r.user_id === userId) || false,
+            read_at: announcement.reads?.find((r: any) => r.user_id === userId)?.read_at || null,
+          }));
+          setAnnouncements(mappedData);
           setLoading(false);
         }
       } catch (err) {
@@ -658,7 +735,7 @@ export function useTripAnnouncements(tripId: string, userId: string) {
       }
     }
 
-    loadAnnouncements();
+    initialLoad();
 
     // Real-time subscription
     const subscription = supabase
@@ -672,7 +749,7 @@ export function useTripAnnouncements(tripId: string, userId: string) {
           filter: `trip_id=eq.${tripId}`,
         },
         () => {
-          loadAnnouncements();
+          if (!cancelled) loadAnnouncements();
         }
       )
       .on(
@@ -683,7 +760,7 @@ export function useTripAnnouncements(tripId: string, userId: string) {
           table: 'announcement_reads',
         },
         () => {
-          loadAnnouncements();
+          if (!cancelled) loadAnnouncements();
         }
       )
       .subscribe();
@@ -692,7 +769,71 @@ export function useTripAnnouncements(tripId: string, userId: string) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [tripId, userId]);
+  }, [supabase, isReady, tripId, userId, loadAnnouncements]);
 
-  return { announcements, loading, error };
+  return { announcements, loading, error, refetch: loadAnnouncements };
+}
+
+/**
+ * Hook to create announcement
+ */
+export function useCreateAnnouncement() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
+
+  const createAnnouncement = useCallback(async (input: CreateAnnouncementInput) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .insert(input)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return { createAnnouncement, loading };
+}
+
+/**
+ * Hook to mark announcement as read
+ */
+export function useMarkAnnouncementRead() {
+  const { supabase } = useSupabase();
+  const [loading, setLoading] = useState(false);
+
+  const markAsRead = useCallback(async (
+    announcementId: string,
+    userId: string
+  ) => {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('announcement_reads')
+        .upsert(
+          {
+            announcement_id: announcementId,
+            user_id: userId,
+          },
+          {
+            onConflict: 'announcement_id,user_id',
+          }
+        );
+
+      if (error) throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  return { markAsRead, loading };
 }

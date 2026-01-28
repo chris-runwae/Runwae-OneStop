@@ -9,7 +9,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -22,9 +21,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { FlashList } from '@shopify/flash-list';
 
 import CreatePollModal from './CreatePollModal';
-import { useTripPolls, calculatePollResults, votePoll } from '../queries';
+import { useTripPolls, calculatePollResults, useVotePoll } from '../queries';
 import type { Poll } from '../types';
 
 interface PollsListProps {
@@ -34,13 +34,20 @@ interface PollsListProps {
 
 export default function PollsList({ tripId, userId }: PollsListProps) {
   const [modalVisible, setModalVisible] = useState(false);
+  const { polls, loading, refetch } = useTripPolls(tripId);
+  const { votePoll, loading: voting } = useVotePoll();
   const [votingPollId, setVotingPollId] = useState<string | null>(null);
-  const { polls, loading } = useTripPolls(tripId);
 
   const handleCreatePoll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setModalVisible(true);
   };
+
+  const handlePollCreated = () => {
+    setModalVisible(false);
+    refetch(); // Instant refresh
+  };
+
 
   const handleVote = async (pollId: string, optionId: string) => {
     try {
@@ -48,6 +55,8 @@ export default function PollsList({ tripId, userId }: PollsListProps) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       await votePoll(pollId, optionId, userId);
+
+      await refetch(); // Instant refresh
     } catch (error) {
       console.error('Error voting:', error);
       Alert.alert('Error', 'Failed to submit vote. Please try again.');
@@ -112,7 +121,7 @@ export default function PollsList({ tripId, userId }: PollsListProps) {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={polls}
         keyExtractor={item => item.id}
         renderItem={renderPollItem}
@@ -147,6 +156,7 @@ export default function PollsList({ tripId, userId }: PollsListProps) {
         visible={modalVisible}
         tripId={tripId}
         onClose={() => setModalVisible(false)}
+        onSuccess={handlePollCreated}
       />
     </View>
   );

@@ -19,23 +19,29 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUser } from '@clerk/clerk-expo';
 
-import { createPoll } from '../queries';
+import { useCreatePoll } from '../queries';
 
 interface CreatePollModalProps {
   visible: boolean;
   tripId: string;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export default function CreatePollModal({
   visible,
   tripId,
   onClose,
+  onSuccess,
 }: CreatePollModalProps) {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
+  const { createPoll } = useCreatePoll();
+  const userId = user?.id;
 
   const handleAddOption = () => {
     if (options.length >= 6) {
@@ -82,6 +88,8 @@ export default function CreatePollModal({
 
       await createPoll({
         trip_id: tripId,
+        // @ts-ignore
+        created_by: userId,
         question: question.trim(),
         options: filledOptions.map(opt => opt.trim()),
       });
@@ -91,6 +99,7 @@ export default function CreatePollModal({
       setOptions(['', '']);
 
       onClose();
+      onSuccess?.();
     } catch (error) {
       console.error('Error creating poll:', error);
       Alert.alert('Error', 'Failed to create poll. Please try again.');

@@ -18,6 +18,7 @@ import {
   ShieldIcon,
   UserIcon,
   Cog,
+  Bell,
 } from 'lucide-react-native';
 
 import { MenuItem, ScreenContainer, Spacer, Text } from '@/components';
@@ -89,7 +90,7 @@ export function ProfileScreen() {
       <Pressable
         // onPress={() => router.push('/(tabs)/profile/account/account-info')}
         onPress={menu.open}>
-        <Cog color={colors.textColors.default} />
+        <Bell size={20} strokeWidth={1.5} color={colors.textColors.default} />
       </Pressable>
     );
   };
@@ -113,7 +114,7 @@ export function ProfileScreen() {
             <TouchableOpacity
               style={[styles.cameraButton, dynamicStyle.cameraButton]}
               activeOpacity={0.8}>
-              <CameraIcon size={22} color="#fff" />
+              <CameraIcon size={10} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -151,6 +152,7 @@ export function ProfileScreen() {
             title="Security"
             subtitle="Stay safe while you explore"
             icon={<ShieldIcon size={20} color={colors.textColors.default} />}
+            onPress={() => router.push('/(tabs)/profile/security/security')}
           />
           <MenuItem
             title="Support"
@@ -161,7 +163,7 @@ export function ProfileScreen() {
                 color={colors.textColors.default}
               />
             }
-            onPress={() => router.push('/events')}
+            onPress={() => router.push('/(tabs)/profile/support/support')}
           />
           <MenuItem
             title="About"
@@ -175,7 +177,7 @@ export function ProfileScreen() {
           />
         </View>
 
-        <Spacer size={24} vertical />
+        {/* <Spacer size={24} vertical />
         <Text style={dynamicStyle.versionText}>Version 0.1.4</Text>
         <Spacer size={4} vertical />
         <Text style={dynamicStyle.versionText}>What&apos;s new?</Text>
@@ -188,7 +190,7 @@ export function ProfileScreen() {
           and book it, redirects to Viator website or app if available
         </Text>
 
-        <Spacer size={160} vertical />
+        <Spacer size={160} vertical /> */}
       </ScrollView>
     </ScreenContainer>
   );
@@ -204,16 +206,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avatarWrapper: {
-    width: 120,
-    height: 120,
+    width: 60,
+    height: 60,
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   avatar: {
-    width: 120,
-    height: 120,
+    width: 60,
+    height: 60,
     borderRadius: 60,
   },
   cameraButton: {
@@ -221,15 +223,15 @@ const styles = StyleSheet.create({
     right: 1,
     bottom: 0,
     // backgroundColor: '#ff4d6d',
-    width: 36,
-    height: 36,
+    width: 20,
+    height: 20,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   name: {
     ...textStyles.bold_20,
-    fontSize: 18,
+    fontSize: 16,
   },
   handle: {
     color: '#7b7b7b',

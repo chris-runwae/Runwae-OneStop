@@ -74,7 +74,7 @@ const FloatingTabBar = () => {
       className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
         <View
-          className={`h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full ${colorScheme === 'dark' ? 'border-[3px] border-[#8A94A621] bg-[#000000]' : 'bg-white'} px-[3px]`}>
+          className={`h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full ${colorScheme === 'dark' ? 'border-[2px] border-[#8A94A621] bg-[#000000]' : 'bg-white'} px-[3px]`}>
           {tabs.map((tab, index) => {
             const isSelected = isTabActive(tab);
             return (
@@ -89,7 +89,7 @@ const FloatingTabBar = () => {
           })}
         </View>
         <TouchableOpacity className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[#FF2E92]">
-          <Plus size={28} color={'#ffffff'} />
+          <Plus size={20} color={'#ffffff'} />
         </TouchableOpacity>
       </View>
     </View>

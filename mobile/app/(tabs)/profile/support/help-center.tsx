@@ -9,7 +9,7 @@ const HelpCenter = () => {
     <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
       <View className="flex-1 px-[12px] py-[8px]">
         <View>
-          <Text className="text-xs text-[#ADB5BD]">
+          <Text className="text-sm text-[#ADB5BD]">
             Find clarity for every step of your Runwae journey.
           </Text>
 

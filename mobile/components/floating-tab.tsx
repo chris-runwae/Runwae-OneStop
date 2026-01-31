@@ -5,7 +5,6 @@ import * as Haptics from 'expo-haptics';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus } from 'lucide-react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme.web';
 
 interface TabItemProps {
   tab: (typeof tabs)[0];
@@ -39,14 +38,12 @@ const FloatingTabBar = () => {
     router.push(route as any);
   };
 
-  const colorScheme = useColorScheme();
-
   const TabItem = ({ tab, index, isSelected, onPress }: TabItemProps) => {
     const Icon = tab.icon;
 
     return (
       <TouchableOpacity
-        className={`z-10 h-[50px] flex-1 items-center justify-center gap-y-1 rounded-full ${isSelected ? (colorScheme === 'dark' ? 'border-[1px] border-[#71003B] bg-[#420021]' : 'bg-[#FFF0F4]') : 'bg-transparent'}`}
+        className={`z-10 h-[50px] flex-1 items-center justify-center gap-y-1 rounded-full ${isSelected ? 'border border-pink-800 bg-pink-100 dark:border-pink-900 dark:bg-pink-950' : 'bg-transparent'}`}
         activeOpacity={0.7}
         onPress={() => onPress(tab.route, isSelected, index)}>
         <Icon
@@ -55,7 +52,7 @@ const FloatingTabBar = () => {
           color={isSelected ? '#FF2E92' : '#ADB5BD'}
         />
         <Text
-          className={`text-[10px] font-medium ${isSelected ? 'text-[#FF2E92]' : 'text-[#ADB5BD]'}`}>
+          className={`text-[10px] font-medium ${isSelected ? 'text-pink-600 dark:text-pink-400' : 'text-gray-500 dark:text-gray-400'}`}>
           {tab.title}
         </Text>
       </TouchableOpacity>
@@ -66,14 +63,13 @@ const FloatingTabBar = () => {
     <View
       style={{
         paddingBottom: Math.max(
-          insets.bottom,
-          Platform.select({ ios: 10, android: 10, default: 10 })
+          insets.bottom - 10,
+          Platform.select({ ios: 20, android: 10, default: 10 })
         ),
       }}
       className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
-        <View
-          className={`h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full ${colorScheme === 'dark' ? 'border-[2px] border-[#8A94A621] bg-[#000000]' : 'bg-white'} px-[3px]`}>
+        <View className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white px-[3px] dark:border-gray-700 dark:bg-black">
           {tabs.map((tab, index) => {
             const isSelected = isTabActive(tab);
             return (
@@ -87,7 +83,7 @@ const FloatingTabBar = () => {
             );
           })}
         </View>
-        <TouchableOpacity className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[#FF2E92]">
+        <TouchableOpacity className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600">
           <Plus size={20} color={'#ffffff'} />
         </TouchableOpacity>
       </View>

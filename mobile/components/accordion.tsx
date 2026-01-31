@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { ChevronDown, Minus, Plus } from 'lucide-react-native';
+import { Minus, Plus } from 'lucide-react-native';
 import { SupportAccordionProps } from '@/types/support.types';
 
 interface AccordionItemProps {
@@ -20,8 +20,6 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
   isExpanded,
   onToggle,
 }) => {
-  const colorSheme = useColorScheme();
-
   const derivedHeight = useDerivedValue(() => {
     const targetHeight = isExpanded ? 80 : 0;
     return withTiming(targetHeight, {
@@ -35,17 +33,15 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
   }));
 
   return (
-    <View
-      className={`mb-4 overflow-hidden rounded-lg border-[1px] ${colorSheme === 'dark' ? 'border-gray-800 bg-black' : 'border-gray-200 bg-[#F8F9FA]'}`}>
+    <View className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-black">
       <TouchableOpacity
         onPress={onToggle}
         className="flex-row items-center justify-between p-4">
-        <Text
-          className={`flex-1 pr-4 text-base font-medium ${colorSheme === 'dark' ? 'text-white' : 'text-black'}`}>
+        <Text className="flex-1 pr-4 text-base font-medium text-black dark:text-white">
           {item.title}
         </Text>
         <Animated.View
-          className="flex items-center justify-center rounded-full bg-[#FF2E92]"
+          className="flex items-center justify-center rounded-full bg-pink-500"
           style={{ height: 20, width: 20 }}>
           {isExpanded ? (
             <Minus size={15} color="#ffffff" />
@@ -57,8 +53,7 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
 
       <Animated.View style={bodyStyle} className="overflow-hidden">
         <View className="px-4 pb-4" style={{ minHeight: 80 }}>
-          <Text
-            className={`text-sm leading-relaxed ${colorSheme === 'dark' ? 'text-white' : 'text-black'}`}>
+          <Text className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
             {item.description}
           </Text>
         </View>

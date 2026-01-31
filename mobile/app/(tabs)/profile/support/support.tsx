@@ -16,14 +16,19 @@ const Support = () => {
           <MenuItem
             title="Contact Support"
             subtitle="Chat, Email or call options"
+            onPress={() =>
+              router.push('/(tabs)/profile/support/contact-support')
+            }
           />
           <MenuItem
             title="Report a Problem"
             subtitle="Help us make Runwae better"
+            onPress={() => router.push('/(tabs)/profile/support/report')}
           />
           <MenuItem
             title="Feedback & Suggestions"
             subtitle="Help us make Runwae better"
+            onPress={() => router.push('/(tabs)/profile/support/feedback')}
           />
         </View>
       </View>

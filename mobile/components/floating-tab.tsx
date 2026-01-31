@@ -14,28 +14,6 @@ interface TabItemProps {
   onPress: (route: string, isSelected: boolean, index: number) => void;
 }
 
-const TabItem = ({ tab, index, isSelected, onPress }: TabItemProps) => {
-  const Icon = tab.icon;
-  const colorScheme = useColorScheme();
-
-  return (
-    <TouchableOpacity
-      className={`z-10 h-[50px] flex-1 items-center justify-center gap-y-1 rounded-full ${isSelected ? (colorScheme === 'dark' ? 'border-[1px] border-[#71003B] bg-[#420021]' : 'bg-[#FFF0F4]') : 'bg-transparent'}`}
-      activeOpacity={0.7}
-      onPress={() => onPress(tab.route, isSelected, index)}>
-      <Icon
-        size={15}
-        strokeWidth={1.5}
-        color={isSelected ? '#FF2E92' : '#ADB5BD'}
-      />
-      <Text
-        className={`text-[10px] font-medium ${isSelected ? 'text-[#FF2E92]' : 'text-[#ADB5BD]'}`}>
-        {tab.title}
-      </Text>
-    </TouchableOpacity>
-  );
-};
-
 const FloatingTabBar = () => {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -62,6 +40,27 @@ const FloatingTabBar = () => {
   };
 
   const colorScheme = useColorScheme();
+
+  const TabItem = ({ tab, index, isSelected, onPress }: TabItemProps) => {
+    const Icon = tab.icon;
+
+    return (
+      <TouchableOpacity
+        className={`z-10 h-[50px] flex-1 items-center justify-center gap-y-1 rounded-full ${isSelected ? (colorScheme === 'dark' ? 'border-[1px] border-[#71003B] bg-[#420021]' : 'bg-[#FFF0F4]') : 'bg-transparent'}`}
+        activeOpacity={0.7}
+        onPress={() => onPress(tab.route, isSelected, index)}>
+        <Icon
+          size={15}
+          strokeWidth={1.5}
+          color={isSelected ? '#FF2E92' : '#ADB5BD'}
+        />
+        <Text
+          className={`text-[10px] font-medium ${isSelected ? 'text-[#FF2E92]' : 'text-[#ADB5BD]'}`}>
+          {tab.title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View

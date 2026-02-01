@@ -1,4 +1,5 @@
 import { MenuItem, ScreenContainer } from '@/components';
+import { router } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 
@@ -10,10 +11,16 @@ const Security = () => {
           <MenuItem
             title="Change your password"
             subtitle="Keep your account secure with a new password."
+            onPress={() =>
+              router.push('/(tabs)/profile/security/change-password')
+            }
           />
           <MenuItem
             title="Two-factor authentication"
             subtitle="Add an extra layer of protection to your account."
+            onPress={() =>
+              router.push('/(tabs)/profile/security/two-factor-auth')
+            }
           />
           <MenuItem
             title="Privacy Settings"

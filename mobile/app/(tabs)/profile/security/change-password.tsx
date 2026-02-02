@@ -1,4 +1,5 @@
 import { ScreenContainer } from '@/components';
+import CustomTextInput from '@/components/ui/custome-input';
 import React, { useState, useEffect } from 'react';
 import {
   KeyboardAvoidingView,
@@ -7,7 +8,6 @@ import {
   Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -56,36 +56,21 @@ const ChangePassword = () => {
               </Text>
 
               <View className="mt-14 flex-col gap-y-5">
-                <View>
-                  <Text className="mb-2 text-black dark:text-gray-400">
-                    Current Password
-                  </Text>
-                  <TextInput
-                    className="w-full rounded-[14px] bg-gray-100 px-[12px] py-[16px] text-black dark:bg-gray-900/50 dark:text-white"
-                    secureTextEntry
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-                <View>
-                  <Text className="mb-2 text-black dark:text-gray-400">
-                    New Password
-                  </Text>
-                  <TextInput
-                    className="w-full rounded-[14px] bg-gray-100 px-[12px] py-[16px] text-black dark:bg-gray-900/50 dark:text-white"
-                    secureTextEntry
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-                <View>
-                  <Text className="mb-2 text-black dark:text-gray-400">
-                    Confirm New Password
-                  </Text>
-                  <TextInput
-                    className="w-full rounded-[14px] bg-gray-100 px-[12px] py-[16px] text-black dark:bg-gray-900/50 dark:text-white"
-                    secureTextEntry
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
+                <CustomTextInput
+                  label="Current Password"
+                  secureTextEntry={true}
+                  isPassword={true}
+                />
+                <CustomTextInput
+                  label="New Password"
+                  secureTextEntry={true}
+                  isPassword={true}
+                />
+                <CustomTextInput
+                  label="Confirm New Password"
+                  secureTextEntry={true}
+                  isPassword={true}
+                />
               </View>
             </View>
 

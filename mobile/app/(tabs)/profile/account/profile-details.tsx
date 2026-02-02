@@ -20,13 +20,18 @@ export default function ProfileDetailsScreen() {
 
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(user?.fullName ?? undefined);
-  const [username, setUsername] = useState(user?.username ?? undefined);
+  const [email, setEmail] = useState(
+    user?.emailAddresses[0]?.emailAddress ?? undefined
+  );
+  const [phoneNumber, setPhoneNumber] = useState(
+    user?.phoneNumbers[0]?.phoneNumber ?? undefined
+  );
 
   const dynamicStyles = StyleSheet.create({
     spanText: {
       ...textStyles.regular_14,
       color: colors.textColors.subtitle,
-      fontSize: 12,
+      fontSize: 14,
     },
     labelStyle: {
       ...textStyles.subtitle_Regular,
@@ -42,7 +47,6 @@ export default function ProfileDetailsScreen() {
     try {
       await user?.update({
         firstName: name,
-        username: username,
       });
 
       Burnt.toast({
@@ -56,7 +60,8 @@ export default function ProfileDetailsScreen() {
       });
 
       setName(undefined);
-      setUsername(undefined);
+      setEmail(undefined);
+      setPhoneNumber(undefined);
     } catch (error) {
       console.error(error);
       Burnt.toast({
@@ -94,24 +99,44 @@ export default function ProfileDetailsScreen() {
         {/* FORM */}
         <View style={styles.inputContainer}>
           <TextInput
-            label="Name"
-            placeholder={user?.firstName ?? 'Enter your name'}
+            label="User Name"
+            placeholder={user?.username ?? 'Enter your name'}
             value={name ?? undefined}
             onChangeText={(text) => setName(text)}
             labelStyle={dynamicStyles.labelStyle}
           />
           <TextInput
-            label="Username"
-            placeholder={user?.username ?? 'Enter your username'}
-            value={username ?? undefined}
-            onChangeText={(text) => setUsername(text)}
+            label="Email Address"
+            placeholder={
+              user?.emailAddresses[0]?.emailAddress ??
+              'Enter your email address'
+            }
+            value={email ?? undefined}
+            onChangeText={(text) => setEmail(text)}
             labelStyle={dynamicStyles.labelStyle}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            label="Phone Number"
+            placeholder={
+              user?.phoneNumbers[0]?.phoneNumber ?? 'Enter your phone number'
+            }
+            value={phoneNumber ?? undefined}
+            onChangeText={(text) => setPhoneNumber(text)}
+            labelStyle={dynamicStyles.labelStyle}
+            keyboardType="phone-pad"
             autoCapitalize="none"
           />
         </View>
 
         <Spacer size={48} vertical />
-        <PrimaryButton onPress={updateUser} title="Save" loading={loading} />
+        <PrimaryButton
+          onPress={updateUser}
+          title="Save Changes"
+          loading={loading}
+        />
       </ScrollView>
     </ScreenContainer>
   );

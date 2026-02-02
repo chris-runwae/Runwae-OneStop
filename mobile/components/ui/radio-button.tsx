@@ -17,14 +17,14 @@ const RadioButton = ({
   return (
     <Pressable
       onPress={() => setChecked(!checked)}
-      className={`flex w-full flex-row items-center gap-4 px-[12px] py-[16px] ${checked ? 'border-[#FFBDD1] bg-[#FFF0F4] dark:border-pink-800 dark:bg-[#500724]/40' : 'border-[#E9ECEF] bg-transparent dark:border-gray-500/60'}`}
+      className={`flex w-full flex-row items-center gap-4 px-[12px] py-[16px] ${checked ? 'border-[#FFBDD1] bg-[#FFF0F4] dark:border-pink-800 dark:bg-[#500724]/20' : 'border-[#E9ECEF] bg-transparent dark:border-gray-500/60'}`}
       style={{
         borderWidth: 1,
       }}>
       <View
-        className={`flex h-[30px] w-[30px] items-center justify-center rounded-full border-[1px] ${checked ? 'border-[#FF2E92]' : 'border-[#E9ECEF] dark:border-gray-500/60'}`}>
+        className={`flex h-[25px] w-[25px] items-center justify-center rounded-full border-[1px] ${checked ? 'border-[#FF2E92]' : 'border-[#E9ECEF] dark:border-gray-500/60'}`}>
         {checked && (
-          <View className="h-[20px] w-[20px] rounded-full bg-[#FF2E92]"></View>
+          <View className="h-[15px] w-[15px] rounded-full bg-[#FF2E92]"></View>
         )}
       </View>
       <View>

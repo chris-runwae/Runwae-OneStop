@@ -12,9 +12,11 @@ import {
   View,
 } from 'react-native';
 import { ChevronDown, X } from 'lucide-react-native';
+import DropdownSelect from '@/components/ui/dropdown-select';
+import CustomTextInput from '@/components/ui/custome-input';
 
 const Feedback = () => {
-  const [selectedIssue, setSelectedIssue] = useState<string>('');
+  const [selectedFeedbak, setSelectedFeedbak] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState<boolean>(false);
 
@@ -38,7 +40,7 @@ const Feedback = () => {
     };
   }, []);
 
-  const issueTypes = [
+  const feedbackType = [
     'Bug Report',
     'Feature Request',
     'Performance Issue',
@@ -48,20 +50,11 @@ const Feedback = () => {
     'Other',
   ];
 
-  const DropdownSelect = () => (
-    <View>
-      <Text className="mb-2 text-black dark:text-gray-400">Feedback Type</Text>
-      <TouchableOpacity
-        onPress={() => setShowDropdown(true)}
-        className="w-full flex-row items-center justify-between rounded-[14px] bg-gray-100 px-[12px] py-[16px] dark:bg-gray-900/50">
-        <Text
-          className={`flex-1 ${selectedIssue ? 'text-black dark:text-white' : 'text-gray-500'}`}>
-          {selectedIssue || 'Select feedback type'}
-        </Text>
-        <ChevronDown size={20} color="#9CA3AF" />
-      </TouchableOpacity>
-    </View>
-  );
+  const [formData, setFormData] = useState({
+    feedbackType: '',
+    feedbackDetails: '',
+    contactEmail: '',
+  });
 
   return (
     <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
@@ -83,32 +76,34 @@ const Feedback = () => {
               </Text>
 
               <View className="mt-14 flex-col gap-y-5">
-                <DropdownSelect />
+                <DropdownSelect
+                  label="Feedbacl Type"
+                  options={feedbackType}
+                  selectedValue={formData.feedbackType}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, feedbackType: value })
+                  }
+                  placeholder="Select feedback type"
+                />
                 <View>
-                  <Text className="mb-2 text-black dark:text-gray-400">
-                    Feedback Details
-                  </Text>
-                  <TextInput
-                    className="min-h-[100px] w-full rounded-[14px] bg-gray-100 px-[12px] py-[12px] text-black dark:bg-gray-900/50 dark:text-white"
+                  <CustomTextInput
+                    label="Feedback Details"
+                    textarea={true}
                     placeholder="Tell us what you think..."
-                    placeholderTextColor="#9CA3AF"
-                    multiline
-                    textAlignVertical="top"
-                    style={{
-                      minHeight: 130,
-                      maxHeight: 200,
-                      lineHeight: 20,
-                    }}
+                    value={formData.feedbackDetails}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, feedbackDetails: text })
+                    }
                   />
                 </View>
                 <View>
-                  <Text className="mb-2 text-black dark:text-gray-400">
-                    Contact Email
-                  </Text>
-                  <TextInput
-                    className="w-full rounded-[14px] bg-gray-100 px-[12px] py-[16px] text-black dark:bg-gray-900/50 dark:text-white"
+                  <CustomTextInput
+                    label="Contact Email"
                     placeholder="example@email.com"
-                    placeholderTextColor="#9CA3AF"
+                    value={formData.contactEmail}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, contactEmail: text })
+                    }
                   />
                 </View>
               </View>
@@ -138,23 +133,23 @@ const Feedback = () => {
           <View className="mx-4 rounded-2xl bg-white p-4 dark:bg-black">
             <View className="mb-4 flex-row items-center justify-between">
               <Text className="text-lg font-semibold text-black dark:text-white">
-                Select Issue Type
+                Select Feedback Type
               </Text>
               <TouchableOpacity onPress={() => setShowDropdown(false)}>
                 <X size={20} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              {issueTypes.map((issue) => (
+              {feedbackType.map((feedback) => (
                 <TouchableOpacity
-                  key={issue}
+                  key={feedback}
                   className="border-b border-gray-100 py-3 dark:border-gray-800"
                   onPress={() => {
-                    setSelectedIssue(issue);
+                    setFormData({ ...formData, feedbackType: feedback });
                     setShowDropdown(false);
                   }}>
                   <Text className="text-base text-black dark:text-white">
-                    {issue}
+                    {feedback}
                   </Text>
                 </TouchableOpacity>
               ))}

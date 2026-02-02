@@ -15,6 +15,8 @@ export default function ProfileLayout() {
         name="account/profile-details"
         options={{ title: 'Profile Details' }}
       />
+      <Stack.Screen name="security" options={{ title: 'Security' }} />
+      <Stack.Screen name="support" options={{ title: 'Support' }} />
     </Stack>
   );
 }

@@ -68,10 +68,10 @@ const ScreenContainer = ({
       alignItems: 'flex-start',
     },
     headerTitle: {
-      fontFamily: 'Space Grotesk',
-      fontWeight: '500',
-      fontSize: 25,
-      lineHeight: 30,
+      fontFamily: 'BricolageGrotesque_700Bold',
+      fontWeight: '700',
+      fontSize: 20,
+      lineHeight: 28,
       letterSpacing: 0,
     },
     svgContainer: {

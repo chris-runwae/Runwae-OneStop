@@ -25,6 +25,9 @@ const Security = () => {
           <MenuItem
             title="Privacy Settings"
             subtitle="Control who can see your trips or invites"
+            onPress={() =>
+              router.push('/(tabs)/profile/security/privacy-settings')
+            }
           />
         </View>
       </View>

@@ -25,3 +25,30 @@ export const twoFaOptionProps: TwoFaOptionProps[] = [
     setChecked: (checked: boolean) => {},
   },
 ];
+
+export const privacySettingOptions: TwoFaOptionProps[] = [
+  {
+    title: 'Public',
+    subtitle: 'Anyone can see your trip details.',
+    checked: false,
+    setChecked: (checked: boolean) => {},
+  },
+  {
+    title: 'Private',
+    subtitle: 'Visible only to your followers and following.',
+    checked: false,
+    setChecked: (checked: boolean) => {},
+  },
+  {
+    title: 'Friends Only',
+    subtitle: 'Visible only to your following.',
+    checked: false,
+    setChecked: (checked: boolean) => {},
+  },
+  {
+    title: 'Custom',
+    subtitle: 'Customize your privacy settings per trip',
+    checked: false,
+    setChecked: (checked: boolean) => {},
+  },
+];

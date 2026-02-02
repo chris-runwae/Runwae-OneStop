@@ -22,14 +22,16 @@ const WelcomeAvatar = () => {
       <View>
         <View style={styles.waveContainer}>
           <Text
-            style={[styles.waveText, { color: colors.textColors.subtitle }]}>
-            Hey
+            numberOfLines={1}
+            style={[
+              styles.waveText,
+              styles.truncatedText,
+              { color: colors.textColors.subtitle },
+            ]}>
+            Hey, {user?.firstName || user?.fullName || user?.username}{' '}
           </Text>
           <HelloWave size={16} />
         </View>
-        {user?.firstName && (
-          <Text style={styles.userName}>{user?.firstName}</Text>
-        )}
       </View>
     </Pressable>
   );
@@ -55,5 +57,10 @@ const styles = StyleSheet.create({
   },
   waveText: {
     fontSize: 16,
+  },
+  truncatedText: {
+    maxWidth: 120,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
 });

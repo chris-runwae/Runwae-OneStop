@@ -1,11 +1,6 @@
-interface TwoFaOptionProps {
-  title: string;
-  subtitle: string;
-  checked: boolean;
-  setChecked: (checked: boolean) => void;
-}
+import { SwitchOptionType } from '@/types/switch-options.type';
 
-export const twoFaOptionProps: TwoFaOptionProps[] = [
+export const twoFaOptionProps: SwitchOptionType[] = [
   {
     title: 'Text Message',
     subtitle: 'Receive updates about your account activity.',
@@ -26,7 +21,7 @@ export const twoFaOptionProps: TwoFaOptionProps[] = [
   },
 ];
 
-export const privacySettingOptions: TwoFaOptionProps[] = [
+export const privacySettingOptions: SwitchOptionType[] = [
   {
     title: 'Public',
     subtitle: 'Anyone can see your trip details.',

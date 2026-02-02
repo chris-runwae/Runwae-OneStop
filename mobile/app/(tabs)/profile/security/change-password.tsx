@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ChevronDown, X } from 'lucide-react-native';
 
 const ChangePassword = () => {
   const [isKeyboardOpen, setIsKeyboardOpen] = useState<boolean>(false);

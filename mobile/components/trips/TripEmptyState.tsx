@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Image } from 'expo-image';
 import { PrimaryButton, Text } from '@/components';
+import NoDataIcon from '@/components/icons/NoDataIcon';
 
 interface TripEmptyStateProps {
   onNewTripPress: () => void;
@@ -10,11 +10,7 @@ interface TripEmptyStateProps {
 const TripEmptyState: React.FC<TripEmptyStateProps> = ({ onNewTripPress }) => {
   return (
     <View className="items-center gap-2 pt-24">
-      <Image
-        source={require('@/assets/svgs/NoData.svg')}
-        className="h-[220px] w-[275px]"
-        contentFit="contain"
-      />
+      <NoDataIcon size={275} />
       <View className="items-center gap-2 px-8">
         <Text className="text-center text-xl font-bold">
           No Planned Trips 😔

@@ -3,7 +3,11 @@ import * as Haptics from 'expo-haptics';
 import { useRouter, RelativePathString } from 'expo-router';
 import React, { useCallback } from 'react';
 
-import { HomeSkeleton, ScreenContainer } from '@/components';
+import {
+  HomeScreenSkeleton,
+  HomeSkeleton,
+  ScreenContainer,
+} from '@/components';
 import useTrips from '@/hooks/useTrips';
 import TripHeader from '@/components/trips/TripHeader';
 import TripList from '@/components/trips/TripList';
@@ -23,7 +27,7 @@ const TripsScreen = () => {
   }, [fetchTrips]);
 
   if (!isLoaded || loading) {
-    return <HomeSkeleton />;
+    return <HomeScreenSkeleton />;
   }
 
   return (

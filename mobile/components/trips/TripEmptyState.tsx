@@ -1,13 +1,9 @@
 import React from 'react';
 import { View } from 'react-native';
-import { PrimaryButton, Text } from '@/components';
+import { Text } from '@/components';
 import NoDataIcon from '@/components/icons/NoDataIcon';
 
-interface TripEmptyStateProps {
-  onNewTripPress: () => void;
-}
-
-const TripEmptyState: React.FC<TripEmptyStateProps> = ({ onNewTripPress }) => {
+const TripEmptyState: React.FC = () => {
   return (
     <View className="items-center gap-2 pt-24">
       <NoDataIcon size={275} />
@@ -20,7 +16,6 @@ const TripEmptyState: React.FC<TripEmptyStateProps> = ({ onNewTripPress }) => {
           button below to plan one.
         </Text>
       </View>
-      <PrimaryButton onPress={onNewTripPress} title="Plan Trip" rounded />
     </View>
   );
 };

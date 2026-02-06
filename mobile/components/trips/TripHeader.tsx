@@ -9,7 +9,7 @@ interface TripHeaderProps {
 const TripHeader: React.FC<TripHeaderProps> = ({ onNewTripPress }) => {
   return (
     <Pressable onPress={onNewTripPress} className="p-2">
-      <Plus size={24} className="text-white" />
+      <Plus size={24} color={'#db2777'} />
     </Pressable>
   );
 };

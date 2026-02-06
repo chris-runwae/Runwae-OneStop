@@ -9,24 +9,15 @@ interface TripListProps {
   trips: Trip[];
   loading: boolean;
   onRefresh: () => void;
-  onNewTripPress: () => void;
 }
 
-const TripList: React.FC<TripListProps> = ({
-  trips,
-  loading,
-  onRefresh,
-  onNewTripPress,
-}) => {
+const TripList: React.FC<TripListProps> = ({ trips, loading, onRefresh }) => {
   const renderItem = useCallback(
     ({ item }: { item: Trip }) => <WideTripCard data={[item]} />,
     []
   );
 
-  const ListEmptyComponent = useMemo(
-    () => <TripEmptyState onNewTripPress={onNewTripPress} />,
-    [onNewTripPress]
-  );
+  const ListEmptyComponent = useMemo(() => <TripEmptyState />, []);
 
   const ListFooterComponent = useMemo(() => <View className="h-[100px]" />, []);
 

@@ -17,14 +17,14 @@ const TripsScreen = () => {
   const { isLoaded } = useUser();
   const { trips, loading, fetchTrips } = useTrips();
 
+  const handleRefresh = useCallback(() => {
+    fetchTrips();
+  }, [fetchTrips]);
+
   const handleNewTripPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/(tabs)/trips/trip-creation' as RelativePathString);
   }, [router]);
-
-  const handleRefresh = useCallback(() => {
-    fetchTrips();
-  }, [fetchTrips]);
 
   if (!isLoaded || loading) {
     return <HomeScreenSkeleton />;
@@ -37,12 +37,7 @@ const TripsScreen = () => {
         rightComponent: <TripHeader onNewTripPress={handleNewTripPress} />,
       }}
       contentContainerStyle={{ flex: 1 }}>
-      <TripList
-        trips={trips}
-        loading={loading}
-        onRefresh={handleRefresh}
-        onNewTripPress={handleNewTripPress}
-      />
+      <TripList trips={trips} loading={loading} onRefresh={handleRefresh} />
     </ScreenContainer>
   );
 };

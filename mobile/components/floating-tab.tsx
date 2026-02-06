@@ -1,5 +1,5 @@
 import { tabs } from '@/constants';
-import { usePathname, useRouter } from 'expo-router';
+import { RelativePathString, usePathname, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
@@ -59,6 +59,11 @@ const FloatingTabBar = () => {
     );
   };
 
+  const handleNewTripPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/(tabs)/trips/trip-creation' as RelativePathString);
+  }, [router]);
+
   return (
     <View
       style={{
@@ -83,7 +88,9 @@ const FloatingTabBar = () => {
             );
           })}
         </View>
-        <TouchableOpacity className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600">
+        <TouchableOpacity
+          onPress={handleNewTripPress}
+          className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600">
           <Plus size={20} color={'#ffffff'} />
         </TouchableOpacity>
       </View>

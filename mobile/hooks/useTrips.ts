@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { getSupabaseClient } from '@/lib/supabase';
 import {
   FeaturedTrip,
+  Trip,
   TripAttendeeRole,
   SavedItem,
   ItineraryItem,
@@ -14,8 +15,8 @@ import {
 import { Toasts } from '@/utils';
 
 const useTrips = () => {
-  const [trips, setTrips] = useState<any[]>([]);
-  const [nextTrip, setNextTrip] = useState<any[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [nextTrip, setNextTrip] = useState<Trip[]>([]);
   const [featuredTrips, setFeaturedTrips] = useState<FeaturedTrip[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

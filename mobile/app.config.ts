@@ -17,6 +17,9 @@ const config: ExpoConfig = {
     supportsTablet: true,
     bundleIdentifier: 'io.runwae.app',
     associatedDomains: ['applinks:runwae.io'],
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
 
   android: {

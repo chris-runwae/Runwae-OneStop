@@ -65,6 +65,7 @@
     "lucide-react-native": "^0.548.0",
     "moti": "^0.30.0",
     "nativewind": "^4.2.1",
+    "patch-package": "^8.0.1",
     "prettier": "^3.6.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",

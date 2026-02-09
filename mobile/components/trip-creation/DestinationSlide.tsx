@@ -1,17 +1,19 @@
 // DestinationSlide.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
-  FlatList,
   Pressable,
   Dimensions,
   Keyboard,
   ActivityIndicator,
   TouchableOpacity,
   ViewStyle,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -21,6 +23,8 @@ import Animated, {
 import { COLORS } from '@/constants';
 import { searchPlaces } from '@/services/liteapi';
 import type { LiteAPIPlace } from '@/types/liteapi.types';
+import CustomTextInput from '../ui/custome-input';
+import { LoaderCircle } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +55,7 @@ export const DestinationSlide: React.FC<SlideProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const slideAnimStyle = useAnimatedStyle(() => ({
     opacity: slideAnimation.value,
@@ -62,30 +67,32 @@ export const DestinationSlide: React.FC<SlideProps> = ({
   }));
 
   /* ---------------------------------------------
-     Explicit search trigger
+     Debounced search function
   ---------------------------------------------- */
-  const handleSearchPress = async () => {
-    const query = searchText.trim();
+  const performSearch = useCallback(async (query: string) => {
+    const trimmedQuery = query.trim();
 
-    if (query.length < 3) {
+    if (trimmedQuery.length < 3) {
       setErrorMessage('Please enter at least 3 characters');
+      setPlaces([]);
+      setShowSuggestions(false);
       return;
     }
 
     setLoadingPlaces(true);
     setErrorMessage(null);
-    setShowSuggestions(false);
 
     try {
       // Cache hit
-      if (placeSearchCache.has(query)) {
-        const cached = placeSearchCache.get(query)!;
+      if (placeSearchCache.has(trimmedQuery)) {
+        const cached = placeSearchCache.get(trimmedQuery)!;
         setPlaces(cached);
         setShowSuggestions(true);
+        setLoadingPlaces(false);
         return;
       }
 
-      const response = await searchPlaces(query);
+      const response = await searchPlaces(trimmedQuery);
 
       const validPlaces = (response.data || []).filter(
         (place): place is LiteAPIPlace =>
@@ -94,7 +101,7 @@ export const DestinationSlide: React.FC<SlideProps> = ({
           typeof place.displayName === 'string'
       );
 
-      placeSearchCache.set(query, validPlaces);
+      placeSearchCache.set(trimmedQuery, validPlaces);
       setPlaces(validPlaces);
       setShowSuggestions(validPlaces.length > 0);
 
@@ -111,10 +118,47 @@ export const DestinationSlide: React.FC<SlideProps> = ({
       }
 
       setPlaces([]);
+      setShowSuggestions(false);
     } finally {
       setLoadingPlaces(false);
     }
-  };
+  }, []);
+
+  /* ---------------------------------------------
+     Debounced text change handler
+  ---------------------------------------------- */
+  const handleTextChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+
+      // Clear existing timeout
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // Show loading state immediately if text is long enough
+      if (text.trim().length >= 3) {
+        setShowSuggestions(true);
+      }
+
+      // Set new timeout for 1 second
+      debounceTimeoutRef.current = setTimeout(() => {
+        performSearch(text);
+      }, 1000);
+    },
+    [performSearch]
+  );
+
+  /* ---------------------------------------------
+     Cleanup timeout on unmount
+  ---------------------------------------------- */
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   /* ---------------------------------------------
      Select a city
@@ -127,13 +171,33 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     onUpdateData('place', place);
 
     setShowSuggestions(false);
+    setErrorMessage(null);
     Keyboard.dismiss();
+
+    // Clear any pending search when a place is selected
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
   };
 
   /* ---------------------------------------------
-     Dropdown style
+     Reusable style objects for better performance
   ---------------------------------------------- */
-  const dropdownStyle: ViewStyle = {
+  const getInputStyle = () => ({
+    backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
+    borderWidth: 1,
+    borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
+  });
+
+  const getTextColor = () => ({
+    color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
+  });
+
+  const getSecondaryTextColor = () => ({
+    color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
+  });
+
+  const getDropdownStyle = (): ViewStyle => ({
     backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
     borderWidth: 1,
     borderColor: isDarkMode ? '#333333' : COLORS.gray[400],
@@ -144,124 +208,104 @@ export const DestinationSlide: React.FC<SlideProps> = ({
     elevation: 10,
     zIndex: 9999,
     top: '100%',
-  };
+  });
+
+  const getPressableStyle = (pressed: boolean) => ({
+    borderBottomColor: isDarkMode ? '#333333' : COLORS.gray[400],
+    backgroundColor: pressed
+      ? isDarkMode
+        ? '#2a2a2a'
+        : COLORS.gray[300]
+      : 'transparent',
+  });
 
   return (
-    <View style={{ width }} className="flex-1 px-6 pt-6">
-      <Animated.View style={[slideAnimStyle]} className="flex-1">
-        <Text
-          className="mb-2 text-3xl font-bold"
-          style={{ color: isDarkMode ? COLORS.white.base : COLORS.gray[750] }}>
-          {slide.title}
-        </Text>
-
-        {slide.subtitle && (
-          <Text
-            className="mb-8 text-base"
-            style={{
-              color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
-            }}>
-            {slide.subtitle}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ width }}
+      className="flex-1">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
+        className="px-[12px] pt-6">
+        <Animated.View style={[slideAnimStyle]} className="flex-1">
+          <Text className="mb-2 text-3xl font-bold" style={getTextColor()}>
+            {slide.title}
           </Text>
-        )}
 
-        {/* Input */}
-        <View className="relative">
-          <View
-            className="flex-row items-center rounded-xl px-4 py-3"
-            style={{
-              backgroundColor: isDarkMode ? '#222222' : COLORS.gray[350],
-              borderWidth: 1,
-              borderColor: isDarkMode ? '#333333' : COLORS.gray[350],
-            }}>
-            <Text className="mr-2 text-lg">🔍</Text>
-            <TextInput
-              placeholder="Search for a city"
-              value={searchText}
-              onChangeText={setSearchText}
-              className="flex-1 text-base"
-              style={{
-                color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
-              }}
-            />
-          </View>
-
-          {/* Search Button */}
-          <TouchableOpacity
-            onPress={handleSearchPress}
-            disabled={loadingPlaces}
-            className="mt-3 items-center rounded-xl py-3"
-            style={{
-              backgroundColor: loadingPlaces
-                ? COLORS.gray[400]
-                : colors.primaryColors.default,
-            }}>
-            {loadingPlaces ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="font-semibold text-white">Search</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Error */}
-          {errorMessage && (
-            <Text
-              className="mt-2 text-sm"
-              style={{ color: colors.destructiveColors.default }}>
-              {errorMessage}
+          {slide.subtitle && (
+            <Text className="mb-8 text-base" style={getSecondaryTextColor()}>
+              {slide.subtitle}
             </Text>
           )}
 
-          {/* Results */}
-          {showSuggestions && places.length > 0 && (
-            <View
-              className="absolute left-0 right-0 mt-32 max-h-64 rounded-xl"
-              style={dropdownStyle}>
-              <FlatList
-                data={places}
-                keyExtractor={(item) => item.placeId}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => handleSelectCity(item)}
-                    className="border-b px-4 py-3"
-                    style={({ pressed }) => ({
-                      borderBottomColor: isDarkMode
-                        ? '#333333'
-                        : COLORS.gray[400],
-                      backgroundColor: pressed
-                        ? isDarkMode
-                          ? '#2a2a2a'
-                          : COLORS.gray[300]
-                        : 'transparent',
-                    })}>
-                    <Text
-                      className="text-base"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.white.base
-                          : COLORS.gray[750],
-                      }}>
-                      {item.displayName}
-                    </Text>
-                    {item.formattedAddress && (
-                      <Text
-                        className="mt-1 text-sm"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.gray[500]
-                            : COLORS.gray[400],
-                        }}>
-                        {item.formattedAddress}
-                      </Text>
-                    )}
-                  </Pressable>
-                )}
+          {/* Input */}
+          <View className="relative">
+            <View>
+              <CustomTextInput
+                label="Destination"
+                value={searchText}
+                onChangeText={handleTextChange}
+                className="flex-1"
+                labelStyle="mb-2 text-black dark:text-gray-400 font-[BricolageGrotesque_700Bold]!"
+                placeholder="e.g Paris, Lagos"
+                error={errorMessage || undefined}
               />
             </View>
-          )}
-        </View>
-      </Animated.View>
-    </View>
+
+            {/* Results */}
+            {showSuggestions && (
+              <View
+                className="absolute left-0 right-0 mt-8 max-h-64 rounded-xl"
+                style={getDropdownStyle()}>
+                {loadingPlaces ? (
+                  // Skeleton loader
+                  <View className="flex h-[300px] flex-1 items-center justify-center">
+                    <LoaderCircle
+                      size={30}
+                      color={isDarkMode ? '#fff' : '#000'}
+                    />
+                  </View>
+                ) : places.length > 0 ? (
+                  <ScrollView
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                    className="max-h-64">
+                    {places.map((item) => (
+                      <Pressable
+                        key={item.placeId}
+                        onPress={() => handleSelectCity(item)}
+                        className="border-b px-4 py-3"
+                        style={({ pressed }) => getPressableStyle(pressed)}>
+                        <Text className="text-base" style={getTextColor()}>
+                          {item.displayName}
+                        </Text>
+                        {item.formattedAddress && (
+                          <Text
+                            className="mt-1 text-sm"
+                            style={getSecondaryTextColor()}>
+                            {item.formattedAddress}
+                          </Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                ) : errorMessage ? (
+                  <View className="p-4">
+                    <Text
+                      className="text-center text-sm"
+                      style={getSecondaryTextColor()}>
+                      {errorMessage}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };

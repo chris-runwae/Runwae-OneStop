@@ -3,7 +3,7 @@ import { Text, TextInput, View, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 interface TextInputProps {
-  label: string;
+  label?: string;
   placeholder?: string;
   value?: string;
   onChangeText?: (text: string) => void;
@@ -14,6 +14,8 @@ interface TextInputProps {
   className?: string;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  error?: string;
+  labelStyle?: string;
 }
 
 const CustomTextInput = ({
@@ -28,6 +30,8 @@ const CustomTextInput = ({
   className = '',
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  error,
+  labelStyle = 'mb-2 text-black dark:text-gray-400',
 }: TextInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const isSecure = isPassword ? !showPassword : secureTextEntry;
@@ -46,7 +50,7 @@ const CustomTextInput = ({
 
   return (
     <View>
-      <Text className="mb-2 text-black dark:text-gray-400">{label}</Text>
+      {label && <Text className={labelStyle}>{label}</Text>}
       <View className="relative">
         <TextInput
           className={inputClassName}
@@ -73,6 +77,7 @@ const CustomTextInput = ({
           </TouchableOpacity>
         )}
       </View>
+      {error && <Text className="mt-1 text-xs text-red-500">{error}</Text>}
     </View>
   );
 };

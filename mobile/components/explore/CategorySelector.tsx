@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, Pressable } from 'react-native';
 import { Text } from '@/components';
 import { textStyles } from '@/utils/styles';
 import { useColorScheme } from 'react-native';
@@ -32,59 +32,28 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
-  const styles = StyleSheet.create({
-    container: {
-      marginBottom: 24,
-    },
-    button: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 20,
-      marginRight: 8,
-      borderWidth: 1,
-    },
-    buttonActive: {
-      backgroundColor: colors.primaryColors.default,
-      borderColor: colors.primaryColors.default,
-    },
-    buttonInactive: {
-      backgroundColor: 'transparent',
-      borderColor: colors.borderColors.subtle,
-    },
-    text: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 14,
-    },
-  });
-
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+      contentContainerClassName="mb-6 px-[12px]">
       {categories.map((category) => (
         <Pressable
           key={category.id}
-          style={[
-            styles.button,
+          className={`mr-2 rounded-full border px-4 py-2 ${
             selectedCategory === category.id
-              ? styles.buttonActive
-              : styles.buttonInactive,
-          ]}
-          onPress={() => onSelectCategory(category.id)}
-        >
+              ? 'border-pink-600 bg-pink-600'
+              : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-[#212529]'
+          }`}
+          onPress={() => onSelectCategory(category.id)}>
           <Text
-            style={[
-              styles.text,
-              {
-                color:
-                  selectedCategory === category.id
-                    ? colors.white
-                    : colors.textColors.default,
-              },
-            ]}
-          >
+            className={[
+              textStyles.subtitle_Regular,
+              'text-sm',
+              selectedCategory === category.id
+                ? 'text-gray-900'
+                : 'text-gray-900 dark:text-white',
+            ].join(' ')}>
             {category.emoji} {category.label}
           </Text>
         </Pressable>

@@ -5,6 +5,7 @@ import { Colors } from '@/constants';
 import { exploreDummyData } from '@/stores/exploreStore';
 import { CategorySelector } from '@/components/explore/CategorySelector';
 import { ExploreSection } from '@/components/explore/ExploreSection';
+import { SearchBar } from '@/components/explore/SearchBar';
 
 type Category = 'all' | 'romantic-getaway' | 'sports' | 'relax';
 
@@ -47,41 +48,19 @@ export default function ExploreScreen() {
       flex: 1,
       backgroundColor: colors.backgroundColors.default,
     },
-    contentContainer: {
-      paddingHorizontal: 16,
-      paddingBottom: 70,
-    },
   });
 
   return (
     <ScreenContainer header={{ title: 'Explore' }}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}>
         <Spacer size={16} vertical />
-        {/* Search Bar */}
-        {/* <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={colors.textColors.subtle} />
-            <Text
-              style={styles.searchInput}
-              onPress={() => {
-                // Handle search
-                console.log('Search pressed');
-              }}>
-              Search...
-            </Text>
-          </View>
-          <Pressable
-            style={styles.filterButton}
-            onPress={() => {
-              // Handle filter
-              console.log('Filter pressed');
-            }}>
-            <Filter size={20} color={colors.textColors.default} />
-          </Pressable>
-        </View> */}
+        <SearchBar
+          onSearch={(query) => console.log('Search:', query)}
+          onFilter={() => console.log('Filter pressed')}
+        />
 
         <CategorySelector
           selectedCategory={selectedCategory}

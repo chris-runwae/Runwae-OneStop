@@ -29,6 +29,7 @@ export const ExploreSection: React.FC<ExploreSectionProps> = ({
 
   const styles = StyleSheet.create({
     container: {
+      paddingHorizontal: type === 'event' ? 12 : 0,
       marginBottom: 32,
     },
   });
@@ -51,14 +52,21 @@ export const ExploreSection: React.FC<ExploreSectionProps> = ({
   };
 
   const ListComponent = type === 'event' ? FlatList : FlashList;
-  const listProps = type === 'event' 
-    ? { scrollEnabled: false }
-    : { horizontal: true, showsHorizontalScrollIndicator: false };
+  const listProps =
+    type === 'event'
+      ? { scrollEnabled: false }
+      : {
+          horizontal: true,
+          showsHorizontalScrollIndicator: false,
+          contentContainerStyle: { paddingHorizontal: 12 },
+        };
 
   return (
     <View style={styles.container}>
-      <SectionHeader title={title} linkText="More →" linkTo={linkTo as any} />
-      <Spacer size={16} vertical />
+      <View className={`${type === 'event' ? 'px-0' : 'px-[12px]'}`}>
+        <SectionHeader title={title} linkText="More →" linkTo={linkTo as any} />
+      </View>
+      <Spacer size={5} vertical />
       <ListComponent
         data={data}
         renderItem={renderCard}

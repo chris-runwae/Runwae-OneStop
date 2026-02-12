@@ -45,14 +45,16 @@ export default function ItineraryDetailScreen() {
   const renderItineraryCard = ({ item }: { item: Experience }) => {
     const itemItinerary = getItineraryItemsForExperience(item.id);
 
-    return (
-      <ItineraryCard
-        item={item}
-        colors={colors}
-        itineraryItems={itemItinerary}
-        destination={destination}
-      />
-    );
+    // Transform Experience to match ItineraryCard interface
+    const transformedItem = {
+      id: item.id,
+      title: item.title,
+      image_url: item.heroImage,
+      activity_count: itemItinerary.length,
+      duration_days: Math.ceil(item.durationMinutes / (24 * 60)) || 1,
+    };
+
+    return <ItineraryCard item={transformedItem} />;
   };
 
   return (

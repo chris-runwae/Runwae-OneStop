@@ -9,6 +9,7 @@ import { ItineraryCard } from './ItineraryCard';
 import { EventCard } from './EventCard';
 import { ExperienceCard } from './ExperienceCard';
 import { DestinationCard } from './DestinationCard';
+import { exploreDummyData } from '@/stores/exploreStore';
 import type { Experience, Destination, FeaturedEvent } from '@/types/explore';
 
 interface ExploreSectionProps {

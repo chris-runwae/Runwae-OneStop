@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -27,6 +29,7 @@ import { Colors, COLORS } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ScreenContainer, Spacer } from '@/components';
 import { useTrips } from '@/hooks';
+import { useKeyboardVisibility } from '@/hooks/useKeyboardVisibility';
 
 const { width } = Dimensions.get('window');
 
@@ -211,81 +214,92 @@ export default function TripCreationScreen() {
 
   const getButtonText = () => {
     if (currentStep === totalSteps - 1) {
-      return 'Save Trip';
+      return 'Create Trip 🥳';
     }
-    return 'Continue';
+    return 'Next';
   };
 
+  const iskeyboardVisible = useKeyboardVisibility();
+
   return (
-    <ScreenContainer
-      header={{
-        leftComponent: (
-          <TouchableOpacity onPress={handleBack}>
-            <ArrowLeft size={24} color={colors.textColors.default} />
-          </TouchableOpacity>
-        ),
-        // rightComponent: (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}>
+      <ScreenContainer
+        header={{
+          leftComponent: (
+            <TouchableOpacity onPress={handleBack}>
+              <ArrowLeft size={24} color={colors.textColors.default} />
+            </TouchableOpacity>
+          ),
+          // rightComponent: (
 
-        // ),
-      }}
-      className="flex-1">
-      <Spacer size={16} vertical />
-      {/* Progress Bar */}
-      <View className="mb-4 items-center justify-center rounded-full px-6">
-        <View
-          className="h-1.5 w-full overflow-hidden rounded-full"
-          style={{
-            backgroundColor: isDarkMode ? '#2a2a2a' : COLORS.gray[350],
-            borderRadius: 100,
-            overflow: 'hidden',
-          }}>
-          <Animated.View
-            className="h-full rounded-full"
-            style={[
-              progressStyle,
-              {
-                backgroundColor: colors.primaryColors.default,
-                height: 16,
-                overflow: 'hidden',
-              },
-            ]}
-          />
-        </View>
-      </View>
-      {/* Slides */}
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}
+          // ),
+        }}
         className="flex-1">
-        {renderSlide()}
-      </ScrollView>
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: iskeyboardVisible ? 10 : 100,
+          }}>
+          {/* <Spacer size={16} vertical /> */}
+          {/* Progress Bar */}
+          {/* <View className="mb-4 items-center justify-center rounded-full px-6">
+            <View
+              className="h-1.5 w-full overflow-hidden rounded-full"
+              style={{
+                backgroundColor: isDarkMode ? '#2a2a2a' : COLORS.gray[350],
+                borderRadius: 100,
+                overflow: 'hidden',
+              }}>
+              <Animated.View
+                className="h-full rounded-full"
+                style={[
+                  progressStyle,
+                  {
+                    backgroundColor: colors.primaryColors.default,
+                    height: 16,
+                    overflow: 'hidden',
+                  },
+                ]}
+              />
+            </View>
+          </View> */}
+          {/* Slides */}
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={false}
+              className="flex-1">
+              {renderSlide()}
+            </ScrollView>
+          </View>
 
-      {/* Continue/Save Button */}
-      <View className="mb-10 items-center gap-y-4 px-6">
-        <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
-          <TouchableOpacity
-            onPress={handleNext}
-            className="w-full flex-row items-center justify-center rounded-xl py-4"
-            style={{
-              backgroundColor: isCurrentStepValid()
-                ? colors.primaryColors.default
-                : COLORS.gray[350],
-              opacity: isCurrentStepValid() ? 1 : 0.7,
-            }}
-            disabled={!isCurrentStepValid()}>
-            <Text
-              className="mr-2 text-lg font-semibold text-white"
-              style={{ color: COLORS.white.base }}>
-              {getButtonText()}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      <Spacer size={60} vertical />
-    </ScreenContainer>
+          {/* Continue/Save Button */}
+          <View className="items-center gap-y-4 px-6">
+            <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
+              <TouchableOpacity
+                onPress={handleNext}
+                className="h-[50px] w-full flex-row items-center justify-center rounded-full bg-pink-600"
+                style={{
+                  opacity: isCurrentStepValid() ? 1 : 0.7,
+                }}
+                disabled={!isCurrentStepValid()}>
+                <Text
+                  className="text-base font-medium text-white"
+                  style={{ color: COLORS.white.base }}>
+                  {getButtonText()}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </ScrollView>
+      </ScreenContainer>
+    </KeyboardAvoidingView>
   );
 }

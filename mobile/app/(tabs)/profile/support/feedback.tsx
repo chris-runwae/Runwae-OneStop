@@ -1,8 +1,7 @@
 import { ScreenContainer } from '@/components';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Keyboard,
   Modal,
   Platform,
   ScrollView,
@@ -14,31 +13,12 @@ import {
 import { ChevronDown, X } from 'lucide-react-native';
 import DropdownSelect from '@/components/ui/dropdown-select';
 import CustomTextInput from '@/components/ui/custome-input';
+import { useKeyboardVisibility } from '@/hooks/useKeyboardVisibility';
 
 const Feedback = () => {
   const [selectedFeedbak, setSelectedFeedbak] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setIsKeyboardOpen(true);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setIsKeyboardOpen(false);
-      }
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+  const isKeyboardOpen = useKeyboardVisibility();
 
   const feedbackType = [
     'Bug Report',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -6,10 +6,11 @@ import {
   StyleSheet,
   useColorScheme,
   Pressable,
+  Image as RNImage,
 } from 'react-native';
 import { RelativePathString, useRouter } from 'expo-router';
 import { useClerk, useUser } from '@clerk/clerk-expo';
-import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import {
   Building2,
   CameraIcon,
@@ -22,6 +23,8 @@ import {
 } from 'lucide-react-native';
 
 import { MenuItem, ScreenContainer, Spacer, Text } from '@/components';
+import { ImagePickerModal } from '@/components/ui/ImagePickerModal';
+import { FullScreenImageModal } from '@/components/ui/FullScreenImageModal';
 import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
 import { useIOSMenu, IOSMenuSheet } from '@/components/buttons/IOSMenuButton';
@@ -36,6 +39,9 @@ export function ProfileScreen() {
   const { user } = useUser();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [showFullScreenImage, setShowFullScreenImage] = useState(false);
 
   const menu = useIOSMenu();
 
@@ -52,6 +58,65 @@ export function ProfileScreen() {
       // See https://clerk.com/docs/guides/development/custom-flows/error-handling
       // for more info on error handling
       console.error(JSON.stringify(err, null, 2));
+    }
+  };
+
+  const handleCameraPress = () => {
+    setShowImagePickerModal(true);
+  };
+
+  const openCamera = async () => {
+    setShowImagePickerModal(false);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImageUri(result.assets[0].uri);
+        // TODO: Upload image to storage and update user profile
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Failed to access camera. Please try again.');
+    }
+  };
+
+  const openGallery = async () => {
+    setShowImagePickerModal(false);
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        alert('Sorry, we need media library permissions to make this work!');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImageUri(result.assets[0].uri);
+        // TODO: Upload image to storage and update user profile
+      }
+    } catch (error) {
+      console.error('Error accessing media library:', error);
+      alert('Failed to access media library. Please try again.');
     }
   };
 
@@ -109,12 +174,19 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
           <View style={styles.avatarWrapper}>
-            <Image source={{ uri: user?.imageUrl }} style={styles.avatar} />
-
+            <TouchableOpacity
+              onPress={() => setShowFullScreenImage(true)}
+              activeOpacity={0.8}>
+              <RNImage
+                source={{ uri: selectedImageUri || user?.imageUrl }}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.cameraButton, dynamicStyle.cameraButton]}
+              onPress={handleCameraPress}
               activeOpacity={0.8}>
-              <CameraIcon size={10} color="#fff" />
+              <CameraIcon size={15} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -192,6 +264,22 @@ export function ProfileScreen() {
 
         <Spacer size={160} vertical /> */}
       </ScrollView>
+
+      {/* Image Picker Modal */}
+      <ImagePickerModal
+        visible={showImagePickerModal}
+        onClose={() => setShowImagePickerModal(false)}
+        onCameraPress={openCamera}
+        onGalleryPress={openGallery}
+        colors={colors}
+      />
+
+      {/* Full Screen Image Modal */}
+      <FullScreenImageModal
+        visible={showFullScreenImage}
+        onClose={() => setShowFullScreenImage(false)}
+        imageUri={selectedImageUri ?? user?.imageUrl ?? null}
+      />
     </ScreenContainer>
   );
 }
@@ -206,16 +294,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   avatarWrapper: {
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   avatar: {
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     borderRadius: 60,
   },
   cameraButton: {
@@ -223,9 +311,9 @@ const styles = StyleSheet.create({
     right: 1,
     bottom: 0,
     // backgroundColor: '#ff4d6d',
-    width: 20,
-    height: 20,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },

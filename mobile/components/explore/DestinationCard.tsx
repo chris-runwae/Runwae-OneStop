@@ -19,9 +19,10 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ item }) => {
 
   const styles = StyleSheet.create({
     card: {
-      width: 280,
+      width: 300,
       marginRight: 16,
-      borderRadius: 16,
+      borderTopRightRadius: 16,
+      borderTopLeftRadius: 16,
       overflow: 'hidden',
     },
     image: {
@@ -29,8 +30,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ item }) => {
       height: 200,
     },
     content: {
-      padding: 12,
-      backgroundColor: colors.backgroundColors.subtle,
+      paddingTop: 12,
     },
     title: {
       ...textStyles.bold_20,
@@ -48,8 +48,7 @@ export const DestinationCard: React.FC<DestinationCardProps> = ({ item }) => {
   return (
     <Pressable
       style={styles.card}
-      onPress={() => router.push(`/(tabs)/explore/destinations/${item.id}`)}
-    >
+      onPress={() => router.push(`/(tabs)/explore/destinations/${item.id}`)}>
       <Image
         source={{ uri: item.heroImage || item.thumbnailImage }}
         style={styles.image}

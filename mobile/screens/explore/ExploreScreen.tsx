@@ -2,10 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { StyleSheet, ScrollView, useColorScheme } from 'react-native';
 import { ScreenContainer, Spacer } from '@/components';
 import { Colors } from '@/constants';
-import { exploreDummyData } from '@/stores/exploreStore';
 import { CategorySelector } from '@/components/explore/CategorySelector';
 import { ExploreSection } from '@/components/explore/ExploreSection';
 import { SearchBar } from '@/components/explore/SearchBar';
+import { FilterModal } from '@/components/explore/FilterModal';
+import { EmptyState } from '@/components/explore/EmptyState';
+import {
+  useExploreFilters,
+  type FilterCategory,
+} from '@/hooks/useExploreFilters';
+import {
+  Music,
+  Utensils,
+  Camera,
+  MapPin,
+  Calendar,
+  Heart,
+} from 'lucide-react-native';
 
 type Category = 'all' | 'romantic-getaway' | 'sports' | 'relax';
 
@@ -13,35 +26,19 @@ export default function ExploreScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  // Get data from store
-  const featuredItineraries = useMemo(() => {
-    // Use featured experiences as itinerary cards
-    return exploreDummyData.experiences
-      .filter((exp) => exp.isFeatured)
-      .slice(0, 5)
-      .map((exp) => ({
-        id: exp.id,
-        title: exp.title,
-        image_url: exp.heroImage,
-        activity_count: exploreDummyData.itineraries.filter(
-          (it) => it.experienceId === exp.id
-        ).length,
-        duration_days: Math.ceil(exp.durationMinutes / (60 * 24)),
-      }));
-  }, []);
-
-  const featuredEvents = useMemo(() => {
-    return exploreDummyData.featuredEvents;
-  }, []);
-
-  const experienceHighlights = useMemo(() => {
-    return exploreDummyData.experiences.filter((exp) => exp.isFeatured);
-  }, []);
-
-  const popularDestinations = useMemo(() => {
-    return exploreDummyData.destinations.filter((dest) => dest.isFeatured);
-  }, []);
+  const {
+    searchQuery,
+    setSearchQuery,
+    selectedFilter,
+    setSelectedFilter,
+    filterOptions,
+    featuredItineraries,
+    featuredEvents,
+    experienceHighlights,
+    popularDestinations,
+  } = useExploreFilters(selectedCategory);
 
   const styles = StyleSheet.create({
     container: {
@@ -50,6 +47,41 @@ export default function ExploreScreen() {
     },
   });
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleFilterPress = () => {
+    setFilterModalVisible(true);
+  };
+
+  const handleFilterSelect = (filter: FilterCategory | null) => {
+    setSelectedFilter(filter);
+  };
+
+  // Check if all sections are empty
+  const hasNoResults =
+    featuredItineraries.length === 0 &&
+    featuredEvents.length === 0 &&
+    experienceHighlights.length === 0 &&
+    popularDestinations.length === 0;
+
+  // Determine empty state type
+  const getEmptyStateType = (): 'search' | 'filter' => {
+    if (searchQuery.trim()) return 'search';
+    if (selectedFilter) return 'filter';
+    return 'search'; // default
+  };
+
+  const getEmptyStateProps = () => {
+    const type = getEmptyStateType();
+    return {
+      type,
+      query: type === 'search' ? searchQuery : undefined,
+      filter: type === 'filter' ? selectedFilter || undefined : undefined,
+    };
+  };
+
   return (
     <ScreenContainer header={{ title: 'Explore' }}>
       <ScrollView
@@ -57,44 +89,62 @@ export default function ExploreScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}>
         <Spacer size={16} vertical />
-        <SearchBar
-          onSearch={(query) => console.log('Search:', query)}
-          onFilter={() => console.log('Filter pressed')}
-        />
+        <SearchBar onSearch={handleSearch} onFilter={handleFilterPress} />
 
         <CategorySelector
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
         />
 
-        <ExploreSection
-          title="Featured Itineraries"
-          linkTo="/(tabs)/explore/itineraries"
-          data={featuredItineraries}
-          type="itinerary"
-        />
+        {hasNoResults ? (
+          <EmptyState {...getEmptyStateProps()} />
+        ) : (
+          <>
+            {featuredItineraries.length > 0 && (
+              <ExploreSection
+                title="Featured Itineraries"
+                linkTo="/(tabs)/explore/itineraries"
+                data={featuredItineraries}
+                type="itinerary"
+              />
+            )}
 
-        <ExploreSection
-          title="Featured Events"
-          linkTo="/(tabs)/explore/events"
-          data={featuredEvents}
-          type="event"
-        />
+            {featuredEvents.length > 0 && (
+              <ExploreSection
+                title="Featured Events"
+                linkTo="/(tabs)/explore/events"
+                data={featuredEvents}
+                type="event"
+              />
+            )}
 
-        <ExploreSection
-          title="Experience Highlights"
-          linkTo="/(tabs)/explore/experiences"
-          data={experienceHighlights}
-          type="experience"
-        />
+            {experienceHighlights.length > 0 && (
+              <ExploreSection
+                title="Experience Highlights"
+                linkTo="/(tabs)/explore/experiences"
+                data={experienceHighlights}
+                type="experience"
+              />
+            )}
 
-        <ExploreSection
-          title="Popular Destinations"
-          linkTo="/(tabs)/explore/destinations"
-          data={popularDestinations}
-          type="destination"
-        />
+            {popularDestinations.length > 0 && (
+              <ExploreSection
+                title="Popular Destinations"
+                linkTo="/(tabs)/explore/destinations"
+                data={popularDestinations}
+                type="destination"
+              />
+            )}
+          </>
+        )}
       </ScrollView>
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        options={filterOptions}
+        selectedFilter={selectedFilter}
+        onSelectFilter={handleFilterSelect}
+      />
     </ScreenContainer>
   );
 }

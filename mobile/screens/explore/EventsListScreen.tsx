@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, Pressable, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MapPin, Calendar, Clock } from 'lucide-react-native';
+import { MapPin } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { format, parseISO } from 'date-fns';
 import { FlashList } from '@shopify/flash-list';
@@ -11,6 +11,7 @@ import { Colors } from '@/constants';
 import { textStyles } from '@/utils/styles';
 import { exploreDummyData } from '@/stores/exploreStore';
 import type { FeaturedEvent } from '@/types/explore';
+import { EventCard } from '@/components/explore/EventCard';
 
 export default function EventsListScreen() {
   const router = useRouter();
@@ -73,110 +74,10 @@ export default function EventsListScreen() {
       paddingTop: 16,
       paddingBottom: 32,
     },
-    card: {
-      flexDirection: 'row',
-      backgroundColor: colors.backgroundColors.subtle,
-      borderRadius: 16,
-      overflow: 'hidden',
-      marginBottom: 16,
-    },
-    image: {
-      width: 140,
-      height: 140,
-    },
-    content: {
-      flex: 1,
-      padding: 16,
-      justifyContent: 'space-between',
-    },
-    title: {
-      ...textStyles.bold_20,
-      fontSize: 18,
-      color: colors.textColors.default,
-      marginBottom: 8,
-    },
-    location: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginBottom: 6,
-    },
-    locationText: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 13,
-      color: colors.textColors.subtle,
-    },
-    dateRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginBottom: 8,
-    },
-    dateText: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 13,
-      color: colors.textColors.subtle,
-    },
-    categoryBadge: {
-      alignSelf: 'flex-start',
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      marginTop: 4,
-    },
-    categoryText: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 11,
-      color: colors.white,
-      fontWeight: '600',
-    },
   });
 
   const renderItem = ({ item }: { item: FeaturedEvent }) => (
-    <Pressable
-      style={styles.card}
-      onPress={() => {
-        router.push(`/(tabs)/explore/events/${item.id}`);
-      }}>
-      <Image
-        source={{ uri: item.heroImage }}
-        style={styles.image}
-        contentFit="cover"
-      />
-      <View style={styles.content}>
-        <View>
-          <Text style={styles.title}>{item.title}</Text>
-          <View style={styles.location}>
-            <MapPin size={14} color={colors.textColors.subtle} />
-            <Text style={styles.locationText}>{item.location}</Text>
-          </View>
-          <View style={styles.dateRow}>
-            <Calendar size={14} color={colors.textColors.subtle} />
-            <Text style={styles.dateText}>
-              {formatDateRange(item.startDate, item.endDate)}
-            </Text>
-            {item.time && (
-              <>
-                <Text style={styles.dateText}>•</Text>
-                <Clock size={14} color={colors.textColors.subtle} />
-                <Text style={styles.dateText}>{item.time}</Text>
-              </>
-            )}
-          </View>
-          {item.category && (
-            <View
-              style={[
-                styles.categoryBadge,
-                { backgroundColor: getCategoryColor(item.category) },
-              ]}>
-              <Text style={styles.categoryText}>
-                {item.category.toUpperCase()}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </Pressable>
+    <EventCard item={item} />
   );
 
   return (
@@ -186,8 +87,7 @@ export default function EventsListScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.contentContainer}
-        estimatedItemSize={140}
-        ItemSeparatorComponent={() => <Spacer size={16} vertical />}
+        ItemSeparatorComponent={() => <Spacer size={8} vertical />}
         ListFooterComponent={() => <Spacer size={120} vertical />}
       />
     </ScreenContainer>

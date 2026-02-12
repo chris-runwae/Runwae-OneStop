@@ -43,7 +43,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           className={`mr-2 rounded-full border px-4 py-2 ${
             selectedCategory === category.id
               ? 'border-pink-600 bg-pink-600'
-              : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-[#212529]'
+              : 'border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-[#F8F9FA]/10'
           }`}
           onPress={() => onSelectCategory(category.id)}>
           <Text

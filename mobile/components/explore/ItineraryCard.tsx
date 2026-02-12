@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Heart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -25,22 +25,28 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ item }) => {
 
   const styles = StyleSheet.create({
     card: {
-      width: 300,
+      width: 350,
+      height: 220,
       marginRight: 16,
       borderRadius: 16,
       overflow: 'hidden',
+      position: 'relative',
       backgroundColor: colors.backgroundColors.subtle,
     },
     image: {
       width: '100%',
-      height: 200,
+      height: 220,
     },
     content: {
       padding: 12,
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
     },
     title: {
       ...textStyles.bold_20,
-      fontSize: 16,
+      fontSize: 25,
       marginBottom: 4,
       color: colors.textColors.default,
     },
@@ -62,15 +68,15 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ item }) => {
     },
   });
 
+  const placeholderImage = require('@/assets/images/placeholder_img.jpg');
+
   return (
     <Pressable
       style={styles.card}
       onPress={() => router.push(`/(tabs)/explore/itineraries/${item.id}`)}>
       <View style={{ position: 'relative' }}>
         <Image
-          source={{
-            uri: item.image_url || 'https://via.placeholder.com/300x200',
-          }}
+          source={item.image_url ? { uri: item.image_url } : placeholderImage}
           style={styles.image}
           contentFit="cover"
         />
@@ -79,11 +85,23 @@ export const ItineraryCard: React.FC<ItineraryCardProps> = ({ item }) => {
         </View>
       </View>
       <View style={styles.content}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.meta}>
-          {item.activity_count || 0} activities • {item.duration_days || 0}{' '}
-          {item.duration_days === 1 ? 'day' : 'days'}
+        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.title}>
+          {item.title}
         </Text>
+        <View className="mt-3 flex-row items-center gap-x-3">
+          <View className="rounded-full bg-gray-300 px-[10px] py-[5px] dark:bg-[#212529]">
+            <Text className="text-sm text-white dark:text-gray-900">
+              {item.activity_count || 0} activities
+            </Text>
+          </View>
+
+          <View className="rounded-full bg-gray-300 px-[10px] py-[5px] dark:bg-[#212529]">
+            <Text className="text-sm text-white dark:text-gray-900">
+              {item.duration_days || 0}{' '}
+              {item.duration_days === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+        </View>
       </View>
     </Pressable>
   );

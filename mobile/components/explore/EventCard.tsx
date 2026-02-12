@@ -8,6 +8,7 @@ import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants';
 import { useDateFormatting, useCategoryColors } from '@/hooks/useExploreUtils';
 import type { FeaturedEvent } from '@/types/explore';
+import { MapPin } from 'lucide-react-native';
 
 interface EventCardProps {
   item: FeaturedEvent;
@@ -40,14 +41,13 @@ export const EventCard: React.FC<EventCardProps> = ({ item }) => {
     title: {
       ...textStyles.bold_20,
       fontSize: 16,
-      marginBottom: 4,
+      marginBottom: 2,
       color: colors.textColors.default,
     },
     location: {
       ...textStyles.subtitle_Regular,
       fontSize: 12,
       color: colors.textColors.subtle,
-      marginBottom: 4,
     },
     date: {
       ...textStyles.subtitle_Regular,
@@ -56,14 +56,14 @@ export const EventCard: React.FC<EventCardProps> = ({ item }) => {
     },
     tag: {
       alignSelf: 'flex-start',
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 8,
-      marginTop: 4,
+      paddingVertical: 1,
+      paddingHorizontal: 3,
+      borderRadius: 4,
     },
     categoryText: {
       ...textStyles.subtitle_Regular,
       fontSize: 10,
+      fontWeight: 700,
       color: colors.textColors.default,
     },
   });
@@ -71,6 +71,7 @@ export const EventCard: React.FC<EventCardProps> = ({ item }) => {
   return (
     <Pressable
       style={styles.card}
+      className="relative"
       onPress={() => router.push(`/(tabs)/explore/events/${item.id}`)}>
       <Image
         source={{ uri: item.heroImage }}
@@ -79,14 +80,28 @@ export const EventCard: React.FC<EventCardProps> = ({ item }) => {
       />
       <View style={styles.content}>
         <View>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.location}>{item.location}</Text>
+          <Text
+            className="max-w-[150px] overflow-hidden"
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={styles.title}>
+            {item.title}
+          </Text>
+          <View className="mb-[15px] flex flex-row items-center gap-1">
+            <MapPin
+              size={15}
+              color={colors.textColors.subtle}
+              strokeWidth={1.5}
+            />
+            <Text style={styles.location}>{item.location}</Text>
+          </View>
           <Text style={styles.date}>
             {formatDateRange(item.startDate, item.endDate)}
             {item.time ? ` | ${item.time}` : ''}
           </Text>
           {item.category && (
             <View
+              className="absolute right-0 top-0"
               style={[
                 styles.tag,
                 { backgroundColor: getCategoryColor(item.category) },

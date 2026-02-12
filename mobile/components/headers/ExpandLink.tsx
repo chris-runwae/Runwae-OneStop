@@ -1,15 +1,9 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useColorScheme,
-} from "react-native";
-import React from "react";
+import { Pressable, Text, View, useColorScheme } from 'react-native';
+import React from 'react';
 
-import { RelativePathString, router } from "expo-router";
-import { MoveRight } from "lucide-react-native";
-import { Colors } from "@/constants/theme";
+import { RelativePathString, router } from 'expo-router';
+import { MoveRight } from 'lucide-react-native';
+import { Colors } from '@/constants/theme';
 
 export interface ExpandLinkProps {
   linkText?: string;
@@ -17,48 +11,32 @@ export interface ExpandLinkProps {
 }
 
 const ExpandLink = ({ linkText, linkTo }: ExpandLinkProps) => {
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
-  const styles = StyleSheet.create({
-    linkContainer: {
-      backgroundColor: colors.primaryColors.background,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingVertical: 4,
-      paddingHorizontal: 12,
-      borderRadius: 100,
-      borderWidth: 1,
-      borderColor: colors.primaryColors.border,
-    },
+  const containerClasses = [
+    'flex-row items-center gap-1.5 py-1 px-3 rounded-full border',
+    'bg-[#420021] border-[#FF2E92]',
+  ].join(' ');
 
-    linkText: {
-      color: colors.primaryColors.default,
-      fontSize: 11,
-      fontWeight: "400",
-      fontFamily: "DM Sans",
-      lineHeight: 16.5,
-      letterSpacing: 0,
-    },
-  });
+  const textClasses = [
+    'text-xs',
+    'text-[#FF2E92]',
+    'font-normal',
+    'font-[DM_Sans]',
+    'leading-[16.5px]',
+    'tracking-normal',
+  ].join(' ');
 
   if (!linkTo) {
-    return (
-      <View style={styles.linkContainer}>
-        <Text style={styles.linkText}>{linkText}</Text>
-        <MoveRight size={12} color={colors.primaryColors.default} />
-      </View>
-    );
+    return;
   }
 
   return (
     <Pressable
       onPress={() => router.push(linkTo!)}
-      style={styles.linkContainer}
-    >
-      <Text style={styles.linkText}>{linkText}</Text>
-      <MoveRight size={12} color={colors.primaryColors.default} />
+      className={containerClasses}>
+      <Text className={textClasses}>{linkText}</Text>
     </Pressable>
   );
 };

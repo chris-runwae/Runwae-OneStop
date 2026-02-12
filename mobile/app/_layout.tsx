@@ -102,12 +102,13 @@ function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <SupabaseProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Slot />
-          <StatusBar style="auto" />
-        </GestureHandlerRootView>
-      </ThemeProvider>
+        <ThemeProvider
+          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Slot />
+            <StatusBar style="auto" />
+          </GestureHandlerRootView>
+        </ThemeProvider>
       </SupabaseProvider>
     </ClerkProvider>
   );

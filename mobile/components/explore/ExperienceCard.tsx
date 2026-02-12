@@ -19,9 +19,9 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
 
   const styles = StyleSheet.create({
     card: {
-      width: 320,
-      marginRight: 16,
-      backgroundColor: colors.backgroundColors.subtle,
+      width: 350,
+      marginRight: 18,
+      backgroundColor: 'transparent',
       borderRadius: 16,
       overflow: 'hidden',
     },
@@ -30,7 +30,7 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
       height: 200,
     },
     content: {
-      padding: 16,
+      paddingTop: 16,
     },
     location: {
       ...textStyles.subtitle_Regular,
@@ -53,9 +53,8 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
     },
     price: {
       ...textStyles.bold_20,
-      fontSize: 16,
+      fontSize: 20,
       color: colors.textColors.default,
-      marginBottom: 12,
     },
     button: {
       backgroundColor: colors.primaryColors.default,
@@ -74,31 +73,37 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
   return (
     <Pressable
       style={styles.card}
-      onPress={() => router.push(`/(tabs)/explore/experiences/${item.id}`)}
-    >
+      onPress={() => router.push(`/(tabs)/explore/experiences/${item.id}`)}>
       <Image
         source={{ uri: item.heroImage }}
         style={styles.image}
         contentFit="cover"
+        className="bg-gray-400/10"
       />
       <View style={styles.content}>
         <Text style={styles.location}>{item.location}</Text>
-        <Text style={styles.title}>{item.title}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.title}>
+          {item.title}
+        </Text>
         <Text style={styles.description} numberOfLines={2}>
           {item.description}
         </Text>
-        <Text style={styles.price}>
-          from ${item.priceFrom} {item.currency}
-        </Text>
-        <Pressable
-          style={styles.button}
-          onPress={(e) => {
-            e.stopPropagation();
-            console.log('Add to trip:', item.id);
-          }}
-        >
-          <Text style={styles.buttonText}>Add to trip</Text>
-        </Pressable>
+        <View className="mt-5 flex flex-row items-center justify-between">
+          <View className="flex-col">
+            <Text className="text-xs font-light text-gray-400">From</Text>
+            <Text style={styles.price}>
+              ${item.priceFrom} {item.currency}
+            </Text>
+          </View>
+          <Pressable
+            style={styles.button}
+            onPress={(e) => {
+              e.stopPropagation();
+              console.log('Add to trip:', item.id);
+            }}>
+            <Text style={styles.buttonText}>Add to trip</Text>
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );

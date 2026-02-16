@@ -1,6 +1,4 @@
 # Runwae – Web App & Event Vendor Dashboard
-## Technical Architecture Document
-
 Version: 1.0  
 
 ---
@@ -24,8 +22,6 @@ Runwae consists of:
    - Availability control
    - Payout tracking
    - Analytics
-
-Backend powered by Supabase.
 
 ---
 
@@ -277,7 +273,7 @@ Never expose API keys to frontend.
 
 - Dev branch → Preview environment
 - Main branch → Production
-- Separate Supabase projects for staging & prod
+- Separate projects for staging & prod
 
 ---
 

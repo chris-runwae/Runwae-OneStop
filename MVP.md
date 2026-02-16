@@ -1,7 +1,7 @@
 # Runwae – 2 Week Engineering Plan
 Team Size: 2–3 Engineers
 Sprint Duration: 14 Days
-Goal: Functional MVP (Web + Vendor Dashboard + Core Backend)
+Goal: Functional MVP (Web + Mobile + Vendor Dashboard + Core Backend)
 
 ---
 
@@ -40,7 +40,7 @@ Deliverable:
 ---
 
 ## Day 3–4
-Engineer A:
+Engineer A / C:
 - Implement Stripe Integrations*
 - Error handling 
 - Test trips CRUD
@@ -49,7 +49,7 @@ Engineer B & D:
 - Auth flow (signup/login)
 - Home page layout
 
-Engineer C:
+Engineer C / B:
 - Vendor dashboard skeleton
 
 Deliverable:
@@ -78,7 +78,7 @@ Deliverable:
 # Phase 2 – Booking & Vendor Flow
 
 ## Day 8–9
-Engineer A:
+Engineer A / C:
 - Service listing CRUD endpoints *
 - Booking logic
 
@@ -87,7 +87,7 @@ Engineer B & D:
 - Event browsing pages
 - Service detail pages
 
-Engineer C:
+Engineer C / B:
 - Vendor service management UI
 
 Deliverable:
@@ -97,14 +97,14 @@ Deliverable:
 ---
 
 ## Day 10–11
-Engineer A:
+Engineer A / C:
 - Stripe checkout integration complete *
 - Booking status update logic
 
-Engineer B:
+Engineer B & D:
 - Booking confirmation UI
 
-Engineer C:
+Engineer C / B:
 - Vendor booking view
 
 Deliverable:

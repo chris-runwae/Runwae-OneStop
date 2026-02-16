@@ -1,4 +1,4 @@
-# Runwae – Web App & Event Vendor Dashboard
+# Runwae
 Version: 1.0  
 
 ---

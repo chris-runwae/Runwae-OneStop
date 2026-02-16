@@ -9,7 +9,7 @@ Goal: Functional MVP (Web + Mobile + Vendor Dashboard + Core Backend)
 
 Deliver:
 
-- User Web App (Trips + Vendor Booking)
+- User Web and Mobile Apps (Trips + Vendor Booking)
 - Vendor Dashboard (Service CRUD + Booking View)
 - Stripe Integration
 - RLS-secured backend
@@ -18,10 +18,10 @@ Deliver:
 
 # Team Roles
 
-Engineer A / C – Backend / Supabase / Payments
-Engineer B – Web App (User)
-Engineer C – Vendor Dashboard + UI Polish (Optional if 3rd engineer)
-Engineer D - Mobile App (User)
+Engineer A / C – Backend / Supabase / Payments<br>
+Engineer B – Web App (User)<br>
+Engineer C – Vendor Dashboard + UI Polish (Optional if 3rd engineer)<br>
+Engineer D - Mobile App (User)<br>
 
 ---
 
@@ -141,7 +141,7 @@ Deliverable:
   - Create service
   - See bookings
 
-- * Payments:
+- Payments:
   - Successful payment confirms booking
   - Failed payment does not create booking
 

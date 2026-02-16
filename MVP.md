@@ -1,5 +1,5 @@
-# Runwae – 2 Week Engineering Plan
-Team Size: 2–3 Engineers
+# Runwae – Week Engineering Plan
+Team Size: 3–4 Engineers
 Sprint Duration: 14 Days
 Goal: Functional MVP (Web + Mobile + Vendor Dashboard + Core Backend)
 

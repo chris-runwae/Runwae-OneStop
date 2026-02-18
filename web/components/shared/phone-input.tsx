@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
-export function PhoneInput() {
+export function PhoneInput({ className }: { className?: string }) {
   return (
-    <div className="relative flex w-full">
-      <div className="flex h-11 w-full overflow-hidden rounded-lg border border-input bg-transparent shadow-xs focus-within:ring-2 focus-within:ring-ring/50">
+    <div className={cn("relative flex w-full", className)}>
+      <div className="flex h-11 w-full overflow-hidden rounded-lg border border-input bg-surface shadow-xs focus-within:ring-2 focus-within:ring-ring/50">
         <span className="flex items-center gap-1 border-r border-input bg-muted/30 px-3 text-sm text-muted-foreground">
           +234
           <svg

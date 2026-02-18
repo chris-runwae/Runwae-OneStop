@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { InputField } from "@/components/ui/input-field";
 import { Input } from "@/components/ui/input";
+import { InputField } from "@/components/ui/input-field";
 import { cn } from "@/lib/utils";
 import { Building2, ChevronDown, Globe } from "lucide-react";
 import { useState } from "react";
@@ -34,7 +34,11 @@ const Setup = () => {
     { platform: "tiktok", url: "" },
   ]);
 
-  const updateSocialLink = (index: number, field: "platform" | "url", value: string) => {
+  const updateSocialLink = (
+    index: number,
+    field: "platform" | "url",
+    value: string,
+  ) => {
     setSocialLinks((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -65,7 +69,7 @@ const Setup = () => {
               className={cn(
                 "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
                 "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                "md:text-sm"
+                "md:text-sm",
               )}
             >
               {ROLES.map((role) => (
@@ -84,7 +88,7 @@ const Setup = () => {
               className={cn(
                 "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
                 "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                "md:text-sm"
+                "md:text-sm",
               )}
             >
               {ORG_TYPES.map((type) => (
@@ -131,7 +135,7 @@ const Setup = () => {
                     className={cn(
                       "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
                       "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                      "md:text-sm"
+                      "md:text-sm",
                     )}
                   >
                     {SOCIAL_PLATFORMS.map((p) => (

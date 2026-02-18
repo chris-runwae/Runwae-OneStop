@@ -54,7 +54,8 @@ export default function Sidebar() {
       <nav className="mt-[46px] flex flex-1 flex-col px-6">
         <ul className="flex flex-col gap-3">
           {navItems.map((item) => {
-            const isActive = pathname === item.to;
+            const isActive =
+              pathname === item.to || pathname.startsWith(`${item.to}/`);
             return (
               <li key={item.to}>
                 <Link

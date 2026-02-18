@@ -147,4 +147,8 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button {
+    @apply cursor-pointer disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50;
+  }
 }

@@ -1,3 +1,11 @@
+"use client";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "lucide-react";
 
 export interface ChartBarData {
@@ -39,10 +47,28 @@ export function EventPerformanceChart() {
             plans.
           </span>
         </div>
-        <span className="flex shrink-0 items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-base font-medium tracking-tight text-body">
-          Events
-          <ChevronDownIcon width={16} height={16} />
-        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-base font-medium tracking-tight text-body transition-colors hover:bg-border-disabled/80 focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              Events
+              <ChevronDownIcon width={16} height={16} aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[160px]">
+            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
+              All Events
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
+              Upcoming
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
+              Past Events
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Chart */}

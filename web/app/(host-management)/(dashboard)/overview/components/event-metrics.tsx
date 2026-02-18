@@ -1,3 +1,11 @@
+"use client";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon, TrendingDown, TrendingUp } from "lucide-react";
 
 export interface EventMetricsProps {
@@ -6,6 +14,13 @@ export interface EventMetricsProps {
   change: string;
   trend: "up" | "down";
 }
+
+const periodOptions = [
+  { value: "this-month", label: "This month" },
+  { value: "last-month", label: "Last month" },
+  { value: "last-3-months", label: "Last 3 months" },
+  { value: "this-year", label: "This year" },
+];
 
 export function EventMetrics({
   label,
@@ -20,10 +35,28 @@ export function EventMetrics({
         <span className="text-sm font-medium tracking-tight text-body">
           {label}
         </span>
-        <span className="flex items-center gap-1 rounded bg-badge px-2 py-1.5 text-xs font-medium tracking-tight text-body">
-          This month
-          <ChevronDownIcon />
-        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-1 rounded bg-badge px-2 py-1.5 text-xs font-medium tracking-tight text-body transition-colors hover:bg-badge/80 focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              This month
+              <ChevronDownIcon className="size-3.5" aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[140px]">
+            {periodOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onSelect={() => {}}
+                className="cursor-pointer"
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Body */}

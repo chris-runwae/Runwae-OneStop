@@ -1,15 +1,10 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import * as schema from "./schema.js";
+import 'dotenv/config';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL ?? "postgresql://localhost:5432/runwae",
-  max: 10,
-});
-
-/**
- * Drizzle DB instance with schema for typed queries.
- * Use `db` in routes for select/insert/update/delete.
- */
-export const db = drizzle(pool, { schema });
-export { schema };
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error('DATABASE_URL is not set. Add it to backend/.env');
+}
+const sql = neon(url);
+export const db = drizzle(sql);

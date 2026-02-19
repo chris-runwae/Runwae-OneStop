@@ -1,4 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
+import { demoUsers } from "./db/schema";
+import { db } from "./db";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
@@ -13,6 +15,38 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+//Test DB connection
+app.post("/db-test", async (_req: Request, res: Response) => {
+  const { name } = _req.body;
+
+  try {
+    const result = await db.insert(demoUsers).values({ name });
+    res.json({ status: "ok", data: result });
+  } catch (error) {
+    const err = error as Error;
+    console.error("DB error:", err?.message ?? err);
+    res.status(500).json({
+      status: "error",
+      message: "Database operation failed",
+      error: err?.message ?? String(error),
+    });
+  }
+});
+
+app.get("/db-test", async (_req: Request, res: Response) => {
+  try {
+    const result = await db.select().from(demoUsers);
+    res.json({ status: "ok", data: result });
+  } catch (error) {
+    const err = error as Error;
+    console.error("DB error:", err?.message ?? err);
+    res.status(500).json({
+      status: "error",
+      message: "Database operation failed",
+      error: err?.message ?? String(error),
+    });
+  }
+});
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });
 });

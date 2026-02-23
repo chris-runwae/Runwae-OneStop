@@ -26,6 +26,10 @@ const TripList: React.FC<TripListProps> = ({ trips, loading, onRefresh }) => {
     []
   );
 
+  if (trips.length === 0) {
+    return <TripEmptyState />;
+  }
+
   return (
     <FlashList
       data={trips}

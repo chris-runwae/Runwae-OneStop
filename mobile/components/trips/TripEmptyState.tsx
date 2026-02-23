@@ -1,12 +1,15 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Text } from '@/components';
-import NoDataIcon from '@/components/icons/NoDataIcon';
+import { Image } from 'react-native';
 
 const TripEmptyState: React.FC = () => {
   return (
-    <View className="items-center gap-2 pt-24">
-      <NoDataIcon size={275} />
+    <View className="flex-1 flex-col items-center justify-center gap-2">
+      <Image
+        source={require('@/assets/images/no-trip-data.png')}
+        className="h-52 w-52"
+      />
       <View className="items-center gap-2 px-8">
         <Text className="text-center text-xl font-bold">
           No Planned Trips 😔

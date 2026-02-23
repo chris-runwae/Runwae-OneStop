@@ -24,6 +24,7 @@ import {
   PersonalizationSlide,
 } from '@/components/trip-creation/TripCreationSlides';
 import { DestinationSlide } from '@/components/trip-creation/DestinationSlide';
+import { TripCreatedModal } from '@/components/trip-creation/components/TripCreatedModal';
 import { tripCreationData } from '@/components/trip-creation/tripCreationData';
 import { Colors, COLORS } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -63,6 +64,8 @@ export default function TripCreationScreen() {
     description: '',
     headerImage: null,
   });
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const currentSlide = tripCreationData[currentStep];
 
@@ -122,7 +125,6 @@ export default function TripCreationScreen() {
     slideAnimation.value = 0;
 
     if (currentStep === totalSteps - 1) {
-      // Handle trip creation/save
       handleSaveTrip();
     } else {
       setCurrentStep(currentStep + 1);
@@ -150,23 +152,46 @@ export default function TripCreationScreen() {
   };
 
   const handleSaveTrip = async () => {
-    // TODO: Implement actual trip saving logic
-    await createTrip({
-      user_id: user?.id,
-      start_date: tripData.startDate,
-      end_date: tripData.endDate,
-      description: tripData.description,
-      title: tripData.name,
-      cover_image_url:
-        tripData.headerImage ??
-        defaultCoverImages[
-          Math.floor(Math.random() * defaultCoverImages.length)
-        ],
-      destination: tripData.destination,
-      place: tripData.place,
-    });
+    try {
+      // TODO: Implement actual trip saving logic
+      await createTrip({
+        user_id: user?.id,
+        start_date: tripData.startDate,
+        end_date: tripData.endDate,
+        description: tripData.description,
+        title: tripData.name,
+        cover_image_url:
+          tripData.headerImage ??
+          defaultCoverImages[
+            Math.floor(Math.random() * defaultCoverImages.length)
+          ],
+        destination: tripData.destination,
+        place: tripData.place,
+      });
 
-    // Navigate back to trips screen
+      // Show success modal instead of navigating immediately
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('Error creating trip:', error);
+      // Handle error - maybe show an alert
+    }
+  };
+
+  const handleViewItinerary = () => {
+    setShowSuccessModal(false);
+    // Navigate to trips screen or specific trip details
+    router.replace('/(tabs)/trips/index' as RelativePathString);
+  };
+
+  const handleShareDetails = () => {
+    setShowSuccessModal(false);
+    // TODO: Implement share functionality
+    console.log('Share trip details');
+  };
+
+  const handleCloseModal = () => {
+    setShowSuccessModal(false);
+    // Navigate to trips screen
     router.replace('/(tabs)/trips/index' as RelativePathString);
   };
 
@@ -242,7 +267,7 @@ export default function TripCreationScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: iskeyboardVisible ? 10 : 100,
+            paddingBottom: 40,
           }}>
           {/* <Spacer size={16} vertical /> */}
           {/* Progress Bar */}
@@ -300,6 +325,16 @@ export default function TripCreationScreen() {
           </View>
         </ScrollView>
       </ScreenContainer>
+
+      {/* Trip Created Success Modal */}
+      <TripCreatedModal
+        visible={showSuccessModal}
+        destination={tripData.destination || 'your destination'}
+        onClose={handleCloseModal}
+        onViewItinerary={handleViewItinerary}
+        onShareDetails={handleShareDetails}
+        isDarkMode={isDarkMode}
+      />
     </KeyboardAvoidingView>
   );
 }

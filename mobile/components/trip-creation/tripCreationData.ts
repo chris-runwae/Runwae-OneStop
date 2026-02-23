@@ -9,13 +9,13 @@ export const tripCreationData = [
   {
     id: 'dates',
     type: 'dates',
-    title: 'Lock in the dates 📅',
+    title: 'Lock in the \ndates 📅',
     subtitle: 'Please Select your trip dates',
   },
   {
     id: 'personalization',
     type: 'personalization',
-    title: 'Give your trip some personality ✨',
+    title: 'Give your trip some \npersonality ✨',
     subtitle: "Personalise your trip; it's all in the details",
   },
 ];

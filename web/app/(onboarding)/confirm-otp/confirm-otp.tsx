@@ -8,9 +8,12 @@ import {
 } from "@/components/ui/input-otp";
 import { COUNTDOWN_KEY, useCountdown } from "@/hooks/use-countdown";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function ConfirmOTP() {
+  const router = useRouter();
   const [countdownKey, setCountdownKey] = useState(0);
   const [otp, setOtp] = useState("");
   const timer = useCountdown(COUNTDOWN_KEY, countdownKey);
@@ -24,11 +27,18 @@ export default function ConfirmOTP() {
 
   return (
     <div className="mx-auto w-full text-muted-foreground">
-      <div className="w-4/5">
-        <h1 className="text-2xl tracking-tight text-foreground text-center font-bricolage font-medium">
+      <button
+        className="flex items-center gap-2 mbe-28"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        Back
+      </button>
+      <div className="w-4/5 flex flex-col items-center">
+        <h1 className="text-3xl tracking-tight text-foreground text-center font-bricolage font-medium">
           Confirm OTP
         </h1>
-        <p className="mt-1.5 text-sm text-center">
+        <p className="mt-1.5 text-sm text-center mb-20">
           Enter the verification code sent to your email
         </p>
 
@@ -37,14 +47,14 @@ export default function ConfirmOTP() {
           maxLength={6}
           value={otp}
           onChange={setOtp}
-          containerClassName="mt-12 w-full"
+          containerClassName="mt-12 w-full justify-center"
         >
-          <InputOTPGroup className="w-full gap-2">
+          <InputOTPGroup className="gap-2">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <InputOTPSlot
                 key={i}
                 index={i}
-                className="h-16 w-auto flex-1 max-w-18 bg-white"
+                className="h-16 w-16 flex-1 max-w-18 bg-white"
               />
             ))}
           </InputOTPGroup>
@@ -54,7 +64,7 @@ export default function ConfirmOTP() {
           Didn’t get any code?
           {hasMoreTime ? " Resend in " : ""}
           <span className="text-primary font-medium">
-            {hasMoreTime ? timer : "Resend"}
+            {hasMoreTime ? timer : " Resend"}
           </span>
         </p>
 

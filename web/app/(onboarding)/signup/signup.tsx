@@ -10,6 +10,11 @@ import Link from "next/link";
 export default function SignUp() {
   return (
     <div className="mx-auto w-full text-muted-foreground">
+      <img
+        src="/logo-dark.png"
+        alt="Runwae Logo"
+        className="lg:w-7 lg:h-10 w-5 h-7 mx-auto my-4 "
+      />
       <h1 className="text-2xl tracking-tight text-foreground text-center font-bricolage font-medium">
         Create an Account
       </h1>

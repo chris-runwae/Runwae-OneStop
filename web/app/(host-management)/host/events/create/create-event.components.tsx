@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, List } from "lucide-react";
 import * as React from "react";
 
 export interface SelectOption {
@@ -96,14 +96,7 @@ export function ThemeSelector({ themes, value, onChange }: ThemeSelectorProps) {
             aria-pressed={isSelected}
             aria-label={`Select ${theme.name}`}
           >
-            <svg
-              className="size-12 text-primary/30"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden
-            >
-              <path d="M2 12h4v-2H2v2zm0-4h4V6H2v2zm0 8h4v-2H2v2zm6 0h14v-2H8v2zm0-4h14v-2H8v2zm0-6v2h14V6H8z" />
-            </svg>
+            <List className="size-12 text-primary/30" aria-hidden />
           </button>
         );
       })}

@@ -29,9 +29,9 @@ export function EventMetrics({
   trend,
 }: EventMetricsProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6 sm:py-4">
         <span className="text-sm font-medium tracking-tight text-body">
           {label}
         </span>
@@ -60,8 +60,8 @@ export function EventMetrics({
       </div>
 
       {/* Body */}
-      <div className="px-6 pt-5 pb-4">
-        <p className="font-display text-[32px] font-semibold leading-10 text-black">
+      <div className="px-4 pt-4 pb-3 sm:px-6 sm:pt-5 sm:pb-4">
+        <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-[32px] sm:leading-10">
           {value}
         </p>
         <div className="mt-3 flex items-center gap-1">

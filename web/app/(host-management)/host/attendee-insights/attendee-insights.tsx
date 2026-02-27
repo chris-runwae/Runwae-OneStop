@@ -129,7 +129,7 @@ const eventOptions = [
 
 export default function AttendeeInsights() {
   return (
-    <div className="flex flex-col gap-6 p-6 sm:p-8 lg:p-10">
+    <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8 xl:p-10">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -165,20 +165,20 @@ export default function AttendeeInsights() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         {kpiCards.map((card) => (
           <EventMetrics key={card.label} {...card} />
         ))}
       </div>
 
       {/* Attendee Location - Map */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="border-b border-border px-6 py-4 lg:px-10">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
+        <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
           <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
             Attendee Location
           </h2>
         </div>
-        <div className="relative w-full overflow-hidden bg-muted/50 lg:aspect-[2.2/1] min-h-[280px]">
+        <div className="relative w-full overflow-hidden bg-muted/50 min-h-[220px] sm:min-h-[280px] lg:aspect-[2.2/1]">
           <svg
             viewBox="0 0 1000 500"
             className="absolute inset-0 h-full w-full opacity-60"
@@ -210,18 +210,18 @@ export default function AttendeeInsights() {
       </div>
 
       {/* Top Countries + Top Itineraries */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
         {/* Top Countries - horizontal bar chart */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          <div className="border-b border-border px-6 py-4 lg:px-10">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
+          <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
             <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
               Top Countries
             </h2>
           </div>
-          <div className="px-6 py-6 lg:px-10">
+          <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
             <ReactApexChart
               type="bar"
-              height={280}
+              height={260}
               options={topCountriesChartOptions}
               series={[{ name: "Attendees", data: topCountries.map((c) => c.value) }]}
             />
@@ -229,16 +229,16 @@ export default function AttendeeInsights() {
         </div>
 
         {/* Top Itineraries - donut chart */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          <div className="border-b border-border px-6 py-4 lg:px-10">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
+          <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
             <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
               Top Itineraries
             </h2>
           </div>
-          <div className="px-6 py-8 lg:px-10">
+          <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <ReactApexChart
               type="donut"
-              height={320}
+              height={280}
               options={topItinerariesChartOptions}
               series={topItineraries.map((i) => i.percent)}
             />

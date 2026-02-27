@@ -7,39 +7,44 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import {
   BanknoteIcon,
   CalendarIcon,
-  ChevronDownIcon,
   DownloadIcon,
   MoreHorizontalIcon,
-  SearchIcon,
   WalletIcon,
 } from "lucide-react";
+import { FilterDropdown } from "../components/filter-dropdown";
+import { SearchInput } from "../components/search-input";
 
-const summaryCards = [
-  {
-    label: "Available Revenue",
-    value: "$6,960",
-    subtitle: "Ready for payout",
-  },
-  {
-    label: "RWX Balance",
-    value: "1,456 RWX",
-    subtitle: "Earned via bookings",
-  },
-  {
-    label: "Pending payouts",
-    value: "$370",
-    subtitle: "In processing",
-  },
+const SUMMARY_CARDS = [
+  { label: "Available Revenue", value: "$6,960", subtitle: "Ready for payout" },
+  { label: "RWX Balance", value: "1,456 RWX", subtitle: "Earned via bookings" },
+  { label: "Pending payouts", value: "$370", subtitle: "In processing" },
 ];
 
-const periodOptions = [
+const PERIOD_OPTIONS = [
   { value: "this-month", label: "This month" },
   { value: "last-month", label: "Last month" },
   { value: "last-3-months", label: "Last 3 months" },
+];
+
+const EVENT_OPTIONS = [
+  { value: "all", label: "All Events" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "past", label: "Past Events" },
+];
+
+const DATE_OPTIONS = [
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Status" },
+  { value: "pending", label: "Pending" },
+  { value: "paid", label: "Paid" },
 ];
 
 type PayoutType = "Fiat" | "RWX";
@@ -110,45 +115,34 @@ function PayoutMethodCell({ method }: { method: PayoutMethod }) {
   );
 }
 
+const tableHeader =
+  "px-4 py-3 font-display font-semibold text-heading sm:px-6 lg:px-10 lg:py-4";
+const tableCell =
+  "px-4 py-3 font-medium text-body sm:px-6 lg:px-10 lg:py-4";
+
 export default function Payouts() {
   return (
-    <div className="flex flex-col gap-6 p-6 sm:p-8 lg:p-10">
+    <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8 xl:p-10">
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {summaryCards.map((card) => (
+        {SUMMARY_CARDS.map((card) => (
           <div
             key={card.label}
-            className="overflow-hidden rounded-2xl border border-border bg-surface"
+            className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl"
           >
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6 sm:py-4">
               <span className="text-sm font-medium tracking-tight text-body">
                 {card.label}
               </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex cursor-pointer items-center gap-1 rounded bg-badge px-2 py-1.5 text-xs font-medium tracking-tight text-body transition-colors hover:bg-badge/80 focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    This month
-                    <ChevronDownIcon className="size-3.5" aria-hidden />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[140px]">
-                  {periodOptions.map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onSelect={() => {}}
-                      className="cursor-pointer"
-                    >
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <FilterDropdown
+                label="This month"
+                options={PERIOD_OPTIONS}
+                minWidth="min-w-[140px]"
+                triggerClassName="flex cursor-pointer items-center gap-1 rounded bg-badge px-2 py-1.5 text-xs font-medium tracking-tight text-body transition-colors hover:bg-badge/80 focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
-            <div className="px-6 py-5">
-              <p className="font-display text-[32px] font-semibold leading-10 text-black">
+            <div className="px-4 py-4 sm:px-6 sm:py-5">
+              <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-[32px] sm:leading-10">
                 {card.value}
               </p>
               <p className="mt-1 text-sm font-medium tracking-tight text-muted-foreground">
@@ -160,9 +154,9 @@ export default function Payouts() {
       </div>
 
       {/* Payout History */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="border-b border-border px-6 py-6 lg:px-10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
+        <div className="border-b border-border px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+          <div className="flex flex-col gap-4">
             <div>
               <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
                 Payout History
@@ -171,124 +165,43 @@ export default function Payouts() {
                 Each row represents a booking that you earned a commission.
               </p>
             </div>
-            <Button variant="primary" size="default" className="shrink-0">
-              Withdraw Funds
-            </Button>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-xs">
-              <SearchIcon
-                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden
-              />
-              <Input
-                type="search"
+            <div className="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+              <SearchInput
                 placeholder="Search events"
-                className="pl-9"
                 aria-label="Search events"
+                className="w-full sm:w-auto"
               />
+              <FilterDropdown label="All Events" options={EVENT_OPTIONS} />
+              <FilterDropdown
+                label="Last 30 days"
+                options={DATE_OPTIONS}
+                icon={CalendarIcon}
+              />
+              <FilterDropdown label="All Status" options={STATUS_OPTIONS} />
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium tracking-tight text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <DownloadIcon className="size-4" aria-hidden />
+                Download CSV
+              </button>
+              <Button variant="primary" size="default" className="ml-auto w-full shrink-0 sm:w-auto">
+                Withdraw Funds
+              </Button>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-sm font-medium tracking-tight text-body transition-colors hover:bg-border-disabled/80 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  All Events
-                  <ChevronDownIcon className="size-4" aria-hidden />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[160px]">
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  All Events
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Upcoming
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Past Events
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-sm font-medium tracking-tight text-body transition-colors hover:bg-border-disabled/80 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <CalendarIcon className="size-4" aria-hidden />
-                  Last 30 days
-                  <ChevronDownIcon className="size-4" aria-hidden />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[160px]">
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Last 7 days
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Last 30 days
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Last 90 days
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-sm font-medium tracking-tight text-body transition-colors hover:bg-border-disabled/80 focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  All Status
-                  <ChevronDownIcon className="size-4" aria-hidden />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[140px]">
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  All Status
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Pending
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-                  Paid
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <button
-              type="button"
-              className="ml-auto flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium tracking-tight text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <DownloadIcon className="size-4" aria-hidden />
-              Download CSV
-            </button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
           <table className="w-full min-w-[700px] text-left text-sm">
             <thead>
               <tr className="border-b border-border bg-badge/50">
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Payout ID
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Date
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Payout Type
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Payout method
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Amount
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Status
-                </th>
-                <th className="px-6 py-4 font-display font-semibold text-heading lg:px-10">
-                  Actions
-                </th>
+                <th className={tableHeader}>Payout ID</th>
+                <th className={tableHeader}>Date</th>
+                <th className={tableHeader}>Payout Type</th>
+                <th className={tableHeader}>Payout method</th>
+                <th className={tableHeader}>Amount</th>
+                <th className={tableHeader}>Status</th>
+                <th className={tableHeader}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -297,27 +210,21 @@ export default function Payouts() {
                   key={i}
                   className="border-b border-border transition-colors hover:bg-badge/30"
                 >
-                  <td className="px-6 py-4 font-medium text-body lg:px-10">
-                    {row.id}
-                  </td>
-                  <td className="px-6 py-4 font-medium text-body lg:px-10">
-                    {row.date}
-                  </td>
-                  <td className="px-6 py-4 lg:px-10">
+                  <td className={tableCell}>{row.id}</td>
+                  <td className={tableCell}>{row.date}</td>
+                  <td className={tableCell}>
                     <PayoutTypeCell type={row.type} />
                   </td>
-                  <td className="px-6 py-4 lg:px-10">
+                  <td className={tableCell}>
                     <PayoutMethodCell method={row.method} />
                   </td>
-                  <td className="px-6 py-4 font-medium text-body lg:px-10">
-                    {row.amount}
-                  </td>
-                  <td className="px-6 py-4 lg:px-10">
+                  <td className={tableCell}>{row.amount}</td>
+                  <td className={tableCell}>
                     <span className="inline-flex rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 lg:px-10">
+                  <td className={tableCell}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button

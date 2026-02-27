@@ -35,9 +35,9 @@ const Y_TICKS = [0, 5000, 10000, 15000, 20000, 25000, 30000];
 
 export function EventPerformanceChart() {
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface">
+    <div className="overflow-hidden rounded-xl bg-surface sm:rounded-2xl">
       {/* Header */}
-      <div className="flex flex-col gap-4 border-b border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between lg:px-10">
+      <div className="flex flex-col gap-4 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5 lg:px-8">
         <div className="min-w-0 flex-1">
           <span className="block text-lg font-medium tracking-tight text-body sm:text-xl">
             Event Performance
@@ -72,7 +72,7 @@ export function EventPerformanceChart() {
       </div>
 
       {/* Chart */}
-      <div className="flex overflow-x-auto px-6 pt-10 pb-8 lg:px-10">
+      <div className="flex overflow-x-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
         {/* Y-axis */}
         <div className="flex w-14 shrink-0 flex-col-reverse justify-between pb-8 text-right text-sm font-medium text-black">
           {Y_TICKS.map((tick) => (

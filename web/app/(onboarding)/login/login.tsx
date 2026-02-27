@@ -66,6 +66,5 @@ export default function Login() {
     </div>
   );
 }
-
 // LOGS
 // we don't use emails in the signup screen

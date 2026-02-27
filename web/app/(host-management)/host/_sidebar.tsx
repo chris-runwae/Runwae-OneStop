@@ -1,11 +1,13 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BaggageClaimIcon,
   Calendar1Icon,
   CardSimIcon,
+  ClipboardListIcon,
   HomeIcon,
   LogOutIcon,
   SettingsIcon,
@@ -24,13 +26,18 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: "/overview", label: "Overview", icon: HomeIcon },
-  { to: "/events", label: "My Events", icon: Calendar1Icon },
-  { to: "/earnings", label: "Earnings", icon: BaggageClaimIcon },
-  { to: "/payouts", label: "Payouts", icon: CardSimIcon },
-  { to: "/attendee-insights", label: "Attendee Insights", icon: UserIcon },
-  { to: "/team-access", label: "Team Access", icon: User2Icon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: ROUTES.host.overview, label: "Overview", icon: HomeIcon },
+  { to: ROUTES.host.events, label: "My Events", icon: Calendar1Icon },
+  { to: ROUTES.host.bookings, label: "Bookings", icon: ClipboardListIcon },
+  { to: ROUTES.host.earnings, label: "Earnings", icon: BaggageClaimIcon },
+  { to: ROUTES.host.payouts, label: "Payouts", icon: CardSimIcon },
+  {
+    to: ROUTES.host.attendeeInsights,
+    label: "Attendee Insights",
+    icon: UserIcon,
+  },
+  { to: ROUTES.host.teamAccess, label: "Team Access", icon: User2Icon },
+  { to: ROUTES.host.settings, label: "Settings", icon: SettingsIcon },
 ];
 
 export default function Sidebar() {
@@ -62,7 +69,7 @@ export default function Sidebar() {
                   href={item.to}
                   className={cn(
                     "flex items-center gap-2 rounded-xl px-6 py-3.5 font-display text-base transition-colors hover:bg-border-light",
-                    isActive && "bg-border-light font-medium"
+                    isActive && "bg-border-light font-medium",
                   )}
                 >
                   <item.icon width={20} height={20} aria-hidden />

@@ -13,7 +13,7 @@ const OnboardingLayout = ({ children }: { children: React.ReactNode }) => {
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="flex w-full flex-col px-8 lg:pr-6  pt-60 pb-12 lg:px-16 lg:pl-[100px] lg:w-1/2">
+        <div className="flex w-full flex-col px-8 lg:pr-6  pt-32 pb-12 lg:px-16 lg:pl-[100px] lg:w-1/2">
           {children}
         </div>
         <Toaster

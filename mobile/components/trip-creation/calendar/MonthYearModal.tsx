@@ -75,12 +75,10 @@ export const MonthYearModal: React.FC<MonthYearModalProps> = ({
       transparent={true}
       animationType="slide"
       onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        className="flex-1 justify-end bg-black/50 p-3 pb-[20px]">
+      <Pressable onPress={onClose} className="flex-1 justify-end bg-black/50">
         <Animated.View
           style={{ transform: [{ translateY }] }}
-          className="rounded-[35px] bg-white p-5 dark:bg-[#1a1a1a]"
+          className="rounded-t-[16px] bg-white p-5 dark:bg-[#1a1a1a]"
           {...panResponder.panHandlers}>
           <Pressable className="mx-auto mb-5 h-1 w-12 rounded-full bg-gray-100 dark:bg-gray-400" />
 

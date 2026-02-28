@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
 import { Dimensions } from 'react-native';
+import { format } from 'date-fns';
 
 import { COLORS } from '@/constants';
 import { useCalendarTheme } from '@/hooks/useCalendarTheme';
@@ -54,6 +55,13 @@ export const DateSlide: React.FC<DateSlideProps> = React.memo(
       textColor: colors.textColors.default,
     });
 
+    const formattedStartDate = tripData.startDate
+      ? format(new Date(tripData.startDate), 'dd MMM')
+      : '';
+    const formattedEndDate = tripData.endDate
+      ? format(new Date(tripData.endDate), 'dd MMM')
+      : '';
+
     return (
       <View style={{ width }} className="flex-1 px-6 pt-6">
         <Animated.View style={[slideAnimStyle]} className="flex-1">
@@ -63,13 +71,27 @@ export const DateSlide: React.FC<DateSlideProps> = React.memo(
             isDarkMode={isDarkMode}
           />
 
-          <CalendarContainer
-            theme={calendarTheme}
-            backgroundColor={'transparent'}
-            onDateRangeChange={handleDateRangeChange}
-          />
+          <View className="flex-1 justify-between">
+            <CalendarContainer
+              theme={calendarTheme}
+              backgroundColor={'transparent'}
+              onDateRangeChange={handleDateRangeChange}
+            />
 
-          <Spacer vertical size={48} />
+            {formattedStartDate && formattedEndDate && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: colors.primaryColors.default,
+                  textAlign: 'center',
+                  fontWeight: '500',
+                }}>
+                {formattedStartDate} → {formattedEndDate}
+              </Text>
+            )}
+          </View>
+
+          <Spacer vertical size={10} />
         </Animated.View>
       </View>
     );

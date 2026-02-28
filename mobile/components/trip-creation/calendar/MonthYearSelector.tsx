@@ -33,7 +33,7 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
         <Text className="text-base font-semibold text-black dark:text-white">
           {getCurrentMonth(currentMonthId)}
         </Text>
-        <ChevronDown size={16} color={theme?.isDarkMode ? '#fff' : '#000'} />
+        <ChevronDown size={16} color={theme?.isDarkMode ? '#000' : '#fff'} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -42,7 +42,7 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
         <Text className="text-base font-semibold text-black dark:text-white">
           {getCurrentYear(currentMonthId)}
         </Text>
-        <ChevronDown size={16} color={theme?.isDarkMode ? '#fff' : '#000'} />
+        <ChevronDown size={16} color={theme?.isDarkMode ? '#000' : '#fff'} />
       </TouchableOpacity>
     </View>
   );

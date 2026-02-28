@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { TripAttendee } from '@/types/trips.types';
-import { appColors, textStyles } from '@/utils/styles';
+import { GroupMember } from '@/hooks/useTripActions';
+import { Colors, textStyles } from '@/constants';
 
 // define gradient tuples
 const GRADIENTS = [
@@ -51,15 +51,15 @@ if (
 }
 
 type AvatarGroupProps = {
-  attendees: TripAttendee[];
+  members: GroupMember[];
   maxVisible?: number;
   size?: number;
   overlap?: number;
-  onPressAvatar?: (attendee: TripAttendee) => void;
+  onPressAvatar?: (attendee: GroupMember) => void;
 };
 
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({
-  attendees,
+  members,
   maxVisible = 4,
   size = 40,
   overlap = 12,
@@ -67,23 +67,27 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
 }) => {
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, [attendees]);
+  }, [members]);
 
-  const visible = attendees.slice(0, maxVisible);
-  const remaining = attendees.length - maxVisible;
+  const visible = members.slice(0, maxVisible);
+  const remaining = members.length - maxVisible;
+
+  const textSize = {
+    fontSize: size * 0.5,
+  };
 
   return (
     <View style={[styles.container, { height: size }]}>
       {visible.map((user, index) => {
-        const initials = user.name
-          ? user.name
+        const initials = user.profiles.name
+          ? user.profiles.name
               .split(' ')
-              .map((n) => n[0])
+              .map((n: string) => n[0])
               .join('')
               .toUpperCase()
           : '?';
 
-        const gradientColors = getRandomGradient(user.name || user.user_id);
+        const gradientColors = getRandomGradient(user.profiles.name || user.user_id);
 
         return (
           <Pressable
@@ -98,9 +102,9 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
                 borderRadius: size / 2,
               },
             ]}>
-            {user.profile_photo_url ? (
+            {user.profiles.profile_image_url ? (
               <Image
-                source={{ uri: user.profile_photo_url }}
+                source={{ uri: user.profiles.profile_image_url }}
                 style={{ width: size, height: size, borderRadius: size / 2 }}
               />
             ) : (
@@ -115,7 +119,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                <Text style={styles.textStyle}>{initials}</Text>
+                <Text style={[styles.textStyle, textSize]}>{initials}</Text>
               </LinearGradient>
             )}
           </Pressable>
@@ -149,14 +153,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarWrapper: {
-    position: 'absolute',
+    // position: 'absolute',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#fff',
   },
   textStyle: {
-    fontWeight: 'bold',
-    ...textStyles.regular_12,
-    color: appColors.white,
+    ...textStyles.textBody12,
+    color: Colors.light.background,
   },
 });

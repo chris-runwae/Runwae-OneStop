@@ -1,792 +1,208 @@
-import {
-  Dimensions,
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-} from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
-import { ImageBackground } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  interpolate,
-  useAnimatedRef,
-  useAnimatedStyle,
-  useScrollOffset,
-} from 'react-native-reanimated';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useUser } from '@clerk/clerk-expo';
-import * as Clipboard from 'expo-clipboard';
-import Share, { ShareOptions } from 'react-native-share';
-import { Asset } from 'expo-asset';
-import {
-  DateRange,
-  HomeScreenSkeleton,
-  MenuItem,
-  SavedItemsSection,
-  Spacer,
-  Text,
-} from '@/components';
-import { TripDiscoverySection } from '@/components/TripDiscoverySection';
-import { AvatarGroup } from '@/components/ui/AvatarGroup';
-import { HorizontalTabs } from '@/components/ui/HorizontalTabs';
-import { useHotels, useTrips } from '@/hooks';
-import { Trip, TripAttendee } from '@/types/trips.types';
-import { ArrowLeftIcon, ForwardIcon, Menu } from 'lucide-react-native';
-import { Colors } from '@/constants/theme';
-import { textStyles } from '@/utils/styles';
-import { TripItinerary } from '@/components/containers/TripItinerary';
+import { View, StyleSheet, Alert, Pressable, TextStyle } from 'react-native';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SavedItem } from '@/types/generic.types';
-import ActivityTab from '../activity/ActivityTab';
+import { ImageBackground } from 'expo-image';
 
-type TripDetailsScreenProps = {
-  tripId: string;
+import { AvatarGroup, Spacer, Text } from '@/components';
+import { useTrips } from '@/context/TripsContext';
+import { useAuth } from '@/context/AuthContext';
+import { Colors, textStyles } from '@/constants';
+
+type Segment = "DISCOVER" | "SAVED" | "ITINERARY" | "ACTIVITY";
+
+const SEGMENTS: Segment[] = ["DISCOVER", "SAVED", "ITINERARY", "ACTIVITY"];
+
+const EMPTY_CONTENT: Record<Segment, { header: string; subtext: string }> = {
+  DISCOVER: {
+    header: "Nothing to discover yet!",
+    subtext: "Add a destination to get started.",
+  },
+  SAVED: {
+    header: "Nothing saved yet!",
+    subtext: "Save destinations to your trip.",
+  },
+  ITINERARY: {
+    header: "Nothing in your itinerary yet!",
+    subtext: "Add activities to your itinerary.",
+  },
+  ACTIVITY: {
+    header: "Nothing in your activity yet!",
+    subtext: "Add activities to your trip.",
+  },
 };
 
-const TripDetailsScreen = ({ tripId }: TripDetailsScreenProps) => {
-  const { fetchHotelsByPlaceId, tripsHotels } = useHotels();
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-  const { user } = useUser();
-  const {
-    fetchTripById,
-    fetchTripAttendees,
-    leaveTrip,
-    removeSavedItem,
-    trips,
-    addToItinerary,
-  } = useTrips();
+export default function TripDetailScreen() {
+  const { tripId } = useLocalSearchParams<{ tripId: string }>();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const scrollOffset = useScrollOffset(scrollRef);
-
-  const HEADER_HEIGHT = 350;
-  const TRANSITION_START = 100;
-  const TRANSITION_END = 250;
-  const TRANSITION_RANGE = TRANSITION_END - TRANSITION_START;
-
-  const hexToRgba = (hex: string, opacity: number): string => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return hex;
-    const r = parseInt(result[1], 16);
-    const g = parseInt(result[2], 16);
-    const b = parseInt(result[3], 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-
-  const [loading, setLoading] = useState(true);
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [attendees, setAttendees] = useState<TripAttendee[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('discover');
-
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const saveToItineraryRef = useRef<BottomSheet>(null);
-  const [selectedItem, setSelectedItem] = useState<SavedItem | null>(null);
-
-  // Refs to track if we've already fetched data
-  const hasFetchedTripRef = useRef(false);
-  const hasFetchedAttendeesRef = useRef(false);
-  const hasFetchedHotelsRef = useRef(false);
-  const currentTripIdRef = useRef<string | null>(null);
-
-  function openSaveToItinerarySheet(value: any) {
-    saveToItineraryRef.current?.expand();
-    setSelectedItem(value);
-  }
-
-  // Fetch trip only once when tripId changes
+  const { user } = useAuth();
+  const { activeTrip, loadTrip, deleteTrip, leaveTrip, isLoading } = useTrips();
+  const [selectedSegment, setSelectedSegment] = useState<Segment>('DISCOVER');
   useEffect(() => {
-    // Reset flags if tripId changes
-    if (currentTripIdRef.current !== tripId) {
-      hasFetchedTripRef.current = false;
-      hasFetchedAttendeesRef.current = false;
-      hasFetchedHotelsRef.current = false;
-      currentTripIdRef.current = tripId;
-    }
+    loadTrip(tripId);
+  }, [tripId, loadTrip]);
 
-    // Skip if already fetched
-    if (hasFetchedTripRef.current) {
-      return;
-    }
+  // const isOwner = activeTrip?.owner_id === user?.id;
 
-    let isMounted = true;
-    hasFetchedTripRef.current = true;
+  // const handleDelete = () => {
+  //   Alert.alert('Delete Trip', 'This will permanently delete the trip for everyone.', [
+  //     { text: 'Cancel', style: 'cancel' },
+  //     {
+  //       text: 'Delete',
+  //       style: 'destructive',
+  //       onPress: async () => {
+  //         await deleteTrip(tripId);
+  //         router.back();
+  //       },
+  //     },
+  //   ]);
+  // };
 
-    const fetchTrip = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchTripById(tripId);
-        if (!isMounted) return;
+  // const handleLeave = () => {
+  //   Alert.alert('Leave Trip', 'You will lose access to this trip.', [
+  //     { text: 'Cancel', style: 'cancel' },
+  //     {
+  //       text: 'Leave',
+  //       style: 'destructive',
+  //       onPress: async () => {
+  //         await leaveTrip(tripId);
+  //         router.back();
+  //       },
+  //     },
+  //   ]);
+  // };
 
-        if (result && !Array.isArray(result)) {
-          setTrip(result as Trip);
-        } else if (Array.isArray(result)) {
-          setTrip(result[0] as Trip);
-        }
-      } catch (error) {
-        console.log('Error fetching trip: ', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchTrip();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [tripId]); // Only depend on tripId, NOT fetchTripById
-
-  // Fetch attendees only once when trip.id is available
-  useEffect(() => {
-    if (!trip?.id || hasFetchedAttendeesRef.current) {
-      return;
-    }
-
-    let isMounted = true;
-    hasFetchedAttendeesRef.current = true;
-
-    const fetchAttendees = async () => {
-      try {
-        const result = await fetchTripAttendees(trip.id);
-        if (!isMounted) return;
-
-        if (result) {
-          setAttendees(result as TripAttendee[]);
-        }
-      } catch (error) {
-        console.log('Error fetching attendees: ', error);
-      }
-    };
-
-    fetchAttendees();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [trip?.id]); // Only depend on trip?.id
-
-  // Fetch hotels only once when placeId is available
-  useEffect(() => {
-    const placeId = trip?.place?.placeId;
-
-    if (!placeId || hasFetchedHotelsRef.current) {
-      return;
-    }
-
-    hasFetchedHotelsRef.current = true;
-    fetchHotelsByPlaceId(placeId);
-  }, [trip?.place?.placeId]); // Only depend on placeId
-
-  const join_code = trip?.join_code ?? '';
-
-  const largeHeaderAnimatedStyle = useAnimatedStyle(() => {
-    const scrollValue = scrollOffset.value;
-    const progress =
-      scrollValue < TRANSITION_START
-        ? 0
-        : scrollValue > TRANSITION_END
-          ? 1
-          : (scrollValue - TRANSITION_START) / TRANSITION_RANGE;
-
-    const headerHeight = interpolate(
-      progress,
-      [0, 1],
-      [HEADER_HEIGHT, 0],
-      'clamp'
-    );
-    const opacity = interpolate(
-      progress,
-      [0, 0.3, 0.7, 1],
-      [1, 0.8, 0.3, 0],
-      'clamp'
-    );
-    const translateY = interpolate(
-      progress,
-      [0, 1],
-      [0, -HEADER_HEIGHT / 2],
-      'clamp'
-    );
-
-    return {
-      height: headerHeight,
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-
-  const compactHeaderAnimatedStyle = useAnimatedStyle(() => {
-    const scrollValue = scrollOffset.value;
-    const progress =
-      scrollValue < TRANSITION_START
-        ? 0
-        : scrollValue > TRANSITION_END
-          ? 1
-          : (scrollValue - TRANSITION_START) / TRANSITION_RANGE;
-
-    const opacity = interpolate(
-      progress,
-      [0, 0.2, 0.6, 1],
-      [0, 0.6, 0.95, 1],
-      'clamp'
-    );
-    const translateY = interpolate(progress, [0, 1], [-10, 0], 'clamp');
-
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-
-  const dynamicStyles = StyleSheet.create({
-    infoContainer: {
-      borderColor: colors.borderColors.default,
-      maxWidth: 200,
-    },
-    emptyText: {
-      color: colors.textColors.subtle,
-    },
-    iconButton: {
-      backgroundColor: colors.backgroundColors.subtle,
-    },
-    iconContentContainer: {
-      top: 0 + insets.top,
-      left: 0,
-      right: 0,
-    },
-  });
-
-  const parseDestination = (destination: string | undefined) => {
-    if (!destination) return { city: '', countryCode: '' };
-
-    const parts = destination.split(',');
-    const countryCode = parts.pop()?.trim() ?? '';
-    const city = parts.join(',').trim();
-
-    return { city, countryCode };
-  };
-
-  const { city, countryCode } = parseDestination(trip?.destination);
-
-  const deepLink = `runwae://join/${tripId}/${join_code}`;
-
-  async function copyCode() {
-    await Clipboard.setStringAsync(join_code);
-  }
-
-  const handleRemoveSavedItem = async (itemId: string) => {
-    if (!trip?.id) return;
-
-    try {
-      await removeSavedItem(trip.id, itemId);
-
-      // Manually refetch trip after removing item
-      const result = await fetchTripById(tripId);
-      if (result && !Array.isArray(result)) {
-        setTrip(result as Trip);
-      } else if (Array.isArray(result)) {
-        setTrip(result[0] as Trip);
-      }
-    } catch (error) {
-      console.log('Error removing saved item: ', error);
-    }
-  };
-
-  async function shareLink() {
-    const title = 'Join my trip on Runwae!!!';
-    const message = 'Join my trip on Runwae';
-    const url = deepLink;
-    const icon = Image.resolveAssetSource(
-      require('@/assets/images/icon.png')
-    ).uri;
-
-    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
-    await asset.downloadAsync();
-
-    const iconUri = trip?.cover_image_url ?? 'https://i.pravatar.cc/150?img=1';
-
-    const options = Platform.select({
-      ios: {
-        activityItemSources: [
-          {
-            placeholderItem: {
-              type: 'url',
-              content: iconUri,
-            },
-            item: {
-              default: {
-                type: 'text',
-                content: `${message} ${url}`,
-              },
-            },
-            linkMetadata: {
-              title,
-              icon: icon,
-              image: iconUri,
-            },
-          },
-        ],
-      },
-      default: {
-        title,
-        subject: title,
-        message: `${message} ${url}`,
-      },
-    });
-
-    try {
-      await Share.open(options as ShareOptions);
-    } catch (error) {
-      console.log('Error sharing link: ', error);
-    }
-  }
-
-  const handleLeaveTrip = async () => {
-    if (!trip?.id || !user?.id) return;
-    await leaveTrip(trip.id, user.id);
-  };
-
-  const handleAddToItinerary = async (targetTripId: string) => {
-    if (!selectedItem || !user?.id) return;
-
-    try {
-      await addToItinerary(targetTripId, {
-        ...selectedItem,
-        created_by: user.id,
-      });
-    } catch (error) {
-      console.log('Error adding to itinerary: ', error);
-    } finally {
-      setSelectedItem(null);
-      saveToItineraryRef.current?.close();
-    }
-  };
-
-  if (loading) {
-    return <HomeScreenSkeleton />;
-  }
-
-  const CompactHeader = () => {
+  if (isLoading || !activeTrip) {
     return (
-      <Animated.View
-        style={[
-          styles.compactHeader,
-          compactHeaderAnimatedStyle,
-          {
-            backgroundColor: colors.backgroundColors.default,
-            paddingTop: insets.top,
-            minHeight: 44 + insets.top,
-          },
-        ]}>
-        <View style={styles.compactHeaderContent}>
-          <Pressable
-            onPress={() => router.push('/trips')}
-            style={[
-              styles.compactIconButton,
-              { backgroundColor: colors.backgroundColors.subtle },
-            ]}>
-            <ArrowLeftIcon size={20} color={colors.textColors.default} />
-          </Pressable>
-          <Text style={styles.compactTitle} numberOfLines={1}>
-            {trip?.title}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-            <Pressable
-              onPress={() => bottomSheetRef.current?.expand()}
-              style={[
-                styles.compactIconButton,
-                { backgroundColor: colors.backgroundColors.subtle },
-              ]}>
-              <ForwardIcon size={20} color={colors.textColors.default} />
-            </Pressable>
-
-            <Pressable
-              onPress={() => {}}
-              style={[
-                styles.compactIconButton,
-                { backgroundColor: colors.backgroundColors.subtle },
-              ]}>
-              <Menu size={20} color={colors.textColors.default} />
-            </Pressable>
-          </View>
-        </View>
-      </Animated.View>
+      <View style={styles.loading}>
+        <Text>Loading...</Text>
+      </View>
     );
-  };
+  }
 
-  const LargeHeader = () => {
-    return (
-      <Animated.View style={largeHeaderAnimatedStyle}>
-        <ImageBackground
-          source={{ uri: trip?.cover_image_url ?? '' }}
-          style={styles.imageBackground}
-          contentFit="cover"
-          transition={1000}>
-          <View
-            style={[
-              styles.iconContentContainer,
-              dynamicStyles.iconContentContainer,
-              { position: 'absolute' },
-            ]}>
-            <Pressable
-              onPress={() => router.push('/trips')}
-              style={[
-                styles.iconButton,
-                {
-                  backgroundColor: colors.backgroundColors.default,
-                  zIndex: 1000,
-                },
-              ]}>
-              <ArrowLeftIcon size={20} color={colors.textColors.default} />
-            </Pressable>
-            <View
-              style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-              <Pressable
-                onPress={() => bottomSheetRef.current?.expand()}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.backgroundColors.default,
-                    zIndex: 1000,
-                  },
-                ]}>
-                <ForwardIcon size={20} color={colors.textColors.default} />
-              </Pressable>
+  const details = activeTrip.trip_details;
+  
+  const getSegmentStyle = (segment: Segment): TextStyle => ({
+    ...styles.segmentedControlText,
+    color: selectedSegment === segment ? Colors.light.primary : Colors.light.text,
+    borderBottomWidth: selectedSegment === segment ? 2 : 0,
+    borderBottomColor:
+      selectedSegment === segment ? Colors.light.primary : Colors.light.borderDefault,
+  });
 
-              <Pressable
-                onPress={() => {}}
-                style={[
-                  styles.iconButton,
-                  {
-                    backgroundColor: colors.backgroundColors.default,
-                    zIndex: 1000,
-                  },
-                ]}>
-                <Menu size={20} color={colors.textColors.default} />
-              </Pressable>
-            </View>
-          </View>
-          <LinearGradient
-            colors={[
-              'transparent',
-              hexToRgba(colors.backgroundColors.default, 0),
-              hexToRgba(colors.backgroundColors.default, 0.25),
-              hexToRgba(colors.backgroundColors.default, 0.6),
-              hexToRgba(colors.backgroundColors.default, 0.85),
-              colors.backgroundColors.default,
-            ]}
-            locations={[0, 0.2, 0.5, 0.75, 0.9, 1]}
-            style={styles.gradientOverlay}>
-            <View style={styles.gradientContent}>
-              <Spacer size={16} vertical />
-              <Text style={styles.title}>{trip?.title}</Text>
-              <Spacer size={8} vertical />
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-      </Animated.View>
-    );
-  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
-      <CompactHeader />
-      <Animated.ScrollView
-        ref={scrollRef}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}>
-        <LargeHeader />
-
-        <View
-          style={[
-            styles.contentContainer,
-            { backgroundColor: colors.backgroundColors.default },
-          ]}>
-          <Spacer size={16} vertical />
-          <View style={styles.locationTimeSpan}>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <Text style={styles.infoText} numberOfLines={1}>
-                📍 {trip?.destination}
-              </Text>
-            </View>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <DateRange
-                startDate={trip?.start_date ?? ''}
-                endDate={trip?.end_date ?? ''}
-                emoji={true}
-                color={colors.textColors.default}
-              />
-            </View>
-          </View>
-
-          {trip?.description && (
-            <>
-              <Spacer size={14} vertical />
-              <Text style={styles.description}>{trip?.description}</Text>
-            </>
-          )}
-
-          <Spacer size={14} vertical />
-          <AvatarGroup
-            attendees={attendees}
-            maxVisible={4}
-            size={30}
-            overlap={12}
-          />
-          <Spacer size={32} vertical />
-
-          <HorizontalTabs
-            tabs={[
-              { id: 'discover', label: 'Discover' },
-              { id: 'saved', label: 'Saved' },
-              { id: 'itinerary', label: 'Itinerary' },
-              { id: 'activity', label: 'Activity' },
-            ]}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-          <Spacer size={24} vertical />
-
-          {activeTab === 'itinerary' && (
-            <>
-              <TripItinerary tripId={trip?.id as string} trip={trip as Trip} />
-              <Spacer size={14} vertical />
-            </>
-          )}
-          {activeTab === 'discover' && (
-            <TripDiscoverySection
-              tripId={trip?.id as string}
-              countryCode={countryCode as string}
-              city={city as string}
-              tripsHotels={tripsHotels}
-              placeDisplayName={trip?.place?.displayName}
-              startDate={trip?.start_date || undefined}
-              endDate={trip?.end_date || undefined}
-            />
-          )}
-          {activeTab === 'saved' && (
-            <SavedItemsSection
-              tripId={trip?.id as string}
-              savedItems={trip?.saved_items as SavedItem[]}
-              handleRemoveSavedItem={handleRemoveSavedItem}
-              openSaveToItinerarySheet={openSaveToItinerarySheet}
-            />
-          )}
-          {activeTab === 'activity' && (
-            <ActivityTab tripId={trip?.id ?? ''} userId={user?.id ?? ''} isAdmin={false} />
-          )}
-          <Spacer size={740} vertical />
+    <View style={styles.container}>
+      <ImageBackground 
+        source={activeTrip?.cover_image_url ? { uri: activeTrip?.cover_image_url } : undefined} 
+        style={styles.backgroundImage}
+        contentFit="cover"
+      >
+        <View style={[styles.header, { paddingTop: insets.top + 24 }] }>
+          <Text style={styles.title}>{activeTrip?.name}</Text>
         </View>
-      </Animated.ScrollView>
+      </ImageBackground>
 
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={['50%']}
-        detached={true}
-        backgroundStyle={{
-          backgroundColor: colors.backgroundColors.subtle,
-        }}
-        enablePanDownToClose>
-        <BottomSheetView
-          style={{
-            flex: 1,
-            backgroundColor: colors.backgroundColors.subtle,
-            height: '100%',
-          }}>
-          <View style={{ padding: 20, gap: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600' }}>
-              Share Join Code
-            </Text>
 
-            <View
-              style={{
-                padding: 16,
-                backgroundColor: colors.backgroundColors.default,
-                borderRadius: 12,
-                alignItems: 'center',
-              }}>
+      <View style={styles.content}>
+        <Spacer size={16} vertical />
+        <Text style={styles.title}>{activeTrip?.name}</Text>
+        <Spacer size={8} vertical />
+
+        <View style={styles.infoButtonContainer}>
+          <Pressable onPress={() => router.push(`/(tabs)/(trips)/${activeTrip?.id}/add-destination`)} style={styles.infoButton}>
+            <Text style={styles.infoButtonText}>{`📍 ${details?.destination_label ?? 'Add Destination'}`}</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push(`/(tabs)/(trips)/${activeTrip?.id}/add-duration`)} style={styles.infoButton}>
+            <Text style={styles.infoButtonText}>{`🗓️ ${details?.start_date ?? 'Add a  trip duration'}`}</Text>
+          </Pressable>
+        </View>
+
+        <Spacer size={12} vertical />
+        <Text style={styles.description}>{activeTrip?.description}</Text>
+
+        <Spacer size={8} vertical />
+        <AvatarGroup members={activeTrip?.group_members ?? []} size={24} overlap={6} />
+
+        <Spacer size={40} vertical />
+        
+        <View style={styles.segmentedControlContainer}>
+            {SEGMENTS.map((segment) => (
               <Text
-                style={{ fontSize: 22, fontWeight: '700', letterSpacing: 3 }}>
-                {join_code}
+                key={segment}
+                style={getSegmentStyle(segment)}
+                onPress={() => setSelectedSegment(segment)}
+              >
+                {segment}
               </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={copyCode}
-              style={{
-                padding: 14,
-                backgroundColor: colors.primaryColors.default,
-                borderRadius: 10,
-              }}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: 16,
-                  color: colors.textColors.default,
-                }}>
-                Copy Code
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={shareLink}
-              style={{
-                padding: 14,
-                backgroundColor: colors.backgroundColors.default,
-                borderRadius: 10,
-              }}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: 16,
-                  color: colors.textColors.default,
-                }}>
-                Share Deep Link
-              </Text>
-            </TouchableOpacity>
-
-            <MenuItem title="Leave Trip" onPress={handleLeaveTrip} />
-          </View>
-        </BottomSheetView>
-      </BottomSheet>
-
-      <BottomSheet
-        ref={saveToItineraryRef}
-        index={-1}
-        snapPoints={['30%']}
-        detached={true}
-        backgroundStyle={{
-          backgroundColor: colors.backgroundColors.subtle,
-        }}
-        enablePanDownToClose>
-        <BottomSheetView
-          style={{
-            flex: 1,
-            backgroundColor: colors.backgroundColors.subtle,
-            height: '100%',
-          }}>
-          {trips.map((trip) => (
-            <Pressable
-              key={trip.id}
-              onPress={() => handleAddToItinerary(trip.id)}>
-              <Text>{trip.title}</Text>
-            </Pressable>
-          ))}
-        </BottomSheetView>
-      </BottomSheet>
+            ))}
+        </View>
+      </View>
+        <Spacer size={4} vertical /> 
+        {/* For the divider - Unsure on if this should stay in design */}
+        <View style={styles.divider} />
     </View>
   );
-};
-
-export default TripDetailsScreen;
+}
 
 const styles = StyleSheet.create({
-  contentContainer: {
-    paddingHorizontal: 12,
-  },
-  imageBackground: {
-    width: '100%',
-    height: '100%',
+  container: {
     flex: 1,
-    flexDirection: 'column',
-    position: 'relative',
+    backgroundColor: Colors.light.background,
   },
-  gradientOverlay: {
-    height: '100%',
-    justifyContent: 'flex-end',
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  backgroundImage: {
+    height: 350,
+    width: "100%",
   },
-  gradientContent: {
-    width: '100%',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 12,
+  content: {
+    // flex: 1,
+    paddingHorizontal: 16,
+    
   },
-  iconContentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  iconButton: {
-    padding: 8,
-    borderRadius: 99,
-  },
-  locationTimeSpan: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  infoContainer: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 99,
-  },
-  infoText: {
-    ...textStyles.subtitle_Regular,
-    fontSize: 13,
-    lineHeight: 19.5,
+  header: {
+    padding: 16,
   },
   title: {
-    ...textStyles.bold_20,
-    fontSize: 32,
-    lineHeight: 38.4,
+    ...textStyles.textHeading16,
   },
   description: {
-    ...textStyles.subtitle_Regular,
-    fontSize: 14,
-    lineHeight: 19.5,
+    ...textStyles.textBody12,
   },
-  emptyContainer: {
-    paddingVertical: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    ...textStyles.subtitle_Regular,
-    fontSize: 14,
-    lineHeight: 19.5,
-  },
-  compactHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    width: Dimensions.get('window').width,
-    zIndex: 1000,
-    justifyContent: 'flex-end',
-  },
-  compactHeaderContent: {
+  infoButtonContainer: {
+    alignSelf: 'flex-start',  // 👈 important
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    height: 44,
-    width: '100%',
+    gap: 8,
   },
-  compactIconButton: {
-    padding: 8,
-    borderRadius: 99,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  
+  infoButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.borderDefault,
+    alignSelf: 'flex-start',  // 👈 makes it size to content
   },
-  compactTitle: {
-    ...textStyles.bold_20,
-    fontSize: 17,
-    lineHeight: 22,
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 8,
+  infoButtonText: {
+    ...textStyles.textBody12,
+    color: Colors.light.textSubtitle,
   },
+
+  //SEGMENTED CONTROL
+  segmentedControlContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 24,
+  },
+  segmentedControlText: {
+    ...textStyles.textBody12,
+    fontSize: 14,
+    paddingBottom: 8,
+  },
+  divider: {
+    height: 4,
+    backgroundColor: Colors.light.borderDefault,
+  }
 });

@@ -1,10 +1,10 @@
 import { View, Text } from "react-native";
 import React from "react";
 
-export default function ForgotPassword() {
+export default function ResetPassword() {
   return (
     <View>
-      <Text>ForgotPassword</Text>
+      <Text>ResetPassword</Text>
     </View>
   );
 }

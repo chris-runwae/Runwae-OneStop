@@ -61,7 +61,7 @@ export const TripFormFields: React.FC<TripFormFieldsProps> = ({
           error={descriptionError}
           textarea
           placeholderTextColor={placeholderColor}
-          className={`${inputBg} h-24 rounded-xl px-4 py-3 text-base`}
+          className={`${inputBg} min-h-24 rounded-xl px-4 py-3 text-base`}
         />
       </KeyboardAvoidingView>
     </>

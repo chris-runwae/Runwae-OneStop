@@ -52,7 +52,6 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
       lineHeight: 18,
     },
     price: {
-      ...textStyles.bold_20,
       fontSize: 20,
       color: colors.textColors.default,
     },
@@ -64,9 +63,8 @@ export const ExperienceCard: React.FC<ExperienceCardProps> = ({ item }) => {
       alignItems: 'center',
     },
     buttonText: {
-      ...textStyles.bold_20,
       fontSize: 14,
-      color: colors.white,
+      color: '#000000',
     },
   });
 

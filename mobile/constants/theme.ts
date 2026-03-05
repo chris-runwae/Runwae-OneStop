@@ -5,8 +5,18 @@
 
 import { Platform, TextStyle } from 'react-native';
 import { useFonts } from 'expo-font';
-import { BricolageGrotesque_700Bold, BricolageGrotesque_600SemiBold, BricolageGrotesque_500Medium, BricolageGrotesque_400Regular } from '@expo-google-fonts/bricolage-grotesque';
-import { DMSans_700Bold, DMSans_600SemiBold, DMSans_500Medium, DMSans_400Regular } from '@expo-google-fonts/dm-sans';
+import {
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_400Regular,
+} from '@expo-google-fonts/bricolage-grotesque';
+import {
+  DMSans_700Bold,
+  DMSans_600SemiBold,
+  DMSans_500Medium,
+  DMSans_400Regular,
+} from '@expo-google-fonts/dm-sans';
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
@@ -66,7 +76,8 @@ export const Fonts = Platform.select({
   web: {
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    rounded:
+      "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
@@ -100,4 +111,4 @@ export const textStyles: Record<string, TextStyle> = {
     lineHeight: 18,
     letterSpacing: 0,
   },
-}
+};

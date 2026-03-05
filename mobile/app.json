@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "hana",
-    "slug": "hana",
+    "name": "Runwae",
+    "slug": "runwae",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "hana",
+    "scheme": "runwae",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chrisobocha.hana"
+      "bundleIdentifier": "io.runwae.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.chrisobocha.hana"
+      "package": "io.runwae.app"
     },
     "web": {
       "output": "static",

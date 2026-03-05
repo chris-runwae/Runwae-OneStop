@@ -1,71 +1,80 @@
-/* eslint-disable import/first */
-// Polyfill Buffer for React Native
-import 'react-native-get-random-values';
-import { Buffer } from 'buffer';
-global.Buffer = global.Buffer || Buffer;
-
-import * as Sentry from '@sentry/react-native';
-import { useFonts } from 'expo-font';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
-import { DMSans_400Regular } from '@expo-google-fonts/dm-sans';
-import { useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import BottomSheet from '@gorhom/bottom-sheet';
-
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from '@react-navigation/native';
-import { router, Slot } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { ClerkProvider } from '@clerk/clerk-expo';
-import Constants from 'expo-constants';
-import { tokenCache } from '@clerk/clerk-expo/token-cache';
-// If using Expo Router, import your CSS file in the app/_layout.tsx file
-import '../global.css';
-import { SupabaseProvider } from '@/lib/SupabaseProvider';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { BricolageGrotesque_400Regular, BricolageGrotesque_500Medium, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from '@expo-google-fonts/dm-sans'; 
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
+import { TripsProvider } from '@/context/TripsContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import * as Linking from 'expo-linking';
+import { useEffect } from 'react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ActivityIndicator, View } from "react-native";
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  enabled: !__DEV__,
-  // enabled: true,
-  sendDefaultPii: true,
-  // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-  // We recommend adjusting this value in production.
-  // Learn more at
-  // https://docs.sentry.io/platforms/react-native/configuration/options/#traces-sample-rate
-  tracesSampleRate: 1.0,
-  // Enable logs to be sent to Sentry
-  // Learn more at https://docs.sentry.io/platforms/react-native/logs/
-  enableLogs: true,
-  // profilesSampleRate is relative to tracesSampleRate.
-  // Here, we'll capture profiles for 100% of transactions.
-  profilesSampleRate: 1.0,
-  // Record session replays for 100% of errors and 10% of sessions
-  replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
-  integrations: [Sentry.mobileReplayIntegration()],
-});
+function RouteGuard() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+  const segments = useSegments();
 
-function RootLayout() {
+
+  const inAuthGroup = segments[0] === "(auth)";
+  const inTabsGroup = segments[0] === "(tabs)";
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      if (!inAuthGroup) {
+        router.replace("/(auth)/login");
+      }
+    } else if (!user.onboardingCompleted) {
+      if (segments.join("/") !== "(auth)/onboarding") {
+        router.replace("/(auth)/onboarding");
+      }
+    } else {
+      if (!inTabsGroup) {
+        router.replace("/(tabs)");
+      }
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, segments, router]);
+
+  //Change to splash screen
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
   const colorScheme = useColorScheme();
-
-  const publishableKey =
-    process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-    Constants.expoConfig?.extra?.clerkPublishableKey;
 
   const [loaded, error] = useFonts({
     BricolageGrotesque_700Bold,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_400Regular,
+    DMSans_700Bold,
+    DMSans_600SemiBold,
+    DMSans_500Medium,
     DMSans_400Regular,
   });
 
@@ -75,43 +84,20 @@ function RootLayout() {
     }
   }, [loaded, error]);
 
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      const parsed = Linking.parse(url);
-
-      // Example: runwae://join/838493/ABCD1234
-      if (parsed.path?.startsWith('join')) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_, tripId, code] = parsed.path.split('/');
-        router.push(`/join/${tripId}/${code}`);
-      }
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  if (!publishableKey) {
-    Sentry.captureException(new Error('❌ Missing Clerk publishable key'));
-    console.error('❌ Missing Clerk publishable key');
-  }
-
   if (!loaded && !error) {
     return null;
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <SupabaseProvider>
-        <ThemeProvider
-          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Slot />
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <KeyboardProvider>
+        <AuthProvider>
+          <TripsProvider>
             <StatusBar style="auto" />
-          </GestureHandlerRootView>
-        </ThemeProvider>
-      </SupabaseProvider>
-    </ClerkProvider>
+            <RouteGuard />
+          </TripsProvider>
+        </AuthProvider>
+      </KeyboardProvider>
+    </ThemeProvider>
   );
 }
-
-export default Sentry.wrap(RootLayout);

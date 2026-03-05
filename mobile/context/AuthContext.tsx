@@ -1,5 +1,11 @@
-import { supabase } from "@/utils/supabase/client";
-import { createContext, useEffect, useState, ReactNode, useContext } from "react";
+import { supabase } from '@/utils/supabase/client';
+import {
+  createContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useContext,
+} from 'react';
 
 export interface User {
   id: string;
@@ -19,7 +25,6 @@ export interface AuthContextType {
   updateUser: (profile: Partial<User>) => Promise<void>;
   signOut: () => Promise<void>;
 }
-
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -51,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
       }
     } catch (error) {
-      console.error("Error checking session:", error);
+      console.error('Error checking session:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -61,23 +66,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error('Error fetching profile:', error);
         return null;
       }
       if (!data) {
-        console.error("No profile data returned");
+        console.error('No profile data returned');
         return null;
       }
 
       const authUser = await supabase.auth.getUser();
       if (!authUser.data.user) {
-        console.error("No auth user found");
+        console.error('No auth user found');
         return null;
       }
 
@@ -85,12 +90,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: data.id,
         name: data.name,
         username: data.username,
-        email: authUser.data.user.email || "",
+        email: authUser.data.user.email || '',
         profileImage: data.profile_image_url,
         onboardingCompleted: data.onboarding_completed,
       };
     } catch (error) {
-      console.error("Error in fetchUserProfile:", error);
+      console.error('Error in fetchUserProfile:', error);
       return null;
     }
   };
@@ -137,28 +142,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         updateData.onboarding_completed = userData.onboardingCompleted;
 
       const { error, data } = await supabase
-        .from("profiles")
+        .from('profiles')
         .update(updateData)
-        .eq("id", user.id)
+        .eq('id', user.id)
         .select()
         .single();
       if (error) throw error;
 
       if (data) {
-        console.log(data);
+        console.log('user profile updated: ', data);
         const profile = await fetchUserProfile(data.id);
         setUser(profile);
       }
     } catch (error) {
-      console.error("Error updating user:", error);
+      console.error('Error updating user:', error);
       throw error;
     }
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, signUp, updateUser, signIn, signOut, isLoading }}
-    >
+      value={{ user, signUp, updateUser, signIn, signOut, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -167,7 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

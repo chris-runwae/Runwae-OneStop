@@ -1,18 +1,18 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import React from "react";
-import { Image } from "expo-image";
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Image } from 'expo-image';
 import { CameraIcon, PlusIcon } from 'lucide-react-native';
 
-import { useAuth } from "@/context/AuthContext";
-import { Text, ScreenContainer, Spacer } from "@/components";
-import { Colors, textStyles } from "@/constants";
+import { useAuth } from '@/context/AuthContext';
+import { Text, ScreenContainer, Spacer } from '@/components';
+import { Colors, textStyles } from '@/constants';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  console.log(user);
+  console.log('user profile: ', user);
 
   return (
-    <ScreenContainer scrollView={true} >
+    <ScreenContainer scrollView={true}>
       <Text style={styles.title}>Profile</Text>
 
       <Spacer size={20} vertical />
@@ -20,7 +20,7 @@ export default function ProfileScreen() {
         <View style={styles.profileImageContainer}>
           {user?.profileImage ? (
             <Image
-              cachePolicy={"none"}
+              cachePolicy={'none'}
               source={{ uri: user?.profileImage }}
               style={styles.profileImage}
             />
@@ -39,7 +39,7 @@ export default function ProfileScreen() {
       </View>
     </ScreenContainer>
   );
-};
+}
 
 const styles = StyleSheet.create({
   title: {
@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.light.borderDefault,
   },
   profileInfoContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   profileImageContainer: {
-    position: "relative",
+    position: 'relative',
   },
   profileImage: {
     width: 100,
@@ -63,21 +63,21 @@ const styles = StyleSheet.create({
   placeholderImage: {
     width: 100,
     height: 100,
-    backgroundColor:  Colors.light.borderDefault,
+    backgroundColor: Colors.light.borderDefault,
     borderRadius: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
     borderWidth: 2,
     borderColor: Colors.light.iconDefault,
-    borderStyle: "dashed",
+    borderStyle: 'dashed',
   },
   placeholderText: {
     ...textStyles.textHeading20,
     fontSize: 40,
   },
   editButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
     right: 0,
     backgroundColor: Colors.light.background,

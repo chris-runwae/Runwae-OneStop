@@ -1,223 +1,94 @@
-import { RelativePathString, router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
-  useSharedValue,
-  withTiming,
   interpolate,
 } from 'react-native-reanimated';
-import { useUser } from '@clerk/clerk-expo';
 
-import {
-  DateSlide,
-  PersonalizationSlide,
-} from '@/components/trip-creation/TripCreationSlides';
-import { DestinationSlide } from '@/components/trip-creation/DestinationSlide';
 import { tripCreationData } from '@/components/trip-creation/tripCreationData';
-import { Colors, COLORS } from '@/constants';
+import { Colors } from '@/constants';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ScreenContainer, Spacer } from '@/components';
-import { useTrips } from '@/hooks';
+import { ScreenContainer } from '@/components';
 import { useKeyboardVisibility } from '@/hooks/useKeyboardVisibility';
+import { useTripValidation } from './TripCreationScreen/hooks/useTripValidation';
+import { useTripNavigation } from './TripCreationScreen/hooks/useTripNavigation';
+import { useTripCreationState } from './TripCreationScreen/hooks/useTripCreationState';
+import { TripCreatedModal } from '@/components/trip-creation/components/TripCreatedModal';
+import { ActionButton } from './TripCreationScreen/components/ActionButton';
+import { SlideRenderer } from './TripCreationScreen/components/SlideRenderer';
 
 const { width } = Dimensions.get('window');
 
-const defaultCoverImages = [
-  'https://plus.unsplash.com/premium_photo-1719843013722-c2f4d69db940?q=80&w=3024&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1476900543704-4312b78632f8?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1711195662184-167579f85e82?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-];
-
 export default function TripCreationScreen() {
-  const { createTrip } = useTrips();
-  const { user } = useUser();
   const colorScheme = useColorScheme() || 'light';
   const colors = Colors[colorScheme];
   const isDarkMode = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const {
+    currentStep,
+    setCurrentStep,
+    tripData,
+    handleUpdateData,
+    showSuccessModal,
+    setShowSuccessModal,
+    isSaving,
+    slideAnimation,
+    progressAnimation,
+    buttonAnimation,
+    resetAnimations,
+    startAnimations,
+  } = useTripCreationState();
+
   const totalSteps = tripCreationData.length;
+  const currentSlide = tripCreationData[currentStep];
+  const { isCurrentStepValid } = useTripValidation(currentSlide, tripData);
 
-  const slideAnimation = useSharedValue(0);
-  const progressAnimation = useSharedValue(0);
-  const buttonAnimation = useSharedValue(0);
-
-  const [tripData, setTripData] = useState<Record<string, any>>({
-    destination: '',
-    startDate: null,
-    endDate: null,
-    name: '',
-    description: '',
-    headerImage: null,
+  const {
+    handleNext,
+    handleBack,
+    handleViewItinerary,
+    handleShareDetails,
+    handleCloseModal,
+  } = useTripNavigation({
+    currentStep,
+    totalSteps,
+    tripData,
+    slideAnimation,
+    setCurrentStep,
+    setShowSuccessModal,
+    setIsSaving: () => {},
+    scrollRef,
+    isCurrentStepValid,
   });
 
-  const currentSlide = tripCreationData[currentStep];
-
-  React.useEffect(() => {
+  useEffect(() => {
     progressAnimation.value = withSpring(currentStep / (totalSteps - 1));
+    startAnimations();
 
-    slideAnimation.value = withTiming(1, { duration: 300 });
-
-    buttonAnimation.value = withTiming(1, { duration: 400 });
-
-    return () => {
-      slideAnimation.value = 0;
-      buttonAnimation.value = 0;
-    };
-
-    //  eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]);
+    return resetAnimations;
+  }, [
+    currentStep,
+    totalSteps,
+    progressAnimation,
+    startAnimations,
+    resetAnimations,
+  ]);
 
   const progressStyle = useAnimatedStyle(() => {
-    // Ensure minimum width of 10% so the bar is always visible
     const progressPercentage = Math.max(10, progressAnimation.value * 100);
-    return {
-      width: `${progressPercentage}%`,
-    };
+    return { width: `${progressPercentage}%` };
   });
-
-  const buttonAnimStyle = useAnimatedStyle(() => {
-    return {
-      opacity: buttonAnimation.value,
-      transform: [
-        { translateY: interpolate(buttonAnimation.value, [0, 1], [10, 0]) },
-      ],
-    };
-  });
-
-  const handleUpdateData = useCallback((key: string, value: any) => {
-    setTripData((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const isCurrentStepValid = () => {
-    switch (currentSlide.type) {
-      case 'destination':
-        return tripData.destination && tripData.destination.trim().length > 0;
-      case 'dates':
-        console.log('tripData.startDate: ', tripData);
-        return tripData.startDate && tripData.endDate;
-      case 'personalization':
-        return tripData.name && tripData.name.trim().length > 0;
-      default:
-        return false;
-    }
-  };
-
-  const handleNext = () => {
-    if (!isCurrentStepValid()) return;
-
-    slideAnimation.value = 0;
-
-    if (currentStep === totalSteps - 1) {
-      // Handle trip creation/save
-      handleSaveTrip();
-    } else {
-      setCurrentStep(currentStep + 1);
-      scrollRef.current?.scrollTo({
-        x: width * (currentStep + 1),
-        animated: true,
-      });
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      slideAnimation.value = 0;
-
-      setCurrentStep(currentStep - 1);
-      scrollRef.current?.scrollTo({
-        x: width * (currentStep - 1),
-        animated: true,
-      });
-    } else {
-      // Go back to previous screen
-      console.log('router -> ', router.canGoBack());
-      router.back();
-    }
-  };
-
-  const handleSaveTrip = async () => {
-    // TODO: Implement actual trip saving logic
-    await createTrip({
-      user_id: user?.id,
-      start_date: tripData.startDate,
-      end_date: tripData.endDate,
-      description: tripData.description,
-      title: tripData.name,
-      cover_image_url:
-        tripData.headerImage ??
-        defaultCoverImages[
-          Math.floor(Math.random() * defaultCoverImages.length)
-        ],
-      destination: tripData.destination,
-      place: tripData.place,
-    });
-
-    // Navigate back to trips screen
-    router.replace('/(tabs)/trips/index' as RelativePathString);
-  };
-
-  const renderSlide = () => {
-    const slide = tripCreationData[currentStep];
-
-    switch (slide.type) {
-      case 'destination':
-        return (
-          <DestinationSlide
-            slide={slide}
-            slideAnimation={slideAnimation}
-            tripData={tripData}
-            onUpdateData={handleUpdateData}
-            colors={colors}
-            isDarkMode={isDarkMode}
-          />
-        );
-      case 'dates':
-        return (
-          <DateSlide
-            slide={slide}
-            slideAnimation={slideAnimation}
-            tripData={tripData}
-            onUpdateData={handleUpdateData}
-            colors={colors}
-            isDarkMode={isDarkMode}
-          />
-        );
-      case 'personalization':
-        return (
-          <PersonalizationSlide
-            slide={slide}
-            slideAnimation={slideAnimation}
-            tripData={tripData}
-            onUpdateData={handleUpdateData}
-            colors={colors}
-            isDarkMode={isDarkMode}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getButtonText = () => {
-    if (currentStep === totalSteps - 1) {
-      return 'Create Trip 🥳';
-    }
-    return 'Next';
-  };
 
   const iskeyboardVisible = useKeyboardVisibility();
 
@@ -232,9 +103,6 @@ export default function TripCreationScreen() {
               <ArrowLeft size={24} color={colors.textColors.default} />
             </TouchableOpacity>
           ),
-          // rightComponent: (
-
-          // ),
         }}
         className="flex-1">
         <ScrollView
@@ -242,64 +110,42 @@ export default function TripCreationScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: iskeyboardVisible ? 10 : 100,
+            paddingBottom: 40,
           }}>
-          {/* <Spacer size={16} vertical /> */}
-          {/* Progress Bar */}
-          {/* <View className="mb-4 items-center justify-center rounded-full px-6">
-            <View
-              className="h-1.5 w-full overflow-hidden rounded-full"
-              style={{
-                backgroundColor: isDarkMode ? '#2a2a2a' : COLORS.gray[350],
-                borderRadius: 100,
-                overflow: 'hidden',
-              }}>
-              <Animated.View
-                className="h-full rounded-full"
-                style={[
-                  progressStyle,
-                  {
-                    backgroundColor: colors.primaryColors.default,
-                    height: 16,
-                    overflow: 'hidden',
-                  },
-                ]}
-              />
-            </View>
-          </View> */}
-          {/* Slides */}
           <View style={{ flex: 1 }}>
-            <ScrollView
-              ref={scrollRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              scrollEnabled={false}
-              className="flex-1">
-              {renderSlide()}
-            </ScrollView>
+            <SlideRenderer
+              currentStep={currentStep}
+              currentSlide={currentSlide}
+              slideAnimation={slideAnimation}
+              tripData={tripData}
+              onUpdateData={handleUpdateData}
+              colors={colors}
+              isDarkMode={isDarkMode}
+              scrollRef={scrollRef}
+            />
           </View>
 
-          {/* Continue/Save Button */}
           <View className="items-center gap-y-4 px-6">
-            <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
-              <TouchableOpacity
-                onPress={handleNext}
-                className="h-[50px] w-full flex-row items-center justify-center rounded-full bg-pink-600"
-                style={{
-                  opacity: isCurrentStepValid() ? 1 : 0.7,
-                }}
-                disabled={!isCurrentStepValid()}>
-                <Text
-                  className="text-base font-medium text-white"
-                  style={{ color: COLORS.white.base }}>
-                  {getButtonText()}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+            <ActionButton
+              onPress={handleNext}
+              disabled={!isCurrentStepValid() || isSaving}
+              isSaving={isSaving}
+              isLastStep={currentStep === totalSteps - 1}
+              buttonAnimation={buttonAnimation}
+              isValid={isCurrentStepValid()}
+            />
           </View>
         </ScrollView>
       </ScreenContainer>
+
+      <TripCreatedModal
+        visible={showSuccessModal}
+        destination={tripData.destination || 'your destination'}
+        onClose={handleCloseModal}
+        onViewItinerary={handleViewItinerary}
+        onShareDetails={handleShareDetails}
+        isDarkMode={isDarkMode}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AlertCircleIcon, HomeIcon } from "lucide-react";
@@ -37,7 +38,7 @@ export default function Error({
             Try again
           </Button>
           <Link
-            href="/overview"
+            href={ROUTES.host.overview}
             className={cn(
               buttonVariants({ variant: "outline", size: "lg" }),
               "inline-flex items-center gap-2 no-underline"

@@ -1,5 +1,6 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { PhoneInput } from "@/components/shared/phone-input";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,7 @@ export default function SignUp() {
       <p className="mt-4 text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/login"
+          href={ROUTES.login}
           className="font-medium text-[#e91e8c] hover:underline"
         >
           Login here

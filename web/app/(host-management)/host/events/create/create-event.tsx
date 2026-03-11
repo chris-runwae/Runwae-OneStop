@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { InputField } from "@/components/ui/input-field";
 import { cn } from "@/lib/utils";
+import { Formik } from "formik";
 import {
   Calendar,
   Camera,
@@ -21,7 +22,7 @@ import {
   Plus,
   Ticket,
 } from "lucide-react";
-import { Formik } from "formik";
+import { FormSelect } from "./create-event.components";
 import {
   BOOKINGS_OPTIONS,
   EVENT_CATEGORIES,
@@ -30,7 +31,6 @@ import {
   eventSlugFromName,
   VISIBILITY_OPTIONS,
 } from "./create-event.constants";
-import { FormSelect, ThemeSelector } from "./create-event.components";
 
 export interface CreateEventFormValues {
   eventName: string;
@@ -95,7 +95,10 @@ export default function CreateEvent() {
                     type="button"
                     className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-body focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <Globe className="size-4 text-muted-foreground" aria-hidden />
+                    <Globe
+                      className="size-4 text-muted-foreground"
+                      aria-hidden
+                    />
                     {visibilityLabel}
                     <ChevronDown
                       className="size-4 text-muted-foreground"
@@ -257,16 +260,6 @@ export default function CreateEvent() {
             </div>
 
             {/* Select Theme */}
-            <div className="flex flex-col gap-4">
-              <h3 className="font-display text-base font-semibold text-black">
-                Select Theme
-              </h3>
-              <ThemeSelector
-                themes={EVENT_THEMES}
-                value={values.themeId}
-                onChange={(id) => setFieldValue("themeId", id)}
-              />
-            </div>
 
             {/* Create Event Button */}
             <div className="flex justify-end">
@@ -287,3 +280,14 @@ export default function CreateEvent() {
     </Formik>
   );
 }
+
+// <div className="flex flex-col gap-4">
+//   <h3 className="font-display text-base font-semibold text-black">
+//     Select Theme
+//   </h3>
+//   <ThemeSelector
+//     themes={EVENT_THEMES}
+//     value={values.themeId}
+//     onChange={(id) => setFieldValue("themeId", id)}
+//   />
+// </div>;

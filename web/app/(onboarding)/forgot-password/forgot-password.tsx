@@ -1,5 +1,6 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { ArrowLeft, Mail } from "lucide-react";
@@ -17,7 +18,7 @@ export default function ForgotPassword() {
       return;
     }
     console.log("Sending code");
-    router.push("/confirm-otp");
+    router.push(ROUTES.confirmOtp);
   };
 
   return (

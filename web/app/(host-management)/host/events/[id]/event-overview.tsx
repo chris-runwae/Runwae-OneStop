@@ -12,6 +12,7 @@ import {
   UserPlus,
   Eye,
 } from "lucide-react";
+import { ROUTES, eventEdit } from "@/app/routes";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -133,7 +134,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
           {tabs.map((tab) => (
             <Link
               key={tab.id}
-              href={`/events/${eventId}/${tab.id === "overview" ? "" : tab.id}`}
+              href={`${ROUTES.host.events}/${eventId}${tab.id === "overview" ? "" : `/${tab.id}`}`}
               className={cn(
                 "relative pb-3 font-display text-sm font-medium transition-colors",
                 tab.id === "overview"
@@ -211,7 +212,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
           Share Event
         </button>
         <Link
-          href={`/events/${eventId}/edit`}
+          href={eventEdit(eventId)}
           className={cn(buttonVariants({ variant: "primary", size: "default" }))}
         >
           Edit Event

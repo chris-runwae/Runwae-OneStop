@@ -1,3 +1,4 @@
+import { ROUTES } from "@/app/routes";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileQuestionIcon, HomeIcon } from "lucide-react";
@@ -19,7 +20,7 @@ export default function NotFound() {
           </p>
         </div>
         <Link
-          href="/overview"
+          href={ROUTES.host.overview}
           className={cn(
             buttonVariants({ variant: "primary", size: "lg" }),
             "inline-flex items-center gap-2 no-underline"

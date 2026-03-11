@@ -193,7 +193,7 @@ export default function Bookings() {
                 className="w-full sm:w-auto"
               />
               <Link
-                href={`${ROUTES.host.events}/create`}
+                href={ROUTES.host.eventsCreate}
                 className={buttonVariants({
                   variant: "primary",
                   size: "default",

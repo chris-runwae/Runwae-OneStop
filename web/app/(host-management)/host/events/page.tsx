@@ -19,6 +19,7 @@ import {
   Search,
   Users,
 } from "lucide-react";
+import { ROUTES, eventDetail } from "@/app/routes";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -197,7 +198,7 @@ export default function EventsPage() {
         </div>
 
         <Link
-          href="/events/create"
+          href={ROUTES.host.eventsCreate}
           className={cn(buttonVariants({ variant: "primary", size: "default" }))}
         >
           Create Event
@@ -356,7 +357,7 @@ export default function EventsPage() {
                   </div>
                   <div className="mt-auto flex flex-wrap gap-2">
                     <Link
-                      href={`/events/${event.id}`}
+                      href={eventDetail(event.id)}
                       className={cn(
                         buttonVariants({ variant: "primary", size: "default" })
                       )}
@@ -394,7 +395,7 @@ export default function EventsPage() {
             No events found. Try adjusting your search or filters.
           </p>
           <Link
-            href="/events/create"
+            href={ROUTES.host.eventsCreate}
             className={cn(buttonVariants({ variant: "primary", size: "default" }))}
           >
             Create Event

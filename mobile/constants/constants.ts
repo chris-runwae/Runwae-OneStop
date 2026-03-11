@@ -70,24 +70,24 @@ export const tabs: Tab[] = [
     name: 'index',
     title: 'Home',
     icon: HomeIcon,
-    route: '/',
+    route: '/(tabs)/index',
   },
   {
     name: 'explore',
     title: 'Explore',
     icon: SearchIcon,
-    route: '/explore',
+    route: '/(tabs)/explore',
   },
   {
     name: 'trips',
     title: 'Trips',
     icon: PlaneIcon,
-    route: '/trips',
+    route: '/(tabs)/trips',
   },
   {
     name: 'profile',
     title: 'Profile',
     icon: User,
-    route: '/profile',
+    route: '/(tabs)/profile',
   },
 ];

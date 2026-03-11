@@ -8,9 +8,10 @@ import FilterTabs from './ui/FilterTabs';
 import HorizontalCarousel from './containers/HorizontalCarousel';
 import HomeSkeleton from './containers/HomeSkeleton';
 import { IconSymbol } from './ui/icon-symbol';
-import PrimaryButton from './buttons/PrimaryButton';
 import SectionHeader from './headers/SectionHeader';
-import ScreenContainer from './containers/ScreenContainer';
+import ScreenContainer, {
+  ScreenContainerProps,
+} from './containers/ScreenContainer';
 import Text from './utils/Text';
 import IconButton from './icons/IconButton';
 import UpcomingTripContainer from './containers/UpcomingTripContainer';
@@ -48,10 +49,10 @@ export {
   HomeSkeleton,
   HomeScreenSkeleton,
   IconSymbol,
-  PrimaryButton,
   SectionHeader,
   ExpandLinkProps,
   ScreenContainer,
+  ScreenContainerProps,
   Text,
   IconButton,
   UpcomingTripContainer,

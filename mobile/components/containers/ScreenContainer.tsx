@@ -14,7 +14,7 @@ import { Colors } from '@/constants';
 import { Text } from '@/components';
 import { router } from 'expo-router';
 
-type ScreenContainerProps = {
+export type ScreenContainerProps = {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   header?: {

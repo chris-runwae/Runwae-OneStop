@@ -1,223 +1,95 @@
+import { Eye, EyeOff } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  View,
-  ViewStyle,
-  TextStyle,
-  TextInput as RNTextInput,
-  TextInputProps as RNTextInputProps,
-  // useColorScheme,
-  StyleSheet,
-} from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { Text } from '@/components';
-import { Colors } from '@/constants';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { textStyles } from '@/utils/styles';
-
-type InputVariant = 'default' | 'filled' | 'outline' | 'ghost';
-type InputSize = 'sm' | 'md' | 'lg';
-
-interface TextInputProps extends RNTextInputProps {
-  variant?: InputVariant;
-  size?: InputSize;
+interface TextInputProps {
   label?: string;
+  placeholder?: string;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  secureTextEntry?: boolean;
+  isPassword?: boolean;
+  textarea?: boolean;
+  placeholderTextColor?: string;
+  className?: string;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
   error?: string;
-  disabled?: boolean;
-  containerStyle?: ViewStyle;
-  inputStyle?: TextStyle;
-  labelColor?: string;
-  labelStyle?: TextStyle;
-  isRequired?: boolean;
-  requiredType?: 'asterisk' | 'text';
-  onPress?: () => void;
+  labelStyle?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
-const TextInput: React.FC<TextInputProps> = ({
+const CustomTextInput = ({
   label,
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry = false,
+  isPassword = false,
+  textarea = false,
+  placeholderTextColor = '#9CA3AF',
+  className = '',
+  keyboardType = 'default',
+  autoCapitalize = 'none',
+  autoCorrect = false,
   error,
-  variant = 'default',
-  size = 'md',
-  disabled = false,
-  containerStyle,
-  inputStyle,
-  labelColor,
-  labelStyle,
-  isRequired = false,
-  onPress,
-  requiredType = 'asterisk',
-  ...props
-}) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-  const [isFocused, setIsFocused] = useState(false);
+  labelStyle = 'mb-2 text-black dark:text-gray-400',
+  leftIcon,
+  rightIcon,
+}: TextInputProps) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isSecure = isPassword ? !showPassword : secureTextEntry;
 
-  const sizeStyle: Record<
-    InputSize,
-    { height?: number; fontSize: number; padding: number }
-  > = {
-    sm: { fontSize: 16, padding: 8 },
-    md: { height: 50, fontSize: 16, padding: 14 },
-    lg: { height: 55, fontSize: 32, padding: 16 },
-  };
+  const inputClassName = textarea
+    ? `min-h-[100px] w-full rounded-[14px] bg-[#F8F9FA] px-[12px] py-[12px] text-black dark:bg-[#F8F9FA]/10 dark:text-white ${className}`
+    : `w-full rounded-[14px] bg-[#F8F9FA] px-[12px] py-[16px] text-black dark:bg-[#F8F9FA]/10 dark:text-white ${isPassword ? 'pr-[48px]' : ''} ${className} ${error ? 'border-2 border-red-500' : ''}`;
 
-  const getVariantStyle = (variant: InputVariant) => {
-    const baseStyle: ViewStyle = {
-      borderRadius: 12,
-      backgroundColor: colors.borderColors.subtle,
-
-      paddingHorizontal: sizeStyle[size].padding,
-      height: sizeStyle[size].height,
-      opacity: disabled ? 0.5 : 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...Platform.select({
-        web: {
-          maxWidth: 320,
-        },
-      }),
-    };
-
-    switch (variant) {
-      case 'filled':
-        return {
-          ...baseStyle,
-          backgroundColor: colors.primaryColors.default,
-          borderWidth: 0,
-        };
-      case 'outline':
-        return {
-          ...baseStyle,
-          borderWidth: isFocused ? 2 : 1,
-          backgroundColor: 'transparent',
-          borderColor: colors.borderColors.default,
-        };
-      case 'ghost':
-        return {
-          ...baseStyle,
-          backgroundColor: 'transparent',
-          borderWidth: 0,
-        };
-      default:
-        return baseStyle;
-    }
-  };
-
-  const getTextColor = () => {
-    if (disabled) {
-      return colors.borderColors.default;
-    }
-    return colors.textColors.default;
-  };
-
-  const textInputStyle = {
-    height: sizeStyle[size].height,
-    fontSize: sizeStyle[size].fontSize,
-    padding: sizeStyle[size].padding,
-    color: getTextColor(),
-    width: '100%' as const,
-  };
-
-  const requiredTextStyle = {
-    ...styles.label,
-    ...labelStyle,
-    color: colors.required,
-  };
-
-  // TODO: Add error style that will use dark or light mode
-  // const errorStyle = {
-  //   color: 'red',
-  //   fontSize: 12,
-  //   marginTop: 4,
-  // }
+  const inputStyle = textarea
+    ? {
+        minHeight: 130,
+        maxHeight: 200,
+        lineHeight: 20,
+      }
+    : {};
 
   return (
-    <View style={[styles.container, containerStyle]}>
-      <View style={styles.labelContainer}>
-        {label && (
-          <Text
-            style={[
-              styles.label,
-              { color: labelColor ?? getTextColor() },
-              labelStyle,
-            ]}>
-            {isRequired && requiredType === 'asterisk' && (
-              <Text style={requiredTextStyle}>*</Text>
-            )}{' '}
-            {label}
-          </Text>
+    <View>
+      {label && <Text className={labelStyle}>{label}</Text>}
+      <View
+        className={`relative flex-row items-center gap-2 ${inputClassName}`}>
+        {leftIcon}
+        <TextInput
+          secureTextEntry={isSecure}
+          className="flex-1 text-gray-900 dark:text-white"
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          placeholderTextColor={placeholderTextColor}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          multiline={textarea}
+          textAlignVertical={textarea ? 'top' : 'auto'}
+          style={inputStyle}
+        />
+        {isPassword && !textarea && (
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            className="absolute right-[12px] items-center justify-center">
+            {showPassword ? (
+              <EyeOff size={20} color="#9CA3AF" />
+            ) : (
+              <Eye size={20} color="#9CA3AF" />
+            )}
+          </TouchableOpacity>
         )}
-        {isRequired && requiredType === 'text' && (
-          <Text style={requiredTextStyle}>required</Text>
-        )}
+        {rightIcon}
       </View>
-
-      {onPress ? (
-        <Pressable
-          onPress={onPress}
-          style={[getVariantStyle(variant), disabled && styles.disabled]}>
-          {/* <RNTextInput
-            {...props}
-            style={[textInputStyle, inputStyle]}
-            placeholderTextColor={getTextColor()}
-            editable={!disabled}
-            onFocus={() => {
-              setIsFocused(true);
-            }}
-            onBlur={() => setIsFocused(false)}
-          /> */}
-          <Text style={[textInputStyle, inputStyle]}>{props.value}</Text>
-        </Pressable>
-      ) : (
-        <View style={[getVariantStyle(variant), disabled && styles.disabled]}>
-          <RNTextInput
-            {...props}
-            style={[textInputStyle, inputStyle]}
-            // placeholderTextColor={getTextColor()}
-            placeholderTextColor={
-              props.placeholderTextColor ?? colors.textColors.subtitle
-            }
-            editable={!disabled}
-            onFocus={() => {
-              setIsFocused(true);
-            }}
-            onBlur={() => setIsFocused(false)}
-          />
-        </View>
-      )}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text className="mt-1 text-xs text-red-500">{error}</Text>}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-  },
-  labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  label: {
-    ...textStyles.bold_20,
-    fontSize: 16,
-  },
-  input: {
-    flex: 1,
-    ...textStyles.bold_20,
-    fontSize: 16,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  error: {
-    color: 'red',
-    ...textStyles.body_Regular,
-    fontSize: 12,
-  },
-});
-
-export default TextInput;
+export default CustomTextInput;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useUser, useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@/context/AuthContext';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 
@@ -21,8 +21,7 @@ const useTrips = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useUser();
-  const { getToken } = useAuth();
+  const { user, getToken } = useAuth();
   // const supabase = await getSupabaseClient(getToken);
 
   useEffect(() => {

@@ -3,7 +3,7 @@ import { Text, TextInput, View, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 interface TextInputProps {
-  label: string;
+  label?: string;
   placeholder?: string;
   value?: string;
   onChangeText?: (text: string) => void;
@@ -14,6 +14,10 @@ interface TextInputProps {
   className?: string;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  error?: string;
+  labelStyle?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 const CustomTextInput = ({
@@ -28,6 +32,10 @@ const CustomTextInput = ({
   className = '',
   keyboardType = 'default',
   autoCapitalize = 'sentences',
+  error,
+  labelStyle = 'mb-2 text-black dark:text-gray-400',
+  leftIcon,
+  rightIcon,
 }: TextInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const isSecure = isPassword ? !showPassword : secureTextEntry;
@@ -46,11 +54,13 @@ const CustomTextInput = ({
 
   return (
     <View>
-      <Text className="mb-2 text-black dark:text-gray-400">{label}</Text>
-      <View className="relative">
+      {label && <Text className={labelStyle}>{label}</Text>}
+      <View
+        className={`relative flex-row items-center gap-2 ${inputClassName}`}>
+        {leftIcon}
         <TextInput
-          className={inputClassName}
           secureTextEntry={isSecure}
+          className="flex-1 text-gray-900 dark:text-white"
           placeholder={placeholder}
           value={value}
           onChangeText={onChangeText}
@@ -72,7 +82,9 @@ const CustomTextInput = ({
             )}
           </TouchableOpacity>
         )}
+        {rightIcon}
       </View>
+      {error && <Text className="mt-1 text-xs text-red-500">{error}</Text>}
     </View>
   );
 };

@@ -19,19 +19,25 @@ const WelcomeAvatar = () => {
   return (
     <Pressable onPress={() => router.push('/profile')} style={styles.container}>
       <UserAvatar size={48} />
-      <View>
+      <View className="flex flex-col">
         <View style={styles.waveContainer}>
           <Text
             numberOfLines={1}
-            style={[
-              styles.waveText,
-              styles.truncatedText,
-              { color: colors.textColors.subtitle },
-            ]}>
-            Hey, {user?.firstName || user?.fullName || user?.username}{' '}
+            style={[styles.waveText, { color: colors.textColors.subtitle }]}>
+            Hey,
           </Text>
           <HelloWave size={16} />
         </View>
+        <Text
+          numberOfLines={1}
+          className="mt-1"
+          style={[
+            styles.waveText,
+            styles.truncatedText,
+            { color: colors.textColors.subtitle },
+          ]}>
+          {user?.firstName || user?.fullName || user?.username}
+        </Text>
       </View>
     </Pressable>
   );

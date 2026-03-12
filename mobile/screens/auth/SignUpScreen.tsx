@@ -1,6 +1,6 @@
-import * as Haptics from 'expo-haptics';
-import { Link, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import * as Haptics from "expo-haptics";
+import { Link, useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,18 +9,18 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Toast } from 'toastify-react-native';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Toast } from "toastify-react-native";
 
-import { Spacer } from '@/components';
-import { useAuth } from '@/hooks/useAuth';
+import { Spacer } from "@/components";
+import CustomTextInput from "@/components/containers/TextInput";
+import { useAuth } from "@/hooks/useAuth";
 import {
   SignUpFormData,
   signUpSchema,
-} from '@/utils/validation/auth.validation';
-import z from 'zod';
-import CustomTextInput from '@/components/ui/custome-input';
+} from "@/utils/validation/auth.validation";
+import z from "zod";
 
 const SignUpScreen = () => {
   const router = useRouter();
@@ -28,19 +28,19 @@ const SignUpScreen = () => {
   const { signUp, isLoading: authLoading, completeOnboarding } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<SignUpFormData>({
-    fullName: '',
-    email: '',
-    password: '',
+    fullName: "",
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState<SignUpFormData>({
-    fullName: '',
-    email: '',
-    password: '',
+    fullName: "",
+    email: "",
+    password: "",
   });
 
   const handleInputChange = (field: keyof SignUpFormData, value: string) => {
     setFormData({ ...formData, [field]: value });
-    setErrors({ ...errors, [field]: '' });
+    setErrors({ ...errors, [field]: "" });
   };
 
   const handleSubmit = async () => {
@@ -54,24 +54,24 @@ const SignUpScreen = () => {
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
-          type: 'error',
-          text1: 'Sign Up Error',
+          type: "error",
+          text1: "Sign Up Error",
           text2: result.error,
-          position: 'bottom',
+          position: "bottom",
           visibilityTime: 4000,
           autoHide: true,
         });
       } else {
         // Navigate to boarding step after successful sign-up
-        router.replace('/boarding/step-1');
+        router.replace("/boarding/step-1");
       }
     } catch (error: any) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (error instanceof z.ZodError) {
         const newErrors: SignUpFormData = {
-          fullName: '',
-          email: '',
-          password: '',
+          fullName: "",
+          email: "",
+          password: "",
         };
         error.issues.forEach((issue) => {
           if (issue.path.length > 0) {
@@ -82,10 +82,10 @@ const SignUpScreen = () => {
         setErrors(newErrors);
       } else {
         Toast.show({
-          type: 'error',
-          text1: 'Sign Up Error',
-          text2: error.message || 'An error occurred during sign up',
-          position: 'bottom',
+          type: "error",
+          text1: "Sign Up Error",
+          text2: error.message || "An error occurred during sign up",
+          position: "bottom",
           visibilityTime: 4000,
         });
       }
@@ -97,22 +97,24 @@ const SignUpScreen = () => {
   return (
     <>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 bg-white px-[20px]">
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1 px-[20px] bg-white"
+      >
         <View style={{ paddingTop: insets.top + 24 }}>
           <Spacer size={24} vertical />
           <Text
-            style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
-            className="text-3xl font-bold">
-            Welcome to{'\n'}Runwae 🎉
+            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
+            className="text-3xl font-bold"
+          >
+            Welcome to{"\n"}Runwae 🎉
           </Text>
           <Spacer size={5} vertical />
 
           <Text className="text-gray-400">
-            Sign up for an account or{' '}
+            Sign up for an account or{" "}
             <Link href="/(auth)/login" className="text-primary underline">
               log in
-            </Link>{' '}
+            </Link>{" "}
             here.
           </Text>
           <Spacer size={50} vertical />
@@ -121,7 +123,7 @@ const SignUpScreen = () => {
             label="Full Name"
             placeholder="John Doe"
             value={formData.fullName}
-            onChangeText={(value) => handleInputChange('fullName', value)}
+            onChangeText={(value) => handleInputChange("fullName", value)}
             error={errors.fullName}
           />
 
@@ -132,7 +134,7 @@ const SignUpScreen = () => {
             keyboardType="email-address"
             placeholder="example@email.com"
             value={formData.email}
-            onChangeText={(value) => handleInputChange('email', value)}
+            onChangeText={(value) => handleInputChange("email", value)}
             error={errors.email}
           />
 
@@ -142,7 +144,7 @@ const SignUpScreen = () => {
             label="Password"
             isPassword
             value={formData.password}
-            onChangeText={(value) => handleInputChange('password', value)}
+            onChangeText={(value) => handleInputChange("password", value)}
             error={errors.password}
           />
 
@@ -152,11 +154,12 @@ const SignUpScreen = () => {
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isSubmitting || authLoading}
-            className="bg-primary flex h-[45px] w-full items-center justify-center rounded-full disabled:opacity-50">
+            className="bg-primary h-[45px] rounded-full w-full flex items-center justify-center disabled:opacity-50"
+          >
             {isSubmitting || authLoading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text className="text-base font-medium text-white">Sign Up</Text>
+              <Text className="text-white font-medium text-base">Sign Up</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -169,7 +172,7 @@ export default SignUpScreen;
 
 const styles = StyleSheet.create({
   forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    width: '100%',
+    alignItems: "flex-end",
+    width: "100%",
   },
 });

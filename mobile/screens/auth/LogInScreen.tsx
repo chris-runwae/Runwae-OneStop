@@ -1,6 +1,6 @@
-import * as Haptics from 'expo-haptics';
-import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import * as Haptics from "expo-haptics";
+import { Link } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,32 +9,32 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Toast } from 'toastify-react-native';
-import z from 'zod';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Toast } from "toastify-react-native";
+import z from "zod";
 
-import { Spacer } from '@/components';
-import { useAuth } from '@/context/AuthContext';
-import { LoginFormData, loginSchema } from '@/utils/validation/auth.validation';
-import CustomTextInput from '@/components/ui/custome-input';
+import { Spacer } from "@/components";
+import CustomTextInput from "@/components/containers/TextInput";
+import { useAuth } from "@/context/AuthContext";
+import { LoginFormData, loginSchema } from "@/utils/validation/auth.validation";
 
 const LogInScreen = () => {
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState<LoginFormData>({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: '' }));
+    setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const handleSubmit = async () => {
@@ -48,10 +48,10 @@ const LogInScreen = () => {
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
-          type: 'error',
-          text1: 'Login Error',
+          type: "error",
+          text1: "Login Error",
           text2: result.error,
-          position: 'bottom',
+          position: "bottom",
           visibilityTime: 4000,
           autoHide: true,
         });
@@ -60,7 +60,7 @@ const LogInScreen = () => {
     } catch (error) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (error instanceof z.ZodError) {
-        const newErrors = { email: '', password: '' };
+        const newErrors = { email: "", password: "" };
         error.issues.forEach((issue) => {
           const field = issue.path[0] as keyof LoginFormData;
           if (field) newErrors[field] = issue.message;
@@ -74,22 +74,24 @@ const LogInScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: 'white', paddingHorizontal: 20 }}>
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 px-[20px] bg-white"
+    >
       <View style={{ paddingTop: insets.top + 24 }}>
         <Spacer size={24} vertical />
         <Text
-          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
-          className="text-3xl font-bold">
-          Welcome {'\n'}Back!
+          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
+          className="text-3xl font-bold"
+        >
+          Welcome {"\n"}Back!
         </Text>
         <Spacer size={5} vertical />
 
         <Text className="text-gray-400">
-          Login to your account or{' '}
+          Login to your account or{" "}
           <Link href="/(auth)/signup" className="text-primary underline">
             sign up
-          </Link>{' '}
+          </Link>{" "}
           here.
         </Text>
         <Spacer size={50} vertical />
@@ -99,7 +101,7 @@ const LogInScreen = () => {
           keyboardType="email-address"
           placeholder="example@email.com"
           value={formData.email}
-          onChangeText={(value) => handleInputChange('email', value)}
+          onChangeText={(value) => handleInputChange("email", value)}
           error={errors.email}
         />
         <Spacer size={16} vertical />
@@ -108,15 +110,16 @@ const LogInScreen = () => {
           label="Password"
           isPassword
           value={formData.password}
-          onChangeText={(value) => handleInputChange('password', value)}
+          onChangeText={(value) => handleInputChange("password", value)}
           error={errors.password}
         />
         <Spacer size={5} vertical />
 
         <View style={styles.forgotPasswordContainer}>
           <Link
-            href={'/(auth)/forgot-password'}
-            className="text-primary text-sm underline">
+            href={"/(auth)/forgot-password"}
+            className="text-sm text-primary underline"
+          >
             Forgot Password?
           </Link>
         </View>
@@ -125,11 +128,12 @@ const LogInScreen = () => {
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={isSubmitting}
-          className="bg-primary h-[45px] w-full items-center justify-center rounded-full disabled:opacity-50">
+          className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
+        >
           {isSubmitting ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-base font-medium text-white">Log in</Text>
+            <Text className="text-white font-medium text-base">Log in</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -141,7 +145,7 @@ export default LogInScreen;
 
 const styles = StyleSheet.create({
   forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    width: '100%',
+    alignItems: "flex-end",
+    width: "100%",
   },
 });

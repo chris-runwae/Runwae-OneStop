@@ -1,91 +1,53 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Redirect, RelativePathString } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
-
-import {
-  IconButton,
-  HorizontalCarousel,
-  ScreenContainer,
-  SectionHeader,
-  Spacer,
-  WelcomeAvatar,
-  UpcomingTripContainer,
-  HomeScreenSkeleton,
-} from '@/components';
-import { useTrips, useViator } from '@/hooks';
-import { useViatorStore } from '@/stores/useViatorStore';
-import { ICON_NAMES } from '@/constants';
+import WelcomeModal from "@/components/WelcomeModal";
+import { useAuth } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 export default function HomeScreen() {
-  const { isSignedIn } = useAuth();
-  const { featuredTrips, loading } = useTrips();
-  const { getDestinations, getTags } = useViator();
-  const { destinations, tags } = useViatorStore();
+  const { signOut, hasCompletedBoarding, completeBoarding } = useAuth();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-  if (!isSignedIn) {
-    return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
-  }
+  useEffect(() => {
+    console.log(
+      "HomeScreen useEffect - hasCompletedBoarding:",
+      hasCompletedBoarding,
+    );
+    if (!hasCompletedBoarding) {
+      setShowWelcomeModal(true);
+      console.log("Showing welcome modal");
+    } else {
+      setShowWelcomeModal(false);
+      console.log("Hiding welcome modal");
+    }
+  }, [hasCompletedBoarding]);
 
-  if (loading) {
-    return <HomeScreenSkeleton />;
-  }
+  const handleCloseWelcomeModal = async () => {
+    await completeBoarding();
+    setShowWelcomeModal(false);
+  };
 
-  if (!destinations || destinations.length === 0) {
-    getDestinations();
-  }
-  if (!tags || tags.length === 0) {
-    getTags();
-  }
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   return (
-    <ScreenContainer
-      header={{
-        rightComponent: (
-          <IconButton
-            icon={ICON_NAMES.BELL}
-            onPress={() => console.log('Notifications')}
-          />
-        ),
-        leftComponent: <WelcomeAvatar />,
-      }}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}>
-        <Spacer size={32} vertical />
-        <UpcomingTripContainer
-          linkText="More"
-          linkTo={'/explore' as RelativePathString}
-        />
-        <Spacer size={32} vertical />
-        {featuredTrips.length > 0 && (
-          <>
-            <SectionHeader
-              title="Trips for you"
-              linkText="More"
-              linkTo={'/explore' as RelativePathString}
-            />
-            <View style={styles.carouselContainer}>
-              <HorizontalCarousel data={featuredTrips} />
-            </View>
-          </>
-        )}
-        <Spacer size={100} vertical />
-      </ScrollView>
-    </ScreenContainer>
+    <View className="flex-1 items-center justify-center">
+      <Text className="text-2xl font-bold mb-8">Home</Text>
+      <Pressable
+        onPress={handleSignOut}
+        className="bg-red-500 px-6 py-3 rounded-lg"
+      >
+        <Text className="text-white font-semibold">Sign Out</Text>
+      </Pressable>
+
+      <WelcomeModal
+        visible={showWelcomeModal}
+        onClose={handleCloseWelcomeModal}
+      />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  scrollViewContent: {
-    paddingHorizontal: 16,
-  },
-  carouselContainer: {
-    marginHorizontal: -16,
-    paddingLeft: 16,
-  },
-});

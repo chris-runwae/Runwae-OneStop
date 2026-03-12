@@ -68,21 +68,22 @@ export interface UseAuthReturn {
 
   signIn: (
     email: string,
-    password: string,
+    password: string
   ) => Promise<{ success: boolean; error?: string }>;
   signUp: (
     email: string,
     password: string,
+    fullName?: string
   ) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<{ success: boolean; error?: string }>;
   updateUser: (
-    userData: Partial<User>,
+    userData: Partial<User>
   ) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (
-    email: string,
+    email: string
   ) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (
-    newPassword: string,
+    newPassword: string
   ) => Promise<{ success: boolean; error?: string }>;
 
   completeOnboarding: () => void;
@@ -117,11 +118,9 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
 
     return {
       id: data.id,
-      name: data.name,
-      username: data.username,
+      full_name: data.full_name,
       email: authUser.data.user.email || "",
-      profileImage: data.profile_image_url,
-      onboardingCompleted: data.onboarding_completed,
+      avatar_url: data.avatar_url,
       role: data.role || "user",
     };
   } catch (error) {
@@ -158,7 +157,7 @@ export function useAuth(): UseAuthReturn {
   const [currentBoardingStep, setCurrentBoardingStepState] = useState(1);
 
   const isAuthenticated = !!user;
-  const isProfileComplete = !!(user?.username && user?.name);
+  const isProfileComplete = !!user?.full_name;
 
   const initialize = useCallback(async () => {
     setIsLoading(true);
@@ -214,9 +213,20 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   const signUp = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, fullName?: string) => {
       try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: fullName
+            ? {
+                data: {
+                  full_name: fullName,
+                  name: fullName,
+                },
+              }
+            : undefined,
+        });
 
         if (error) {
           return { success: false, error: error.message };
@@ -238,7 +248,7 @@ export function useAuth(): UseAuthReturn {
         return { success: false, error: "An unexpected error occurred" };
       }
     },
-    [saveBoardingStatus],
+    [saveBoardingStatus]
   );
 
   const signOut = useCallback(async () => {
@@ -261,13 +271,10 @@ export function useAuth(): UseAuthReturn {
 
       try {
         const updateData: any = {};
-        if (userData.name !== undefined) updateData.name = userData.name;
-        if (userData.username !== undefined)
-          updateData.username = userData.username;
-        if (userData.profileImage !== undefined)
-          updateData.profile_image_url = userData.profileImage;
-        if (userData.onboardingCompleted !== undefined)
-          updateData.onboarding_completed = userData.onboardingCompleted;
+        if (userData.full_name !== undefined)
+          updateData.full_name = userData.full_name;
+        if (userData.avatar_url !== undefined)
+          updateData.avatar_url = userData.avatar_url;
         if (userData.role !== undefined) updateData.role = userData.role;
 
         const { error, data } = await supabase
@@ -293,7 +300,7 @@ export function useAuth(): UseAuthReturn {
         return { success: false, error: "An unexpected error occurred" };
       }
     },
-    [user],
+    [user]
   );
 
   const resetPassword = useCallback(async (email: string) => {

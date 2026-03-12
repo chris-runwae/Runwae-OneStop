@@ -49,7 +49,11 @@ const SignUpScreen = () => {
       signUpSchema.parse(formData);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      const result = await signUp(formData.email, formData.password);
+      const result = await signUp(
+        formData.email,
+        formData.password,
+        formData.fullName
+      );
 
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

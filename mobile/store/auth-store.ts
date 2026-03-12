@@ -4,10 +4,9 @@ import { create } from "zustand";
 export interface User {
   id: string;
   email: string;
-  name: string;
-  username: string;
-  profileImage?: string;
-  onboardingCompleted?: boolean;
+  full_name: string;
+  username?: string;
+  avatar_url?: string;
   role?: "vendor" | "user";
 }
 
@@ -25,11 +24,11 @@ interface AuthStore {
   setCurrentOnboardingStep: (step: number) => void;
 
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (profile: Partial<User>) => Promise<void>;
   initialize: () => Promise<void>;
-  completeOnboarding: () => void;
+  completeOnboarding: () => Promise<void>;
   nextOnboardingStep: () => void;
 }
 
@@ -43,7 +42,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   setUser: (user) => {
     const isAuthenticated = !!user;
-    const isProfileComplete = !!(user?.username && user?.name);
+    const isProfileComplete = !!(user?.username && user?.full_name);
     set({ user, isAuthenticated, isProfileComplete });
   },
 
@@ -54,7 +53,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setCurrentOnboardingStep: (currentOnboardingStep) =>
     set({ currentOnboardingStep }),
 
-  completeOnboarding: () => set({ hasSeenOnboarding: true }),
+  completeOnboarding: async () => {
+    set({ hasSeenOnboarding: true });
+    await setLocalOnboardingStatus(true);
+  },
 
   nextOnboardingStep: () => {
     const { currentOnboardingStep } = get();
@@ -75,14 +77,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (session?.user) {
         const profile = await fetchUserProfile(session.user.id);
         setUser(profile);
-        if (profile?.onboardingCompleted) {
-          setHasSeenOnboarding(true);
-        }
       } else {
         setUser(null);
-        const hasSeen = await checkOnboardingStatus();
-        setHasSeenOnboarding(hasSeen);
       }
+      
+      const hasSeen = await checkOnboardingStatus();
+      setHasSeenOnboarding(hasSeen);
     } catch (error) {
       console.error("Error initializing auth:", error);
       setUser(null);
@@ -106,15 +106,28 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  signUp: async (email, password) => {
+  signUp: async (email, password, fullName) => {
     const { setUser } = get();
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: fullName
+        ? {
+            data: {
+              full_name: fullName,
+              name: fullName,
+            },
+          }
+        : undefined,
+    });
 
     if (error) throw error;
 
     if (data.user) {
       const profile = await fetchUserProfile(data.user.id);
       setUser(profile);
+      set({ hasSeenOnboarding: false });
+      await setLocalOnboardingStatus(false);
     }
   },
 
@@ -129,13 +142,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     try {
       const updateData: any = {};
-      if (userData.name !== undefined) updateData.name = userData.name;
+      if (userData.full_name !== undefined)
+        updateData.name = userData.full_name;
       if (userData.username !== undefined)
         updateData.username = userData.username;
-      if (userData.profileImage !== undefined)
-        updateData.profile_image_url = userData.profileImage;
-      if (userData.onboardingCompleted !== undefined)
-        updateData.onboarding_completed = userData.onboardingCompleted;
+      if (userData.avatar_url !== undefined)
+        updateData.profile_image_url = userData.avatar_url;
 
       const { error, data } = await supabase
         .from("profiles")
@@ -182,11 +194,9 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
 
     return {
       id: data.id,
-      name: data.name,
-      username: data.username,
+      full_name: data.full_name,
       email: authUser.data.user.email || "",
-      profileImage: data.profile_image_url,
-      onboardingCompleted: data.onboarding_completed,
+      avatar_url: data.avatar_url,
     };
   } catch (error) {
     console.error("Error in fetchUserProfile:", error);
@@ -194,8 +204,32 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
   }
 }
 
+const ONBOARDING_STORAGE_KEY = "@onboarding_completed";
+
+async function setLocalOnboardingStatus(status: boolean): Promise<void> {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(ONBOARDING_STORAGE_KEY, status.toString());
+    } else {
+      const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+      await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, status.toString());
+    }
+  } catch (error) {
+    console.error("Error setting onboarding status:", error);
+  }
+}
+
 async function checkOnboardingStatus(): Promise<boolean> {
-  // You can store this in AsyncStorage or Supabase
-  // For now, return false (first time user)
-  return false;
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true";
+    } else {
+      const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+      const value = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+      return value === "true";
+    }
+  } catch (error) {
+    console.error("Error checking onboarding status:", error);
+    return false;
+  }
 }

@@ -9,6 +9,7 @@ module.exports = {
         primary: "#FF2E92",
         "muted-200": "#E9ECEF",
         muted: "#F8F9FA",
+        "dark-bg": "#212529",
       },
     },
   },

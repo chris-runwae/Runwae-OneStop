@@ -1,6 +1,7 @@
 import React from "react";
 import { Image, Modal, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 
 interface WelcomeModalProps {
   visible: boolean;
@@ -15,9 +16,9 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ visible, onClose }) => {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/30">
+      <BlurView intensity={50} tint="dark" className="flex-1">
         <SafeAreaView className="flex-1 items-center pb-2 justify-end w-full">
-          <View className="bg-white rounded-[50px] p-6 w-full max-w-[368px] mx-auto shadow-2xl">
+          <View className="bg-white rounded-[50px] p-6 w-full max-w-[370px] mx-auto shadow-2xl">
             <View className="items-center mb-2">
               <View className="w-[160px] h-[160px] mb-10">
                 <Image
@@ -50,7 +51,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ visible, onClose }) => {
             </View>
           </View>
         </SafeAreaView>
-      </View>
+      </BlurView>
     </Modal>
   );
 };

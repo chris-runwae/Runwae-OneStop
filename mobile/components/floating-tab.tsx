@@ -5,6 +5,7 @@ import { Plus } from "lucide-react-native";
 import React, { useCallback } from "react";
 import { Platform, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 
 interface TabItemProps {
   tab: (typeof tabs)[0];
@@ -67,7 +68,9 @@ const FloatingTabBar = () => {
   }, [router]);
 
   return (
-    <View
+    <BlurView
+      intensity={80}
+      tint="light"
       style={{
         paddingBottom: Math.max(
           insets.bottom - 10,
@@ -98,7 +101,7 @@ const FloatingTabBar = () => {
           <Plus size={20} color={"#ffffff"} />
         </TouchableOpacity>
       </View>
-    </View>
+    </BlurView>
   );
 };
 

@@ -41,7 +41,7 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
           {item.title}
         </Text>
         <Animated.View
-          className="flex items-center justify-center rounded-full bg-pink-500"
+          className="flex items-center justify-center rounded-full bg-primary"
           style={{ height: 20, width: 20 }}
         >
           {isExpanded ? (

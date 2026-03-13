@@ -24,7 +24,7 @@ const HelpCeter = () => {
             Help Center
           </Text>
           <Text className="text-sm text-gray-400">
-            Get answers to your questions.
+            Find clarity for every step of your Runwae journey.
           </Text>
         </View>
       </View>

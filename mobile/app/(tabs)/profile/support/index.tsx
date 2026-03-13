@@ -16,7 +16,7 @@ const SUPPORT_ITEMS: { title: string; route: string }[] = [
   },
   {
     title: "Report an Issue",
-    route: "/profile/support/report",
+    route: "/profile/support/report-issue",
   },
   {
     title: "Give Feedback & Suggestions",

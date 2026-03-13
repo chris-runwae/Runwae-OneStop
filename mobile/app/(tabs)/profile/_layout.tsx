@@ -8,7 +8,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="support/index" />
       <Stack.Screen name="support/help-center" />
       <Stack.Screen name="support/contact-support" />
-      <Stack.Screen name="support/report" />
+      <Stack.Screen name="support/report-issue" />
       <Stack.Screen name="support/feedback" />
     </Stack>
   );

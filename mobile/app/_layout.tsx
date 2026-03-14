@@ -202,6 +202,7 @@ export default function RootLayout() {
           <ToastManager
             showProgressBar={false}
             style={{ borderRadius: 20, boxShadow: "none" }}
+            theme={colorScheme === "dark" ? "dark" : "light"}
           />
           <RouteGuard />
         </AuthProvider>

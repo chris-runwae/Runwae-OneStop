@@ -1,3 +1,4 @@
+import CustomTextInput from "@/components/containers/TextInput";
 import CustomModal from "@/components/ui/CustomModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +11,6 @@ import {
   Platform,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -104,20 +104,14 @@ const ReportIssue = () => {
               </TouchableOpacity>
             </View>
 
-            <View className="gap-y-2">
-              <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Issue Details
-              </Text>
-              <TextInput
-                className="w-full bg-gray-50 dark:bg-dark-seconndary/50 border border-gray-200 dark:border-dark-seconndary rounded-lg px-4 py-3 text-base text-black dark:text-white min-h-[120px]"
-                placeholder="Details of the issue..."
-                placeholderTextColor="#9ca3af"
-                multiline
-                textAlignVertical="top"
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
+            <CustomTextInput
+              label="Issue Details"
+              labelStyle="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+              textarea
+              placeholder="Details of the issue..."
+              value={description}
+              onChangeText={setDescription}
+            />
           </View>
 
           <View className="p-[20px]">

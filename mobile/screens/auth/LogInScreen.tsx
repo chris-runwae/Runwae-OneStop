@@ -75,13 +75,13 @@ const LogInScreen = () => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 px-[20px] bg-white"
+      className="flex-1 px-[20px]"
     >
       <View style={{ paddingTop: insets.top + 24 }}>
         <Spacer size={24} vertical />
         <Text
           style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          className="text-3xl font-bold"
+          className="text-3xl font-bold text-black dark:text-white"
         >
           Welcome {"\n"}Back!
         </Text>

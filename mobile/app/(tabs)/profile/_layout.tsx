@@ -11,6 +11,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="support/report-issue" />
       <Stack.Screen name="support/feedback" />
       <Stack.Screen name="appearance/index" />
+      <Stack.Screen name="security/index" />
+      <Stack.Screen name="security/change-password" />
     </Stack>
   );
 }

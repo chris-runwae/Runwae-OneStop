@@ -1,7 +1,7 @@
 import {
   ArrowRightFromLine,
   BrushCleaning,
-  Info,
+  Lock,
   MessageCircleQuestionMark,
 } from "lucide-react-native";
 
@@ -48,9 +48,9 @@ export const MENU_OPTIONS: MENU_OPTIONS_PROPS[] = [
     icon: BrushCleaning,
   },
   {
-    title: "Support",
-    route: "/support",
-    icon: Info,
+    title: "Security",
+    route: "/profile/security",
+    icon: Lock,
   },
   {
     title: "Legal",

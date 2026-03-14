@@ -43,8 +43,8 @@ const CustomTextInput = ({
   const isSecure = isPassword ? !showPassword : secureTextEntry;
 
   const inputClassName = textarea
-    ? `min-h-[100px] w-full rounded-[14px] bg-[#F8F9FA] px-[12px] py-[12px] text-black dark:bg-[#F8F9FA]/10 dark:text-white ${className}`
-    : `w-full rounded-[14px] bg-[#F8F9FA] px-[12px] py-[16px] text-black dark:bg-[#F8F9FA]/10 dark:text-white ${isPassword ? "pr-[48px]" : ""} ${className} ${error ? "border-2 border-red-500" : ""}`;
+    ? `min-h-[120px] w-full rounded-lg bg-gray-50 border border-gray-200 px-4 text-black dark:bg-dark-seconndary/50 dark:border-dark-seconndary dark:text-white ${className}`
+    : `w-full rounded-lg bg-gray-50 border border-gray-200 px-4 h-[45px] text-black dark:bg-dark-seconndary/50 dark:border-dark-seconndary dark:text-white ${isPassword ? "pr-[48px]" : ""} ${className} ${error ? "border-2 border-red-500" : ""}`;
 
   const inputStyle = textarea
     ? {
@@ -63,7 +63,7 @@ const CustomTextInput = ({
         {leftIcon}
         <TextInput
           secureTextEntry={isSecure}
-          className="flex-1 text-gray-900 dark:text-white"
+          className="flex-1 text-base text-gray-900 dark:text-white"
           placeholder={placeholder}
           value={value}
           onChangeText={onChangeText}

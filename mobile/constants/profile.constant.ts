@@ -44,7 +44,7 @@ export const MENU_OPTIONS: MENU_OPTIONS_PROPS[] = [
   },
   {
     title: "Appearance",
-    route: "/appearance",
+    route: "/profile/appearance",
     icon: BrushCleaning,
   },
   {

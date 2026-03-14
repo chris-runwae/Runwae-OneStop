@@ -10,6 +10,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="support/contact-support" />
       <Stack.Screen name="support/report-issue" />
       <Stack.Screen name="support/feedback" />
+      <Stack.Screen name="appearance/index" />
     </Stack>
   );
 }

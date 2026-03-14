@@ -1,5 +1,5 @@
 import { X } from "lucide-react-native";
-import React, { useEffect } from "react";
+import React from "react";
 import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   FadeIn,
@@ -54,7 +54,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+              className="h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-transparent dark:border dark:border-gray-200/40"
             >
               <X size={18} color="#9ca3af" />
             </TouchableOpacity>

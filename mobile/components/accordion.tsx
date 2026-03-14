@@ -32,7 +32,7 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
   }));
 
   return (
-    <View className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-black">
+    <View className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-dark-seconndary dark:bg-dark-seconndary/50">
       <TouchableOpacity
         onPress={onToggle}
         className="flex-row items-center justify-between p-4"

@@ -1,6 +1,8 @@
 import CustomSwitch from "@/components/ui/CustomSwitch";
+import SkeletonBox from "@/components/ui/SkeletonBox";
 import { MENU_OPTIONS, MOCK_REWARDS } from "@/constants/profile.constant";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 import { ExternalPathString, RelativePathString, router } from "expo-router";
 import {
@@ -11,69 +13,31 @@ import {
   LogOut,
   SquarePen,
 } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const SkeletonBox = ({
-  width,
-  height,
-  borderRadius = 8,
-}: {
-  width: number;
-  height: number;
-  borderRadius?: number;
-}) => {
-  const opacity = useRef(new Animated.Value(0.4)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [opacity]);
-
-  return (
-    <Animated.View
-      style={{
-        width,
-        height,
-        borderRadius,
-        backgroundColor: "#E5E7EB",
-        opacity,
-      }}
-    />
-  );
-};
 
 const ProfileScreen = () => {
   const { user, isLoading, signOut } = useAuth();
   const [copied, setCopied] = useState(false);
   const [hostMode, setHostMode] = useState(false);
+  const { dark } = useTheme();
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-dark-bg">
-      <View className="flex flex-row items-center justify-between py-5 border-b-2 border-b-gray-200 px-[20px]">
+    <SafeAreaView className="flex-1">
+      <View className="flex flex-row items-center justify-between py-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary px-[20px]">
         <Text
-          className="font-semibold text-3xl"
+          className="font-semibold text-3xl dark:text-white"
           style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
         >
           Profile
         </Text>
-        <TouchableOpacity className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200">
-          <Bell size={15} strokeWidth={1.5} color={"#000000"} />
+        <TouchableOpacity className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+          <Bell
+            size={15}
+            strokeWidth={1.5}
+            color={dark ? "#ffffff" : "#000000"}
+          />
         </TouchableOpacity>
       </View>
 
@@ -90,7 +54,7 @@ const ProfileScreen = () => {
               </>
             ) : (
               <>
-                <View className="h-[60px] w-[60px] rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                <View className="h-[60px] w-[60px] rounded-full bg-gray-200 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center">
                   {user?.avatar_url ? (
                     <Image
                       source={{ uri: user.avatar_url }}
@@ -98,7 +62,7 @@ const ProfileScreen = () => {
                       resizeMode="cover"
                     />
                   ) : (
-                    <Text className="text-xl font-bold text-gray-500">
+                    <Text className="text-xl font-bold text-gray-500 dark:text-gray-200">
                       {(user?.full_name || "John Doe")
                         .split(" ")
                         .map((n) => n[0])
@@ -110,10 +74,10 @@ const ProfileScreen = () => {
                 </View>
                 <View>
                   <Text
-                    className="font-semibold text-xl"
+                    className="font-semibold text-xl text-black dark:text-white"
                     style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
                   >
-                    {user?.full_name || "John Doe"}
+                    {user?.full_name}
                   </Text>
                   <View className="flex-row items-center gap-x-1">
                     <Text
@@ -144,13 +108,19 @@ const ProfileScreen = () => {
           </View>
 
           <TouchableOpacity>
-            <SquarePen size={20} strokeWidth={1.5} color={"#000000"} />
+            <SquarePen
+              size={20}
+              strokeWidth={1.5}
+              color={dark ? "#ffffff" : "#000000"}
+            />
           </TouchableOpacity>
         </View>
 
         <View className="mt-5">
           <View className="flex-row gap-x-2 items-center">
-            <Text className="font-semibold text-base uppercase">Rewards</Text>
+            <Text className="font-semibold text-base uppercase text-black dark:text-white">
+              Rewards
+            </Text>
             <View className="py-[4px] px-[6px] h-full rounded-[4px] bg-primary/10">
               <Text className="text-sm font-semibold text-primary">
                 Coming soon
@@ -162,9 +132,11 @@ const ProfileScreen = () => {
             {MOCK_REWARDS.map((data, index) => (
               <View
                 key={index}
-                className="flex-1 h-[62px] border border-gray-200 rounded-[6px] p-[10px] items-start justify-center"
+                className="flex-1 h-[62px] border border-gray-200 dark:border-dark-seconndary rounded-[6px] p-[10px] items-start justify-center"
               >
-                <Text className="font-bold text-xl">{data.value}</Text>
+                <Text className="font-bold text-xl text-black dark:text-white">
+                  {data.value}
+                </Text>
                 <Text className="font-light text-sm text-gray-400">
                   {data.label}
                 </Text>
@@ -174,8 +146,10 @@ const ProfileScreen = () => {
         </View>
 
         <View className="mt-5">
-          <View className="bg-[#F8F9FA] rounded-[10px] py-[14px] px-[16px] rouded-[8px] border-[0.5px] border-gray-200 flex-row items-center justify-between">
-            <Text className="font-semibold text-base">Switch to Host Mode</Text>
+          <View className="bg-[#F8F9FA] dark:bg-dark-seconndary/50 rounded-[10px] py-[14px] px-[16px] rouded-[8px] border-[0.5px] border-gray-200 dark:border-dark-seconndary flex-row items-center justify-between">
+            <Text className="font-semibold text-base text-black dark:text-white">
+              Switch to Host Mode
+            </Text>
             <CustomSwitch
               value={hostMode}
               onValueChange={setHostMode}
@@ -197,12 +171,22 @@ const ProfileScreen = () => {
                 className="flex-row items-center justify-between"
               >
                 <View className="flex-row items-center gap-x-4">
-                  <View className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200">
-                    <data.icon size={17} strokeWidth={1.5} color={"#343A40"} />
+                  <View className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+                    <data.icon
+                      size={17}
+                      strokeWidth={1.5}
+                      color={dark ? "#ffffff" : "#343A40"}
+                    />
                   </View>
-                  <Text className="font-semibold text-base">{data.title}</Text>
+                  <Text className="font-semibold text-base text-black dark:text-white">
+                    {data.title}
+                  </Text>
                 </View>
-                <ChevronRight size={17} strokeWidth={1.5} color={"#000000"} />
+                <ChevronRight
+                  size={17}
+                  strokeWidth={1.5}
+                  color={dark ? "#ffffff" : "#000000"}
+                />
               </TouchableOpacity>
             ))}
 

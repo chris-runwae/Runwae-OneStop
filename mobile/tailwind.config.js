@@ -10,6 +10,7 @@ module.exports = {
         "muted-200": "#E9ECEF",
         muted: "#F8F9FA",
         "dark-bg": "#212529",
+        "dark-seconndary": "#212529",
       },
     },
   },

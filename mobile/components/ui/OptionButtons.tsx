@@ -1,4 +1,6 @@
+import { useTheme } from "@react-navigation/native";
 import { ChevronRight } from "lucide-react-native";
+import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 const OptionButtons = ({
@@ -9,19 +11,31 @@ const OptionButtons = ({
   onPress,
 }: {
   title: string;
-  icon: any;
+  icon: React.ElementType | React.ReactElement;
   badge?: boolean;
   badgeText?: string;
   onPress: () => void;
 }) => {
+  const { dark } = useTheme();
+  const iconColor = dark ? "#ffffff" : "#343A40";
+
+  const renderIcon = () => {
+    if (React.isValidElement(icon)) {
+      return React.cloneElement(icon as React.ReactElement<{ color?: string }>, {
+        color: iconColor,
+      });
+    }
+    const Icon = icon as React.ElementType;
+    return <Icon size={15} color={iconColor} />;
+  };
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="flex-row items-center justify-between border-b border-b-gray-100 py-4 dark:border-b-gray-800"
+      className="flex-row items-center justify-between border-b border-b-gray-100 py-4 dark:border-b-dark-seconndary"
     >
       <View className="flex-row items-center gap-x-2">
-        <View className="flex h-[35px] w-[35px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/60">
-          {icon}
+        <View className="flex h-[35px] w-[35px] items-center justify-center rounded-full bg-gray-100 dark:bg-dark-seconndary">
+          {renderIcon()}
         </View>
         <Text className="text-base font-semibold text-black dark:text-white">
           {title}
@@ -35,7 +49,7 @@ const OptionButtons = ({
           </Text>
         </View>
       ) : (
-        <ChevronRight size={15} color="#ADB5BD" />
+        <ChevronRight size={15} color={dark ? "#ffffff" : "#ADB5BD"} />
       )}
     </TouchableOpacity>
   );

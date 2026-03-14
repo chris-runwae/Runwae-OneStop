@@ -1,8 +1,9 @@
 import CustomModal from "@/components/ui/CustomModal";
+import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { createIssueReport } from "@/utils/supabase/issue-report.service";
 import { router } from "expo-router";
-import { ArrowLeft, Check, ChevronDown } from "lucide-react-native";
+import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -62,7 +63,7 @@ const ReportIssue = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-dark-bg">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -72,25 +73,10 @@ const ReportIssue = () => {
           showsVerticalScrollIndicator={false}
           style={{ paddingBottom: 50 }}
         >
-          <View className="flex flex-row items-center gap-x-5 px-[20px] py-5 border-b-2 border-b-gray-200">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="h-[35px] w-[35px] flex items-center justify-center rounded-full bg-gray-200"
-            >
-              <ArrowLeft size={18} strokeWidth={1.5} color={"#000000"} />
-            </TouchableOpacity>
-            <View>
-              <Text
-                className="font-semibold text-2xl"
-                style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-              >
-                Report an Issue
-              </Text>
-              <Text className="text-sm text-gray-400">
-                Let us know if you have any issues with our app.
-              </Text>
-            </View>
-          </View>
+          <ScreenHeader
+            title="Report an Issue"
+            subtitle="Let us know if you have any issues with our app."
+          />
 
           <View className="mt-5 px-[20px] flex-1 gap-y-6">
             <Text className="text-base text-gray-400">
@@ -105,7 +91,7 @@ const ReportIssue = () => {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setShowModal(true)}
-                className="flex-row items-center justify-between w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3"
+                className="flex-row items-center justify-between w-full bg-gray-50 dark:bg-dark-seconndary/50 border border-gray-200 dark:border-dark-seconndary rounded-lg px-4 py-3"
               >
                 <Text
                   className={`text-base ${
@@ -123,7 +109,7 @@ const ReportIssue = () => {
                 Issue Details
               </Text>
               <TextInput
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-3 text-base text-black dark:text-white min-h-[120px]"
+                className="w-full bg-gray-50 dark:bg-dark-seconndary/50 border border-gray-200 dark:border-dark-seconndary rounded-lg px-4 py-3 text-base text-black dark:text-white min-h-[120px]"
                 placeholder="Details of the issue..."
                 placeholderTextColor="#9ca3af"
                 multiline

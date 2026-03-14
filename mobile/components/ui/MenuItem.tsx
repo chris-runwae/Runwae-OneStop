@@ -22,7 +22,9 @@ const MenuItem: React.FC<MenuItemProps> = ({
       className="flex-row items-center justify-between py-4"
     >
       <View className="flex-1 mr-3">
-        <Text className="font-semibold text-base text-gray-900">{title}</Text>
+        <Text className="font-semibold text-base text-black dark:text-white">
+          {title}
+        </Text>
         {subtitle ? (
           <Text className="text-sm text-gray-400 mt-0.5">{subtitle}</Text>
         ) : null}

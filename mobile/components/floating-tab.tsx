@@ -5,7 +5,6 @@ import { Plus } from "lucide-react-native";
 import React, { useCallback } from "react";
 import { Platform, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 
 interface TabItemProps {
   tab: (typeof tabs)[0];
@@ -28,7 +27,7 @@ const FloatingTabBar = () => {
       }
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
     },
-    [pathname]
+    [pathname],
   );
 
   const handlePress = (route: string, isSelected: boolean, index: number) => {
@@ -68,17 +67,7 @@ const FloatingTabBar = () => {
   }, [router]);
 
   return (
-    <BlurView
-      intensity={80}
-      tint="light"
-      style={{
-        paddingBottom: Math.max(
-          insets.bottom - 10,
-          Platform.select({ ios: 20, android: 10, default: 10 })
-        ),
-      }}
-      className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]"
-    >
+    <View className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
         <View className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white px-[3px] dark:border-gray-700 dark:bg-black">
           {tabs.map((tab, index) => {
@@ -101,7 +90,7 @@ const FloatingTabBar = () => {
           <Plus size={20} color={"#ffffff"} />
         </TouchableOpacity>
       </View>
-    </BlurView>
+    </View>
   );
 };
 

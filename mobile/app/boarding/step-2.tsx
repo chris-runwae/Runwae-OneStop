@@ -1,10 +1,10 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep2 = () => {
   const router = useRouter();
@@ -86,7 +86,7 @@ const BoardingStep2 = () => {
                 className={`px-3 py-2 rounded-full border ${
                   selectedInterests.includes(interest)
                     ? "bg-primary/10 border-primary"
-                    : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
+                    : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
                 }`}
                 onPress={() => toggleInterest(interest)}
               >
@@ -94,7 +94,7 @@ const BoardingStep2 = () => {
                   className={`text-xs ${
                     selectedInterests.includes(interest)
                       ? "text-primary"
-                      : "text-gray-700 dark:text-gray-300"
+                      : "text-black dark:text-white"
                   }`}
                 >
                   {interest}

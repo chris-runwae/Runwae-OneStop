@@ -64,6 +64,8 @@ export interface UseAuthReturn {
   isProfileComplete: boolean;
   hasSeenOnboarding: boolean;
   hasCompletedBoarding: boolean;
+  showWelcomeModal: boolean;
+  setShowWelcomeModal: (show: boolean) => void;
   currentBoardingStep: number;
 
   signIn: (
@@ -154,6 +156,7 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [hasCompletedBoarding, setHasCompletedBoarding] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [currentBoardingStep, setCurrentBoardingStepState] = useState(1);
 
   const isAuthenticated = !!user;
@@ -341,6 +344,7 @@ export function useAuth(): UseAuthReturn {
 
   const completeBoarding = useCallback(async () => {
     setHasCompletedBoarding(true);
+    setShowWelcomeModal(true);
     await saveBoardingStatus(true);
   }, []);
 
@@ -374,6 +378,8 @@ export function useAuth(): UseAuthReturn {
     isProfileComplete,
     hasSeenOnboarding,
     hasCompletedBoarding,
+    showWelcomeModal,
+    setShowWelcomeModal,
     currentBoardingStep,
     signIn,
     signUp,

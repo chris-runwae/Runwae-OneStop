@@ -1,3 +1,4 @@
+import { useTheme } from "@react-navigation/native";
 import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
@@ -24,13 +25,15 @@ const BoardingHeader = ({
   const strokeDashoffset = circumference * (1 - progress);
   const size = (radius + strokeWidth) * 2;
 
+  const { dark } = useTheme();
+
   return (
     <View className="flex-row w-full justify-between items-center mb-8">
       <TouchableOpacity
         onPress={onBack || (() => router.back())}
-        className="w-[40px] h-[40px] rounded-full bg-gray-200 flex items-center justify-center"
+        className="w-[40px] h-[40px] rounded-full bg-gray-200 dark:bg-dark-seconndary flex items-center justify-center"
       >
-        <ArrowLeft size={15} color="#374151" />
+        <ArrowLeft size={15} color={dark ? "#ffffff" : "#374151"} />
       </TouchableOpacity>
 
       {/* Circular progress */}
@@ -43,7 +46,7 @@ const BoardingHeader = ({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="#E5E7EB"
+            stroke={dark ? "#212529" : "#E5E7EB"}
             strokeWidth={strokeWidth}
             fill="none"
           />

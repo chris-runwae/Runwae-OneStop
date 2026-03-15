@@ -19,7 +19,9 @@ const OnboardingHeader = ({
           <View
             key={index}
             className={`h-1 rounded-full ${
-              index < currentStep ? "w-8 bg-primary" : "w-8 bg-gray-300"
+              index < currentStep
+                ? "w-8 bg-primary"
+                : "w-8 bg-gray-300 dark:bg-dark-seconndary"
             }`}
           />
         ))}

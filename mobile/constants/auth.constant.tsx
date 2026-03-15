@@ -30,6 +30,7 @@ export const OAuthProviderData: OAuthProvider[] = [
     icon: (
       <Image
         source={require("@/assets/images/apple-icon.png")}
+        className="dark:invert"
         style={{ width: 20, height: 20, resizeMode: "contain" }}
       />
     ),

@@ -1,10 +1,10 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep1 = () => {
   const router = useRouter();
@@ -54,7 +54,7 @@ const BoardingStep1 = () => {
               className={`p-4 flex flex-row items-center gap-x-5 border ${
                 selectedOption === option
                   ? "bg-primary/20 border-primary"
-                  : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
+                  : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
               }`}
               onPress={() => setSelectedOption(option)}
             >
@@ -71,7 +71,9 @@ const BoardingStep1 = () => {
               </View>
               <Text
                 className={`text-base font-medium ${
-                  selectedOption === option ? "text-primary" : "text-gray-700 dark:text-gray-300"
+                  selectedOption === option
+                    ? "text-primary"
+                    : "text-gray-700 dark:text-gray-300"
                 }`}
               >
                 {option}

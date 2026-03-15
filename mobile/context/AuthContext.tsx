@@ -8,6 +8,8 @@ export interface AuthContextType {
   hasCompletedBoarding: boolean;
   currentBoardingStep: number;
   isAuthenticated: boolean;
+  showWelcomeModal: boolean;
+  setShowWelcomeModal: (show: boolean) => void;
   isProfileComplete: boolean;
   currentOnboardingStep: number;
   signUp: (
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         ...authHook,
-        currentOnboardingStep: 1, // Default value since useAuth hook doesn't have this
+        currentOnboardingStep: 1,
         nextOnboardingStep: () => {}, // Empty implementation since useAuth hook doesn't have this
       }}
     >

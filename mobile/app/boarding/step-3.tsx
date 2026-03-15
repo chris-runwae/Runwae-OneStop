@@ -1,10 +1,10 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep3 = () => {
   const router = useRouter();
@@ -65,7 +65,7 @@ const BoardingStep3 = () => {
               className={`p-4 flex flex-row items-center gap-x-5 border ${
                 selectedCompanion === option
                   ? "bg-primary/20 border-primary"
-                  : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
+                  : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
               }`}
               onPress={() => setSelectedCompanion(option)}
             >
@@ -73,7 +73,7 @@ const BoardingStep3 = () => {
                 className={`h-[20px] w-[20px] rounded-full flex items-center justify-center border ${
                   selectedCompanion === option
                     ? "border-primary"
-                    : "border-gray-300 dark:border-gray-700"
+                    : "border-gray-300 dark:border-dark-seconndary"
                 }`}
               >
                 {selectedCompanion === option && (
@@ -84,7 +84,7 @@ const BoardingStep3 = () => {
                 className={`text-base font-medium ${
                   selectedCompanion === option
                     ? "text-primary"
-                    : "text-gray-700 dark:text-gray-300"
+                    : "text-black dark:text-white"
                 }`}
               >
                 {option}

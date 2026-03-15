@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep2 = () => {
   const router = useRouter();
@@ -57,7 +57,7 @@ const BoardingStep2 = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <BoardingHeader
         currentStep={2}
         totalSteps={4}
@@ -68,7 +68,7 @@ const BoardingStep2 = () => {
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">
           <Text
-            className="text-black text-2xl font-bold"
+            className="text-black dark:text-white text-2xl font-bold"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
             What type of events are you most interested in?
@@ -86,7 +86,7 @@ const BoardingStep2 = () => {
                 className={`px-3 py-2 rounded-full border ${
                   selectedInterests.includes(interest)
                     ? "bg-primary/10 border-primary"
-                    : "bg-gray-50 border-gray-200"
+                    : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
                 }`}
                 onPress={() => toggleInterest(interest)}
               >
@@ -94,7 +94,7 @@ const BoardingStep2 = () => {
                   className={`text-xs ${
                     selectedInterests.includes(interest)
                       ? "text-primary"
-                      : "text-gray-700"
+                      : "text-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {interest}
@@ -113,7 +113,7 @@ const BoardingStep2 = () => {
           <Text className="text-white font-medium text-base">Next</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

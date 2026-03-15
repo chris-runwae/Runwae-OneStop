@@ -1,5 +1,6 @@
 import CustomTextInput from "@/components/containers/TextInput";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import {
   ChangePasswordFormData,
@@ -16,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Toast } from "toastify-react-native";
 import { z } from "zod";
 
@@ -76,7 +76,7 @@ const ChangePassword = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -149,7 +149,7 @@ const ChangePassword = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

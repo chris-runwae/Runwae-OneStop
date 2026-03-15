@@ -22,6 +22,7 @@ import {
 } from "@/utils/validation/auth.validation";
 import { ArrowLeft } from "lucide-react-native";
 import z from "zod";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const ForgotPasswordScreen = () => {
   const insets = useSafeAreaInsets();
@@ -94,18 +95,18 @@ const ForgotPasswordScreen = () => {
   };
 
   return (
-    <>
+    <AppSafeAreaView className="px-[20px]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 px-[20px] bg-white"
+        className="flex-1"
       >
-        <View style={{ paddingTop: insets.top + 24 }}>
+        <View style={{ paddingTop: 24 }}>
           <View style={styles.headerContainer}>
             <TouchableOpacity
               onPress={() => router.back()}
-              className="w-[50px] h-[50px] rounded-full bg-gray-200 flex items-center justify-center"
+              className="w-[50px] h-[50px] rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"
             >
-              <ArrowLeft size={20} color="#374151" />
+              <ArrowLeft size={20} color="#374151" className="dark:text-gray-300" />
             </TouchableOpacity>
           </View>
 
@@ -113,7 +114,7 @@ const ForgotPasswordScreen = () => {
 
           <Text
             style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-            className="text-3xl font-bold"
+            className="text-3xl font-bold dark:text-white"
           >
             Forgot Password?
           </Text>
@@ -151,7 +152,7 @@ const ForgotPasswordScreen = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </>
+    </AppSafeAreaView>
   );
 };
 

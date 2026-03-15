@@ -1,6 +1,7 @@
 import CustomTextInput from "@/components/containers/TextInput";
 import CustomModal from "@/components/ui/CustomModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import { createIssueReport } from "@/utils/supabase/issue-report.service";
 import { router } from "expo-router";
@@ -14,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const ISSUE_TYPES = [
   "App Crash",
@@ -63,7 +63,7 @@ const ReportIssue = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -163,7 +163,7 @@ const ReportIssue = () => {
           ))}
         </View>
       </CustomModal>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

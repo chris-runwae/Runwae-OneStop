@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep3 = () => {
   const router = useRouter();
@@ -37,7 +37,7 @@ const BoardingStep3 = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <BoardingHeader
         currentStep={3}
         totalSteps={4}
@@ -48,7 +48,7 @@ const BoardingStep3 = () => {
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">
           <Text
-            className="text-black text-2xl font-bold"
+            className="text-black dark:text-white text-2xl font-bold"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
             Who do you usually go with?
@@ -65,7 +65,7 @@ const BoardingStep3 = () => {
               className={`p-4 flex flex-row items-center gap-x-5 border ${
                 selectedCompanion === option
                   ? "bg-primary/20 border-primary"
-                  : "bg-gray-50 border-gray-200"
+                  : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
               }`}
               onPress={() => setSelectedCompanion(option)}
             >
@@ -73,7 +73,7 @@ const BoardingStep3 = () => {
                 className={`h-[20px] w-[20px] rounded-full flex items-center justify-center border ${
                   selectedCompanion === option
                     ? "border-primary"
-                    : "border-gray-300"
+                    : "border-gray-300 dark:border-gray-700"
                 }`}
               >
                 {selectedCompanion === option && (
@@ -84,7 +84,7 @@ const BoardingStep3 = () => {
                 className={`text-base font-medium ${
                   selectedCompanion === option
                     ? "text-primary"
-                    : "text-gray-700"
+                    : "text-gray-700 dark:text-gray-300"
                 }`}
               >
                 {option}
@@ -102,7 +102,7 @@ const BoardingStep3 = () => {
           <Text className="text-white font-medium text-base">Next</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

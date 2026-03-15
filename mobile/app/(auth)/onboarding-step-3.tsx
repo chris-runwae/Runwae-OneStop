@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const OnboardingStep3 = () => {
   const router = useRouter();
@@ -23,7 +23,7 @@ const OnboardingStep3 = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white h-screen">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <OnboardingHeader currentStep={3} totalSteps={3} onSkip={handleSkip} />
 
       <View className="flex-1 gap-y-5 w-full">
@@ -35,7 +35,7 @@ const OnboardingStep3 = () => {
         </View>
         <View className="gap-y-2">
           <Text
-            className="text-black text-3xl"
+            className="text-black dark:text-white text-3xl"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
             One app, your {"\n"}while trip.
@@ -50,7 +50,7 @@ const OnboardingStep3 = () => {
 
       <View className="flex-row items-center gap-x-2">
         <TouchableOpacity
-          className="bg-primary/10 border border-primary/20 h-[45px] px-[40px] rounded-full items-center justify-center"
+          className="bg-primary/10 border border-primary/20 dark:bg-primary/20 h-[45px] px-[40px] rounded-full items-center justify-center"
           onPress={handleBack}
         >
           <Text className="text-primary font-medium text-base">Back</Text>
@@ -62,7 +62,7 @@ const OnboardingStep3 = () => {
           <Text className="text-white font-medium text-base">Get Started</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

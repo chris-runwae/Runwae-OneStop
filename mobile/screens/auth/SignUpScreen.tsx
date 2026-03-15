@@ -21,6 +21,7 @@ import {
   signUpSchema,
 } from "@/utils/validation/auth.validation";
 import z from "zod";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const SignUpScreen = () => {
   const router = useRouter();
@@ -99,16 +100,16 @@ const SignUpScreen = () => {
   };
 
   return (
-    <>
+    <AppSafeAreaView className="px-[20px]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 px-[20px] bg-white"
+        className="flex-1"
       >
-        <View style={{ paddingTop: insets.top + 24 }}>
+        <View style={{ paddingTop: 24 }}>
           <Spacer size={24} vertical />
           <Text
             style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-            className="text-3xl font-bold"
+            className="text-3xl font-bold dark:text-white"
           >
             Welcome to{"\n"}Runwae 🎉
           </Text>
@@ -168,7 +169,7 @@ const SignUpScreen = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </>
+    </AppSafeAreaView>
   );
 };
 

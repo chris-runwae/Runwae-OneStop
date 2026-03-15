@@ -2,6 +2,7 @@ import WelcomeModal from "@/components/WelcomeModal";
 import { useAuth } from "@/context/AuthContext";
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 export default function HomeScreen() {
   const { signOut, hasCompletedBoarding, completeBoarding } = useAuth();
@@ -35,8 +36,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text className="text-2xl font-bold mb-8">Home</Text>
+    <AppSafeAreaView className="items-center justify-center">
+      <Text className="text-2xl font-bold mb-8 dark:text-white">Home</Text>
       <Pressable
         onPress={handleSignOut}
         className="bg-red-500 px-6 py-3 rounded-lg"
@@ -48,6 +49,6 @@ export default function HomeScreen() {
         visible={showWelcomeModal}
         onClose={handleCloseWelcomeModal}
       />
-    </View>
+    </AppSafeAreaView>
   );
 }

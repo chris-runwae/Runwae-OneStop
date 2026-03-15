@@ -1,11 +1,12 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const ExploreScreen = () => {
   return (
-    <View className="flex-1 items-center justify-center">
-      <Text className="text-2xl font-bold">ExploreScreen</Text>
-    </View>
+    <AppSafeAreaView className="items-center justify-center">
+      <Text className="text-2xl font-bold dark:text-white">ExploreScreen</Text>
+    </AppSafeAreaView>
   );
 };
 

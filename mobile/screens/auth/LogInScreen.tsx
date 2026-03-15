@@ -18,6 +18,7 @@ import { Spacer } from "@/components";
 import CustomTextInput from "@/components/containers/TextInput";
 import { useAuth } from "@/context/AuthContext";
 import { LoginFormData, loginSchema } from "@/utils/validation/auth.validation";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const LogInScreen = () => {
   const insets = useSafeAreaInsets();
@@ -73,71 +74,73 @@ const LogInScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 px-[20px]"
-    >
-      <View style={{ paddingTop: insets.top + 24 }}>
-        <Spacer size={24} vertical />
-        <Text
-          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          className="text-3xl font-bold text-black dark:text-white"
-        >
-          Welcome {"\n"}Back!
-        </Text>
-        <Spacer size={5} vertical />
-
-        <Text className="text-gray-400">
-          Login to your account or{" "}
-          <Link href="/(auth)/signup" className="text-primary underline">
-            sign up
-          </Link>{" "}
-          here.
-        </Text>
-        <Spacer size={50} vertical />
-
-        <CustomTextInput
-          label="Email address"
-          keyboardType="email-address"
-          placeholder="example@email.com"
-          value={formData.email}
-          onChangeText={(value) => handleInputChange("email", value)}
-          error={errors.email}
-        />
-        <Spacer size={16} vertical />
-
-        <CustomTextInput
-          label="Password"
-          isPassword
-          value={formData.password}
-          onChangeText={(value) => handleInputChange("password", value)}
-          error={errors.password}
-        />
-        <Spacer size={5} vertical />
-
-        <View style={styles.forgotPasswordContainer}>
-          <Link
-            href={"/(auth)/forgot-password"}
-            className="text-sm text-primary underline"
+    <AppSafeAreaView className="px-[20px]">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <View style={{ paddingTop: 24 }}>
+          <Spacer size={24} vertical />
+          <Text
+            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
+            className="text-3xl font-bold text-black dark:text-white"
           >
-            Forgot Password?
-          </Link>
-        </View>
-        <Spacer size={20} vertical />
+            Welcome {"\n"}Back!
+          </Text>
+          <Spacer size={5} vertical />
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-          className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text className="text-white font-medium text-base">Log in</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <Text className="text-gray-400">
+            Login to your account or{" "}
+            <Link href="/(auth)/signup" className="text-primary underline">
+              sign up
+            </Link>{" "}
+            here.
+          </Text>
+          <Spacer size={50} vertical />
+
+          <CustomTextInput
+            label="Email address"
+            keyboardType="email-address"
+            placeholder="example@email.com"
+            value={formData.email}
+            onChangeText={(value) => handleInputChange("email", value)}
+            error={errors.email}
+          />
+          <Spacer size={16} vertical />
+
+          <CustomTextInput
+            label="Password"
+            isPassword
+            value={formData.password}
+            onChangeText={(value) => handleInputChange("password", value)}
+            error={errors.password}
+          />
+          <Spacer size={5} vertical />
+
+          <View style={styles.forgotPasswordContainer}>
+            <Link
+              href={"/(auth)/forgot-password"}
+              className="text-sm text-primary underline"
+            >
+              Forgot Password?
+            </Link>
+          </View>
+          <Spacer size={20} vertical />
+
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text className="text-white font-medium text-base">Log in</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </AppSafeAreaView>
   );
 };
 

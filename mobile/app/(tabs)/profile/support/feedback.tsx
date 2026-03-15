@@ -1,6 +1,7 @@
 import CustomTextInput from "@/components/containers/TextInput";
 import CustomModal from "@/components/ui/CustomModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import { createFeedback } from "@/utils/supabase/feedback.service";
 import { router } from "expo-router";
@@ -14,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const FEEDBACK_TYPES = [
   "App Suggestion",
@@ -63,7 +63,7 @@ const Feedback = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -165,7 +165,7 @@ const Feedback = () => {
           ))}
         </View>
       </CustomModal>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

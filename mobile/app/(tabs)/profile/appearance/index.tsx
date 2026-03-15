@@ -1,9 +1,9 @@
 import RadioOptions from "@/components/ui/RadioOptions";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const Appearance = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -33,7 +33,7 @@ const Appearance = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <ScreenHeader title="Appearance" />
 
       <View className="mt-5 px-[20px]">
@@ -47,7 +47,7 @@ const Appearance = () => {
           />
         ))}
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

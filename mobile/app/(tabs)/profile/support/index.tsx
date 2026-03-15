@@ -1,9 +1,9 @@
 import MenuItem from "@/components/ui/MenuItem";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { RelativePathString, router } from "expo-router";
 import React from "react";
 import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const SUPPORT_ITEMS: { title: string; route: string }[] = [
   {
@@ -27,7 +27,7 @@ const SUPPORT_ITEMS: { title: string; route: string }[] = [
 const Support = () => {
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <ScreenHeader title="Get Help" />
 
       <View className="mt-5 px-[20px]">
@@ -41,7 +41,7 @@ const Support = () => {
           ))}
         </View>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

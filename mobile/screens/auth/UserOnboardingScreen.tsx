@@ -15,10 +15,11 @@ import { supabase } from "@/utils/supabase/client";
 import { uploadProfileImage } from "@/utils/supabase/storage";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
-import { 
-  KeyboardAwareScrollView, 
+import {
+  KeyboardAwareScrollView,
   // KeyboardToolbar  // Commented out to avoid warning, will add after physical device testing
 } from "react-native-keyboard-controller";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 export default function UserOnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -141,12 +142,12 @@ export default function UserOnboardingScreen() {
     }
   };
   return (
-    <>
-    <KeyboardAwareScrollView bottomOffset={100} contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]}>
+    <AppSafeAreaView>
+    <KeyboardAwareScrollView bottomOffset={100} contentContainerStyle={[styles.content, { paddingTop: 24 }]}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Complete Your Profile</Text>
-          <Text style={styles.subtitle}>
+          <Text className="text-black dark:text-white text-3xl font-bold mb-2">Complete Your Profile</Text>
+          <Text className="text-gray-600 dark:text-gray-400 text-base mb-8">
             Add your information to get started
           </Text>
         </View>
@@ -174,6 +175,7 @@ export default function UserOnboardingScreen() {
 
           <TextInput
             style={styles.input}
+            className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
             placeholder="Full Name"
             placeholderTextColor="#999"
             value={name}
@@ -183,6 +185,7 @@ export default function UserOnboardingScreen() {
 
           <TextInput
             style={styles.input}
+            className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
             placeholder="Username"
             placeholderTextColor="#999"
             value={username}
@@ -191,18 +194,17 @@ export default function UserOnboardingScreen() {
             autoComplete="username"
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleComplete}>
+          <TouchableOpacity style={styles.button} className="bg-black dark:bg-white" onPress={handleComplete}>
             {isLoading ? (
               <ActivityIndicator size={24} color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Complete Setup</Text>
+              <Text style={styles.buttonText} className="text-white dark:text-black">Complete Setup</Text>
             )}
           </TouchableOpacity>
         </View>
       </View>
     </KeyboardAwareScrollView>
-    {/* <KeyboardToolbar /> */}
-    </>
+    </AppSafeAreaView>
   );
 }
 

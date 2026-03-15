@@ -1,14 +1,14 @@
 import OptionButtons from "@/components/ui/OptionButtons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { CONTACT_ITEMS } from "@/constants/contact-support.constant";
 import { MessageSquare } from "lucide-react-native";
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const ContactSupport = () => {
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <ScreenHeader
         title="Contact Support"
         subtitle="We would love to hear from you."
@@ -31,7 +31,7 @@ const ContactSupport = () => {
           ))}
         </View>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

@@ -3,13 +3,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import {
-  SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Toast } from "toastify-react-native";
 
 import { Spacer } from "@/components";
 import { useAuth } from "@/hooks/useAuth";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const CheckEmailScreen = () => {
   const insets = useSafeAreaInsets();
@@ -97,7 +97,7 @@ const CheckEmailScreen = () => {
 
   return (
     <>
-      <SafeAreaView className="flex-1 px-[20px] bg-white">
+      <AppSafeAreaView className="px-[20px]">
         <View className="flex flex-1 justify-between">
           <View className="flex-1 items-center justify-center">
             <View className="items-center justify-center">
@@ -160,7 +160,7 @@ const CheckEmailScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </AppSafeAreaView>
     </>
   );
 };

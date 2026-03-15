@@ -1,5 +1,6 @@
 import CustomSwitch from "@/components/ui/CustomSwitch";
 import SkeletonBox from "@/components/ui/SkeletonBox";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { MENU_OPTIONS, MOCK_REWARDS } from "@/constants/profile.constant";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@react-navigation/native";
@@ -15,7 +16,6 @@ import {
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const ProfileScreen = () => {
   const { user, isLoading, signOut } = useAuth();
@@ -24,7 +24,7 @@ const ProfileScreen = () => {
   const { dark } = useTheme();
 
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <View className="flex flex-row items-center justify-between py-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary px-[20px]">
         <Text
           className="font-semibold text-3xl dark:text-white"
@@ -206,7 +206,7 @@ const ProfileScreen = () => {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

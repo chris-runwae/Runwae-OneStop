@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const BoardingStep1 = () => {
   const router = useRouter();
@@ -30,13 +30,13 @@ const BoardingStep1 = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <BoardingHeader currentStep={1} totalSteps={4} onSkip={handleSkip} />
 
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">
           <Text
-            className="text-black text-2xl font-bold"
+            className="text-black dark:text-white text-2xl font-bold"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
             What brings you to Runwae?
@@ -54,7 +54,7 @@ const BoardingStep1 = () => {
               className={`p-4 flex flex-row items-center gap-x-5 border ${
                 selectedOption === option
                   ? "bg-primary/20 border-primary"
-                  : "bg-gray-50 border-gray-200"
+                  : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
               }`}
               onPress={() => setSelectedOption(option)}
             >
@@ -62,7 +62,7 @@ const BoardingStep1 = () => {
                 className={`h-[20px] w-[20px] rounded-full flex items-center justify-center border ${
                   selectedOption === option
                     ? "border-primary"
-                    : "border-gray-300"
+                    : "border-gray-300 dark:border-gray-700"
                 }`}
               >
                 {selectedOption === option && (
@@ -71,7 +71,7 @@ const BoardingStep1 = () => {
               </View>
               <Text
                 className={`text-base font-medium ${
-                  selectedOption === option ? "text-primary" : "text-gray-700"
+                  selectedOption === option ? "text-primary" : "text-gray-700 dark:text-gray-300"
                 }`}
               >
                 {option}
@@ -87,7 +87,7 @@ const BoardingStep1 = () => {
       >
         <Text className="text-white font-medium text-base">Next</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

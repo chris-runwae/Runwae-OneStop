@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const OnboardingScreen = () => {
   const router = useRouter();
@@ -24,7 +24,7 @@ const OnboardingScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white h-screen">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <View className="flex-1 items-center gap-y-5 w-full">
         <View className="my-10">
           <Image
@@ -33,7 +33,7 @@ const OnboardingScreen = () => {
           />
         </View>
         <Text
-          className="text-black text-center text-3xl"
+          className="text-black dark:text-white text-center text-3xl"
           style={{ fontFamily: "BricolageGrotesque-Bold" }}
         >
           Travel round the world {"\n"}without worries
@@ -58,18 +58,18 @@ const OnboardingScreen = () => {
         </View>
 
         <View className="flex-row items-center gap-2">
-          <View className="flex-1 h-[1px] bg-gray-100" />
+          <View className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800" />
           <View className="h-[30px] w-[30px] flex-row items-center justify-center">
             <Text className="text-gray-400">or</Text>
           </View>
-          <View className="flex-1 h-[1px] bg-gray-100" />
+          <View className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800" />
         </View>
 
         <View className="flex-row items-center gap-x-5">
           {OAuthProviderData.map((data, index) => (
             <TouchableOpacity
               key={index}
-              className="h-[50px] w-[50px] rounded-full border border-gray-200 flex items-center justify-center"
+              className="h-[50px] w-[50px] rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center"
             >
               {data.icon}
             </TouchableOpacity>
@@ -88,7 +88,7 @@ const OnboardingScreen = () => {
         </Text>
         .
       </Text>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

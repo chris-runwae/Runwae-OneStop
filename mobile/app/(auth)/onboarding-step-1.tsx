@@ -2,7 +2,7 @@ import OnboardingHeader from "@/components/onboarding/OnboardingHeader";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const OnboardingStep1 = () => {
   const router = useRouter();
@@ -16,7 +16,7 @@ const OnboardingStep1 = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 px-[20px] items-center justify-between bg-white h-screen">
+    <AppSafeAreaView className="px-[20px] items-center justify-between">
       <OnboardingHeader currentStep={1} totalSteps={3} onSkip={handleSkip} />
 
       <View className="flex-1 gap-y-5 w-full">
@@ -28,7 +28,7 @@ const OnboardingStep1 = () => {
         </View>
         <View className="gap-y-2">
           <Text
-            className="text-black text-3xl"
+            className="text-black dark:text-white text-3xl"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
             Find events worth {"\n"}the trip.
@@ -47,7 +47,7 @@ const OnboardingStep1 = () => {
       >
         <Text className="text-white font-medium text-base">Next</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

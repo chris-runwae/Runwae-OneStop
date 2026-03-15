@@ -81,9 +81,9 @@ const CustomTextInput = ({
             className="absolute right-[12px] items-center justify-center"
           >
             {showPassword ? (
-              <EyeOff size={20} color="#9CA3AF" />
+              <EyeOff size={20} strokeWidth={1.5} color="#9CA3AF" />
             ) : (
-              <Eye size={20} color="#9CA3AF" />
+              <Eye size={20} strokeWidth={1.5} color="#9CA3AF" />
             )}
           </TouchableOpacity>
         )}

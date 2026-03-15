@@ -1,9 +1,9 @@
 import MenuItem from "@/components/ui/MenuItem";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { RelativePathString, router } from "expo-router";
 import React from "react";
 import { View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const SECURITY_ITEMS: { title: string; subtitle: string; route: string }[] = [
   {
@@ -14,7 +14,7 @@ const SECURITY_ITEMS: { title: string; subtitle: string; route: string }[] = [
   {
     title: "Two-factor authentication",
     subtitle: "Add an extra layer of protection to your account.",
-    route: "/profile/security/two-factor-authentication",
+    route: "/profile/security/two-factor-auth",
   },
   {
     title: "Privacy settings",
@@ -25,7 +25,7 @@ const SECURITY_ITEMS: { title: string; subtitle: string; route: string }[] = [
 
 const SecurityScreen = () => {
   return (
-    <SafeAreaView className="flex-1">
+    <AppSafeAreaView>
       <ScreenHeader title="Security" />
 
       <View className="mt-5 px-[20px]">
@@ -40,7 +40,7 @@ const SecurityScreen = () => {
           ))}
         </View>
       </View>
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 };
 

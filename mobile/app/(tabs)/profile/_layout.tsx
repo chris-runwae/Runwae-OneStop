@@ -13,6 +13,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="appearance/index" />
       <Stack.Screen name="security/index" />
       <Stack.Screen name="security/change-password" />
+      <Stack.Screen name="security/two-factor-auth" />
     </Stack>
   );
 }

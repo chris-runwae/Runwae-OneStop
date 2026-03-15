@@ -17,7 +17,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ visible, onClose }) => {
       onRequestClose={onClose}
     >
       <BlurView intensity={20} tint="dark" className="flex-1">
-        <SafeAreaView className="flex-1 items-center pb-2 justify-end w-full">
+        <SafeAreaView className="flex-1 items-center pb-[7px] justify-end w-full">
           <View className="bg-white dark:bg-dark-seconndary rounded-[50px] p-6 w-full max-w-[370px] mx-auto shadow-2xl">
             <View className="items-center mb-2">
               <View className="w-[160px] h-[160px] mb-10">

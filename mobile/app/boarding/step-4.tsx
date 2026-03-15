@@ -1,6 +1,6 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -28,18 +28,11 @@ const BoardingStep4 = () => {
     router.replace("/boarding/step-3");
   };
 
-  const handleSkip = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await completeBoarding();
-    router.replace("/(tabs)");
-  };
-
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
       <BoardingHeader
         currentStep={4}
         totalSteps={4}
-        onSkip={handleSkip}
         onBack={handleBack}
       />
 

@@ -1,6 +1,6 @@
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import RadioOptions from "@/components/ui/RadioOptions";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { View } from "react-native";
@@ -9,11 +9,14 @@ const Appearance = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
   const [selectedTheme, setSelectedTheme] = React.useState<
     "light" | "dark" | "system"
-  >(colorScheme as "light" | "dark" | "system");
+  >((colorScheme as "light" | "dark" | "system") || "system");
 
   React.useEffect(() => {
     if (colorScheme) {
       setSelectedTheme(colorScheme as any);
+    } else {
+      setColorScheme("system");
+      setSelectedTheme("system");
     }
   }, []);
 

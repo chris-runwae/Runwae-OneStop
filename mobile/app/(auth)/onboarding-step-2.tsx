@@ -1,9 +1,9 @@
 import OnboardingHeader from "@/components/onboarding/OnboardingHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const OnboardingStep2 = () => {
   const router = useRouter();

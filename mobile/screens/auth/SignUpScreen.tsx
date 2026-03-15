@@ -15,7 +15,7 @@ import { Toast } from "toastify-react-native";
 
 import { Spacer } from "@/components";
 import CustomTextInput from "@/components/containers/TextInput";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import {
   SignUpFormData,
   signUpSchema,

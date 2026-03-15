@@ -1,10 +1,10 @@
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { OAuthProviderData } from "@/constants/auth.constant";
 import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const OnboardingScreen = () => {
   const router = useRouter();

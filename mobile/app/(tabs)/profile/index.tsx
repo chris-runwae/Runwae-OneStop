@@ -1,9 +1,10 @@
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import CustomSwitch from "@/components/ui/CustomSwitch";
 import SkeletonBox from "@/components/ui/SkeletonBox";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { MENU_OPTIONS, MOCK_REWARDS } from "@/constants/profile.constant";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@react-navigation/native";
+import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
 import { ExternalPathString, RelativePathString, router } from "expo-router";
 import {
@@ -13,14 +14,16 @@ import {
   Files,
   LogOut,
   SquarePen,
+  X,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Modal, Text, TouchableOpacity, View } from "react-native";
 
 const ProfileScreen = () => {
   const { user, isLoading, signOut } = useAuth();
   const [copied, setCopied] = useState(false);
   const [hostMode, setHostMode] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const { dark } = useTheme();
 
   return (
@@ -32,7 +35,10 @@ const ProfileScreen = () => {
         >
           Profile
         </Text>
-        <TouchableOpacity className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+        <TouchableOpacity 
+          onPress={() => router.push("/notifications")}
+          className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary"
+        >
           <Bell
             size={15}
             strokeWidth={1.5}
@@ -54,7 +60,11 @@ const ProfileScreen = () => {
               </>
             ) : (
               <>
-                <View className="h-[60px] w-[60px] rounded-full bg-gray-200 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center">
+                <TouchableOpacity
+                  activeOpacity={user?.avatar_url ? 0.9 : 1}
+                  onPress={() => user?.avatar_url && setShowImagePreview(true)}
+                  className="h-[60px] w-[60px] rounded-full bg-gray-200 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center"
+                >
                   {user?.avatar_url ? (
                     <Image
                       source={{ uri: user.avatar_url }}
@@ -65,16 +75,18 @@ const ProfileScreen = () => {
                     <Text className="text-xl font-bold text-gray-500 dark:text-gray-200">
                       {(user?.full_name || "John Doe")
                         .split(" ")
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join("")
                         .toUpperCase()
                         .substring(0, 2)}
                     </Text>
                   )}
-                </View>
+                </TouchableOpacity>
                 <View>
                   <Text
-                    className="font-semibold text-xl text-black dark:text-white"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    className="font-semibold text-xl text-black dark:text-white max-w-[200px]"
                     style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
                   >
                     {user?.full_name}
@@ -107,7 +119,7 @@ const ProfileScreen = () => {
             )}
           </View>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/profile/edit")}>
             <SquarePen
               size={20}
               strokeWidth={1.5}
@@ -206,6 +218,41 @@ const ProfileScreen = () => {
           </View>
         </View>
       </View>
+
+      {/* Full Screen Image Preview Modal */}
+      <Modal
+        visible={showImagePreview}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImagePreview(false)}
+      >
+        <BlurView
+          intensity={80}
+          tint="dark"
+          className="flex-1"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowImagePreview(false)}
+            className="flex-1 items-center justify-center relative"
+          >
+            <TouchableOpacity
+              onPress={() => setShowImagePreview(false)}
+              className="absolute top-14 right-6 z-10 p-2"
+            >
+              <X color="white" size={28} strokeWidth={2} />
+            </TouchableOpacity>
+
+            {user?.avatar_url && (
+              <Image
+                source={{ uri: user.avatar_url }}
+                className="w-full h-full"
+                resizeMode="contain"
+              />
+            )}
+          </TouchableOpacity>
+        </BlurView>
+      </Modal>
     </AppSafeAreaView>
   );
 };

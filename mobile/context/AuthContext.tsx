@@ -9,12 +9,13 @@ export interface AuthContextType {
   currentBoardingStep: number;
   isAuthenticated: boolean;
   showWelcomeModal: boolean;
-  setShowWelcomeModal: (show: boolean) => void;
+  setShowWelcomeModal: (show: boolean) => Promise<void>;
   isProfileComplete: boolean;
   currentOnboardingStep: number;
   signUp: (
     email: string,
     password: string,
+    fullName?: string
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (
     email: string,
@@ -31,10 +32,10 @@ export interface AuthContextType {
     newPassword: string,
   ) => Promise<{ success: boolean; error?: string }>;
   initialize: () => Promise<void>;
-  completeOnboarding: () => void;
-  completeBoarding: () => void;
-  setCurrentBoardingStep: (step: number) => void;
-  nextOnboardingStep: () => void;
+  completeOnboarding: () => Promise<void>;
+  completeBoarding: () => Promise<void>;
+  setCurrentBoardingStep: (step: number) => Promise<void>;
+  nextOnboardingStep: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,8 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         ...authHook,
-        currentOnboardingStep: 1,
-        nextOnboardingStep: () => {}, // Empty implementation since useAuth hook doesn't have this
+        currentOnboardingStep: authHook.currentBoardingStep,
+        nextOnboardingStep: async () => {
+          if (authHook.currentBoardingStep < 4) {
+             await authHook.setCurrentBoardingStep(authHook.currentBoardingStep + 1);
+          }
+        },
       }}
     >
       {children}

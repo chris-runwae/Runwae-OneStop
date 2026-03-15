@@ -8,7 +8,7 @@ import {
 import { Toast } from "toastify-react-native";
 
 import { Spacer } from "@/components";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
 const CheckEmailScreen = () => {

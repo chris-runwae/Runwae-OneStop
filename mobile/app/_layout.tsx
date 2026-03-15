@@ -15,7 +15,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -27,17 +27,9 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import "../global.css";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
 function RouteGuard() {
-  const router = useRouter();
   const segments = useSegments();
-  const isNavigating = useRef(false);
-  const lastRoute = useRef<string | null>(null);
   const {
-    user,
     isLoading,
     hasSeenOnboarding,
     hasCompletedBoarding,
@@ -50,107 +42,85 @@ function RouteGuard() {
     initialize();
   }, []);
 
-  useEffect(() => {
-    if (isLoading || isNavigating.current) return;
-
-    const AUTH_ROUTES = new Set([
-      "(auth)",
-      "login",
-      "register",
-      "forgot-password",
-      "check-email",
-      "reset-password",
-      "onboarding",
-    ]);
-
-    const ONBOARDING_STEPS = new Set([
-      "onboarding",
-      "onboarding-step-1",
-      "onboarding-step-2",
-      "onboarding-step-3",
-    ]);
-
-    const BOARDING_STEPS = new Set([
-      "boarding",
-      "step-1",
-      "step-2",
-      "step-3",
-      "step-4",
-    ]);
-
-    const [currentSegment, secondSegment] = segments;
-    const isInAuthFlow =
-      AUTH_ROUTES.has(currentSegment) ||
-      (currentSegment === "(auth)" &&
-        secondSegment &&
-        AUTH_ROUTES.has(secondSegment));
-    const isInOnboardingSteps =
-      currentSegment === "(auth)" &&
-      secondSegment &&
-      ONBOARDING_STEPS.has(secondSegment);
-    const isInBoardingSteps =
-      currentSegment === "boarding" &&
-      secondSegment &&
-      BOARDING_STEPS.has(secondSegment);
-    const isInTabs = currentSegment === "(tabs)";
-    const isInOnboarding = currentSegment === "onboarding";
-
-    console.log("RouteGuard state:", {
-      isAuthenticated,
-      hasSeenOnboarding,
-      hasCompletedBoarding,
-      currentSegment,
-      secondSegment,
-      isInAuthFlow,
-      isInOnboardingSteps,
-      isInBoardingSteps,
-      isInTabs,
-      isInOnboarding,
-    });
-
-    let targetRoute: string | null = null;
-
-    if (!isAuthenticated && hasSeenOnboarding && !isInAuthFlow) {
-      targetRoute = "/(auth)/login";
-    } else if (
-      !isAuthenticated &&
-      !hasSeenOnboarding &&
-      !isInOnboarding &&
-      !isInOnboardingSteps &&
-      !isInAuthFlow
-    ) {
-      targetRoute = "/(auth)/onboarding";
-    } else if (
-      isAuthenticated &&
-      !hasCompletedBoarding &&
-      !isInTabs &&
-      !isInBoardingSteps
-    ) {
-      // Route to appropriate boarding step
-      targetRoute = `/boarding/step-${currentBoardingStep}`;
-    } else if (isAuthenticated && !isInTabs && !isInBoardingSteps) {
-      targetRoute = "/(tabs)";
-    }
-
-    if (targetRoute && targetRoute !== lastRoute.current) {
-      console.log("RouteGuard: Navigating to", targetRoute);
-      lastRoute.current = targetRoute;
-      isNavigating.current = true;
-      router.replace(targetRoute as any);
-      setTimeout(() => {
-        isNavigating.current = false;
-      }, 200);
-    }
-  }, [
-    isAuthenticated,
-    hasSeenOnboarding,
-    hasCompletedBoarding,
-    isLoading,
-    segments,
-  ]);
-
   if (isLoading) {
     return <SplashScreen />;
+  }
+
+  const AUTH_ROUTES = new Set([
+    "(auth)",
+    "login",
+    "register",
+    "forgot-password",
+    "check-email",
+    "reset-password",
+    "onboarding",
+  ]);
+
+  const ONBOARDING_STEPS = new Set([
+    "onboarding",
+    "onboarding-step-1",
+    "onboarding-step-2",
+    "onboarding-step-3",
+  ]);
+
+  const BOARDING_STEPS = new Set([
+    "boarding",
+    "step-1",
+    "step-2",
+    "step-3",
+    "step-4",
+  ]);
+
+  const AUTHORIZED_ROOT_ROUTES = new Set([
+    "(tabs)",
+    "notifications",
+    "modal",
+  ]);
+
+  const [currentSegment, secondSegment] = segments;
+  const isInAuthFlow =
+    AUTH_ROUTES.has(currentSegment) ||
+    (currentSegment === "(auth)" &&
+      secondSegment &&
+      AUTH_ROUTES.has(secondSegment));
+  const isInOnboardingSteps =
+    currentSegment === "(auth)" &&
+    secondSegment &&
+    ONBOARDING_STEPS.has(secondSegment);
+  const isInBoardingSteps =
+    currentSegment === "boarding" &&
+    secondSegment &&
+    BOARDING_STEPS.has(secondSegment);
+  const isInTabs = currentSegment === "(tabs)";
+  const isInOnboarding = currentSegment === "onboarding";
+  const isInAuthorizedRoot = AUTHORIZED_ROOT_ROUTES.has(currentSegment);
+
+  // Redirection Logic
+  if (!isAuthenticated && hasSeenOnboarding && !isInAuthFlow) {
+    return <Redirect href="/(auth)/login" />;
+  } 
+  
+  if (
+    !isAuthenticated &&
+    !hasSeenOnboarding &&
+    !isInOnboarding &&
+    !isInOnboardingSteps &&
+    !isInAuthFlow
+  ) {
+    return <Redirect href="/(auth)/onboarding" />;
+  } 
+  
+  if (
+    isAuthenticated &&
+    !hasCompletedBoarding &&
+    !isInAuthorizedRoot &&
+    !isInBoardingSteps
+  ) {
+    return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
+  } 
+  
+  if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
+    return <Redirect href="/(tabs)" />;
   }
 
   return (

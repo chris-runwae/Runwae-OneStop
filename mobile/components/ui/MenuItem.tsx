@@ -7,6 +7,7 @@ interface MenuItemProps {
   subtitle?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
+  hasBorder?: boolean;
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({
@@ -14,12 +15,13 @@ const MenuItem: React.FC<MenuItemProps> = ({
   subtitle,
   onPress,
   rightElement,
+  hasBorder = false,
 }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="flex-row items-center justify-between py-4"
+      className={`flex-row items-center justify-between py-4 ${hasBorder ? "border-b border-b-gray-100 dark:border-b-gray-800" : ""}`}
     >
       <View className="flex-1 mr-3">
         <Text className="font-semibold text-base text-black dark:text-white">

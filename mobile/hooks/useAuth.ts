@@ -1,58 +1,40 @@
 import { User } from "@/store/auth-store";
 import { supabase } from "@/utils/supabase/client";
 import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 // Simple storage abstraction that works on web and handles AsyncStorage gracefully
+const BOARDING_STORAGE_KEY = "@boarding_completed";
+const ONBOARDING_STORAGE_KEY = "@onboarding_completed";
+const CURRENT_BOARDING_STEP_KEY = "@current_boarding_step";
+const WELCOME_MODAL_TRIGGER_KEY = "@show_welcome_modal";
+
 const storage = {
   async getItem(key: string): Promise<string | null> {
     try {
-      console.log("storage.getItem called for key:", key);
-      // Try AsyncStorage first (for native)
-      if (typeof window !== "undefined" && window.localStorage) {
-        const value = localStorage.getItem(key);
-        console.log("localStorage.getItem result:", value);
-        return value;
+      if (Platform.OS === "web") {
+        return localStorage.getItem(key);
       }
-      // Fallback for AsyncStorage if available
       const AsyncStorage =
         require("@react-native-async-storage/async-storage").default;
-      const value = await AsyncStorage.getItem(key);
-      console.log("AsyncStorage.getItem result:", value);
-      return value;
+      return await AsyncStorage.getItem(key);
     } catch (error) {
-      console.log("storage.getItem error:", error);
-      // Final fallback to localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        const value = localStorage.getItem(key);
-        console.log("fallback localStorage.getItem result:", value);
-        return value;
-      }
-      console.log("storage.getItem returning null");
+      console.error(`storage.getItem error for ${key}:`, error);
       return null;
     }
   },
 
   async setItem(key: string, value: string): Promise<void> {
     try {
-      console.log("storage.setItem called for key:", key, "value:", value);
-      // Try AsyncStorage first (for native)
-      if (typeof window !== "undefined" && window.localStorage) {
+      if (Platform.OS === "web") {
         localStorage.setItem(key, value);
-        console.log("localStorage.setItem completed");
         return;
       }
-      // Fallback for AsyncStorage if available
       const AsyncStorage =
         require("@react-native-async-storage/async-storage").default;
       await AsyncStorage.setItem(key, value);
-      console.log("AsyncStorage.setItem completed");
     } catch (error) {
-      console.log("storage.setItem error:", error);
-      // Final fallback to localStorage
-      if (typeof window !== "undefined" && window.localStorage) {
-        localStorage.setItem(key, value);
-        console.log("fallback localStorage.setItem completed");
-      }
+      console.error(`storage.setItem error for ${key}:`, error);
     }
   },
 };
@@ -65,7 +47,7 @@ export interface UseAuthReturn {
   hasSeenOnboarding: boolean;
   hasCompletedBoarding: boolean;
   showWelcomeModal: boolean;
-  setShowWelcomeModal: (show: boolean) => void;
+  setShowWelcomeModal: (show: boolean) => Promise<void>;
   currentBoardingStep: number;
 
   signIn: (
@@ -88,9 +70,9 @@ export interface UseAuthReturn {
     newPassword: string
   ) => Promise<{ success: boolean; error?: string }>;
 
-  completeOnboarding: () => void;
-  completeBoarding: () => void;
-  setCurrentBoardingStep: (step: number) => void;
+  completeOnboarding: () => Promise<void>;
+  completeBoarding: () => Promise<void>;
+  setCurrentBoardingStep: (step: number) => Promise<void>;
 
   initialize: () => Promise<void>;
 }
@@ -131,24 +113,22 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
   }
 }
 
-async function checkOnboardingStatus(): Promise<boolean> {
-  // You can store this in AsyncStorage or Supabase
-  // For now, return false (first time user)
-  return false;
-}
-
 async function saveBoardingStatus(hasCompleted: boolean): Promise<void> {
-  console.log("saveBoardingStatus called with:", hasCompleted);
-  await storage.setItem("@boarding_completed", hasCompleted.toString());
-  console.log("saveBoardingStatus completed");
+  await storage.setItem(BOARDING_STORAGE_KEY, hasCompleted.toString());
 }
 
 async function loadBoardingStatus(): Promise<boolean> {
-  console.log("loadBoardingStatus called");
-  const value = await storage.getItem("@boarding_completed");
-  const result = value === "true";
-  console.log("loadBoardingStatus result:", result, "(raw value:", value, ")");
-  return result;
+  const value = await storage.getItem(BOARDING_STORAGE_KEY);
+  return value === "true";
+}
+
+async function checkOnboardingStatus(): Promise<boolean> {
+  const value = await storage.getItem(ONBOARDING_STORAGE_KEY);
+  return value === "true";
+}
+
+async function saveOnboardingStatus(hasSeen: boolean): Promise<void> {
+  await storage.setItem(ONBOARDING_STORAGE_KEY, hasSeen.toString());
 }
 
 export function useAuth(): UseAuthReturn {
@@ -183,6 +163,16 @@ export function useAuth(): UseAuthReturn {
       // Load boarding completion status
       const boardingCompleted = await loadBoardingStatus();
       setHasCompletedBoarding(boardingCompleted);
+
+      // Load current boarding step
+      const storedStep = await storage.getItem(CURRENT_BOARDING_STEP_KEY);
+      if (storedStep) {
+        setCurrentBoardingStepState(parseInt(storedStep, 10));
+      }
+
+      // Load welcome modal trigger status
+      const showModal = await storage.getItem(WELCOME_MODAL_TRIGGER_KEY);
+      setShowWelcomeModal(showModal === "true");
     } catch (error) {
       console.error("Error initializing auth:", error);
       setUser(null);
@@ -239,8 +229,16 @@ export function useAuth(): UseAuthReturn {
           const profile = await fetchUserProfile(data.user.id);
           setUser(profile);
 
+          // Reset all onboarding/boarding status for new user
           setHasCompletedBoarding(false);
+          setHasSeenOnboarding(true);
+          setShowWelcomeModal(false);
+          setCurrentBoardingStepState(1);
+
           await saveBoardingStatus(false);
+          await saveOnboardingStatus(true);
+          await storage.setItem(CURRENT_BOARDING_STEP_KEY, "1");
+          await storage.setItem(WELCOME_MODAL_TRIGGER_KEY, "false");
 
           return { success: true };
         }
@@ -338,18 +336,26 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback(async () => {
     setHasSeenOnboarding(true);
+    await saveOnboardingStatus(true);
   }, []);
 
   const completeBoarding = useCallback(async () => {
     setHasCompletedBoarding(true);
     setShowWelcomeModal(true);
     await saveBoardingStatus(true);
+    await storage.setItem(WELCOME_MODAL_TRIGGER_KEY, "true");
   }, []);
 
-  const setCurrentBoardingStep = useCallback((step: number) => {
+  const setCurrentBoardingStep = useCallback(async (step: number) => {
     setCurrentBoardingStepState(step);
+    await storage.setItem(CURRENT_BOARDING_STEP_KEY, step.toString());
+  }, []);
+
+  const setShowWelcomeModalWrapped = useCallback(async (show: boolean) => {
+    setShowWelcomeModal(show);
+    await storage.setItem(WELCOME_MODAL_TRIGGER_KEY, show.toString());
   }, []);
 
   useEffect(() => {
@@ -379,7 +385,7 @@ export function useAuth(): UseAuthReturn {
     hasSeenOnboarding,
     hasCompletedBoarding,
     showWelcomeModal,
-    setShowWelcomeModal,
+    setShowWelcomeModal: setShowWelcomeModalWrapped,
     currentBoardingStep,
     signIn,
     signUp,

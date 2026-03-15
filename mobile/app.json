@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "runwea",
-    "slug": "runwea",
+    "name": "Runwae",
+    "slug": "runwae",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "runwea",
+    "scheme": "runwae",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chrisobocha.runwea"
+      "bundleIdentifier": "com.chrisobocha.runwae",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.chrisobocha.runwea"
+      "package": "com.chrisobocha.runwae",
+      "versionCode": 1
     },
     "web": {
       "output": "static",

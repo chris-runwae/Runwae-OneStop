@@ -8,7 +8,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 const BoardingStep3 = () => {
   const router = useRouter();
-  const { setCurrentBoardingStep } = useAuth();
+  const { setCurrentBoardingStep, completeBoarding } = useAuth();
   const [selectedCompanion, setSelectedCompanion] = useState<string>("");
 
   const companionOptions = [
@@ -19,9 +19,9 @@ const BoardingStep3 = () => {
     "🌍 Community/Groups",
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCurrentBoardingStep(4);
+    await setCurrentBoardingStep(4);
     router.push("/boarding/step-4");
   };
 
@@ -31,19 +31,9 @@ const BoardingStep3 = () => {
     router.replace("/boarding/step-2");
   };
 
-  const handleSkip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace("/(tabs)");
-  };
-
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
-      <BoardingHeader
-        currentStep={3}
-        totalSteps={4}
-        onSkip={handleSkip}
-        onBack={handleBack}
-      />
+      <BoardingHeader currentStep={3} totalSteps={4} onBack={handleBack} />
 
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">

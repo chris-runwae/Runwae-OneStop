@@ -1,6 +1,6 @@
 import {
-  ArrowRightFromLine,
   BrushCleaning,
+  FileText,
   Lock,
   MessageCircleQuestionMark,
 } from "lucide-react-native";
@@ -53,8 +53,13 @@ export const MENU_OPTIONS: MENU_OPTIONS_PROPS[] = [
     icon: Lock,
   },
   {
-    title: "Legal",
-    route: "/legal",
-    icon: ArrowRightFromLine,
+    title: "About Us",
+    route: "/profile/about",
+    icon: FileText,
   },
+  // {
+  //   title: "Legal",
+  //   route: "/legal",
+  //   icon: Scale,
+  // },
 ];

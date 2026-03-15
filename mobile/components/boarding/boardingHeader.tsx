@@ -1,4 +1,6 @@
+import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
@@ -10,6 +12,7 @@ interface OnboardingHeaderProps {
   totalSteps: number;
   onSkip?: () => void;
   onBack?: () => void;
+  showSkip?: boolean;
 }
 
 const BoardingHeader = ({
@@ -17,7 +20,9 @@ const BoardingHeader = ({
   totalSteps,
   onSkip,
   onBack,
+  showSkip = true,
 }: OnboardingHeaderProps) => {
+  const { completeBoarding } = useAuth();
   const radius = 18;
   const strokeWidth = 3;
   const circumference = 2 * Math.PI * radius;
@@ -26,6 +31,16 @@ const BoardingHeader = ({
   const size = (radius + strokeWidth) * 2;
 
   const { dark } = useTheme();
+
+  const handleInternalSkip = async () => {
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await completeBoarding();
+    router.replace("/(tabs)");
+  };
 
   return (
     <View className="flex-row w-full justify-between items-center mb-8">
@@ -71,8 +86,8 @@ const BoardingHeader = ({
         </View>
       </View>
 
-      {onSkip ? (
-        <TouchableOpacity onPress={onSkip}>
+      {showSkip ? (
+        <TouchableOpacity onPress={handleInternalSkip}>
           <Text className="text-gray-400 underline text-sm">Skip</Text>
         </TouchableOpacity>
       ) : (

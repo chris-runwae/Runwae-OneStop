@@ -8,7 +8,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 const BoardingStep1 = () => {
   const router = useRouter();
-  const { setCurrentBoardingStep } = useAuth();
+  const { setCurrentBoardingStep, completeBoarding } = useAuth();
   const [selectedOption, setSelectedOption] = useState<string>("");
 
   const options = [
@@ -18,20 +18,15 @@ const BoardingStep1 = () => {
     "💰 Find Travel Deals",
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCurrentBoardingStep(2);
+    await setCurrentBoardingStep(2);
     router.push("/boarding/step-2");
-  };
-
-  const handleSkip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace("/(tabs)");
   };
 
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
-      <BoardingHeader currentStep={1} totalSteps={4} onSkip={handleSkip} />
+      <BoardingHeader currentStep={1} totalSteps={4} />
 
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">

@@ -1,5 +1,8 @@
 import React from "react";
-import { SafeAreaView, type SafeAreaViewProps } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  type SafeAreaViewProps,
+} from "react-native-safe-area-context";
 
 interface AppSafeAreaViewProps extends SafeAreaViewProps {
   className?: string;

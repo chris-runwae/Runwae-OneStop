@@ -8,7 +8,7 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const BoardingStep2 = () => {
   const router = useRouter();
-  const { setCurrentBoardingStep } = useAuth();
+  const { setCurrentBoardingStep, completeBoarding } = useAuth();
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
   const interestOptions = [
@@ -39,9 +39,9 @@ const BoardingStep2 = () => {
     );
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCurrentBoardingStep(3);
+    await setCurrentBoardingStep(3);
     router.push("/boarding/step-3");
   };
 
@@ -51,17 +51,11 @@ const BoardingStep2 = () => {
     router.replace("/boarding/step-1");
   };
 
-  const handleSkip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace("/(tabs)");
-  };
-
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
       <BoardingHeader
         currentStep={2}
         totalSteps={4}
-        onSkip={handleSkip}
         onBack={handleBack}
       />
 

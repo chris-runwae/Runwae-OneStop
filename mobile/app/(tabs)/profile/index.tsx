@@ -1,5 +1,6 @@
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import CustomSwitch from "@/components/ui/CustomSwitch";
+import MainTabHeader from "@/components/ui/MainTabHeader";
 import SkeletonBox from "@/components/ui/SkeletonBox";
 import { MENU_OPTIONS, MOCK_REWARDS } from "@/constants/profile.constant";
 import { useAuth } from "@/context/AuthContext";
@@ -8,7 +9,6 @@ import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
 import { ExternalPathString, RelativePathString, router } from "expo-router";
 import {
-  Bell,
   Check,
   ChevronRight,
   Files,
@@ -28,24 +28,7 @@ const ProfileScreen = () => {
 
   return (
     <AppSafeAreaView>
-      <View className="flex flex-row items-center justify-between py-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary px-[20px]">
-        <Text
-          className="font-semibold text-3xl dark:text-white"
-          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-        >
-          Profile
-        </Text>
-        <TouchableOpacity 
-          onPress={() => router.push("/notifications")}
-          className="h-[40px] w-[40px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary"
-        >
-          <Bell
-            size={15}
-            strokeWidth={1.5}
-            color={dark ? "#ffffff" : "#000000"}
-          />
-        </TouchableOpacity>
-      </View>
+      <MainTabHeader title="Profile" />
 
       <View className="px-[20px] mt-5">
         <View className="flex flex-row items-center justify-between">
@@ -226,11 +209,7 @@ const ProfileScreen = () => {
         animationType="fade"
         onRequestClose={() => setShowImagePreview(false)}
       >
-        <BlurView
-          intensity={80}
-          tint="dark"
-          className="flex-1"
-        >
+        <BlurView intensity={80} tint="dark" className="flex-1">
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => setShowImagePreview(false)}

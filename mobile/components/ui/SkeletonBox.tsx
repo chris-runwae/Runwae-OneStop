@@ -7,10 +7,11 @@ const SkeletonBox = ({
   height,
   borderRadius = 8,
 }: {
-  width: number;
-  height: number;
+  width: number | string;
+  height: number | string;
   borderRadius?: number;
 }) => {
+
   const opacity = useRef(new Animated.Value(0.4)).current;
   const { dark } = useTheme();
 
@@ -36,13 +37,14 @@ const SkeletonBox = ({
   return (
     <Animated.View
       style={{
-        width,
-        height,
+        width: width as any,
+        height: height as any,
         borderRadius,
         backgroundColor: dark ? "#212529" : "#E5E7EB",
         opacity,
       }}
     />
+
   );
 };
 

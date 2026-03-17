@@ -1,4 +1,5 @@
 import { Itinerary } from "@/constants/home.constant";
+import { router } from "expo-router";
 
 import { Heart } from "lucide-react-native";
 import React, { useState } from "react";
@@ -12,15 +13,28 @@ import {
 
 interface ItineraryCardProps {
   item: Itinerary;
+  fullWidth?: boolean;
+  hasBorder?: boolean;
+  height?: number;
 }
 
-const ItineraryCard = ({ item }: ItineraryCardProps) => {
+const ItineraryCard = ({
+  item,
+  fullWidth = false,
+  hasBorder = true,
+  height = 245,
+}: ItineraryCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
 
   return (
     <Pressable
-      className="rounded-[24px] overflow-hidden border-[1.5px] border-gray-200 dark:border-dark-seconndary bg-white p-1 dark:bg-dark-seconndary/50"
-      style={{ width: 338, height: 245 }}
+      onPress={() => router.push(`/explore/itinerary/${item.id}`)}
+      className={`rounded-[24px] overflow-hidden ${
+        hasBorder
+          ? "border-[1.5px] border-gray-200 dark:border-dark-seconndary bg-white p-1 dark:bg-dark-seconndary/50"
+          : ""
+      }`}
+      style={{ width: fullWidth ? "100%" : 338, height }}
     >
       <ImageBackground
         source={{ uri: item.image }}

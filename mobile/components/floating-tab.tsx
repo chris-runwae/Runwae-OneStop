@@ -20,12 +20,26 @@ const FloatingTabBar = () => {
 
   const isTabActive = useCallback(
     (tab: (typeof tabs)[0]) => {
-      if (tab.name === "index") {
+      if (tab.name === "home") {
         return (
-          pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/"
+          pathname === "/" ||
+          pathname === "/home" ||
+          pathname.startsWith("/home/") ||
+          pathname === "/(tabs)" ||
+          pathname === "/(tabs)/home"
+        );
+      }
+
+      if (tab.name === "explore") {
+        return (
+          pathname === "/explore" ||
+          pathname.startsWith("/explore/") ||
+          pathname === "/(tabs)/explore" ||
+          pathname.startsWith("/(tabs)/explore/")
         );
       }
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
+
     },
     [pathname],
   );

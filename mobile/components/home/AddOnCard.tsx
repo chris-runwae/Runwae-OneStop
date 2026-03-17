@@ -5,10 +5,14 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface AddOnCardProps {
   item: AddOn;
+  fullWidth?: boolean;
 }
 
-const AddOnCard = ({ item }: AddOnCardProps) => (
-  <View className="rounded-t-[16px] mr-3" style={{ width: 315 }}>
+const AddOnCard = ({ item, fullWidth = false }: AddOnCardProps) => (
+  <View
+    className="rounded-t-[16px] mr-3"
+    style={{ width: fullWidth ? "100%" : 315 }}
+  >
     <Image
       source={{ uri: item.image }}
       className="w-full h-[150px] rounded-t-[16px]"

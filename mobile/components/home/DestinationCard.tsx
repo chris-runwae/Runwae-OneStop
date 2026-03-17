@@ -4,10 +4,15 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface DestinationCardProps {
   item: Destination;
+  fullWidth?: boolean;
 }
 
-const DestinationCard = ({ item }: DestinationCardProps) => (
-  <TouchableOpacity className="mr-3" style={{ width: 240 }}>
+const DestinationCard = ({ item, fullWidth = false }: DestinationCardProps) => (
+  <TouchableOpacity
+    className={fullWidth ? "" : "mr-3"}
+    style={{ width: fullWidth ? "100%" : 240 }}
+  >
+
     <Image
       source={{ uri: item.image }}
       className="w-full h-[200px] rounded-t-[16px]"

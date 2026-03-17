@@ -46,7 +46,7 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                   activeOpacity={user?.avatar_url ? 0.9 : 1}
                   onPress={() => user?.avatar_url && setShowImagePreview(true)}
-                  className="h-[60px] w-[60px] rounded-full bg-gray-200 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center"
+                  className="h-[60px] w-[60px] rounded-full bg-primary overflow-hidden flex items-center justify-center"
                 >
                   {user?.avatar_url ? (
                     <Image
@@ -55,7 +55,7 @@ const ProfileScreen = () => {
                       resizeMode="cover"
                     />
                   ) : (
-                    <Text className="text-xl font-bold text-gray-500 dark:text-gray-200">
+                    <Text className="text-xl font-bold text-white">
                       {(user?.full_name || "John Doe")
                         .split(" ")
                         .map((n: string) => n[0])

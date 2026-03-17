@@ -1,3 +1,4 @@
+import { TripCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { Trip } from "@/constants/home.constant";
 import React from "react";
@@ -6,15 +7,18 @@ import TripCard from "./TripCard";
 
 interface UpcomingTripsProps {
   trips: Trip[];
+  loading?: boolean;
 }
 
-const UpcomingTrips = ({ trips }: UpcomingTripsProps) => {
+const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
+  const displayData = loading ? Array(5).fill({}) : trips;
+
   return (
     <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5">
       <SectionHeader title="Upcoming Trips" onPress={() => {}} />
 
       <FlatList
-        data={trips}
+        data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
@@ -22,9 +26,12 @@ const UpcomingTrips = ({ trips }: UpcomingTripsProps) => {
           marginTop: 16,
           paddingHorizontal: 20,
         }}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => (loading ? `skeleton-${index}` : item.id)}
         ItemSeparatorComponent={() => <View className="w-3" />}
-        renderItem={({ item }) => <TripCard trip={item} />}
+        renderItem={({ item }) =>
+          loading ? <TripCardSkeleton /> : <TripCard trip={item} />
+        }
+
         ListEmptyComponent={
           <View className="flex items-center justify-center w-full">
             <Image

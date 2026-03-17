@@ -8,6 +8,7 @@ interface SearchInputProps {
   value?: string;
   onChangeText?: (text: string) => void;
   onFilterPress?: () => void;
+  showFilter?: boolean;
 }
 
 const SearchInput = ({
@@ -15,6 +16,7 @@ const SearchInput = ({
   value,
   onChangeText,
   onFilterPress,
+  showFilter = true,
 }: SearchInputProps) => {
   const { dark } = useTheme();
 
@@ -32,15 +34,18 @@ const SearchInput = ({
         value={value}
         onChangeText={onChangeText}
       />
-      <TouchableOpacity onPress={onFilterPress} className="ml-2">
-        <Settings2
-          size={17}
-          color={dark ? "#9ca3af" : "#9ca3af"}
-          strokeWidth={1.5}
-        />
-      </TouchableOpacity>
+      {showFilter && (
+        <TouchableOpacity onPress={onFilterPress} className="ml-2">
+          <Settings2
+            size={17}
+            color={dark ? "#9ca3af" : "#9ca3af"}
+            strokeWidth={1.5}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
+
 
 export default SearchInput;

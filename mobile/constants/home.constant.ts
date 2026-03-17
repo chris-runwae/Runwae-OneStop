@@ -69,6 +69,22 @@ export const UPCOMING_TRIPS: Trip[] = [
   },
 ];
 
+export interface ItineraryIncluded {
+  icon: string;
+  title: string;
+  subtitle: string;
+}
+
+export interface Activity {
+  title: string;
+  description: string;
+}
+
+export interface DailyItinerary {
+  day: number;
+  activities: Activity[];
+}
+
 export interface Itinerary {
   id: string;
   title: string;
@@ -79,6 +95,9 @@ export interface Itinerary {
   rating: number;
   reviewCount: number;
   activities: number;
+  description?: string;
+  included?: ItineraryIncluded[];
+  dailyItinerary?: DailyItinerary[];
 }
 
 // TODO: Replace with real itinerary data
@@ -93,6 +112,64 @@ export const ITINERARIES_FOR_YOU: Itinerary[] = [
     rating: 4.9,
     reviewCount: 128,
     activities: 7,
+    description: "Explore New York's iconic landmarks and hidden gems. From Central Park picnics to museum hopping, discover the city's vibrant culture. Get ready for a laid-back adventure that captures the true essence of the Big Apple, all while discovering the city's unique charm and energy.",
+    included: [
+      {
+        icon: "hotel",
+        title: "Hotel Pickup",
+        subtitle: "We offer complimentary pickup from select hotels."
+      },
+      {
+        icon: "car",
+        title: "Ground Transfers",
+        subtitle: "Enjoy seamless transfers between locations."
+      },
+      {
+        icon: "ticket",
+        title: "Funicular Tickets",
+        subtitle: "Tickets for the Montmartre funicular are included."
+      }
+    ],
+    dailyItinerary: [
+      {
+        day: 1,
+        activities: [
+          {
+            title: "Central Park Exploration",
+            description: "Start your day with a peaceful stroll through Central Park, enjoying the scenic landscapes and perhaps stopping at a quiet bench to people-watch."
+          },
+          {
+            title: "Art Gallery Visit",
+            description: "Explore a local art gallery in Chelsea, allowing yourself to immerse in contemporary art and perhaps engage in conversation with the artists."
+          },
+          {
+            title: "Brooklyn Bridge Walk",
+            description: "Enjoy a picturesque walk across the Brooklyn Bridge, taking in stunning views of the Manhattan skyline as the sun begins to set."
+          },
+          {
+            title: "DUMBO Coffee Break",
+            description: "Relax at a cozy café in DUMBO, sipping on your favorite brew while admiring the unique architecture and atmosphere of the area."
+          }
+        ]
+      },
+      {
+        day: 2,
+        activities: [
+          {
+            title: "Statue of Liberty Ferry",
+            description: "Take the ferry to Liberty Island and enjoy magnificent views of Lady Liberty and the harbor."
+          },
+          {
+            title: "High Line Park Walk",
+            description: "Walk along the elevated park built on a historic freight rail line, featuring lush gardens and public art."
+          },
+          {
+            title: "Times Square at Night",
+            description: "End your journey with the bright lights and bustling energy of Times Square."
+          }
+        ]
+      }
+    ]
   },
   {
     id: "2",
@@ -104,6 +181,66 @@ export const ITINERARIES_FOR_YOU: Itinerary[] = [
     rating: 4.7,
     reviewCount: 94,
     activities: 12,
+    description: "Experience the vibrant energy of Bangkok, from its majestic golden temples to the world-renowned street food scene. Immerse yourself in the local culture, navigate the bustling canals, and taste the authentic flavors of Thailand.",
+    included: [
+      {
+        icon: "hotel",
+        title: "Boutique Stay",
+        subtitle: "Accommodation in a centrally located boutique hotel."
+      },
+      {
+        icon: "car",
+        title: "Tuk-Tuk Tours",
+        subtitle: "Local transport via traditional tuk-tuks for all tours."
+      },
+      {
+        icon: "ticket",
+        title: "Entry Fees",
+        subtitle: "Admission to the Grand Palace and major temples included."
+      }
+    ],
+    dailyItinerary: [
+      {
+        day: 1,
+        activities: [
+          {
+            title: "Grand Palace Marvels",
+            description: "Visit the spectacular Grand Palace and the Temple of the Emerald Buddha, marveling at the intricate architecture."
+          },
+          {
+            title: "River Canal Tour",
+            description: "Explore the 'Venice of the East' with a long-tail boat ride through Bangkok's historic canals."
+          }
+        ]
+      },
+      {
+        day: 2,
+        activities: [
+          {
+            title: "Street Food Safari",
+            description: "Join a guided night tour through Yaowarat (Chinatown) to sample the city's best street delicacies."
+          }
+        ]
+      },
+      {
+        day: 3,
+        activities: [
+          {
+            title: "Floating Market Trip",
+            description: "A day trip to the colorful Damnoen Saduak floating market to see local trade in action."
+          }
+        ]
+      },
+      {
+        day: 4,
+        activities: [
+          {
+            title: "Thai Cooking Class",
+            description: "Learn to cook classic Thai dishes like Pad Thai and Green Curry in a hands-on workshop."
+          }
+        ]
+      }
+    ]
   },
   {
     id: "3",
@@ -115,6 +252,57 @@ export const ITINERARIES_FOR_YOU: Itinerary[] = [
     rating: 4.8,
     reviewCount: 61,
     activities: 5,
+    description: "Embark on an Arctic adventure in the heart of the aurora zone. Join expert guides as we chase the mystical Northern Lights across the stunning Norwegian landscape, combined with unique winter experiences.",
+    included: [
+      {
+        icon: "hotel",
+        title: "Arctic Lodge",
+        subtitle: "Stay in a cozy lodge with prime aurora viewing decks."
+      },
+      {
+        icon: "car",
+        title: "Chase Transport",
+        subtitle: "Specially equipped vehicles for chasing the lights across borders."
+      },
+      {
+        icon: "ticket",
+        title: "Gear Rental",
+        subtitle: "Thermal suits and professional photography tripods provided."
+      }
+    ],
+    dailyItinerary: [
+      {
+        day: 1,
+        activities: [
+          {
+            title: "Welcome to Tromsø",
+            description: "Arrival and evening briefing on how the Northern Lights occur and photography tips."
+          }
+        ]
+      },
+      {
+        day: 2,
+        activities: [
+          {
+            title: "Husky Sledding",
+            description: "Drive your own dog team through the snow-covered valleys of the Arctic north."
+          },
+          {
+            title: "Aurora Hunt #1",
+            description: "Our first night chasing the lights with a campfire and local snacks."
+          }
+        ]
+      },
+      {
+        day: 3,
+        activities: [
+          {
+            title: "Fjord Cruise",
+            description: "A silent electric boat cruise through the breathtaking Arctic fjords."
+          }
+        ]
+      }
+    ]
   },
   {
     id: "4",
@@ -126,6 +314,57 @@ export const ITINERARIES_FOR_YOU: Itinerary[] = [
     rating: 4.6,
     reviewCount: 43,
     activities: 4,
+    description: "Journey deep into the Sahara Desert for an unforgettable experience. Ride camels across the golden dunes of Erg Chebbi and spend a night under a canopy of a million stars in a traditional Berber camp.",
+    included: [
+      {
+        icon: "hotel",
+        title: "Luxury Camp",
+        subtitle: "Night in a private tent with modern amenities in the dunes."
+      },
+      {
+        icon: "car",
+        title: "4x4 Transfer",
+        subtitle: "Rugged desert transport from the city to the dune base."
+      },
+      {
+        icon: "ticket",
+        title: "Camel Trek",
+        subtitle: "Sunset and sunrise camel rides through the Sahara."
+      }
+    ],
+    dailyItinerary: [
+      {
+        day: 1,
+        activities: [
+          {
+            title: "Into the Sahara",
+            description: "Departure in 4x4 vehicles towards the golden dunes of Merzouga."
+          },
+          {
+            title: "Sunset Camel Ride",
+            description: "A peaceful trek across the dunes to watch the sun disappear over the horizon."
+          }
+        ]
+      },
+      {
+        day: 2,
+        activities: [
+          {
+            title: "Berber Culture",
+            description: "Visit a local nomadic family to learn about their traditions and enjoy Saharan tea."
+          }
+        ]
+      },
+      {
+        day: 3,
+        activities: [
+          {
+            title: "Sunrise Peaks",
+            description: "Early morning climb to the highest dune for a spectacular desert sunrise."
+          }
+        ]
+      }
+    ]
   },
 ];
 

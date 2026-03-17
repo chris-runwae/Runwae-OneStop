@@ -21,8 +21,17 @@ const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedPrice, setSelectedPrice] = useState("$50 - $200");
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleApplyFilters = () => {
+
     console.log("Applying filters:", { selectedCategory, selectedPrice });
     setIsFilterModalVisible(false);
   };
@@ -47,18 +56,22 @@ const ExploreScreen = () => {
           data={FEATURED_ITINERARIES}
           title="Featured Trip Itineraries"
           subtitle="Recommended by Runwae"
+          loading={loading}
         />
-        <UpcomingEvents data={UPCOMING_EVENTS} />
+        <UpcomingEvents data={UPCOMING_EVENTS} loading={loading} />
         <AddOnsForYou
           data={EXPERIENCE_HIGHLIGHTS}
           title="Experience Highlights"
           subtitle="Top picks for you"
+          loading={loading}
         />
         <DestinationsForYou
           data={DESTINATION_HIGHLIGHTS}
           title="Popular Destinations"
           subtitle="Places that everyone else is crazy about"
+          loading={loading}
         />
+
       </ScrollView>
 
       <CustomModal

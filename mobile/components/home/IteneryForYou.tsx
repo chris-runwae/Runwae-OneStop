@@ -1,5 +1,7 @@
+import { ItineraryCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { Itinerary } from "@/constants/home.constant";
+import { router } from "expo-router";
 import React from "react";
 import { FlatList, Text, View } from "react-native";
 import ItineraryCard from "./ItineraryCard";
@@ -8,23 +10,27 @@ interface ItineraryForYouProps {
   data: Itinerary[];
   title?: string;
   subtitle?: string;
+  loading?: boolean;
 }
 
 const ItineraryForYou = ({
   data,
   title = "Itineraries for you",
   subtitle = "Curated specially for you based on your preferences",
+  loading = false,
 }: ItineraryForYouProps) => {
+  const displayData = loading ? Array(5).fill({}) : data;
+
   return (
     <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5">
       <SectionHeader
         title={title}
         subtitle={subtitle}
-        onPress={() => {}}
+        onPress={() => router.push("/(tabs)/explore/itinerary")}
       />
 
       <FlatList
-        data={data}
+        data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
@@ -32,9 +38,12 @@ const ItineraryForYou = ({
           marginTop: 16,
           paddingHorizontal: 20,
         }}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => (loading ? `skeleton-${index}` : item.id)}
         ItemSeparatorComponent={() => <View className="w-3" />}
-        renderItem={({ item }) => <ItineraryCard item={item} />}
+        renderItem={({ item }) =>
+          loading ? <ItineraryCardSkeleton /> : <ItineraryCard item={item} />
+        }
+
         ListEmptyComponent={
           <View className="flex items-center justify-center w-full py-8">
             <Text className="text-3xl mb-3">🗺️</Text>

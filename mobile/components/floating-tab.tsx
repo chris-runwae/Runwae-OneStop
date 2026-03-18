@@ -35,6 +35,7 @@ const FloatingTabBar = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
+    console.log('route: ', route);
     router.push(route as any);
   };
 

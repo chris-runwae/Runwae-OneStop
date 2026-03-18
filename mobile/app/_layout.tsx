@@ -24,6 +24,7 @@ import ToastManager from "toastify-react-native";
 
 import SplashScreen from "@/components/ui/splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { TripsProvider } from "@/context/TripsContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import "../global.css";
 
@@ -168,13 +169,15 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <KeyboardProvider>
         <AuthProvider>
-          <StatusBar style="auto" />
-          <ToastManager
-            showProgressBar={false}
-            style={{ borderRadius: 20, boxShadow: "none" }}
-            theme={colorScheme === "dark" ? "dark" : "light"}
-          />
-          <RouteGuard />
+          <TripsProvider>
+            <StatusBar style="auto" />
+            <ToastManager
+              showProgressBar={false}
+              style={{ borderRadius: 20, boxShadow: "none" }}
+              theme={colorScheme === "dark" ? "dark" : "light"}
+            />
+            <RouteGuard />
+          </TripsProvider>
         </AuthProvider>
       </KeyboardProvider>
     </ThemeProvider>

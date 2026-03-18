@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/mobile/app/\\\\\\(tabs\\\\\\))",
+      "Bash(ls /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/mobile/app/\\\\\\(auth\\\\\\))",
+      "Bash(ls /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/mobile/app/\\\\\\(tabs\\\\\\)/profile)",
+      "mcp__supabase__list_tables",
+      "mcp__plugin_figma_figma__get_metadata",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

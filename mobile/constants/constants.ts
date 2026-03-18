@@ -19,7 +19,7 @@ export const tabs: Tab[] = [
     name: "home",
     title: "Home",
     icon: HomeIcon,
-    route: "/home",
+    route: "/",
   },
 
   {

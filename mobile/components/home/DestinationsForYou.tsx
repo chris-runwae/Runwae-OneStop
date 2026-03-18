@@ -1,7 +1,7 @@
 import { DestinationCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { Destination } from "@/constants/home.constant";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import React from "react";
 import { FlatList, Text, View } from "react-native";
 import DestinationCard from "./DestinationCard";
@@ -20,13 +20,14 @@ const DestinationsForYou = ({
   loading = false,
 }: DestinationsForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
+  const router = useRouter();
 
   return (
     <View className="mt-5">
       <SectionHeader
         title={title}
         subtitle={subtitle}
-        onPress={() => router.push("/(tabs)/explore/destination")}
+        onPress={() => router.navigate("/destination")}
       />
 
       <FlatList

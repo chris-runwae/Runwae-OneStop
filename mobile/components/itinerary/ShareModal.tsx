@@ -67,6 +67,7 @@ interface ShareModalProps {
   onClose: () => void;
   title: string;
   imageUri: string;
+  showImage?: boolean;
 }
 
 const ShareModal = ({
@@ -74,6 +75,7 @@ const ShareModal = ({
   onClose,
   title,
   imageUri,
+  showImage = true,
 }: ShareModalProps) => {
   return (
     <Modal
@@ -99,9 +101,8 @@ const ShareModal = ({
         <Animated.View
           entering={FadeInDown.duration(400)}
           className="bg-white rounded-t-[24px] rounded-b-[45px] p-5"
-          style={{ minHeight: SCREEN_HEIGHT * 0.6 }}
+          style={{ minHeight: showImage ? SCREEN_HEIGHT * 0.6 : undefined }}
         >
-          {/* Header */}
           <View className="flex-row justify-between items-center mb-5">
             <Text
               className="text-xl font-bold"
@@ -111,28 +112,28 @@ const ShareModal = ({
             </Text>
           </View>
 
-          {/* Preview Card */}
-          <View className="relative mb-10 shadow-xl shadow-black/20">
-            <Image
-              source={{ uri: imageUri }}
-              className="w-full h-[191px] rounded-[15px]"
-              resizeMode="cover"
-            />
-            <View
-              className="absolute inset-0 rounded-[15px]"
-              style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
-            />
-            <View className="absolute bottom-6 left-6 right-6">
-              <Text
-                className="text-white text-2xl font-bold leading-tight"
-                style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-              >
-                {title}
-              </Text>
+          {showImage && (
+            <View className="relative mb-10 shadow-xl shadow-black/20">
+              <Image
+                source={{ uri: imageUri }}
+                className="w-full h-[191px] rounded-[15px]"
+                resizeMode="cover"
+              />
+              <View
+                className="absolute inset-0 rounded-[15px]"
+                style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
+              />
+              <View className="absolute bottom-6 left-6 right-6">
+                <Text
+                  className="text-white text-2xl font-bold leading-tight"
+                  style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
+                >
+                  {title}
+                </Text>
+              </View>
             </View>
-          </View>
+          )}
 
-          {/* Grid of options */}
           <View className="flex-row flex-wrap justify-start">
             {SHARE_OPTIONS.map((option, index) => (
               <ShareOption
@@ -144,7 +145,6 @@ const ShareModal = ({
             ))}
           </View>
 
-          {/* Done Button */}
           <TouchableOpacity
             onPress={onClose}
             className="bg-primary h-[45px] rounded-[30px] items-center justify-center mt-5"

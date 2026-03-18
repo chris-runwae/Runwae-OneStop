@@ -1,7 +1,7 @@
 import { AddOnCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { AddOn } from "@/constants/home.constant";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import React from "react";
 
 import { FlatList, Text, View } from "react-native";
@@ -21,13 +21,24 @@ const AddOnsForYou = ({
   loading = false,
 }: AddOnsForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
+  const router = useRouter();
+  const isNavigating = React.useRef(false);
+
+  const handleHeaderPress = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+    router.navigate("/experience");
+    setTimeout(() => {
+      isNavigating.current = false;
+    }, 1000);
+  };
 
   return (
     <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5">
       <SectionHeader
         title={title}
         subtitle={subtitle}
-        onPress={() => router.push("/(tabs)/explore/experience")}
+        onPress={handleHeaderPress}
       />
 
       <FlatList

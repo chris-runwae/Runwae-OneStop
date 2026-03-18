@@ -1,6 +1,5 @@
 import { Itinerary } from "@/constants/home.constant";
-import { router } from "expo-router";
-
+import { useRouter } from "expo-router";
 import { Heart } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -25,10 +24,21 @@ const ItineraryCard = ({
   height = 245,
 }: ItineraryCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const router = useRouter();
+  const isNavigating = React.useRef(false);
+
+  const handlePress = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+    router.navigate(`/itinerary/${item.id}`);
+    setTimeout(() => {
+      isNavigating.current = false;
+    }, 1000);
+  };
 
   return (
     <Pressable
-      onPress={() => router.push(`/explore/itinerary/${item.id}`)}
+      onPress={handlePress}
       className={`rounded-[24px] overflow-hidden ${
         hasBorder
           ? "border-[1.5px] border-gray-200 dark:border-dark-seconndary bg-white p-1 dark:bg-dark-seconndary/50"

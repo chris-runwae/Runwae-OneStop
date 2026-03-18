@@ -52,7 +52,6 @@ const ExperienceScreen = () => {
     );
   }, [searchQuery]);
 
-
   const displayData = loading ? Array(5).fill({}) : filteredExperiences;
 
   return (

@@ -15,9 +15,10 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments, Redirect } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import "react-native-reanimated";
 import ToastManager from "toastify-react-native";
@@ -75,6 +76,8 @@ function RouteGuard() {
     "(tabs)",
     "notifications",
     "modal",
+    "itinerary",
+    "experience",
   ]);
 
   const [currentSegment, secondSegment] = segments;
@@ -93,13 +96,21 @@ function RouteGuard() {
     BOARDING_STEPS.has(secondSegment);
   const isInTabs = currentSegment === "(tabs)";
   const isInOnboarding = currentSegment === "onboarding";
-  const isInAuthorizedRoot = AUTHORIZED_ROOT_ROUTES.has(currentSegment);
+  const isInAuthorizedRoot = [
+    undefined,
+    "(tabs)",
+    "notifications",
+    "modal",
+    "itinerary",
+    "experience",
+    "destination",
+  ].includes(currentSegment as any);
 
   // Redirection Logic
   if (!isAuthenticated && hasSeenOnboarding && !isInAuthFlow) {
     return <Redirect href="/(auth)/login" />;
-  } 
-  
+  }
+
   if (
     !isAuthenticated &&
     !hasSeenOnboarding &&
@@ -108,8 +119,8 @@ function RouteGuard() {
     !isInAuthFlow
   ) {
     return <Redirect href="/(auth)/onboarding" />;
-  } 
-  
+  }
+
   if (
     isAuthenticated &&
     !hasCompletedBoarding &&
@@ -117,8 +128,8 @@ function RouteGuard() {
     !isInBoardingSteps
   ) {
     return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
-  } 
-  
+  }
+
   if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
     return <Redirect href="/(tabs)" />;
   }
@@ -129,6 +140,11 @@ function RouteGuard() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary" options={{ headerShown: false }} />
+      <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="destination" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
         options={{ presentation: "modal", headerShown: true, title: "Modal" }}
@@ -166,17 +182,19 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <KeyboardProvider>
-        <AuthProvider>
-          <StatusBar style="auto" />
-          <ToastManager
-            showProgressBar={false}
-            style={{ borderRadius: 20, boxShadow: "none" }}
-            theme={colorScheme === "dark" ? "dark" : "light"}
-          />
-          <RouteGuard />
-        </AuthProvider>
-      </KeyboardProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
+          <AuthProvider>
+            <StatusBar style="auto" />
+            <ToastManager
+              showProgressBar={false}
+              style={{ borderRadius: 20, boxShadow: "none" }}
+              theme={colorScheme === "dark" ? "dark" : "light"}
+            />
+            <RouteGuard />
+          </AuthProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </ThemeProvider>
   );
 }

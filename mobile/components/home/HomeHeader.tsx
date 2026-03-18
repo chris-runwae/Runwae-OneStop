@@ -56,7 +56,10 @@ const HomeHeader = ({ user, isLoading, dark }: HomeHeaderProps) => {
       )}
 
       <View className="flex-row items-center gap-x-3">
-        <TouchableOpacity className="h-[40px] flex-row gap-x-1 w-[112px] flex items-center justify-center rounded-full bg-transparent border border-dashed border-gray-300 dark:border-gray-500">
+        <TouchableOpacity
+          onPress={() => router.push("/trips")}
+          className="h-[40px] flex-row gap-x-1 w-[112px] flex items-center justify-center rounded-full bg-transparent border border-dashed border-gray-300 dark:border-gray-500"
+        >
           <Plus
             size={17}
             strokeWidth={1.5}

@@ -1,12 +1,14 @@
-import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
+import { useRouter, useSegments } from "expo-router";
 import { ChevronLeft, Heart, Upload } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import Animated, {
+  FadeIn,
+  FadeOut,
+  SharedValue,
   interpolate,
   useAnimatedStyle,
-  SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ShareModal from "./ShareModal";
@@ -17,11 +19,18 @@ interface ItineraryHeaderProps {
   title: string;
 }
 
-const ItineraryHeader = ({ scrollY, imageUri, title }: ItineraryHeaderProps) => {
+const ItineraryHeader = ({
+  scrollY,
+  imageUri,
+  title,
+}: ItineraryHeaderProps) => {
   const router = useRouter();
+  const segments = useSegments();
   const insets = useSafeAreaInsets();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
+
+  const isExperience = segments[0] === "experience";
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     const opacity = interpolate(scrollY.value, [100, 200], [0, 1], "clamp");
@@ -37,16 +46,18 @@ const ItineraryHeader = ({ scrollY, imageUri, title }: ItineraryHeaderProps) => 
         style={{ paddingTop: insets.top + 10, height: insets.top + 60 }}
       >
         <Animated.View
-          className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden"
+          className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden bg-gray-100"
           style={headerAnimatedStyle}
         >
-          <Image
+          <Animated.Image
+            key={imageUri}
+            entering={FadeIn.duration(1000)}
+            exiting={FadeOut.duration(1000)}
             source={{ uri: imageUri }}
             className="absolute top-0 left-0 right-0 bottom-0"
             resizeMode="cover"
           />
           <BlurView intensity={10} tint="light" className="flex-1" />
-          <View className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200" />
         </Animated.View>
 
         <TouchableOpacity
@@ -81,6 +92,7 @@ const ItineraryHeader = ({ scrollY, imageUri, title }: ItineraryHeaderProps) => 
         isVisible={isShareModalVisible}
         onClose={() => setIsShareModalVisible(false)}
         title={title}
+        showImage={!isExperience}
         imageUri={imageUri}
       />
     </>

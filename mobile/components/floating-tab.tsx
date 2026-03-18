@@ -35,7 +35,6 @@ const FloatingTabBar = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    console.log('route: ', route);
     router.push(route as any);
   };
 
@@ -64,7 +63,7 @@ const FloatingTabBar = () => {
 
   const handleNewTripPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push("/(tabs)/trips/trip-creation" as RelativePathString);
+    router.push("/create-trip/destination" as RelativePathString);
   }, [router]);
 
   return (

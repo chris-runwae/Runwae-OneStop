@@ -76,6 +76,7 @@ function RouteGuard() {
     "(tabs)",
     "notifications",
     "modal",
+    "create-trip",
   ]);
 
   const [currentSegment, secondSegment] = segments;
@@ -130,6 +131,7 @@ function RouteGuard() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
         options={{ presentation: "modal", headerShown: true, title: "Modal" }}

@@ -53,7 +53,7 @@ export interface TripsContextType {
   clearActiveTrip: () => void;
 
   // Mutations
-  createTrip:        (input: CreateTripInput) => Promise<{ error: string | null }>;
+  createTrip:        (input: CreateTripInput) => Promise<{ groupId: string | null; error: string | null }>;
   updateTrip:        (groupId: string, input: UpdateTripInput) => Promise<{ error: string | null }>;
   updateTripDetails: (groupId: string, input: UpdateTripDetailsInput) => Promise<{ error: string | null }>;
   updateDestination: (groupId: string, place: UpdateDestinationInput) => Promise<{ error: string | null }>;
@@ -157,15 +157,15 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
 
   const createTrip = useCallback(async (
     input: CreateTripInput,
-  ): Promise<{ error: string | null }> => {
-    if (!user?.id) return { error: 'Not authenticated' };
+  ): Promise<{ groupId: string | null; error: string | null }> => {
+    if (!user?.id) return { groupId: null, error: 'Not authenticated' };
 
     const { data, error: err } = await createTripAction(user.id, input);
-    if (err || !data) return { error: err ?? 'Failed to create trip' };
+    if (err || !data) return { groupId: null, error: err ?? 'Failed to create trip' };
 
     // Insert at the head — newest first matches fetchMyTrips ordering
     setMyTrips((prev) => [data, ...prev]);
-    return { error: null };
+    return { groupId: data.id, error: null };
   }, [user?.id]);
 
   // ----------------------------------------------------------------

@@ -198,7 +198,7 @@ export default function TripsIndexScreen() {
         </Text>
         <TouchableOpacity
           style={[styles.headerButton, { backgroundColor: dark ? '#2c2c2e' : '#f3f4f6' }]}
-          onPress={() => router.push('/(tabs)/(trips)/create/destination' as any)}
+          onPress={() => router.push('/create-trip/destination' as any)}
         >
           <Plus size={18} strokeWidth={2} color={dark ? '#ffffff' : '#111827'} />
         </TouchableOpacity>

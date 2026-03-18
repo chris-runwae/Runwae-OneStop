@@ -7,7 +7,10 @@
       "mcp__supabase__list_tables",
       "mcp__plugin_figma_figma__get_metadata",
       "mcp__supabase__execute_sql",
-      "mcp__supabase__apply_migration"
+      "mcp__supabase__apply_migration",
+      "Bash(npm install:*)",
+      "Bash(npx expo:*)",
+      "Bash(ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

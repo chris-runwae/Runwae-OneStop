@@ -67,7 +67,7 @@ const FloatingTabBar = () => {
           color={isSelected ? "#FF2E92" : "#ADB5BD"}
         />
         <Text
-          className={`text-[10px] font-medium ${isSelected ? "text-pink-600 dark:text-pink-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`text-[10px] font-medium ${isSelected ? "text-pink-600 dark:text-pink-400" : "text-gray-400 dark:text-gray-400"}`}
         >
           {tab.title}
         </Text>
@@ -84,7 +84,7 @@ const FloatingTabBar = () => {
     <View className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
         <BlurView
-          intensity={60}
+          intensity={70}
           tint="default"
           className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white/70 px-[3px] dark:border-gray-700 dark:bg-black/70"
         >

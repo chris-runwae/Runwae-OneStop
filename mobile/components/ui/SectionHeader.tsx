@@ -7,9 +7,15 @@ interface SectionHeaderProps {
   title: string;
   subtitle?: string;
   onPress?: () => void;
+  showSubtitle?: boolean;
 }
 
-const SectionHeader = ({ title, subtitle, onPress }: SectionHeaderProps) => {
+const SectionHeader = ({
+  title,
+  subtitle,
+  onPress,
+  showSubtitle = true,
+}: SectionHeaderProps) => {
   const { dark } = useTheme();
 
   return (
@@ -34,7 +40,7 @@ const SectionHeader = ({ title, subtitle, onPress }: SectionHeaderProps) => {
             />
           )}
         </View>
-        {subtitle && (
+        {subtitle && showSubtitle && (
           <Text className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
             {subtitle}
           </Text>

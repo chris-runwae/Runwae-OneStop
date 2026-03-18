@@ -12,6 +12,8 @@ interface AddOnsForYouProps {
   title?: string;
   subtitle?: string;
   loading?: boolean;
+  showSubtitle?: boolean;
+  showBorder?: boolean;
 }
 
 const AddOnsForYou = ({
@@ -19,6 +21,8 @@ const AddOnsForYou = ({
   title = "Add-ons for your Trips",
   subtitle = "Explore experiences to enhance your current travel plans",
   loading = false,
+  showSubtitle = true,
+  showBorder = true,
 }: AddOnsForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
   const router = useRouter();
@@ -34,12 +38,16 @@ const AddOnsForYou = ({
   };
 
   return (
-    <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5">
-      <SectionHeader
-        title={title}
-        subtitle={subtitle}
-        onPress={handleHeaderPress}
-      />
+    <View
+      className={`mt-5 ${showBorder ? "border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5" : ""}`}
+    >
+      {showSubtitle && (
+        <SectionHeader
+          title={title}
+          subtitle={subtitle}
+          onPress={handleHeaderPress}
+        />
+      )}
 
       <FlatList
         data={displayData}

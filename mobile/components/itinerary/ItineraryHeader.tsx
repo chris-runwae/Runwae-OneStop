@@ -31,7 +31,8 @@ const ItineraryHeader = ({
   const [isFavorite, setIsFavorite] = useState(false);
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
 
-  const isExperience = segments[0] === "experience";
+  const isExperienceOrDestination =
+    segments[0] === "experience" || segments[0] === "destination";
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     const opacity = interpolate(scrollY.value, [100, 200], [0, 1], "clamp");
@@ -60,7 +61,7 @@ const ItineraryHeader = ({
             className="absolute top-0 left-0 right-0 bottom-0"
             resizeMode="cover"
           />
-          <BlurView intensity={10} tint="light" className="flex-1" />
+          <BlurView intensity={20} tint="light" className="flex-1" />
         </Animated.View>
 
         <TouchableOpacity
@@ -103,7 +104,7 @@ const ItineraryHeader = ({
         isVisible={isShareModalVisible}
         onClose={() => setIsShareModalVisible(false)}
         title={title}
-        showImage={!isExperience}
+        showImage={!isExperienceOrDestination}
         imageUri={imageUri}
       />
     </>

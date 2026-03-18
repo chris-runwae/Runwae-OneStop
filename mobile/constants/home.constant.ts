@@ -805,26 +805,41 @@ export interface Destination {
   title: string;
   location: string;
   image: string;
+  rating?: number;
+  reviewCount?: number;
+  description?: string;
 }
 
 export const DESTINATIONS_FOR_YOU: Destination[] = [
   {
     id: "1",
-    title: "Wine under the mountains",
-    location: "Cape Town, South Africa",
-    image: "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600",
+    title: "Accra",
+    location: "Accra, Ghana",
+    image: "https://images.unsplash.com/photo-1591122731590-76192135043f?w=600",
+    rating: 4.8,
+    reviewCount: 320,
+    description:
+      "Uncover the wonders of Accra! Immerse yourself in its captivating history and dynamic culture. Wander through the energetic Makola Market, delve into the traditional crafts at the Centre for National Culture, and relax on the beautiful beaches. From the historic Jamestown district to the modern developments of Airport City, Accra offers a unique blend of old and new that will leave you wanting more.",
   },
   {
     id: "2",
-    title: "The city that never sleeps",
-    location: "New York, USA",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600",
+    title: "Wine under the mountains",
+    location: "Cape Town, South Africa",
+    image: "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600",
+    rating: 4.7,
+    reviewCount: 156,
+    description:
+      "Experience the world-renowned wineries of Cape Town, set against the backdrop of stunning mountain ranges. Enjoy tastings, cellar tours, and exquisite dining in the heart of the Winelands.",
   },
   {
     id: "3",
     title: "Romantic canals",
     location: "Venice, Italy",
     image: "https://images.unsplash.com/photo-1514890547357-a9ee288728e0?w=600",
+    rating: 4.9,
+    reviewCount: 428,
+    description:
+      "Venture through the narrow streets and iconic canals of Venice. Experience the charm of Gondola rides, historic landmarks, and exquisite Italian cuisine in one of the world's most romantic cities.",
   },
 ];
 

@@ -55,9 +55,9 @@ const AddToTripContent = ({ onCancel, onDone }: AddToTripContentProps) => {
       <View className="flex-row gap-x-4">
         <TouchableOpacity
           onPress={onCancel}
-          className="h-[45px] px-12 rounded-full border border-gray-200 bg-white items-center justify-center"
+          className="h-[45px] px-12 rounded-full border border-gray-200 dark:border-gray-600 items-center justify-center"
         >
-          <Text className=" text-black">Cancel</Text>
+          <Text className=" text-black dark:text-white">Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => onDone(selectedId)}

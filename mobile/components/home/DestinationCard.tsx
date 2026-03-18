@@ -6,26 +6,44 @@ import { Image, Pressable, Text, View } from "react-native";
 interface DestinationCardProps {
   item: Destination;
   fullWidth?: boolean;
+  width?: number;
+  imageHieght?: number;
 }
 
-const DestinationCard = ({ item, fullWidth = false }: DestinationCardProps) => {
+const DestinationCard = ({
+  item,
+  fullWidth = false,
+  width = 240,
+  imageHieght = 200,
+}: DestinationCardProps) => {
   const router = useRouter();
   const isNavigating = React.useRef(false);
 
+  const handlePress = () => {
+    if (isNavigating.current) return;
+    isNavigating.current = true;
+    router.navigate(`/destination/${item.id}`);
+    setTimeout(() => {
+      isNavigating.current = false;
+    }, 1000);
+  };
+
   return (
     <Pressable
+      onPress={handlePress}
       className={fullWidth ? "" : "mr-3"}
-      style={{ width: fullWidth ? "100%" : 240 }}
+      style={{ width: fullWidth ? "100%" : width }}
     >
       <Image
         source={{ uri: item.image }}
-        className="w-full h-[200px] rounded-t-[16px]"
+        className={`w-full h-[${imageHieght}px] rounded-t-[16px]`}
         resizeMode="cover"
       />
       <View className="mt-3">
         <Text
           className="text-black dark:text-white font-semibold text-lg leading-tight mb-1"
           numberOfLines={1}
+          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
         >
           {item.title}
         </Text>

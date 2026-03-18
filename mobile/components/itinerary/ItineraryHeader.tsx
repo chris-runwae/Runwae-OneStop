@@ -1,3 +1,4 @@
+import { useTheme } from "@react-navigation/native";
 import { BlurView } from "expo-blur";
 import { useRouter, useSegments } from "expo-router";
 import { ChevronLeft, Heart, Upload } from "lucide-react-native";
@@ -39,6 +40,8 @@ const ItineraryHeader = ({
     };
   });
 
+  const { dark } = useTheme();
+
   return (
     <>
       <View
@@ -46,7 +49,7 @@ const ItineraryHeader = ({
         style={{ paddingTop: insets.top + 10, height: insets.top + 60 }}
       >
         <Animated.View
-          className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden bg-gray-100"
+          className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden bg-gray-100 dark:bg-dark-seconndary"
           style={headerAnimatedStyle}
         >
           <Animated.Image
@@ -62,26 +65,34 @@ const ItineraryHeader = ({
 
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-white/90 items-center justify-center shadow-sm"
+          className="w-10 h-10 rounded-full bg-white/90 dark:bg-dark-seconndary items-center justify-center shadow-sm"
         >
-          <ChevronLeft size={20} strokeWidth={1.5} color="#000" />
+          <ChevronLeft
+            size={20}
+            strokeWidth={1.5}
+            color={dark ? "#fff" : "#000"}
+          />
         </TouchableOpacity>
 
         <View className="flex-row items-center gap-x-3">
           <TouchableOpacity
             onPress={() => setIsShareModalVisible(true)}
-            className="w-10 h-10 rounded-full bg-white/90 items-center justify-center shadow-sm"
+            className="w-10 h-10 rounded-full bg-white/90 dark:bg-dark-seconndary items-center justify-center shadow-sm"
           >
-            <Upload size={17} strokeWidth={1.5} color="#000" />
+            <Upload
+              size={17}
+              strokeWidth={1.5}
+              color={dark ? "#fff" : "#000"}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setIsFavorite(!isFavorite)}
-            className="w-10 h-10 rounded-full bg-white/90 items-center justify-center shadow-sm"
+            className="w-10 h-10 rounded-full bg-white/90 dark:bg-dark-seconndary items-center justify-center shadow-sm"
           >
             <Heart
               size={17}
               strokeWidth={1.5}
-              color={isFavorite ? "#FF2E92" : "#000"}
+              color={isFavorite ? "#FF2E92" : dark ? "#fff" : "#000"}
               fill={isFavorite ? "#FF2E92" : "transparent"}
             />
           </TouchableOpacity>

@@ -1,9 +1,9 @@
+import DetailNotFound from "@/components/experience/DetailNotFound";
 import ItineraryCard from "@/components/home/ItineraryCard";
 import DailyItinerary from "@/components/itinerary/DailyItinerary";
 import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
 import ItineraryInfo from "@/components/itinerary/ItineraryInfo";
 import WhatIsIncluded from "@/components/itinerary/WhatIsIncluded";
-import DetailNotFound from "@/components/experience/DetailNotFound";
 import { FEATURED_ITINERARIES } from "@/constants/home.constant";
 import { useDetailItem } from "@/hooks/use-detail-item";
 import React, { useMemo } from "react";
@@ -37,7 +37,7 @@ const ItineraryDetail = () => {
   }
 
   return (
-    <View className="flex-1 bg-white dark:bg-dark">
+    <View className="flex-1">
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={itinerary.image}
@@ -88,6 +88,7 @@ const ItineraryDetail = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20 }}
             keyExtractor={(item) => item.id}
+            ItemSeparatorComponent={() => <View className="w-3" />}
             renderItem={({ item }) => (
               <ItineraryCard key={item.id} item={item} fullWidth={false} />
             )}

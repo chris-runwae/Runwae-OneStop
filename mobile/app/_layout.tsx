@@ -50,19 +50,16 @@ function RouteGuard() {
   const AUTH_ROUTES = new Set([
     "(auth)",
     "login",
+    "signup",
     "register",
     "forgot-password",
     "check-email",
     "reset-password",
     "onboarding",
+    "onboarding-steps",
   ]);
 
-  const ONBOARDING_STEPS = new Set([
-    "onboarding",
-    "onboarding-step-1",
-    "onboarding-step-2",
-    "onboarding-step-3",
-  ]);
+  const ONBOARDING_STEPS = new Set(["onboarding", "onboarding-steps"]);
 
   const BOARDING_STEPS = new Set([
     "boarding",
@@ -107,17 +104,7 @@ function RouteGuard() {
   ].includes(currentSegment as any);
 
   // Redirection Logic
-  if (!isAuthenticated && hasSeenOnboarding && !isInAuthFlow) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  if (
-    !isAuthenticated &&
-    !hasSeenOnboarding &&
-    !isInOnboarding &&
-    !isInOnboardingSteps &&
-    !isInAuthFlow
-  ) {
+  if (!isAuthenticated && !isInAuthFlow) {
     return <Redirect href="/(auth)/onboarding" />;
   }
 
@@ -136,7 +123,6 @@ function RouteGuard() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

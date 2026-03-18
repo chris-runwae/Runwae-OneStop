@@ -12,18 +12,8 @@ const DestinationCard = ({ item, fullWidth = false }: DestinationCardProps) => {
   const router = useRouter();
   const isNavigating = React.useRef(false);
 
-  const handlePress = () => {
-    if (isNavigating.current) return;
-    isNavigating.current = true;
-    router.navigate("/destination");
-    setTimeout(() => {
-      isNavigating.current = false;
-    }, 1000);
-  };
-
   return (
     <Pressable
-      onPress={handlePress}
       className={fullWidth ? "" : "mr-3"}
       style={{ width: fullWidth ? "100%" : 240 }}
     >

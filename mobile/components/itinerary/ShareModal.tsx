@@ -30,7 +30,9 @@ const ShareOption = ({ icon, label, isImage = true }: ShareOptionProps) => (
         </View>
       )}
     </View>
-    <Text className="text-gray-500 text-[10px]">{label}</Text>
+    <Text className="text-gray-500 dark:text-gray-400 text-[10px]">
+      {label}
+    </Text>
   </TouchableOpacity>
 );
 
@@ -100,12 +102,12 @@ const ShareModal = ({
 
         <Animated.View
           entering={FadeInDown.duration(400)}
-          className="bg-white rounded-t-[24px] rounded-b-[45px] p-5"
+          className="bg-white dark:bg-dark-seconndary rounded-t-[24px] rounded-b-[45px] p-5"
           style={{ minHeight: showImage ? SCREEN_HEIGHT * 0.6 : undefined }}
         >
           <View className="flex-row justify-between items-center mb-5">
             <Text
-              className="text-xl font-bold"
+              className="text-xl font-bold dark:text-white"
               style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
             >
               Share Trip

@@ -1,4 +1,5 @@
 import { tabs } from "@/constants";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { RelativePathString, usePathname, useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
@@ -39,7 +40,6 @@ const FloatingTabBar = () => {
         );
       }
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
-
     },
     [pathname],
   );
@@ -83,7 +83,11 @@ const FloatingTabBar = () => {
   return (
     <View className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
-        <View className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white px-[3px] dark:border-gray-700 dark:bg-black">
+        <BlurView
+          intensity={60}
+          tint="default"
+          className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white/70 px-[3px] dark:border-gray-700 dark:bg-black/70"
+        >
           {tabs.map((tab, index) => {
             const isSelected = isTabActive(tab);
             return (
@@ -96,7 +100,7 @@ const FloatingTabBar = () => {
               />
             );
           })}
-        </View>
+        </BlurView>
         <TouchableOpacity
           onPress={handleNewTripPress}
           className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600"

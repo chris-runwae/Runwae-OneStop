@@ -58,15 +58,15 @@ const ExperienceInfo = ({
             <Image
               key={i}
               source={{ uri: `https://i.pravatar.cc/100?img=${i}` }}
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-dark-background -ml-2"
+              className="w-8 h-8 rounded-full border border-white dark:border-gray-600 -ml-2"
               style={{ marginLeft: i === 1 ? 0 : -10 }}
             />
           ))}
           <View
-            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-dark-seconndary border-2 border-white dark:border-dark-background items-center justify-center -ml-2"
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-dark-seconndary border-2 border-white dark:border-gray-600 items-center justify-center -ml-2"
             style={{ marginLeft: -10 }}
           >
-            <Text className="text-[10px] font-bold text-gray-500">+2k</Text>
+            <Text className="text-xs text-gray-500">+2k</Text>
           </View>
         </View>
         <Text className="text-gray-400 text-xs">added to their trip</Text>

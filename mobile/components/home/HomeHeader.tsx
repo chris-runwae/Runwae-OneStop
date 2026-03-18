@@ -27,7 +27,7 @@ const HomeHeader = ({ user, isLoading, dark }: HomeHeaderProps) => {
           onPress={() => router.push("/profile")}
           className="flex-row items-center gap-x-2"
         >
-          <View className="h-[40px] w-[40px] rounded-full bg-gray-200 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center">
+          <View className="h-[40px] w-[40px] rounded-full bg-primary overflow-hidden flex items-center justify-center">
             {user?.avatar_url ? (
               <Image
                 source={{ uri: user.avatar_url }}
@@ -35,7 +35,7 @@ const HomeHeader = ({ user, isLoading, dark }: HomeHeaderProps) => {
                 resizeMode="cover"
               />
             ) : (
-              <Text className="text-xl font-bold text-gray-500 dark:text-gray-200">
+              <Text className="text-base font-bold text-white">
                 {(user?.full_name || "John Doe")
                   .split(" ")
                   .map((n: string) => n[0])
@@ -48,7 +48,11 @@ const HomeHeader = ({ user, isLoading, dark }: HomeHeaderProps) => {
 
           <View>
             <Text className="text-sm text-gray-400">Hey!</Text>
-            <Text className="text-lg font-semibold text-black dark:text-white">
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              className="text-lg font-semibold max-w-[120px] text-black dark:text-white"
+            >
               {user?.full_name || "John Doe"}
             </Text>
           </View>

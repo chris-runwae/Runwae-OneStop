@@ -1,3 +1,4 @@
+import DetailNotFound from "@/components/experience/DetailNotFound";
 import ExperienceGallery from "@/components/experience/ExperienceGallery";
 import ExperienceIncluded from "@/components/experience/ExperienceIncluded";
 import ExperienceInfo from "@/components/experience/ExperienceInfo";
@@ -5,7 +6,6 @@ import ExperienceItinerary from "@/components/experience/ExperienceItinerary";
 import ImagePreviewModal from "@/components/experience/ImagePreviewModal";
 import ReviewList from "@/components/experience/ReviewList";
 import WhatToKnow from "@/components/experience/WhatToKnow";
-import DetailNotFound from "@/components/experience/DetailNotFound";
 import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
 import { useDetailItem } from "@/hooks/use-detail-item";
 import React, { useEffect, useMemo, useState } from "react";
@@ -63,9 +63,7 @@ const ExperienceDetailScreen = () => {
   }
 
   return (
-    <View
-      className="flex-1 bg-white dark:bg-dark-background"
-    >
+    <View className="flex-1">
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={allImages[currentImageIndex] || experience.image}

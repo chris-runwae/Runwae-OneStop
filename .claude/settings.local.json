@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"LITEAPI\\\\|liteapi\" /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/mobile/.env*)",
+      "Bash(ls /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/mobile/.env*)",
+      "Bash(supabase db query --project-ref zvicmujgveepxbekpzkf \":*)",
+      "Bash(supabase db:*)",
+      "Bash(supabase --version)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(supabase login:*)",
+      "Bash(supabase projects:*)",
+      "Bash(PGPASSWORD=\"\" supabase db pull --linked --schema public --password \"\")",
+      "Bash(supabase gen:*)",
+      "Bash(find ~ -name *.json -path */supabase/*)",
+      "Bash(find ~ -name config.json -path */supabase*)",
+      "Bash(find ~/Library -name *.json -path *supabase*)",
+      "Bash(supabase status:*)",
+      "Bash(PGPASSWORD=\"kafbum-8vIbke-qehcos\" psql \"postgresql://postgres.zvicmujgveepxbekpzkf@aws-1-eu-west-2.pooler.supabase.com:5432/postgres\" -c \":*)",
+      "Bash(brew list:*)",
+      "Read(//opt/homebrew/**)"
+    ]
+  }
+}

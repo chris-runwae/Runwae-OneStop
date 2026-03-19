@@ -13,6 +13,7 @@ interface UsePlacesAutocompleteResult {
   setQuery:     (q: string) => void;
   results:      LiteAPIPlace[];
   loading:      boolean;
+  error:        string | null;
   clearResults: () => void;
 }
 
@@ -20,17 +21,20 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteResult {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<LiteAPIPlace[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
   const [debouncedQuery] = useDebounce(query, 300);
   const abortRef = useRef<AbortController | null>(null);
 
   const clearResults = useCallback(() => {
     setResults([]);
+    setError(null);
   }, []);
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
       setResults([]);
+      setError(null);
       return;
     }
 
@@ -42,16 +46,23 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteResult {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const apiKey = process.env.EXPO_PUBLIC_LITEAPI_KEY ?? '';
-    const url = `https://api.liteapi.travel/v3.0/data/places?textQuery=${encodeURIComponent(debouncedQuery)}&type=locality`;
+    const apiKey = process.env.EXPO_PUBLIC_LITE_API_KEY ?? '';
+    const baseUrl = process.env.EXPO_PUBLIC_LITE_API_URL ?? 'https://api.liteapi.travel/v3.0';
+    const url = `${baseUrl}/data/places?textQuery=${encodeURIComponent(debouncedQuery)}&type=locality`;
 
     setLoading(true);
+    setError(null);
 
     fetch(url, {
       headers: { 'X-API-Key': apiKey },
       signal: controller.signal,
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Search failed (${res.status})`);
+        }
+        return res.json();
+      })
       .then((json) => {
         const raw: any[] = json?.data ?? [];
         const places: LiteAPIPlace[] = raw.map((item) => ({
@@ -64,10 +75,10 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteResult {
         setLoading(false);
       })
       .catch((err) => {
-        if (err?.name !== 'AbortError') {
-          setResults([]);
-          setLoading(false);
-        }
+        if (err?.name === 'AbortError') return;
+        setResults([]);
+        setLoading(false);
+        setError(err?.message ?? 'Something went wrong searching for places.');
       });
 
     return () => {
@@ -75,5 +86,5 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteResult {
     };
   }, [debouncedQuery]);
 
-  return { query, setQuery, results, loading, clearResults };
+  return { query, setQuery, results, loading, error, clearResults };
 }

@@ -1,9 +1,10 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { LiteAPIPlace, usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { MapPin, Search, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Toast } from 'toastify-react-native';
 import CreateStepHeader from './CreateStepHeader';
 
 // ================================================================
@@ -36,8 +38,21 @@ const SUGGESTED_DESTINATIONS = [
 
 export default function CreateTripDestination() {
   const { dark } = useTheme();
-  const { query, setQuery, results, loading, clearResults } = usePlacesAutocomplete();
+  const { query, setQuery, results, loading, error, clearResults } = usePlacesAutocomplete();
   const [selectedPlace, setSelectedPlace] = useState<LiteAPIPlace | null>(null);
+
+  useEffect(() => {
+    if (!error) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    Toast.show({
+      type: 'error',
+      text1: '📍 Lost in translation',
+      text2: "Couldn't find that place — check your connection and try again.",
+      position: 'bottom',
+      visibilityTime: 4000,
+      autoHide: true,
+    });
+  }, [error]);
 
   const handleSelect = (place: LiteAPIPlace) => {
     setSelectedPlace(place);

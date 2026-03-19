@@ -41,7 +41,7 @@ export interface Trip {
   name:                  string;
   description:           string | null;
   created_by:            string;
-  trip_id:               string | null;  // self-ref: parent trip-group
+  group_id:               string | null;  // self-ref: parent trip-group
   // Pending columns (see SCHEMA NOTES above):
   destination_label:     string | null;
   destination_place_id:  string | null;
@@ -52,7 +52,7 @@ export interface Trip {
 
 export interface TripDetails {
   id:              string;
-  trip_id:         string;
+  group_id:         string;
   budget:          number | null;
   currency:        string;
   notes:           string | null;
@@ -65,12 +65,19 @@ export interface TripDetails {
   updated_at:      string;
 }
 
+export interface MemberProfile {
+  id:         string;
+  full_name:  string | null;
+  avatar_url: string | null;
+}
+
 export interface GroupMember {
   id:        string;
   group_id:  string;
   user_id:   string;
   role:      GroupMemberRole;
   joined_at: string;
+  profiles?: MemberProfile | null;
 }
 
 // ================================================================
@@ -138,6 +145,7 @@ export async function createTrip(
   userId: string,
   input: CreateTripInput,
 ): Promise<ActionResult<TripWithDetails>> {
+
   const { data: group, error: groupError } = await supabase
     .from('groups')
     .insert({
@@ -214,9 +222,8 @@ export async function fetchTripById(
 ): Promise<ActionResult<TripWithEverything>> {
   const { data, error } = await supabase
     .from('groups')
-    .select('*, trip_details(*), group_members(*)')
+    .select('*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))')
     .eq('id', groupId)
-    .eq('type', 'trip')
     .single();
 
   if (error) return { data: null, error: error.message };
@@ -248,7 +255,7 @@ export async function updateTrip(
 // updateTripDetails
 //
 // Updates budget, currency, dates, notes, visibility on trip_details.
-// Identified by trip_id (= groups.id), not trip_details.id.
+// Identified by group_id (= groups.id), not trip_details.id.
 //
 // NOTE: start_date and end_date require the pending schema columns
 // described at the top of this file.

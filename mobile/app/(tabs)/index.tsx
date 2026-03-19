@@ -7,6 +7,7 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 export default function HomeScreen() {
   const { signOut, showWelcomeModal, setShowWelcomeModal } = useAuth();
 
+
   const handleSignOut = async () => {
     try {
       await signOut();

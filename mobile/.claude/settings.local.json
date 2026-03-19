@@ -10,7 +10,8 @@
       "mcp__supabase__apply_migration",
       "Bash(npm install:*)",
       "Bash(npx expo:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__supabase__list_migrations"
     ]
   },
   "enableAllProjectMcpServers": true,

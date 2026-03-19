@@ -150,17 +150,8 @@ export async function createTrip(
     .single();
 
   if (groupError) {
+    console.log('Error creating trip: ', groupError, userId);
     return { data: null, error: groupError.message };
-  }
-
-  const { error: memberError } = await supabase
-    .from('group_members')
-    .insert({ group_id: group.id, user_id: userId, role: 'owner' });
-
-  if (memberError) {
-    // Best-effort cleanup so we don't leave an orphaned group
-    await supabase.from('groups').delete().eq('id', group.id);
-    return { data: null, error: memberError.message };
   }
 
   return { data: group as TripWithDetails, error: null };
@@ -270,7 +261,7 @@ export async function updateTripDetails(
   const { data, error } = await supabase
     .from('trip_details')
     .update({ ...input, updated_at: new Date().toISOString() })
-    .eq('trip_id', groupId)
+    .eq('group_id', groupId)
     .select()
     .single();
 

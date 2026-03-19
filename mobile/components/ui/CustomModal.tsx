@@ -22,7 +22,9 @@ interface CustomModalProps {
   centeredTitle?: boolean;
   showCloseButton?: boolean;
   showIndicator?: boolean;
+  maxContentHeight?: string;
 }
+
 
 const CustomModal: React.FC<CustomModalProps> = ({
   isVisible,
@@ -32,7 +34,9 @@ const CustomModal: React.FC<CustomModalProps> = ({
   centeredTitle = false,
   showCloseButton = true,
   showIndicator = false,
+  maxContentHeight = "80%",
 }) => {
+
   const translateY = useSharedValue(0);
 
   const context = useSharedValue({ y: 0 });
@@ -88,11 +92,11 @@ const CustomModal: React.FC<CustomModalProps> = ({
         {/* Modal Content */}
         <GestureDetector gesture={panGesture}>
           <Animated.View
-            entering={SlideInDown.duration(300).easing(Easing.out(Easing.quad))}
             exiting={SlideOutDown}
-            className="bg-white dark:bg-dark-bg rounded-t-[24px] px-5 pb-10 pt-5 max-h-[80%]"
-            style={animatedStyle}
+            className="bg-white dark:bg-dark-bg rounded-t-[24px] px-5 pb-10 pt-5"
+            style={[animatedStyle, { maxHeight: maxContentHeight as any }]}
           >
+
             {showIndicator && (
               <TouchableOpacity
                 activeOpacity={1}

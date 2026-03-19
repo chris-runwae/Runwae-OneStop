@@ -1,47 +1,44 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View } from 'react-native';
 import {
   Calendar,
   toDateId,
   useDateRange,
-} from '@marceloterreiro/flash-calendar';
-import { MonthYearModal } from './MonthYearModal';
-import { MonthYearSelector } from './MonthYearSelector';
+} from "@marceloterreiro/flash-calendar";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
+import { MonthYearModal } from "./MonthYearModal";
+import { MonthYearSelector } from "./MonthYearSelector";
 import {
+  createYearMonthId,
   generateMonths,
   generateYears,
-  createYearMonthId,
-} from './calendarUtils';
+  getCurrentYear,
+} from "./calendarUtils";
+
 
 interface CalendarContainerProps {
   theme: any;
   backgroundColor: string;
-  onDateRangeChange?: (
-    dateRange: { startId?: string; endId?: string } | undefined
-  ) => void;
+  calendarActiveDateRanges: any[];
+  onCalendarDayPress: (dateId: string) => void;
 }
 
 export const CalendarContainer: React.FC<CalendarContainerProps> = ({
   theme,
   backgroundColor,
-  onDateRangeChange,
+  calendarActiveDateRanges,
+  onCalendarDayPress,
 }) => {
   const today = toDateId(new Date());
-  const { calendarActiveDateRanges, onCalendarDayPress, dateRange } =
-    useDateRange();
-
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [showYearModal, setShowYearModal] = useState(false);
   const [currentMonthId, setCurrentMonthId] = useState(today);
 
-  // Memoized month and year data
   const months = useMemo(
     () => generateMonths(currentMonthId),
-    [currentMonthId]
+    [currentMonthId],
   );
   const years = useMemo(() => generateYears(currentMonthId), [currentMonthId]);
 
-  // Callbacks for modal actions
   const handleMonthSelect = useCallback((monthId: string) => {
     setCurrentMonthId(monthId);
   }, []);
@@ -53,24 +50,20 @@ export const CalendarContainer: React.FC<CalendarContainerProps> = ({
       const yearMonthId = createYearMonthId(parseInt(yearId), currentMonth);
       setCurrentMonthId(yearMonthId);
     },
-    [currentMonthId]
+    [currentMonthId],
   );
 
-  // Sync date range changes with parent
-  useEffect(() => {
-    onDateRangeChange?.(dateRange);
-  }, [dateRange, onDateRangeChange]);
+
 
   return (
     <View
       style={{
-        width: '100%',
-        height: 'auto',
+        width: "100%",
+        height: "auto",
         padding: 0,
-        backgroundColor,
-        borderRadius: 16,
-        overflow: 'hidden',
-      }}>
+        overflow: "hidden",
+      }}
+    >
       <MonthYearSelector
         currentMonthId={currentMonthId}
         onMonthPress={() => setShowMonthModal(true)}
@@ -104,7 +97,8 @@ export const CalendarContainer: React.FC<CalendarContainerProps> = ({
         onSelect={handleYearSelect}
         title="Select Year"
         items={years}
-        currentId={currentMonthId}
+        currentId={getCurrentYear(currentMonthId)}
+
         theme={theme}
         backgroundColor={backgroundColor}
       />

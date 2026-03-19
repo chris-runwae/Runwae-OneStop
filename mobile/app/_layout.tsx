@@ -75,6 +75,7 @@ function RouteGuard() {
     "modal",
     "itinerary",
     "experience",
+    "create-trip",
   ]);
 
   const [currentSegment, secondSegment] = segments;
@@ -101,7 +102,9 @@ function RouteGuard() {
     "itinerary",
     "experience",
     "destination",
+    "create-trip",
   ].includes(currentSegment as any);
+
 
   // Redirection Logic
   if (!isAuthenticated && !isInAuthFlow) {
@@ -129,6 +132,7 @@ function RouteGuard() {
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen

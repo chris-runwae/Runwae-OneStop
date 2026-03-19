@@ -2,14 +2,19 @@ import React from "react";
 import { View } from "react-native";
 import SkeletonBox from "./SkeletonBox";
 
-export const TripCardSkeleton = () => (
+export const TripCardSkeleton = ({
+  fullWidth = false,
+}: {
+  fullWidth?: boolean;
+}) => (
   <View
-    className="rounded-2xl overflow-hidden mr-3"
-    style={{ width: 360, height: 250 }}
+    className="rounded-2xl overflow-hidden"
+    style={{ width: fullWidth ? "100%" : 360, height: 210 }}
   >
-    <SkeletonBox width={360} height={250} borderRadius={16} />
+    <SkeletonBox width={fullWidth ? "100%" : 360} height={210} borderRadius={16} />
   </View>
 );
+
 
 export const ItineraryCardSkeleton = ({
   fullWidth = false,

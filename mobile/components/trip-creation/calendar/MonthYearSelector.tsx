@@ -1,3 +1,4 @@
+import { useTheme } from '@react-navigation/native';
 import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
@@ -15,6 +16,8 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
   onYearPress,
   theme,
 }) => {
+  const { dark } = useTheme();
+
   const getCurrentMonth = (monthId: string): string => {
     const date = new Date(monthId);
     return date.toLocaleDateString('en-US', { month: 'long' });
@@ -25,6 +28,8 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
     return date.getFullYear().toString();
   };
 
+  const iconColor = dark ? '#fff' : '#000';
+
   return (
     <View className="mb-4 flex-row items-center gap-x-5 py-2">
       <TouchableOpacity
@@ -33,7 +38,7 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
         <Text className="text-base font-semibold text-black dark:text-white">
           {getCurrentMonth(currentMonthId)}
         </Text>
-        <ChevronDown size={16} color={theme?.isDarkMode ? '#000' : '#fff'} />
+        <ChevronDown size={16} color={iconColor} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -42,8 +47,9 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
         <Text className="text-base font-semibold text-black dark:text-white">
           {getCurrentYear(currentMonthId)}
         </Text>
-        <ChevronDown size={16} color={theme?.isDarkMode ? '#000' : '#fff'} />
+        <ChevronDown size={16} color={iconColor} />
       </TouchableOpacity>
     </View>
   );
 };
+

@@ -6,14 +6,15 @@ import AvatarGroup from "./AvatarGroup";
 
 interface TripCardProps {
   trip: Trip;
+  fullWidth?: boolean;
 }
 
-const TripCard = ({ trip }: TripCardProps) => {
+const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   return (
     <Pressable
       className="rounded-2xl overflow-hidden"
       onPress={() => {}}
-      style={{ width: 360, height: 250 }}
+      style={{ width: fullWidth ? "100%" : 360, height: 210 }}
     >
       <ImageBackground
         source={{ uri: trip.image }}

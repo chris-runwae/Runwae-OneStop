@@ -1,14 +1,26 @@
-import { toDateId } from '@marceloterreiro/flash-calendar';
+import { toDateId } from "@marceloterreiro/flash-calendar";
 
-export const generateMonths = (currentMonthId: string): { id: string; name: string }[] => {
+export const generateMonths = (
+  currentMonthId: string,
+): { id: string; name: string }[] => {
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
-  
+
   const currentDate = new Date(currentMonthId);
   const currentYear = currentDate.getFullYear();
-  
+
   return monthNames.map((monthName, index) => {
     const monthDate = new Date(currentYear, index, 1);
     const monthId = toDateId(monthDate);
@@ -16,21 +28,22 @@ export const generateMonths = (currentMonthId: string): { id: string; name: stri
   });
 };
 
-export const generateYears = (currentMonthId: string): { id: string; name: string }[] => {
+export const generateYears = (
+  currentMonthId: string,
+): { id: string; name: string }[] => {
   const years: { id: string; name: string }[] = [];
-  const currentDate = new Date(currentMonthId);
-  const currentYear = currentDate.getFullYear();
-  
-  for (let i = currentYear - 10; i <= currentYear + 10; i++) {
+  const currentYear = new Date().getFullYear();
+
+  for (let i = currentYear + 10; i >= currentYear - 20; i--) {
     years.push({ id: i.toString(), name: i.toString() });
   }
-  
+
   return years;
 };
 
 export const getCurrentMonth = (currentMonthId: string): string => {
   const date = new Date(currentMonthId);
-  return date.toLocaleDateString('en-US', { month: 'long' });
+  return date.toLocaleDateString("en-US", { month: "long" });
 };
 
 export const getCurrentYear = (currentMonthId: string): string => {

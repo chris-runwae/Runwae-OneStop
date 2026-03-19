@@ -60,7 +60,7 @@ const TripCreatedModal = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={onShare}
-            className="bg-white dark:bg-transparent h-[45px] rounded-full justify-center items-center border border-gray-200 dark:border-gray-800"
+            className="bg-white dark:bg-transparent h-[45px] rounded-full justify-center items-center border border-gray-200 dark:border-gray-600"
           >
             <Text className="text-gray-600 dark:text-gray-300">
               Share Details

@@ -1,4 +1,5 @@
 import { CalendarContainer } from "@/components/trip-creation/calendar/CalendarContainer";
+import SkeletonBox from "@/components/ui/SkeletonBox";
 import { useDateRange } from "@marceloterreiro/flash-calendar";
 
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
@@ -36,22 +37,8 @@ import {
 
 const { width } = Dimensions.get("window");
 
-const MOCK_DESTINATIONS = [
-  "Paris, France",
-  "Suva, Fiji",
-  "Nairobi, Kenya",
-  "Tokyo, Japan",
-  "New York, USA",
-  "Bangkok, Thailand",
-  "Tromsø, Norway",
-  "Merzouga, Morocco",
-  "Lagos, Nigeria",
-  "London, UK",
-  "Bali, Indonesia",
-  "Rome, Italy",
-  "Madrid, Spain",
-  "Barcelona, Spain",
-];
+import { usePlaceSearch } from "@/components/trip-creation/hooks/usePlaceSearch";
+import { LiteAPIPlace } from "@/types/liteapi.types";
 
 const CreateTrip = () => {
   const { dark } = useTheme();
@@ -79,30 +66,17 @@ const CreateTrip = () => {
   }, [dateRange]);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredDestinations, setFilteredDestinations] = useState<string[]>(
-    [],
-  );
+  const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  useEffect(() => {
-    if (MOCK_DESTINATIONS.includes(searchQuery)) {
-      setShowDropdown(false);
-      return;
-    }
-    const handler = setTimeout(() => {
-      if (searchQuery.trim().length >= 2) {
-        const matches = MOCK_DESTINATIONS.filter((d) =>
-          d.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
-        setFilteredDestinations(matches);
-        setShowDropdown(matches.length > 0);
-      } else {
-        setShowDropdown(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+  const { debouncedSearch } = usePlaceSearch(
+    setPlaces,
+    setLoading,
+    setErrorMessage,
+    setShowDropdown,
+  );
 
   const scrollToStep = (index: number) => {
     flatListRef.current?.scrollToIndex({ index, animated: true });
@@ -202,32 +176,114 @@ const CreateTrip = () => {
                   onChangeText={(text) => {
                     setSearchQuery(text);
                     setDestination(text);
+                    debouncedSearch(text, 300);
                   }}
                 />
 
                 {showDropdown && (
                   <View
-                    className="absolute top-24 left-0 right-0 bg-white dark:bg-dark-seconndary rounded-xl shadow-lg border border-gray-100 dark:border-white/10 overflow-hidden z-50"
+                    className="absolute top-24 left-0 right-0 bg-white dark:bg-dark-seconndary/50 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 overflow-hidden z-50"
                     style={{ maxHeight: 200 }}
                   >
-                    <ScrollView nestedScrollEnabled>
-                      {filteredDestinations.map((dest, i) => (
+                    <ScrollView nestedScrollEnabled className="z-50">
+                      {loading && (
+                        <View className="p-4 gap-y-4">
+                          {[1, 2, 3].map((i) => (
+                            <View key={i} className="flex-row items-center">
+                              <SkeletonBox
+                                width={18}
+                                height={18}
+                                borderRadius={9}
+                              />
+                              <View className="ml-3 flex-1 gap-y-1.5">
+                                <SkeletonBox
+                                  width="60%"
+                                  height={14}
+                                  borderRadius={4}
+                                />
+                                <SkeletonBox
+                                  width="90%"
+                                  height={10}
+                                  borderRadius={4}
+                                />
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {searchQuery.trim().length > 0 &&
+                        searchQuery.trim().length < 3 &&
+                        !loading && (
+                          <View className="p-10 items-center justify-center">
+                            <Ionicons
+                              name="search-outline"
+                              size={24}
+                              color={dark ? "#666" : "#999"}
+                            />
+                            <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium">
+                              Type to search destinations
+                            </Text>
+                          </View>
+                        )}
+
+                      {errorMessage && !loading && (
+                        <View className="p-10 items-center justify-center">
+                          <Ionicons
+                            name="alert-circle-outline"
+                            size={24}
+                            color={dark ? "#666" : "#999"}
+                          />
+                          <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium">
+                            {errorMessage}
+                          </Text>
+                        </View>
+                      )}
+
+                      {!loading &&
+                        !errorMessage &&
+                        searchQuery.trim().length >= 3 &&
+                        places.length === 0 && (
+                          <View className="p-10 items-center justify-center">
+                            <Ionicons
+                              name="location-outline"
+                              size={24}
+                              color={dark ? "#666" : "#999"}
+                            />
+                            <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium text-center">
+                              No results found
+                            </Text>
+                          </View>
+                        )}
+
+                      {places.map((place) => (
                         <TouchableOpacity
-                          key={i}
-                          className="p-4 border-b border-gray-50 dark:border-white/5 last:border-0 flex-row items-center"
+                          key={place.placeId}
+                          className="p-4 border-b border-gray-50 dark:border-white/5 last:border-0"
                           onPress={() => {
-                            setDestination(dest);
-                            setSearchQuery(dest);
+                            setDestination(place.displayName);
+                            setSearchQuery(place.displayName);
                             setShowDropdown(false);
                           }}
                         >
-                          <Ionicons
-                            name="location-outline"
-                            size={18}
-                            color="#FF385C"
-                            style={{ marginRight: 10 }}
-                          />
-                          <Text className="dark:text-white">{dest}</Text>
+                          <View className="flex-row items-center">
+                            <Ionicons
+                              name="location-outline"
+                              size={18}
+                              color="#FF385C"
+                              style={{ marginRight: 10 }}
+                            />
+                            <View className="flex-1">
+                              <Text className="dark:text-white font-medium">
+                                {place.displayName}
+                              </Text>
+                              {place.formattedAddress && (
+                                <Text className="text-gray-400 text-xs mt-0.5">
+                                  {place.formattedAddress}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -367,7 +423,9 @@ const CreateTrip = () => {
       searchQuery,
       destination,
       showDropdown,
-      filteredDestinations,
+      places,
+      loading,
+      errorMessage,
       calendarTheme,
       calendarActiveDateRanges,
       onCalendarDayPress,

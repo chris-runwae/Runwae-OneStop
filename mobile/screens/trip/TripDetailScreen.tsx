@@ -80,8 +80,7 @@ export default function TripDetailScreen() {
     return <TripDetailSkeleton insetTop={insets.top} />;
   }
 
-  // const coverUrl = activeTrip.trip_details?.cover_image_url;
-  const coverUrl = 'https://images.unsplash.com/photo-1773332598289-ed0444ad1d6f?q=80&w=988&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+  const coverUrl = activeTrip?.cover_image_url;
 
   //Image picker functions
   const pickImage = async () => {
@@ -103,7 +102,7 @@ export default function TripDetailScreen() {
 
     if (!result.canceled && result.assets[0]) {
       await uploadTripCoverImage(result.assets[0].uri);
-      setCoverImage(result.assets[0].uri);
+      // setCoverImage(result.assets[0].uri);
     }
   };
 
@@ -125,7 +124,7 @@ export default function TripDetailScreen() {
 
     if (!result.canceled && result.assets[0]) {
       await uploadTripCoverImage(result.assets[0].uri);
-      setCoverImage(result.assets[0].uri);
+      // setCoverImage(result.assets[0].uri);
     }
   };
 
@@ -171,9 +170,10 @@ export default function TripDetailScreen() {
       <View style={[styles.hero, { height: HERO_HEIGHT + insets.top }]}>
         {coverUrl ? (
           <Image
-            source={{ uri: coverImage || coverUrl }}
+            source={{ uri: coverUrl }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
+            cachePolicy="none"
           />
         ) : (
           <View style={[styles.heroPlaceholder, { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' }]}>

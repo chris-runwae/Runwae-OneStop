@@ -48,6 +48,7 @@ export interface Trip {
   destination_address:   string | null;
   created_at:            string;
   updated_at:            string;
+  cover_image_url:       string | null;
 }
 
 export interface TripDetails {

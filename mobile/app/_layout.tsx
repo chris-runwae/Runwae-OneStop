@@ -127,7 +127,7 @@ function RouteGuard() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding" />
+      {/* <Stack.Screen name="onboarding" /> Does not exist in folder structure */}
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

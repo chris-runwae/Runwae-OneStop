@@ -1,117 +1,190 @@
-/* eslint-disable import/first */
-// Polyfill Buffer for React Native
-import 'react-native-get-random-values';
-import { Buffer } from 'buffer';
-global.Buffer = global.Buffer || Buffer;
-
-import * as Sentry from '@sentry/react-native';
-import { useFonts } from 'expo-font';
-import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque';
-import { DMSans_400Regular } from '@expo-google-fonts/dm-sans';
-import { useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import BottomSheet from '@gorhom/bottom-sheet';
-
+import {
+  Inter_100Thin,
+  Inter_200ExtraLight,
+  Inter_300Light,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from "@expo-google-fonts/inter";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from '@react-navigation/native';
-import { router, Slot } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import { ClerkProvider } from '@clerk/clerk-expo';
-import Constants from 'expo-constants';
-import { tokenCache } from '@clerk/clerk-expo/token-cache';
-// If using Expo Router, import your CSS file in the app/_layout.tsx file
-import '../global.css';
-import { SupabaseProvider } from '@/lib/SupabaseProvider';
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Redirect, Stack, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import "react-native-reanimated";
+import ToastManager from "toastify-react-native";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import * as Linking from 'expo-linking';
+import SplashScreen from "@/components/ui/splash-screen";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import "../global.css";
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
-
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  enabled: !__DEV__,
-  // enabled: true,
-  sendDefaultPii: true,
-  // Set tracesSampleRate to 1.0 to capture 100% of transactions for tracing.
-  // We recommend adjusting this value in production.
-  // Learn more at
-  // https://docs.sentry.io/platforms/react-native/configuration/options/#traces-sample-rate
-  tracesSampleRate: 1.0,
-  // Enable logs to be sent to Sentry
-  // Learn more at https://docs.sentry.io/platforms/react-native/logs/
-  enableLogs: true,
-  // profilesSampleRate is relative to tracesSampleRate.
-  // Here, we'll capture profiles for 100% of transactions.
-  profilesSampleRate: 1.0,
-  // Record session replays for 100% of errors and 10% of sessions
-  replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
-  integrations: [Sentry.mobileReplayIntegration()],
-});
-
-function RootLayout() {
-  const colorScheme = useColorScheme();
-
-  const publishableKey =
-    process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-    Constants.expoConfig?.extra?.clerkPublishableKey;
-
-  const [loaded, error] = useFonts({
-    BricolageGrotesque_700Bold,
-    DMSans_400Regular,
-  });
+function RouteGuard() {
+  const segments = useSegments();
+  const {
+    isLoading,
+    hasSeenOnboarding,
+    hasCompletedBoarding,
+    currentBoardingStep,
+    isAuthenticated,
+    initialize,
+  } = useAuth();
 
   useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
-
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      const parsed = Linking.parse(url);
-
-      // Example: runwae://join/838493/ABCD1234
-      if (parsed.path?.startsWith('join')) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const [_, tripId, code] = parsed.path.split('/');
-        router.push(`/join/${tripId}/${code}`);
-      }
-    });
-
-    return () => subscription.remove();
+    initialize();
   }, []);
 
-  if (!publishableKey) {
-    Sentry.captureException(new Error('❌ Missing Clerk publishable key'));
-    console.error('❌ Missing Clerk publishable key');
+  if (isLoading) {
+    return <SplashScreen />;
   }
 
-  if (!loaded && !error) {
-    return null;
+  const AUTH_ROUTES = new Set([
+    "(auth)",
+    "login",
+    "signup",
+    "register",
+    "forgot-password",
+    "check-email",
+    "reset-password",
+    "onboarding",
+    "onboarding-steps",
+  ]);
+
+  const ONBOARDING_STEPS = new Set(["onboarding", "onboarding-steps"]);
+
+  const BOARDING_STEPS = new Set([
+    "boarding",
+    "step-1",
+    "step-2",
+    "step-3",
+    "step-4",
+  ]);
+
+  const AUTHORIZED_ROOT_ROUTES = new Set([
+    "(tabs)",
+    "notifications",
+    "modal",
+    "itinerary",
+    "experience",
+    "create-trip",
+  ]);
+
+  const [currentSegment, secondSegment] = segments;
+  const isInAuthFlow =
+    AUTH_ROUTES.has(currentSegment) ||
+    (currentSegment === "(auth)" &&
+      secondSegment &&
+      AUTH_ROUTES.has(secondSegment));
+  const isInOnboardingSteps =
+    currentSegment === "(auth)" &&
+    secondSegment &&
+    ONBOARDING_STEPS.has(secondSegment);
+  const isInBoardingSteps =
+    currentSegment === "boarding" &&
+    secondSegment &&
+    BOARDING_STEPS.has(secondSegment);
+  const isInTabs = currentSegment === "(tabs)";
+  const isInOnboarding = currentSegment === "onboarding";
+  const isInAuthorizedRoot = [
+    undefined,
+    "(tabs)",
+    "notifications",
+    "modal",
+    "itinerary",
+    "experience",
+    "destination",
+    "create-trip",
+  ].includes(currentSegment as any);
+
+
+  // Redirection Logic
+  if (!isAuthenticated && !isInAuthFlow) {
+    return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  if (
+    isAuthenticated &&
+    !hasCompletedBoarding &&
+    !isInAuthorizedRoot &&
+    !isInBoardingSteps
+  ) {
+    return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
+  }
+
+  if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
+    return <Redirect href="/(tabs)" />;
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <SupabaseProvider>
-        <ThemeProvider
-          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Slot />
-            <StatusBar style="auto" />
-          </GestureHandlerRootView>
-        </ThemeProvider>
-      </SupabaseProvider>
-    </ClerkProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="boarding" />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary" options={{ headerShown: false }} />
+      <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="destination" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="modal"
+        options={{ presentation: "modal", headerShown: true, title: "Modal" }}
+      />
+    </Stack>
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    "BricolageGrotesque-Regular": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Regular.ttf"),
+    "BricolageGrotesque-Medium": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Medium.ttf"),
+    "BricolageGrotesque-SemiBold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-SemiBold.ttf"),
+    "BricolageGrotesque-Bold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Bold.ttf"),
+    "BricolageGrotesque-ExtraBold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraBold.ttf"),
+    "BricolageGrotesque-Light": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Light.ttf"),
+    "BricolageGrotesque-ExtraLight": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraLight.ttf"),
+
+    // inter
+    InterThin: Inter_100Thin,
+    InterExtraLight: Inter_200ExtraLight,
+    InterLight: Inter_300Light,
+    Inter: Inter_400Regular,
+    InterMedium: Inter_500Medium,
+    InterSemiBold: Inter_600SemiBold,
+    InterBold: Inter_700Bold,
+    InterExtraBold: Inter_800ExtraBold,
+    InterBlack: Inter_900Black,
+  });
+
+  if (!fontsLoaded) {
+    return <SplashScreen />;
+  }
+
+  return (
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
+          <AuthProvider>
+            <StatusBar style="auto" />
+            <ToastManager
+              showProgressBar={false}
+              style={{ borderRadius: 20, boxShadow: "none" }}
+              theme={colorScheme === "dark" ? "dark" : "light"}
+            />
+            <RouteGuard />
+          </AuthProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
+    </ThemeProvider>
+  );
+}

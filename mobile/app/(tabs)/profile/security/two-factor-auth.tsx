@@ -1,71 +1,66 @@
-import { ScreenContainer } from '@/components';
-import Switch from '@/components/ui/switch';
-import { twoFaOptionProps } from '@/constants/profile/security.constant';
-import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import ScreenHeader from "@/components/ui/ScreenHeader";
+import SwitchRow from "@/components/ui/SwitchRow";
+import React, { useState } from "react";
+import { Text, View } from "react-native";
+
+const TWO_FACTOR_METHODS = [
+  {
+    id: "sms",
+    label: "Text Message",
+    description: "Receive updates about your account activity.",
+  },
+  {
+    id: "app",
+    label: "Authentication App",
+    description: "Receive secure codes for added protection.",
+  },
+  {
+    id: "email",
+    label: "Email Address",
+    description: "Receive security alerts and important updates.",
+  },
+] as const;
+
+type MethodId = (typeof TWO_FACTOR_METHODS)[number]["id"];
 
 const TwoFactorAuth = () => {
-  const [twoFaOptions, setTwoFaOptions] = useState(twoFaOptionProps);
+  const [methods, setMethods] = useState<Record<MethodId, boolean>>({
+    sms: false,
+    app: false,
+    email: false,
+  });
 
-  const handleToggle = (index: number, checked: boolean) => {
-    const updatedOptions = [...twoFaOptions];
-    updatedOptions[index] = { ...updatedOptions[index], checked };
-    setTwoFaOptions(updatedOptions);
-  };
-
-  const OptionButtons = ({
-    title,
-    subtitle,
-    checked,
-    setChecked,
-  }: {
-    title: string;
-    subtitle: string;
-    checked: boolean;
-    setChecked: (checked: boolean) => void;
-  }) => {
-    return (
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text className="text-base font-semibold text-black dark:text-white">
-            {title}
-          </Text>
-          <Text className="text-sm text-[#ADB5BD]">{subtitle}</Text>
-        </View>
-
-        <Switch
-          checked={checked}
-          onValueChange={(checked) => {
-            setChecked(checked);
-          }}
-        />
-      </View>
-    );
+  const toggleMethod = (id: MethodId) => {
+    setMethods((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
-    <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
-      <View className="flex-1 px-[12px] py-[8px]">
-        <View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            Manage your 2-Factor Authentication (2FA) settings to enhance your
-            account security.
-          </Text>
+    <AppSafeAreaView>
+      <ScreenHeader
+        title="Two Factor Auth"
+        subtitle="Add an extra layer of security to your account"
+      />
 
-          <View className="mt-10 flex-col gap-y-10">
-            {twoFaOptions.map((data, index) => (
-              <OptionButtons
-                title={data.title}
-                subtitle={data.subtitle}
-                key={index}
-                checked={data.checked}
-                setChecked={(checked) => handleToggle(index, checked)}
-              />
-            ))}
-          </View>
+      <View className="mt-5 px-[20px] flex-1 gap-y-6">
+        <Text className="text-base text-gray-400">
+          Manage your 2-Factor Authentication (2FA) settings to enhance your
+          account security.
+        </Text>
+
+        <View className="mt-2 gap-y-4 flex-col">
+          {TWO_FACTOR_METHODS.map((method) => (
+            <SwitchRow
+              key={method.id}
+              label={method.label}
+              description={method.description}
+              value={methods[method.id]}
+              onValueChange={() => toggleMethod(method.id)}
+            />
+          ))}
         </View>
       </View>
-    </ScreenContainer>
+    </AppSafeAreaView>
   );
 };
 

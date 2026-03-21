@@ -1,89 +1,155 @@
-import { ScreenContainer } from '@/components';
-import CustomTextInput from '@/components/ui/custome-input';
-import React, { useState, useEffect } from 'react';
+import CustomTextInput from "@/components/containers/TextInput";
+import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import { useAuth } from "@/context/AuthContext";
 import {
+  ChangePasswordFormData,
+  changePasswordSchema,
+} from "@/utils/validation/auth.validation";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
   KeyboardAvoidingView,
-  Keyboard,
-  Modal,
   Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
+import { Toast } from "toastify-react-native";
+import { z } from "zod";
 
 const ChangePassword = () => {
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState<boolean>(false);
+  const { updatePassword } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<ChangePasswordFormData>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = useState<Partial<ChangePasswordFormData>>({});
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        setIsKeyboardOpen(true);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setIsKeyboardOpen(false);
-      }
-    );
+  const handleInputChange = (
+    field: keyof ChangePasswordFormData,
+    value: string,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
 
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      changePasswordSchema.parse(formData);
+
+      const result = await updatePassword(formData.newPassword);
+
+      if (result.success) {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Password updated successfully",
+          position: "bottom",
+        });
+        router.back();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: result.error || "Failed to update password",
+          position: "bottom",
+        });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Partial<ChangePasswordFormData> = {};
+        error.issues.forEach((issue) => {
+          const field = issue.path[0] as keyof ChangePasswordFormData;
+          if (field) newErrors[field] = issue.message;
+        });
+        setErrors(newErrors);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
+    <AppSafeAreaView>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
         <ScrollView
-          className="flex-1 px-[12px] py-[8px]"
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: isKeyboardOpen ? 150 : 100,
-          }}>
-          <View className="flex-1 flex-col gap-y-[20px]">
-            <View>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                Enter a Password that you can remember. New password can not be
-                the same as your old password
-              </Text>
+          style={{ paddingBottom: 100 }}
+        >
+          <ScreenHeader
+            title="Change your password"
+            subtitle="Keep your account secure with a new password."
+          />
 
-              <View className="mt-14 flex-col gap-y-5">
-                <CustomTextInput
-                  label="Current Password"
-                  secureTextEntry={true}
-                  isPassword={true}
-                />
-                <CustomTextInput
-                  label="New Password"
-                  secureTextEntry={true}
-                  isPassword={true}
-                />
-                <CustomTextInput
-                  label="Confirm New Password"
-                  secureTextEntry={true}
-                  isPassword={true}
-                />
-              </View>
+          <View className="mt-5 px-[20px] flex-1 gap-y-6">
+            <Text className="text-base text-gray-400">
+              Enter a Password that you can remember. New password can not be
+              the same as your old password
+            </Text>
+
+            <View className="gap-y-4">
+              <CustomTextInput
+                label="Current Password"
+                labelStyle="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                value={formData.currentPassword}
+                isPassword
+                onChangeText={(val) =>
+                  handleInputChange("currentPassword", val)
+                }
+                error={errors.currentPassword}
+              />
+              <CustomTextInput
+                label="Enter New Password"
+                labelStyle="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                value={formData.newPassword}
+                isPassword
+                onChangeText={(val) => handleInputChange("newPassword", val)}
+                error={errors.newPassword}
+              />
+              <CustomTextInput
+                label="Confirm New Password"
+                labelStyle="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                value={formData.confirmPassword}
+                isPassword
+                onChangeText={(val) =>
+                  handleInputChange("confirmPassword", val)
+                }
+                error={errors.confirmPassword}
+              />
             </View>
 
-            <View className="mt-8">
-              <TouchableOpacity className="flex h-[50px] w-full items-center justify-center rounded-full bg-pink-600">
-                <Text className="font-semibold text-white">
-                  Change Password
-                </Text>
+            <View className="mt-10">
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                activeOpacity={0.8}
+                className={`h-[44px] w-full items-center justify-center rounded-full bg-primary ${
+                  isSubmitting ? "opacity-50" : ""
+                }`}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-base font-semibold text-white">
+                    Change password
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ScreenContainer>
+    </AppSafeAreaView>
   );
 };
 

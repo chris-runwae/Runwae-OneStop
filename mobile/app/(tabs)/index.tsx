@@ -1,91 +1,71 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Redirect, RelativePathString } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
-
+import HomeHeader from "@/components/home/HomeHeader";
+import ItineraryForYou from "@/components/home/IteneryForYou";
+import AddOnsForYou from "@/components/home/AddOnsForYou";
+import UpcomingTrips from "@/components/home/UpcomingTrips";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import WelcomeModal from "@/components/WelcomeModal";
 import {
-  IconButton,
-  HorizontalCarousel,
-  ScreenContainer,
-  SectionHeader,
-  Spacer,
-  WelcomeAvatar,
-  UpcomingTripContainer,
-  HomeScreenSkeleton,
-} from '@/components';
-import { useTrips, useViator } from '@/hooks';
-import { useViatorStore } from '@/stores/useViatorStore';
-import { ICON_NAMES } from '@/constants';
+  ADD_ONS_FOR_YOU,
+  DESTINATIONS_FOR_YOU,
+  ITINERARIES_FOR_YOU,
+  UPCOMING_TRIPS,
+} from "@/constants/home.constant";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@react-navigation/native";
+import React, { useState, useCallback } from "react";
+import { ScrollView, RefreshControl } from "react-native";
+
+import DestinationsForYou from "@/components/home/DestinationsForYou";
 
 export default function HomeScreen() {
-  const { isSignedIn } = useAuth();
-  const { featuredTrips, loading } = useTrips();
-  const { getDestinations, getTags } = useViator();
-  const { destinations, tags } = useViatorStore();
+  const { showWelcomeModal, setShowWelcomeModal, user, isLoading: authLoading } = useAuth();
+  const { dark } = useTheme();
 
-  if (!isSignedIn) {
-    return <Redirect href={'(auth)/sign-in' as RelativePathString} />;
-  }
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  if (loading) {
-    return <HomeScreenSkeleton />;
-  }
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!destinations || destinations.length === 0) {
-    getDestinations();
-  }
-  if (!tags || tags.length === 0) {
-    getTags();
-  }
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Simulate a network request
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1500);
+  }, []);
+
 
   return (
-    <ScreenContainer
-      header={{
-        rightComponent: (
-          <IconButton
-            icon={ICON_NAMES.BELL}
-            onPress={() => console.log('Notifications')}
-          />
-        ),
-        leftComponent: <WelcomeAvatar />,
-      }}>
+    <AppSafeAreaView edges={["top"]}>
+      <HomeHeader user={user} isLoading={authLoading} dark={dark} />
+
       <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}>
-        <Spacer size={32} vertical />
-        <UpcomingTripContainer
-          linkText="More"
-          linkTo={'/explore' as RelativePathString}
-        />
-        <Spacer size={32} vertical />
-        {featuredTrips.length > 0 && (
-          <>
-            <SectionHeader
-              title="Trips for you"
-              linkText="More"
-              linkTo={'/explore' as RelativePathString}
-            />
-            <View style={styles.carouselContainer}>
-              <HorizontalCarousel data={featuredTrips} />
-            </View>
-          </>
-        )}
-        <Spacer size={100} vertical />
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={dark ? "#ffffff" : "#000000"}
+          />
+        }
+      >
+        <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
+        <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
+        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
+        <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
       </ScrollView>
-    </ScreenContainer>
+
+
+      <WelcomeModal
+        visible={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+      />
+    </AppSafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  scrollViewContent: {
-    paddingHorizontal: 16,
-  },
-  carouselContainer: {
-    marginHorizontal: -16,
-    paddingLeft: 16,
-  },
-});

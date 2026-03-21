@@ -1,48 +1,107 @@
-import { ScreenContainer } from '@/components';
-import RadioButton from '@/components/ui/radio-button';
-import { privacySettingOptions } from '@/constants/profile/security.constant';
-import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import RadioOptions from "@/components/ui/RadioOptions";
+import ScreenHeader from "@/components/ui/ScreenHeader";
+import SwitchRow from "@/components/ui/SwitchRow";
+import {
+  PRIVACY_SECTIONS_METADATA,
+  TRIP_VISIBILITY_OPTIONS,
+} from "@/constants/privacy.constant";
+import React, { useState } from "react";
+import { ScrollView, Text, View } from "react-native";
 
 const PrivacySettings = () => {
-  const [selectedPrivacy, setSelectedPrivacy] = useState(0);
+  const [settings, setSettings] = useState({
+    profilePublic: true,
+    tripVisibility: "public",
+    showBadges: false,
+    findByName: true,
+    findByEmail: false,
+    shareActivity: true,
+    analyticsEnabled: true,
+    personalizedAds: false,
+  });
 
-  const handlePrivacyChange = (index: number) => {
-    setSelectedPrivacy(index);
-  };
+  const updateSetting =
+    (key: keyof typeof settings) => (value: boolean | string) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    };
 
-  const updatedPrivacyOptions = privacySettingOptions.map((option, index) => ({
-    ...option,
-    checked: index === selectedPrivacy,
-    setChecked: (checked: boolean) => {
-      if (checked) {
-        handlePrivacyChange(index);
-      }
-    },
-  }));
+  const SettingsSection = ({
+    title,
+    items,
+  }: (typeof PRIVACY_SECTIONS_METADATA)[0]) => (
+    <View>
+      <View className="mt-8 mb-2">
+        <Text
+          className="text-sm font-bold text-gray-400 uppercase tracking-wider"
+          style={{ fontFamily: "BricolageGrotesque-Bold" }}
+        >
+          {title}
+        </Text>
+      </View>
+      <View className="bg-gray-100 dark:bg-dark-seconndary/50 rounded-2xl p-4 border border-gray-200 dark:border-dark-seconndary/50">
+        {items.map((item, index) => (
+          <React.Fragment key={item.id}>
+            <SwitchRow
+              label={item.label}
+              description={item.description}
+              value={settings[item.id as keyof typeof settings] as boolean}
+              onValueChange={updateSetting(item.id as keyof typeof settings)}
+            />
+            {index < items.length - 1 && (
+              <View className="h-[1px] bg-gray-200 dark:bg-dark-seconndary mx-1 my-3" />
+            )}
+          </React.Fragment>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
-    <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
-      <View className="flex-1 px-[12px] py-[8px]">
-        <View>
-          <Text className="text-sm text-[#ADB5BD]">
-            Control who can see your trips and invites.
-          </Text>
+    <AppSafeAreaView edges={["top", "left", "right"]}>
+      <ScreenHeader
+        title="Privacy Settings"
+        subtitle="Manage how your information is shared and seen."
+      />
 
-          <View className="mt-20 flex-col gap-y-5">
-            {updatedPrivacyOptions.map((data, index) => (
-              <RadioButton
-                title={data.title}
-                subtitle={data.subtitle}
-                checked={data.checked}
-                setChecked={data.setChecked}
-                key={index}
-              />
-            ))}
-          </View>
+      <ScrollView
+        className="flex-1 px-[20px]"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* Account Visibility Section */}
+        <SettingsSection {...PRIVACY_SECTIONS_METADATA[0]} />
+
+        {/* Discoverability and Data & Activity Sections */}
+        {PRIVACY_SECTIONS_METADATA.slice(1).map((section) => (
+          <SettingsSection key={section.title} {...section} />
+        ))}
+
+        {/* Trip Visibility Section - Moved above Discoverability */}
+        <View className="mt-8 mb-2">
+          <Text
+            className="text-sm font-bold text-gray-400 uppercase tracking-wider"
+            style={{ fontFamily: "BricolageGrotesque-Bold" }}
+          >
+            Who can see my trips
+          </Text>
         </View>
-      </View>
-    </ScreenContainer>
+
+        <View className="bg-gray-100 dark:bg-dark-seconndary/50 rounded-2xl p-4 border border-gray-200 dark:border-dark-seconndary/50">
+          {TRIP_VISIBILITY_OPTIONS.map((option) => (
+            <RadioOptions
+              key={option.value}
+              title={option.label}
+              subtitle={option.subtitle}
+              selected={settings.tripVisibility === option.value}
+              onPress={() =>
+                updateSetting("tripVisibility" as any)(option.value)
+              }
+            />
+          ))}
+        </View>
+      </ScrollView>
+    </AppSafeAreaView>
   );
 };
 

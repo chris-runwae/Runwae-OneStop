@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { SupportAccordionProps } from "@/constants/help-center.constant";
+import { Minus, Plus } from "lucide-react-native";
+import React, { useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useDerivedValue,
-  useSharedValue,
   withTiming,
-} from 'react-native-reanimated';
-import { Minus, Plus } from 'lucide-react-native';
-import { SupportAccordionProps } from '@/types/support.types';
+} from "react-native-reanimated";
 
 interface AccordionItemProps {
   item: SupportAccordionProps;
@@ -33,16 +32,18 @@ const AccordionItemComponent: React.FC<AccordionItemProps> = ({
   }));
 
   return (
-    <View className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-black">
+    <View className="mb-4 overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-dark-seconndary dark:bg-dark-seconndary/50">
       <TouchableOpacity
         onPress={onToggle}
-        className="flex-row items-center justify-between p-4">
+        className="flex-row items-center justify-between p-4"
+      >
         <Text className="flex-1 pr-4 text-base font-medium text-black dark:text-white">
           {item.title}
         </Text>
         <Animated.View
-          className="flex items-center justify-center rounded-full bg-pink-500"
-          style={{ height: 20, width: 20 }}>
+          className="flex items-center justify-center rounded-full bg-primary"
+          style={{ height: 20, width: 20 }}
+        >
           {isExpanded ? (
             <Minus size={15} color="#ffffff" />
           ) : (

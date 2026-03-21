@@ -105,6 +105,7 @@ export interface CreateTripInput {
 export interface UpdateTripInput {
   name?:        string;
   description?: string;
+  cover_image_url?: string | null;
 }
 
 export interface UpdateTripDetailsInput {

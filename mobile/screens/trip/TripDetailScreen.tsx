@@ -70,7 +70,7 @@ function TripDetailSkeleton({ insetTop }: { insetTop: number }) {
 
 export default function TripDetailScreen() {
   const { dark } = useTheme();
-  const { activeTrip, isLoading } = useTrips();
+  const { activeTrip, isLoading, updateTrip } = useTrips();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -136,32 +136,17 @@ export default function TripDetailScreen() {
     ]);
   };
 
-  const uploadTripCoverImage = async (coverImage: string) => {
-    let coverImageUrl: string | null = null;
-      if (coverImage && activeTrip) {
-        try {
-          coverImageUrl = await uploadGroupCoverImage(activeTrip.id, coverImage);
-        } catch (err) {
-          console.error("Failed to upload cover image:", err);
-          Alert.alert(
-            "Warning",
-            "Failed to upload cover image. You can add it later."
-          );
-        }
-
-        // 3️⃣ Update the trip with cover URL
-        if (coverImageUrl) {
-          const { error: updateError } = await supabase
-            .from("groups")
-            .update({ cover_image_url: coverImageUrl })
-            .eq("id", activeTrip.id);
-
-          if (updateError) console.error(
-            "Failed to update trip with cover image URL",
-            updateError
-          );
-        }
+  const uploadTripCoverImage = async (imageUri: string) => {
+    if (!activeTrip) return;
+    try {
+      const coverImageUrl = await uploadGroupCoverImage(activeTrip.id, imageUri);
+      if (coverImageUrl) {
+        await updateTrip(activeTrip.id, { cover_image_url: coverImageUrl });
       }
+    } catch (err) {
+      console.error("Failed to upload cover image:", err);
+      Alert.alert("Warning", "Failed to upload cover image. You can add it later.");
+    }
   };
 
   return (
@@ -173,7 +158,6 @@ export default function TripDetailScreen() {
             source={{ uri: coverUrl }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            cachePolicy="none"
           />
         ) : (
           <View style={[styles.heroPlaceholder, { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' }]}>

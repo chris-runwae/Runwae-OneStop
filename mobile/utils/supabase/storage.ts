@@ -44,15 +44,14 @@ export const uploadGroupCoverImage = async (tripId: string, imageUri: string) =>
         upsert: true,
       });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const { data: urlData } = supabase.storage
       .from("groups")
       .getPublicUrl(fileName);
 
-    return urlData.publicUrl;
+    // Cache bust so expo-image treats it as a new image
+    return `${urlData.publicUrl}?t=${Date.now()}`;
   } catch (error) {
     console.error("Error uploading group cover image:", error);
     throw error;

@@ -1,23 +1,27 @@
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { useTrips } from '@/context/TripsContext';
 import { useTheme } from '@react-navigation/native';
-import { Image } from 'expo-image';
+import { Image, ImageBackground } from 'expo-image';
+import * as ImagePicker from "expo-image-picker";
 import { router } from 'expo-router';
-import { ChevronLeft, MapPin } from 'lucide-react-native';
+import { ChevronLeft, MapPin, Pencil } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Platform,
-  StatusBar,
+  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
 import TripActivityTab from './tabs/TripActivityTab';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripMembersTab from './tabs/TripMembersTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
+import { uploadGroupCoverImage } from '@/utils/supabase/storage';
+import { supabase } from '@/utils/supabase/client';
 
 // ================================================================
 // Constants
@@ -69,13 +73,97 @@ export default function TripDetailScreen() {
   const { activeTrip, isLoading } = useTrips();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
 
   // --- Loading state ---
   if (isLoading || !activeTrip) {
     return <TripDetailSkeleton insetTop={insets.top} />;
   }
 
-  const coverUrl = activeTrip.trip_details?.cover_image_url;
+  // const coverUrl = activeTrip.trip_details?.cover_image_url;
+  const coverUrl = 'https://images.unsplash.com/photo-1773332598289-ed0444ad1d6f?q=80&w=988&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+
+  //Image picker functions
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "We need camera roll permissions to select a profile image.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadTripCoverImage(result.assets[0].uri);
+      setCoverImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "We need camera permissions to take a photo.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadTripCoverImage(result.assets[0].uri);
+      setCoverImage(result.assets[0].uri);
+    }
+  };
+
+  const showImagePicker = () => {
+    Alert.alert("Select Profile Image", "Choose an option", [
+      { text: "Camera", onPress: takePhoto },
+      { text: "Photo Library", onPress: pickImage },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
+  const uploadTripCoverImage = async (coverImage: string) => {
+    let coverImageUrl: string | null = null;
+      if (coverImage && activeTrip) {
+        try {
+          coverImageUrl = await uploadGroupCoverImage(activeTrip.id, coverImage);
+        } catch (err) {
+          console.error("Failed to upload cover image:", err);
+          Alert.alert(
+            "Warning",
+            "Failed to upload cover image. You can add it later."
+          );
+        }
+
+        // 3️⃣ Update the trip with cover URL
+        if (coverImageUrl) {
+          const { error: updateError } = await supabase
+            .from("groups")
+            .update({ cover_image_url: coverImageUrl })
+            .eq("id", activeTrip.id);
+
+          if (updateError) console.error(
+            "Failed to update trip with cover image URL",
+            updateError
+          );
+        }
+      }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: dark ? '#000000' : '#ffffff' }]}>
@@ -83,7 +171,7 @@ export default function TripDetailScreen() {
       <View style={[styles.hero, { height: HERO_HEIGHT + insets.top }]}>
         {coverUrl ? (
           <Image
-            source={{ uri: coverUrl }}
+            source={{ uri: coverImage || coverUrl }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
@@ -103,6 +191,15 @@ export default function TripDetailScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <ChevronLeft size={22} strokeWidth={2.5} color="#ffffff" />
+        </TouchableOpacity>
+
+        {/* {Edit image button} */}
+        <TouchableOpacity
+          style={[styles.editImageButton, { top: insets.top + 12 }]}
+          onPress={showImagePicker}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Pencil size={22} strokeWidth={2.5} color="#ffffff" />
         </TouchableOpacity>
 
         {/* Trip name */}
@@ -191,6 +288,16 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editImageButton: {
+    position: 'absolute',
+    right: 16,
     width: 36,
     height: 36,
     borderRadius: 18,

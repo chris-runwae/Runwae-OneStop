@@ -33,7 +33,7 @@ export const uploadProfileImage = async (userId: string, imageUri: string) => {
 export const uploadGroupCoverImage = async (tripId: string, imageUri: string) => {
   try {
     const fileExtension = imageUri.split(".").pop() || "jpg";
-    const fileName = `${tripId}/${Date.now()}.${fileExtension}`;
+    const fileName = `${tripId}/cover.${fileExtension}`;
     const file = new File(imageUri);
     const bytes = await file.bytes();
 
@@ -41,7 +41,7 @@ export const uploadGroupCoverImage = async (tripId: string, imageUri: string) =>
       .from("groups")
       .upload(fileName, bytes, {
         contentType: `image/${fileExtension}`,
-        upsert: false,
+        upsert: true,
       });
 
     if (error) {

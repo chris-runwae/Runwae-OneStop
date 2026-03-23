@@ -1,10 +1,10 @@
-import { CalendarContainer } from "@/components/trip-creation/calendar/CalendarContainer";
-import SkeletonBox from "@/components/ui/SkeletonBox";
+import { DateSelectionStep } from "@/components/trip-creation/steps/DateSelectionStep";
+import { DestinationStep } from "@/components/trip-creation/steps/DestinationStep";
+import { TripDetailsStep } from "@/components/trip-creation/steps/TripDetailsStep";
 import { useDateRange } from "@marceloterreiro/flash-calendar";
 
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -21,19 +21,16 @@ import { useAuth } from "@/context/AuthContext";
 import { createTrip } from "@/utils/supabase/trips.service";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Toast } from "toastify-react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -153,265 +150,44 @@ const CreateTrip = () => {
       switch (index) {
         case 0:
           return (
-            <View style={{ width }} className="px-5 pt-8">
-              <Text
-                className="text-2xl font-bold dark:text-white mb-2"
-                style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-              >
-                Where's the next adventure? 🚀
-              </Text>
-              <Text className="text-gray-400 dark:text-gray-500 mb-8">
-                Please select a destination.
-              </Text>
-
-              <View className="mb-6 z-50">
-                <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
-                  Destination
-                </Text>
-                <TextInput
-                  className="bg-gray-100 dark:bg-dark-seconndary p-4 rounded-xl dark:text-white"
-                  placeholder="e.g Paris, Lagos"
-                  placeholderTextColor={dark ? "#666" : "#999"}
-                  value={searchQuery}
-                  onChangeText={(text) => {
-                    setSearchQuery(text);
-                    setDestination(text);
-                    debouncedSearch(text, 300);
-                  }}
-                />
-
-                {showDropdown && (
-                  <View
-                    className="absolute top-24 left-0 right-0 bg-white dark:bg-dark-seconndary/50 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 overflow-hidden z-50"
-                    style={{ maxHeight: 200 }}
-                  >
-                    <ScrollView nestedScrollEnabled className="z-50">
-                      {loading && (
-                        <View className="p-4 gap-y-4">
-                          {[1, 2, 3].map((i) => (
-                            <View key={i} className="flex-row items-center">
-                              <SkeletonBox
-                                width={18}
-                                height={18}
-                                borderRadius={9}
-                              />
-                              <View className="ml-3 flex-1 gap-y-1.5">
-                                <SkeletonBox
-                                  width="60%"
-                                  height={14}
-                                  borderRadius={4}
-                                />
-                                <SkeletonBox
-                                  width="90%"
-                                  height={10}
-                                  borderRadius={4}
-                                />
-                              </View>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-
-                      {searchQuery.trim().length > 0 &&
-                        searchQuery.trim().length < 3 &&
-                        !loading && (
-                          <View className="p-10 items-center justify-center">
-                            <Ionicons
-                              name="search-outline"
-                              size={24}
-                              color={dark ? "#666" : "#999"}
-                            />
-                            <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium">
-                              Type to search destinations
-                            </Text>
-                          </View>
-                        )}
-
-                      {errorMessage && !loading && (
-                        <View className="p-10 items-center justify-center">
-                          <Ionicons
-                            name="alert-circle-outline"
-                            size={24}
-                            color={dark ? "#666" : "#999"}
-                          />
-                          <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium">
-                            {errorMessage}
-                          </Text>
-                        </View>
-                      )}
-
-                      {!loading &&
-                        !errorMessage &&
-                        searchQuery.trim().length >= 3 &&
-                        places.length === 0 && (
-                          <View className="p-10 items-center justify-center">
-                            <Ionicons
-                              name="location-outline"
-                              size={24}
-                              color={dark ? "#666" : "#999"}
-                            />
-                            <Text className="text-gray-400 dark:text-gray-500 text-xs mt-3 font-medium text-center">
-                              No results found
-                            </Text>
-                          </View>
-                        )}
-
-                      {places.map((place) => (
-                        <TouchableOpacity
-                          key={place.placeId}
-                          className="p-4 border-b border-gray-50 dark:border-white/5 last:border-0"
-                          onPress={() => {
-                            setDestination(place.displayName);
-                            setSearchQuery(place.displayName);
-                            setShowDropdown(false);
-                          }}
-                        >
-                          <View className="flex-row items-center">
-                            <Ionicons
-                              name="location-outline"
-                              size={18}
-                              color="#FF385C"
-                              style={{ marginRight: 10 }}
-                            />
-                            <View className="flex-1">
-                              <Text className="dark:text-white font-medium">
-                                {place.displayName}
-                              </Text>
-                              {place.formattedAddress && (
-                                <Text className="text-gray-400 text-xs mt-0.5">
-                                  {place.formattedAddress}
-                                </Text>
-                              )}
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            </View>
+            <DestinationStep
+              width={width}
+              dark={dark}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setDestination={setDestination}
+              debouncedSearch={debouncedSearch}
+              showDropdown={showDropdown}
+              setShowDropdown={setShowDropdown}
+              places={places}
+              loading={loading}
+              errorMessage={errorMessage}
+            />
           );
-
         case 1:
           return (
-            <View style={{ width }} className="px-5 pt-8 flex-1">
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ flexGrow: 1 }}
-              >
-                <Text
-                  className="text-2xl font-bold dark:text-white mb-2"
-                  style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-                >
-                  Lock in the {"\n"}dates 🗓️
-                </Text>
-                <Text className="text-gray-400 dark:text-gray-500 mb-8">
-                  Please Select your trip dates.
-                </Text>
-
-                <View className="mb-4">
-                  <CalendarContainer
-                    theme={calendarTheme}
-                    backgroundColor={dark ? "#1A1A1A" : "#F7F8FA"}
-                    calendarActiveDateRanges={calendarActiveDateRanges}
-                    onCalendarDayPress={onCalendarDayPress}
-                  />
-                </View>
-
-                {selectedDates.startId && (
-                  <View className="flex-row items-center justify-center mt-auto mb-5">
-                    <Text className="text-primary font-medium">
-                      {formatDate(selectedDates.startId)}
-                      {selectedDates.endId
-                        ? ` → ${formatDate(selectedDates.endId)}`
-                        : ""}
-                    </Text>
-                  </View>
-                )}
-              </ScrollView>
-            </View>
+            <DateSelectionStep
+              width={width}
+              dark={dark}
+              calendarTheme={calendarTheme}
+              calendarActiveDateRanges={calendarActiveDateRanges}
+              onCalendarDayPress={onCalendarDayPress}
+              selectedDates={selectedDates}
+              formatDate={formatDate}
+            />
           );
         case 2:
           return (
-            <View style={{ width }} className="px-5 pt-8">
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <Text
-                  className="text-2xl font-bold dark:text-white mb-2"
-                  style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-                >
-                  Give your trip some {"\n"}personality ✨
-                </Text>
-                <Text className="text-gray-400 dark:text-gray-500 mb-8">
-                  Personalise your trip; it's all in the details.
-                </Text>
-
-                <View className="mb-6">
-                  <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
-                    Trip Title
-                  </Text>
-
-                  <TextInput
-                    className="bg-gray-100 dark:bg-dark-seconndary p-4 rounded-xl dark:text-white"
-                    placeholder="Placeholder"
-                    placeholderTextColor={dark ? "#666" : "#999"}
-                    value={title}
-                    onChangeText={setTitle}
-                  />
-                </View>
-
-                <View className="mb-6">
-                  <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
-                    Description
-                  </Text>
-
-                  <TextInput
-                    className="bg-gray-100 dark:bg-dark-seconndary p-4 rounded-xl dark:text-white h-32"
-                    placeholder="Placeholder"
-                    placeholderTextColor={dark ? "#666" : "#999"}
-                    multiline
-                    textAlignVertical="top"
-                    value={description}
-                    onChangeText={setDescription}
-                  />
-                </View>
-
-                <View className="mb-10">
-                  <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
-                    Header Image
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={pickImage}
-                    className="bg-gray-50 dark:bg-dark-seconndary/30 border border-gray-200 dark:border-white/10 rounded-[8px] h-40 items-center justify-center overflow-hidden"
-                  >
-                    {image ? (
-                      <Image
-                        source={{ uri: image }}
-                        className="w-full h-full"
-                      />
-                    ) : (
-                      <>
-                        <View className="mb-5">
-                          <Image
-                            source={require("@/assets/images/gallery-icon.png")}
-                            style={{ width: 44, height: 44 }}
-                            resizeMode="contain"
-                          />
-                        </View>
-
-                        <Text className="text-primary font-semibold mb-2">
-                          Tap to upload image
-                        </Text>
-                        <Text className="text-xs text-gray-400">
-                          png or jpg (max 800x400px)
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            </View>
+            <TripDetailsStep
+              width={width}
+              dark={dark}
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              image={image}
+              pickImage={pickImage}
+            />
           );
         default:
           return null;
@@ -421,7 +197,7 @@ const CreateTrip = () => {
       width,
       dark,
       searchQuery,
-      destination,
+      debouncedSearch,
       showDropdown,
       places,
       loading,
@@ -438,7 +214,12 @@ const CreateTrip = () => {
 
   const handleCreateTrip = async () => {
     if (!user?.id) {
-      Alert.alert("Error", "You must be logged in to create a trip.");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "You must be logged in to create a trip.",
+        position: "bottom",
+      });
       return;
     }
 
@@ -457,11 +238,21 @@ const CreateTrip = () => {
       if (result.success) {
         setShowSuccessModal(true);
       } else {
-        Alert.alert("Error", result.error || "Failed to create trip.");
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: result.error || "Failed to create trip.",
+          position: "bottom",
+        });
       }
     } catch (error: any) {
       console.error("Error creating trip:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "An unexpected error occurred. Please try again.",
+        position: "bottom",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -542,7 +333,12 @@ const CreateTrip = () => {
           router.replace("/trips");
         }}
         onShare={() => {
-          Alert.alert("Share", "Sharing feature coming soon! 🚀");
+          Toast.show({
+            type: "info",
+            text1: "Share",
+            text2: "Sharing feature coming soon! 🚀",
+            position: "bottom",
+          });
         }}
       />
     </AppSafeAreaView>
@@ -550,3 +346,4 @@ const CreateTrip = () => {
 };
 
 export default CreateTrip;
+

@@ -26,6 +26,8 @@ const ProfileScreen = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const { dark } = useTheme();
 
+  console.log(user);
+
   return (
     <AppSafeAreaView>
       <MainTabHeader title="Profile" />

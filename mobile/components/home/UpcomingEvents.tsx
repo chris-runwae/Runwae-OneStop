@@ -1,6 +1,7 @@
 import { EventCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { Event } from "@/constants/home.constant";
+import { router } from "expo-router";
 import React from "react";
 import { Dimensions, FlatList, View } from "react-native";
 import EventCard from "./EventCard";
@@ -20,10 +21,8 @@ const UpcomingEvents = ({
   subtitle = "Find events that match your vibe",
   loading = false,
 }: UpcomingEventsProps) => {
-  // Group data into columns of 3
   const columns = [];
   if (loading) {
-    // Show 2 columns of skeletons (total 6, satisfying "5 skeleton loaders" requirement while keeping layout)
     columns.push([{}, {}, {}]);
     columns.push([{}, {}, {}]);
   } else {
@@ -34,7 +33,7 @@ const UpcomingEvents = ({
 
   return (
     <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-2">
-      <SectionHeader title={title} subtitle={subtitle} onPress={() => {}} />
+      <SectionHeader title={title} subtitle={subtitle} onPress={() => router.push("/events" as any)} />
 
       <FlatList
         data={columns}
@@ -64,11 +63,9 @@ const UpcomingEvents = ({
             )}
           </View>
         )}
-
       />
     </View>
   );
 };
 
 export default UpcomingEvents;
-

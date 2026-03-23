@@ -14,13 +14,15 @@ import {
   FEATURED_ITINERARIES,
   UPCOMING_EVENTS,
 } from "@/constants/home.constant";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("All");
+  const [selectedTopCategory, setSelectedTopCategory] = useState("All");
   const [selectedPrice, setSelectedPrice] = useState("$50 - $200");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
@@ -31,10 +33,66 @@ const ExploreScreen = () => {
   }, []);
 
   const handleApplyFilters = () => {
-
-    console.log("Applying filters:", { selectedCategory, selectedPrice });
+    console.log("Applying filters:", { selectedTopCategory, selectedPrice });
     setIsFilterModalVisible(false);
   };
+
+  // Helper function for text search
+  const matchesSearch = (text: string, query: string) => {
+    if (!query) return true;
+    return text.toLowerCase().includes(query.toLowerCase());
+  };
+
+  // Helper for sub-category matching
+  const matchesSubCategory = (itemCategory: string, selected: string) => {
+    if (selected === "All") return true;
+    return itemCategory === selected;
+  };
+
+  const filteredItineraries = useMemo(() => {
+    if (selectedTopCategory !== "All" && selectedTopCategory !== "Trips") return [];
+    return FEATURED_ITINERARIES.filter(
+      (item) =>
+        matchesSearch(item.title + item.location, searchQuery) &&
+        matchesSubCategory(item.category, selectedSubCategory)
+    );
+  }, [searchQuery, selectedSubCategory, selectedTopCategory]);
+
+  const filteredEvents = useMemo(() => {
+    if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
+    return UPCOMING_EVENTS.filter(
+      (item) =>
+        matchesSearch(item.title + item.location, searchQuery) &&
+        matchesSubCategory(item.category, selectedSubCategory)
+    );
+  }, [searchQuery, selectedSubCategory, selectedTopCategory]);
+
+  const filteredExperiences = useMemo(() => {
+    if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
+    
+    // Parse price range from string e.g., "$50 - $200"
+    const getPriceBounds = (range: string) => {
+      if (range === "$500+") return [500, Infinity];
+      const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
+      return [numbers[0], numbers[1] || Infinity];
+    };
+    
+    const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
+
+    return EXPERIENCE_HIGHLIGHTS.filter(
+      (item) =>
+        matchesSearch(item.title, searchQuery) &&
+        matchesSubCategory(item.category, selectedSubCategory) &&
+        item.price >= minPrice && item.price <= maxPrice
+    );
+  }, [searchQuery, selectedSubCategory, selectedTopCategory, selectedPrice]);
+
+  const filteredDestinations = useMemo(() => {
+    if (selectedTopCategory !== "All" && selectedTopCategory !== "Trips") return [];
+    return DESTINATION_HIGHLIGHTS.filter(
+      (item) => matchesSearch(item.title + item.location, searchQuery)
+    );
+  }, [searchQuery, selectedTopCategory]);
 
   return (
     <AppSafeAreaView>
@@ -44,33 +102,80 @@ const ExploreScreen = () => {
         <View className="mt-4 px-[20px]">
           <SearchInput
             placeholder="Search trips, hotels, experiences..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
             onFilterPress={() => setIsFilterModalVisible(true)}
           />
         </View>
         <ExploreCategories
           categories={EXPLORE_CATEGORIES}
-          selectedCategory={selectedCategory}
-          onCategoryPress={(cat) => setSelectedCategory(cat)}
+          selectedCategory={selectedSubCategory}
+          onCategoryPress={(cat) => setSelectedSubCategory(cat)}
+          showClear={
+            searchQuery !== "" || 
+            selectedSubCategory !== "All" || 
+            selectedTopCategory !== "All" || 
+            selectedPrice !== "$50 - $200"
+          }
+          onClear={() => {
+            setSearchQuery("");
+            setSelectedSubCategory("All");
+            setSelectedTopCategory("All");
+            setSelectedPrice("$50 - $200");
+          }}
         />
-        <ItineraryForYou
-          data={FEATURED_ITINERARIES}
-          title="Featured Trip Itineraries"
-          subtitle="Recommended by Runwae"
-          loading={loading}
-        />
-        <UpcomingEvents data={UPCOMING_EVENTS} loading={loading} />
-        <AddOnsForYou
-          data={EXPERIENCE_HIGHLIGHTS}
-          title="Experience Highlights"
-          subtitle="Top picks for you"
-          loading={loading}
-        />
-        <DestinationsForYou
-          data={DESTINATION_HIGHLIGHTS}
-          title="Popular Destinations"
-          subtitle="Places that everyone else is crazy about"
-          loading={loading}
-        />
+        
+        {filteredItineraries.length > 0 && (
+          <ItineraryForYou
+            data={filteredItineraries}
+            title="Featured Trip Itineraries"
+            subtitle="Recommended by Runwae"
+            loading={loading}
+          />
+        )}
+
+        {filteredEvents.length > 0 && (
+          <UpcomingEvents data={filteredEvents} loading={loading} />
+        )}
+
+        {filteredExperiences.length > 0 && (
+          <AddOnsForYou
+            data={filteredExperiences}
+            title="Experience Highlights"
+            subtitle="Top picks for you"
+            loading={loading}
+          />
+        )}
+
+        {filteredDestinations.length > 0 && (
+          <DestinationsForYou
+            data={filteredDestinations}
+            title="Popular Destinations"
+            subtitle="Places that everyone else is crazy about"
+            loading={loading}
+          />
+        )}
+
+        {filteredItineraries.length === 0 && 
+         filteredEvents.length === 0 && 
+         filteredExperiences.length === 0 && 
+         filteredDestinations.length === 0 && (
+          <View className="items-center justify-center py-10 px-5">
+            <Text className="text-gray-400 text-center text-lg font-medium">
+              No results found for "{searchQuery}"
+            </Text>
+            <TouchableOpacity 
+              onPress={() => {
+                setSearchQuery("");
+                setSelectedSubCategory("All");
+                setSelectedTopCategory("All");
+              }}
+              className="mt-4"
+            >
+              <Text className="text-primary font-semibold">Clear all filters</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       </ScrollView>
 
@@ -89,16 +194,16 @@ const ExploreScreen = () => {
               {["All", "Trips", "Hotels", "Experiences"].map((cat, i) => (
                 <TouchableOpacity
                   key={i}
-                  onPress={() => setSelectedCategory(cat)}
+                  onPress={() => setSelectedTopCategory(cat)}
                   className={`px-4 py-2 rounded-full border ${
-                    cat === selectedCategory
+                    cat === selectedTopCategory
                       ? "bg-primary border-primary"
                       : "bg-transparent border-gray-200 dark:border-gray-600"
                   }`}
                 >
                   <Text
                     className={`${
-                      cat === selectedCategory
+                      cat === selectedTopCategory
                         ? "text-white"
                         : "text-black dark:text-white text-sm"
                     }`}

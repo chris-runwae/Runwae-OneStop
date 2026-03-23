@@ -1,7 +1,8 @@
 import { Event } from "@/constants/home.constant";
+import { router } from "expo-router";
 import { MapPin } from "lucide-react-native";
 import React from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface EventCardProps {
   event: Event;
@@ -10,7 +11,9 @@ interface EventCardProps {
 
 const EventCard = ({ event, isLast }: EventCardProps) => {
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => router.push(`/events/${event.id}` as any)}
       className={`flex-row items-center py-3 ${
         !isLast
           ? "border-b border-b-gray-200 dark:border-b-dark-seconndary"
@@ -80,8 +83,9 @@ const EventCard = ({ event, isLast }: EventCardProps) => {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
 export default EventCard;
+

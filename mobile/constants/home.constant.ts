@@ -1435,6 +1435,8 @@ export interface Event {
   time: string;
   category: string;
   image: string;
+  latitude: number;
+  longitude: number;
 }
 
 export const UPCOMING_EVENTS: Event[] = [
@@ -1446,6 +1448,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "12PM",
     category: "MUSIC FEST",
     image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600",
+    latitude: 33.6803,
+    longitude: -116.2365,
   },
   {
     id: "e2",
@@ -1455,6 +1459,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "All Day",
     category: "CULTURAL",
     image: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=600",
+    latitude: 35.6895,
+    longitude: 139.6917,
   },
   {
     id: "e3",
@@ -1464,6 +1470,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "2PM",
     category: "SPORT",
     image: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600",
+    latitude: 51.4345,
+    longitude: -0.2145,
   },
   {
     id: "e4",
@@ -1473,6 +1481,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "All Day",
     category: "CULTURAL",
     image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600",
+    latitude: 40.7864,
+    longitude: -119.2065,
   },
   {
     id: "e5",
@@ -1482,6 +1492,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "12PM",
     category: "MUSIC FEST",
     image: "https://images.unsplash.com/photo-1514525253361-bee24386b17b?w=600",
+    latitude: 51.0911,
+    longitude: 4.3855,
   },
   {
     id: "e6",
@@ -1491,6 +1503,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "3:30PM",
     category: "SPORT",
     image: "https://images.unsplash.com/photo-1454162272261-da491f71802b?w=600",
+    latitude: 37.4033,
+    longitude: -121.9694,
   },
   {
     id: "e7",
@@ -1500,6 +1514,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "11AM",
     category: "FOOD",
     image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
+    latitude: 41.8757,
+    longitude: -87.6243,
   },
   {
     id: "e8",
@@ -1509,6 +1525,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "10AM",
     category: "FOOD",
     image: "https://images.unsplash.com/photo-1555658636-6e4a3621464c?w=600",
+    latitude: 48.1312,
+    longitude: 11.5494,
   },
   {
     id: "e9",
@@ -1518,6 +1536,8 @@ export const UPCOMING_EVENTS: Event[] = [
     time: "9AM",
     category: "FOOD",
     image: "https://images.unsplash.com/photo-1414235077428-33b07bd44c83?w=600",
+    latitude: 39.1911,
+    longitude: -106.8175,
   },
 ];
 

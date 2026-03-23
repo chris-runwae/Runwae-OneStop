@@ -32,7 +32,7 @@ const ItineraryHeader = ({
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
 
   const isExperienceOrDestination =
-    segments[0] === "experience" || segments[0] === "destination";
+    segments[0] === "experience" || segments[0] === "destination" || segments[0] === "events";
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     const opacity = interpolate(scrollY.value, [100, 200], [0, 1], "clamp");

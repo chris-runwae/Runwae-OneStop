@@ -1,6 +1,7 @@
 import { TripCardSkeleton } from "@/components/ui/CardSkeletons";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { Trip } from "@/constants/home.constant";
+import { useRouter } from "expo-router";
 import React from "react";
 import { FlatList, Image, Text, View } from "react-native";
 import TripCard from "./TripCard";
@@ -11,11 +12,15 @@ interface UpcomingTripsProps {
 }
 
 const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
+  const router = useRouter();
   const displayData = loading ? Array(5).fill({}) : trips;
 
   return (
     <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5">
-      <SectionHeader title="Upcoming Trips" onPress={() => {}} />
+      <SectionHeader
+        title="Upcoming Trips"
+        onPress={() => router.push("/trips")}
+      />
 
       <FlatList
         data={displayData}

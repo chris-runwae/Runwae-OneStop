@@ -76,9 +76,10 @@ function RouteGuard() {
     "itinerary",
     "experience",
     "create-trip",
+    "events",
   ]);
 
-  const [currentSegment, secondSegment] = segments;
+  const [currentSegment, secondSegment] = segments as string[];
   const isInAuthFlow =
     AUTH_ROUTES.has(currentSegment) ||
     (currentSegment === "(auth)" &&
@@ -103,6 +104,7 @@ function RouteGuard() {
     "experience",
     "destination",
     "create-trip",
+    "events",
   ].includes(currentSegment as any);
 
 
@@ -133,6 +135,7 @@ function RouteGuard() {
       <Stack.Screen name="experience" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen

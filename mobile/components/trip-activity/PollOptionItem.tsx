@@ -53,7 +53,7 @@ const PollOptionItem = ({
       tension: 60,
       friction: 10,
     }).start();
-  }, [percentage]);
+  }, [percentage, animatedWidth]);
 
   const handlePress = () => {
     if (isSelected) {

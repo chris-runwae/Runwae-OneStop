@@ -49,9 +49,7 @@ export default function AddPollScreen() {
       setAllowMultipleAnswers(poll.type === 'multiple_choice');
       setAnonymousVoting(poll.anonymous_voting ?? false);
       setAllowAddingOptions(poll.allow_add_options ?? false);
-      setOptions(
-        poll.poll_options.map((o) => ({ id: o.id, label: o.label }))
-      );
+      setOptions(poll.poll_options.map((o) => ({ id: o.id, label: o.label })));
     });
   }, [pollId]);
 
@@ -103,8 +101,13 @@ export default function AddPollScreen() {
       }
       router.dismiss();
     } catch (error) {
-      console.error(`Failed to ${isEditMode ? 'update' : 'create'} poll:`, error);
-      alert(`Failed to ${isEditMode ? 'update' : 'create'} poll. Please try again.`);
+      console.error(
+        `Failed to ${isEditMode ? 'update' : 'create'} poll:`,
+        error
+      );
+      alert(
+        `Failed to ${isEditMode ? 'update' : 'create'} poll. Please try again.`
+      );
     }
   };
 
@@ -216,14 +219,10 @@ export default function AddPollScreen() {
           borderBottomColor: colors.borderColors.subtle,
         }}>
         <Pressable
-          hitSlop={{ top: 30, bottom: 30, left: 30, right: 60 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           onPress={() => router.dismiss()}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 24,
-          }}>
-          <Text style={{ fontSize: 14, textAlign: 'left' }}>Close</Text>
+          style={{ width: 60 }}>
+          <Text style={{ fontSize: 14 }}>Close</Text>
         </Pressable>
         <Text
           style={{
@@ -234,6 +233,7 @@ export default function AddPollScreen() {
           }}>
           {isEditMode ? 'Edit Poll' : 'Add Poll'}
         </Text>
+        <View style={{ width: 60 }} />
       </View>
       <Spacer size={24} vertical />
 
@@ -326,7 +326,10 @@ export default function AddPollScreen() {
       </View>
 
       <Spacer size={24} vertical />
-      <Pressable onPress={handleSubmit} disabled={isLoading} style={styles.button}>
+      <Pressable
+        onPress={handleSubmit}
+        disabled={isLoading}
+        style={styles.button}>
         {isLoading ? (
           <ActivityIndicator size={24} color={colors.textColors.default} />
         ) : (

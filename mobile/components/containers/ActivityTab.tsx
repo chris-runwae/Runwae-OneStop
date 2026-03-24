@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 // import AnnouncementsList from './announcements/AnnouncementsList';
 
 import { Colors, textStyles } from '@/constants';
-import { Spacer, Text } from '@/components';
+import { PollsContainer, Spacer, Text } from '@/components';
 import { TripWithEverything } from '@/hooks/useTripActions';
 
 type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';
@@ -41,16 +41,10 @@ const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
 
 interface ActivityTabProps {
   tripId: string;
-  userId: string;
-  isAdmin: boolean; // Whether user can create announcements
   trip?: TripWithEverything;
 }
 
-export default function ActivityTab({
-  tripId,
-  userId,
-  isAdmin,
-}: ActivityTabProps) {
+export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
   const [activeSection, setActiveSection] = useState<ActivitySection>('polls');
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -92,7 +86,7 @@ export default function ActivityTab({
   const renderContent = () => {
     switch (activeSection) {
       case 'polls':
-        return <Text>Polls</Text>;
+        return <PollsContainer groupId={tripId} />;
       case 'expenses':
         return <Text>Expenses</Text>; // <ExpensesList tripId={tripId} userId={userId} />;
       case 'posts':

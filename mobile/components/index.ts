@@ -9,6 +9,8 @@ import DateRange from './containers/DateRange';
 import HorizontalTabs from './ui/HorizontalTabs';
 import { AvatarGroup } from './containers/AvatarGroup';
 import ActivityTab from './containers/ActivityTab';
+import PollItem from './trip-activity/PollItem';
+import PollsContainer from './trip-activity/PollsContainer';
 
 export {
   ScreenContainer,
@@ -22,4 +24,6 @@ export {
   HorizontalTabs,
   AvatarGroup,
   ActivityTab,
+  PollItem,
+  PollsContainer,
 };

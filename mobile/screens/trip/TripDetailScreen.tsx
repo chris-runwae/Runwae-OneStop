@@ -29,6 +29,7 @@ import {
   Text,
   AvatarGroup,
   HorizontalTabs,
+  ActivityTab,
 } from '@/components';
 import { Colors, textStyles } from '@/constants';
 
@@ -332,7 +333,9 @@ export default function TripDetailScreen() {
           // />
           <TripItineraryTab />
         )}
-        {activeTab === 'activity' && <TripActivityTab />}
+        {activeTab === 'activity' && (
+          <ActivityTab tripId={activeTrip.id} trip={activeTrip} />
+        )}
         <Spacer size={740} vertical />
         {/* <View style={styles.tabContent}>
         {activeTab === 'overview'   && <TripOverviewTab   trip={activeTrip} />}

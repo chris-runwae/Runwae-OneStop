@@ -16,11 +16,12 @@ export const constants = {
 
 export const tabs: Tab[] = [
   {
-    name: "index",
+    name: "home",
     title: "Home",
     icon: HomeIcon,
     route: "/",
   },
+
   {
     name: "explore",
     title: "Explore",
@@ -31,7 +32,7 @@ export const tabs: Tab[] = [
     name: "trips",
     title: "Trips",
     icon: PlaneIcon,
-    route: "/(trips)",
+    route: "/trips",
   },
   {
     name: "profile",

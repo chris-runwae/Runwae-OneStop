@@ -16,7 +16,7 @@ type HorizontalTabsProps = {
   onTabChange: (tabId: string) => void;
 };
 
-export const HorizontalTabs = ({
+const HorizontalTabs = ({
   tabs,
   activeTab,
   onTabChange,
@@ -76,6 +76,8 @@ export const HorizontalTabs = ({
   );
 };
 
+export default HorizontalTabs;
+
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
@@ -93,8 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabText: {
-    ...textStyles.subtitle_Regular,
-    fontSize: 14,
-    fontWeight: '300',
+    ...textStyles.textBody14,
   },
 });

@@ -67,7 +67,13 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
   };
 
   return (
-    <View>
+    <View
+      style={{
+        backgroundColor: colors.backgroundColors.subtle,
+        paddingHorizontal: 8,
+        paddingVertical: 16,
+        borderRadius: 16,
+      }}>
       <View
         style={{
           flexDirection: 'row',
@@ -76,7 +82,12 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
           alignItems: 'center',
         }}>
         <View
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            flex: 1,
+          }}>
           <ProfileAvatar
             name={post.creator.full_name}
             imageUrl={post.creator.avatar_url}
@@ -86,7 +97,10 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
               {post.creator.full_name}
             </Text>
             <Text
-              style={{ ...textStyles.textBody12, color: colors.textColors.subtle }}>
+              style={{
+                ...textStyles.textBody12,
+                color: colors.textColors.subtle,
+              }}>
               {createdAt} ago
             </Text>
           </View>
@@ -118,7 +132,7 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
         {post.content}
       </Text>
 
-      <Spacer size={32} vertical />
+      <Spacer size={16} vertical />
     </View>
   );
 };

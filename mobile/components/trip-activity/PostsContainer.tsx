@@ -82,7 +82,6 @@ export default function PostsContainer({ groupId }: { groupId: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   headerTitle: {
     ...textStyles.textHeading16,

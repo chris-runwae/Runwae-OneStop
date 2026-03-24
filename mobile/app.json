@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "Runwae",
-    "slug": "runwae",
+    "slug": "Runwae",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "runwae",
+    "scheme": "Runwae",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chrisobocha.runwae",
+      "bundleIdentifier": "com.chrisobocha.Runwae",
       "buildNumber": "1"
     },
     "android": {
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.chrisobocha.runwae",
+      "package": "com.chrisobocha.Runwae",
       "versionCode": 1
     },
     "web": {
@@ -53,7 +53,14 @@
         }
       ],
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow Runwae to use your location"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

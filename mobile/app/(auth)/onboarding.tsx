@@ -12,7 +12,7 @@ const OnboardingScreen = () => {
 
   const handleGetStarted = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push("/(auth)/onboarding-step-1");
+    router.push("/(auth)/onboarding-steps");
   };
 
   const handleLogin = () => {

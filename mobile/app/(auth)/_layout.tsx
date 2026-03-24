@@ -7,9 +7,8 @@ export default function AuthLayout() {
       <Stack.Screen name="signup" options={{ headerShown: false }} />
       <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding-step-1" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding-step-2" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding-step-3" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding-steps" options={{ headerShown: false }} />
     </Stack>
   );
 }

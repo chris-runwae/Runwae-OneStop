@@ -31,20 +31,31 @@ export default function PostsContainer({ groupId }: { groupId: string }) {
     await fetchPosts(groupId);
   }, [groupId, fetchPosts]);
 
-  const renderHeader = () => (
-    <>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Posts</Text>
-        <Pressable
-          style={styles.headerButton}
-          onPress={() => router.push(`/(tabs)/(trips)/${groupId}/add-post`)}>
-          <Plus size={16} color={colors.primaryColors.default} />
-          <Text style={{ color: colors.primaryColors.default }}>Add post</Text>
-        </Pressable>
-      </View>
-      <Spacer size={16} vertical />
-    </>
-  );
+  const renderHeader = () => {
+    const postCount = posts?.length ?? 0;
+    const postCountText =
+      postCount === 0
+        ? `${postCount} posts`
+        : postCount === 1
+          ? '1 post'
+          : `${postCount} posts`;
+    return (
+      <>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>{postCountText}</Text>
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => router.push(`/(tabs)/(trips)/${groupId}/add-post`)}>
+            <Plus size={16} color={colors.primaryColors.default} />
+            <Text style={{ color: colors.primaryColors.default }}>
+              Add post
+            </Text>
+          </Pressable>
+        </View>
+        <Spacer size={16} vertical />
+      </>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyStateContainer}>

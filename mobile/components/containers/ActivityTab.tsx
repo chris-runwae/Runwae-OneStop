@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 // import AnnouncementsList from './announcements/AnnouncementsList';
 
 import { Colors, textStyles } from '@/constants';
-import { PollsContainer, PostsContainer, Spacer, Text } from '@/components';
+import { ExpensesContainer, PollsContainer, PostsContainer, Spacer, Text } from '@/components';
 import { TripWithEverything } from '@/hooks/useTripActions';
 
 type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';
@@ -88,7 +88,7 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
       case 'polls':
         return <PollsContainer groupId={tripId} />;
       case 'expenses':
-        return <Text>Expenses</Text>; // <ExpensesList tripId={tripId} userId={userId} />;
+        return <ExpensesContainer groupId={tripId} />;
       case 'posts':
         return <PostsContainer groupId={tripId} />;
       case 'members':

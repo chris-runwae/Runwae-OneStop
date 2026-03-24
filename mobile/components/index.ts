@@ -13,6 +13,8 @@ import PollItem from './trip-activity/PollItem';
 import PollsContainer from './trip-activity/PollsContainer';
 import PostItem from './trip-activity/PostItem';
 import PostsContainer from './trip-activity/PostsContainer';
+import ExpenseItem from './trip-activity/ExpenseItem';
+import ExpensesContainer from './trip-activity/ExpensesContainer';
 import ProfileAvatar from './ui/ProfileAvatar';
 
 export {
@@ -31,5 +33,7 @@ export {
   PollsContainer,
   PostItem,
   PostsContainer,
+  ExpenseItem,
+  ExpensesContainer,
   ProfileAvatar,
 };

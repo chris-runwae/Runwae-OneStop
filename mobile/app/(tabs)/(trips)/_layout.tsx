@@ -22,6 +22,14 @@ export default function TripsLayout() {
           sheetAllowedDetents: [0.75, 1],
         }}
       />
+      <Stack.Screen
+        name="[tripId]/add-expense"
+        options={{
+          headerShown: false,
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.9, 1],
+        }}
+      />
     </Stack>
   );
 }

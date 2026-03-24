@@ -2,110 +2,97 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  useColorScheme,
   Pressable,
+  useColorScheme,
 } from 'react-native';
 import React, { useCallback, useEffect } from 'react';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Vote } from 'lucide-react-native';
+import { Plus, Receipt } from 'lucide-react-native';
 
-import usePollActions from '@/hooks/usePollActions';
-import { PollItem, Spacer, Text } from '@/components';
+import useExpenseActions from '@/hooks/useExpenseActions';
+import ExpenseItem from './ExpenseItem';
+import { Spacer, Text } from '@/components';
 import { textStyles, Colors } from '@/constants';
 
-export default function PollsContainer({ groupId }: { groupId: string }) {
+export default function ExpensesContainer({ groupId }: { groupId: string }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { polls, fetchPolls, castVote, removeVote, swapVote, deletePoll } =
-    usePollActions();
+  const {
+    expenses,
+    fetchExpenses,
+    deleteExpense,
+    markPaid,
+    confirmPayment,
+  } = useExpenseActions();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    callFetchPolls();
+    callFetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const callFetchPolls = useCallback(async () => {
-    await fetchPolls(groupId);
-  }, [groupId, fetchPolls]);
-
-  // const dynamicStyles = StyleSheet.create({
-  //   headerDivider: {
-  //     width: '100%',
-  //     height: 2,
-  //     backgroundColor: colors.borderColors.subtle,
-  //     marginVertical: -16,
-  //   },
-  // });
+  const callFetchExpenses = useCallback(async () => {
+    await fetchExpenses(groupId);
+  }, [groupId, fetchExpenses]);
 
   const renderHeader = () => {
-    const pollCount = polls?.length ?? 0;
-    const pollCountText =
-      pollCount === 0
-        ? `${pollCount} polls`
-        : pollCount === 1
-          ? '1 poll'
-          : `${pollCount} polls`;
+    const count = expenses?.length ?? 0;
+    const countText =
+      count === 1 ? '1 expense' : `${count} expenses`;
 
     return (
       <>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>{pollCountText}</Text>
-
+          <Text style={styles.headerTitle}>{countText}</Text>
           <Pressable
             style={styles.headerButton}
-            onPress={() => {
-              router.push(`/(tabs)/(trips)/${groupId}/add-poll`);
-            }}>
+            onPress={() =>
+              router.push(`/(tabs)/(trips)/${groupId}/add-expense`)
+            }>
             <Plus size={16} color={colors.primaryColors.default} />
             <Text style={{ color: colors.primaryColors.default }}>
-              Add poll
+              Add expense
             </Text>
           </Pressable>
         </View>
-
-        {/* <View style={dynamicStyles.headerDivider} /> */}
-
         <Spacer size={16} vertical />
       </>
     );
   };
-  const renderEmptyState = () => {
-    return (
-      <View style={styles.emptyStateContainer}>
-        <Vote size={40} color={colors.primaryColors.default} />
-        <Text style={styles.emptyStateTitle}>No polls found</Text>
-        <Text style={styles.emptyStateBody}>
-          Create your first poll to get started
-        </Text>
-      </View>
-    );
-  };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <Receipt size={40} color={colors.primaryColors.default} />
+      <Text style={styles.emptyStateTitle}>No expenses yet</Text>
+      <Text style={styles.emptyStateBody}>
+        Track shared costs by adding your first expense
+      </Text>
+    </View>
+  );
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
       <FlashList
-        data={polls}
+        data={expenses}
         renderItem={({ item }) => (
-          <PollItem
-            poll={item}
+          <ExpenseItem
             key={item.id}
+            expense={item}
             groupId={groupId}
-            onCastVote={castVote}
-            onRemoveVote={removeVote}
-            onSwapVote={swapVote}
-            onDeletePoll={deletePoll}
+            onDeleteExpense={deleteExpense}
+            onMarkPaid={markPaid}
+            onConfirmPayment={confirmPayment}
           />
         )}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
+        estimatedItemSize={200}
       />
-
       <Spacer size={16} vertical />
     </ScrollView>
   );
@@ -129,18 +116,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-
-  // Empty state
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
+    paddingTop: 40,
   },
   emptyStateTitle: {
     ...textStyles.textHeading16,
   },
   emptyStateBody: {
     ...textStyles.textBody12,
+    textAlign: 'center',
   },
 });

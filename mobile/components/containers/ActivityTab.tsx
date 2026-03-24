@@ -135,7 +135,7 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
       </ScrollView>
 
       {/* Content Area */}
-      <Spacer size={16} vertical />
+      <Spacer size={32} vertical />
       <View style={styles.content}>{renderContent()}</View>
     </View>
   );

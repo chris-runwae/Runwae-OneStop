@@ -5,6 +5,8 @@
 
 import { Platform, TextStyle } from 'react-native';
 
+const ios = Platform.OS === 'ios';
+
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
@@ -210,27 +212,54 @@ export const Fonts = Platform.select({
   },
 });
 
+export const AppFonts = {
+  bricolage: {
+    light: ios ? 'BricolageGrotesque-Light' : 'BricolageGrotesque_300Light',
+    regular: ios
+      ? 'BricolageGrotesque-Regular'
+      : 'BricolageGrotesque_400Regular',
+    medium: ios ? 'BricolageGrotesque-Medium' : 'BricolageGrotesque_500Medium',
+    semiBold: ios
+      ? 'BricolageGrotesque-SemiBold'
+      : 'BricolageGrotesque_600SemiBold',
+    bold: ios ? 'BricolageGrotesque-Bold' : 'BricolageGrotesque_700Bold',
+    extraBold: ios
+      ? 'BricolageGrotesque-ExtraBold'
+      : 'BricolageGrotesque_800ExtraBold',
+  },
+  inter: {
+    thin: ios ? 'Inter-Thin' : 'Inter_100Thin',
+    light: ios ? 'Inter-Light' : 'Inter_300Light',
+    regular: ios ? 'Inter-Regular' : 'Inter_400Regular',
+    medium: ios ? 'Inter-Medium' : 'Inter_500Medium',
+    semiBold: ios ? 'Inter-SemiBold' : 'Inter_600SemiBold',
+    bold: ios ? 'Inter-Bold' : 'Inter_700Bold',
+    extraBold: ios ? 'Inter-ExtraBold' : 'Inter_800ExtraBold',
+    black: ios ? 'Inter-Black' : 'Inter_900Black',
+  },
+} as const;
+
 export const textStyles: Record<string, TextStyle> = {
   textHeading20: {
-    fontFamily: 'BricolageGrotesque_700Bold',
+    fontFamily: AppFonts.bricolage.bold,
     fontSize: 20,
     lineHeight: 24,
     letterSpacing: 0,
   },
   textHeading16: {
-    fontFamily: 'BricolageGrotesque_600SemiBold',
+    fontFamily: AppFonts.bricolage.semiBold,
     fontSize: 16,
     lineHeight: 20,
     letterSpacing: 0,
   },
   textBody12: {
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: AppFonts.inter.regular,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0,
   },
   textBody14: {
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: AppFonts.inter.regular,
     fontSize: 14,
     lineHeight: 19.5,
     letterSpacing: 0,

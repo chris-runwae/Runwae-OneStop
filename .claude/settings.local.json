@@ -17,7 +17,13 @@
       "Bash(supabase status:*)",
       "Bash(PGPASSWORD=\"kafbum-8vIbke-qehcos\" psql \"postgresql://postgres.zvicmujgveepxbekpzkf@aws-1-eu-west-2.pooler.supabase.com:5432/postgres\" -c \":*)",
       "Bash(brew list:*)",
-      "Read(//opt/homebrew/**)"
+      "Read(//opt/homebrew/**)",
+      "Bash(supabase inspect:*)",
+      "Bash(supabase query:*)",
+      "Read(//Users/christopherobocha/.supabase/**)",
+      "Read(//Users/christopherobocha/.config/supabase/**)",
+      "Read(//Users/christopherobocha/**)",
+      "Read(//Users/christopherobocha/.config/**)"
     ]
   }
 }

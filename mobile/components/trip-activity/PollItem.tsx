@@ -5,30 +5,47 @@ import { ProfileAvatar, Spacer, Text } from '@/components';
 
 import { formatDistanceToNow } from 'date-fns';
 import { Colors, textStyles } from '@/constants';
-import usePollActions, {
-  PollOption,
-  Poll,
-  PollVote,
-} from '@/hooks/usePollActions';
+import { PollOption, Poll, PollVote } from '@/hooks/usePollActions';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrips } from '@/context/TripsContext';
 
-const PollItem = ({ poll }: { poll: Poll }) => {
+type PollItemProps = {
+  poll: Poll;
+  onCastVote: (
+    pollId: string,
+    optionId: string,
+    userId: string
+  ) => Promise<PollVote>;
+  onRemoveVote: (
+    pollId: string,
+    optionId: string,
+    userId: string
+  ) => Promise<void>;
+  onSwapVote: (
+    pollId: string,
+    oldOptionId: string,
+    newOptionId: string,
+    userId: string
+  ) => Promise<void>;
+};
+
+const PollItem = ({
+  poll,
+  onCastVote,
+  onRemoveVote,
+  onSwapVote,
+}: PollItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const createdAt = formatDistanceToNow(new Date(poll.created_at));
 
-  const { castVote, removeVote, swapVote } = usePollActions();
   const { user } = useAuth();
   const { activeTrip } = useTrips();
-  const tripId = activeTrip?.id;
-
   const userId = user?.id ?? '';
-  const userVotes = poll.poll_votes.filter(
-    (vote: PollVote) => vote.user_id === userId && vote.poll_id === tripId
-  );
 
-  const tripMemberCount = activeTrip?.group_members.length;
+  const userVotes = poll.poll_votes.filter(
+    (vote: PollVote) => vote.user_id === userId && vote.poll_id === poll.id
+  );
 
   const styles = StyleSheet.create({
     creatorContainer: {
@@ -45,7 +62,6 @@ const PollItem = ({ poll }: { poll: Poll }) => {
     },
     titleText: {
       ...textStyles.textHeading16,
-      // color: colors.textColors.default,
     },
   });
 
@@ -57,6 +73,10 @@ const PollItem = ({ poll }: { poll: Poll }) => {
         : 'Rank the options';
 
   const votesCount = poll.poll_votes.length;
+
+  // The user's current voted option for single_choice polls
+  const currentVoteOptionId =
+    poll.type === 'single_choice' ? userVotes[0]?.option_id : undefined;
 
   return (
     <View>
@@ -95,17 +115,15 @@ const PollItem = ({ poll }: { poll: Poll }) => {
             (vote: PollVote) => vote.option_id === option.id
           )}
           pollType={poll.type as 'single_choice' | 'multiple_choice'}
-          selectedOptionId={
-            userVotes.find((vote: PollVote) => vote.option_id === option.id)
-              ?.option_id
-          } // for single choice
-          onVote={(id) => castVote(poll.id, id, userId)}
-          onUnvote={(id) => removeVote(poll.id, id, userId)}
+          selectedOptionId={currentVoteOptionId}
+          onVote={(id) => onCastVote(poll.id, id, userId)}
+          onUnvote={(id) => onRemoveVote(poll.id, id, userId)}
           onSwapVote={(id) =>
-            swapVote(poll.id, userVotes[0].option_id ?? '', id, userId)
+            onSwapVote(poll.id, currentVoteOptionId ?? '', id, userId)
           }
         />
       ))}
+      <Spacer size={32} vertical />
     </View>
   );
 };

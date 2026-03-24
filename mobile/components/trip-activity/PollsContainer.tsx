@@ -1,6 +1,5 @@
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   useColorScheme,
@@ -13,13 +12,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Vote } from 'lucide-react-native';
 
 import usePollActions from '@/hooks/usePollActions';
-import { PollItem, Spacer } from '@/components';
+import { PollItem, Spacer, Text } from '@/components';
 import { textStyles, Colors } from '@/constants';
 
 export default function PollsContainer({ groupId }: { groupId: string }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { polls, fetchPolls } = usePollActions();
+  const { polls, fetchPolls, castVote, removeVote, swapVote } = usePollActions();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -82,7 +81,15 @@ export default function PollsContainer({ groupId }: { groupId: string }) {
       contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
       <FlashList
         data={polls}
-        renderItem={({ item }) => <PollItem poll={item} key={item.id} />}
+        renderItem={({ item }) => (
+          <PollItem
+            poll={item}
+            key={item.id}
+            onCastVote={castVote}
+            onRemoveVote={removeVote}
+            onSwapVote={swapVote}
+          />
+        )}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}

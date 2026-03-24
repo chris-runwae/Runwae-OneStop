@@ -266,14 +266,14 @@ const EventDetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <View className="absolute bottom-6 left-5 right-5 bg-white dark:bg-dark-seconndary rounded-2xl p-5 shadow-xl border border-gray-100 dark:border-white/10 flex-row items-center justify-between">
+          <View className="absolute bottom-6 left-5 right-5 bg-white dark:bg-dark-seconndary rounded-[30px] p-5 shadow-xl border border-gray-100 dark:border-white/10 flex-row items-center justify-between">
             <View>
               <Text className="text-xl font-bold dark:text-white mb-1">
                 {event.title}
               </Text>
               <View className="flex-row items-center gap-x-2">
-                <MapPin size={16} color="#9ca3af" />
-                <Text className="text-gray-500 dark:text-gray-400 flex-1">
+                <MapPin size={13} color="#9ca3af" />
+                <Text className="text-gray-500 text-sm dark:text-gray-400 flex-1">
                   {event.location}
                 </Text>
               </View>
@@ -281,7 +281,7 @@ const EventDetailScreen = () => {
 
             <TouchableOpacity
               onPress={handleGetDirections}
-              className="bg-primary px-4 py-3 rounded-full flex-row items-center gap-x-2 shadow-sm"
+              className="bg-primary px-4 py-4 rounded-full flex-row items-center gap-x-2"
             >
               <Navigation size={16} color="#fff" />
               <Text className="text-white font-bold">Directions</Text>

@@ -137,6 +137,98 @@ const usePollActions = () => {
     }
   };
 
+  const castVote = async (
+    pollId: string,
+    optionId: string,
+    userId: string
+  ): Promise<PollVote> => {
+    const { data, error } = await supabase
+      .from('poll_votes')
+      .insert({ poll_id: pollId, option_id: optionId, user_id: userId })
+      .select()
+      .single();
+    if (error) throw error;
+
+    // Optimistic update
+    setPolls((prev) =>
+      prev.map((poll) =>
+        poll.id === pollId
+          ? { ...poll, poll_votes: [...poll.poll_votes, data as PollVote] }
+          : poll
+      )
+    );
+
+    return data as PollVote;
+  };
+
+  const removeVote = async (
+    pollId: string,
+    optionId: string,
+    userId: string
+  ): Promise<void> => {
+    const { error } = await supabase
+      .from('poll_votes')
+      .delete()
+      .eq('poll_id', pollId)
+      .eq('option_id', optionId)
+      .eq('user_id', userId);
+    if (error) throw error;
+
+    // Optimistic update
+    setPolls((prev) =>
+      prev.map((poll) =>
+        poll.id === pollId
+          ? {
+              ...poll,
+              poll_votes: poll.poll_votes.filter(
+                (v) => !(v.option_id === optionId && v.user_id === userId)
+              ),
+            }
+          : poll
+      )
+    );
+  };
+
+  const swapVote = async (
+    pollId: string,
+    oldOptionId: string,
+    newOptionId: string,
+    userId: string
+  ): Promise<void> => {
+    // Run as sequential ops — remove old then insert new
+    const { error: deleteError } = await supabase
+      .from('poll_votes')
+      .delete()
+      .eq('poll_id', pollId)
+      .eq('option_id', oldOptionId)
+      .eq('user_id', userId);
+    if (deleteError) throw deleteError;
+
+    const { data, error: insertError } = await supabase
+      .from('poll_votes')
+      .insert({ poll_id: pollId, option_id: newOptionId, user_id: userId })
+      .select()
+      .single();
+    if (insertError) throw insertError;
+
+    // Optimistic update
+    setPolls((prev) =>
+      prev.map((poll) =>
+        poll.id === pollId
+          ? {
+              ...poll,
+              poll_votes: [
+                ...poll.poll_votes.filter(
+                  (v) => !(v.option_id === oldOptionId && v.user_id === userId)
+                ),
+                data as PollVote,
+              ],
+            }
+          : poll
+      )
+    );
+  };
+
   const fetchPolls = async (groupId: string): Promise<Poll[]> => {
     try {
       const { data, error } = await supabase
@@ -154,6 +246,15 @@ const usePollActions = () => {
     }
   };
 
-  return { createPoll, addPollOption, fetchPolls, polls, isLoading };
+  return {
+    createPoll,
+    addPollOption,
+    fetchPolls,
+    castVote,
+    removeVote,
+    swapVote,
+    polls,
+    isLoading,
+  };
 };
 export default usePollActions;

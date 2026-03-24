@@ -21,8 +21,8 @@ const Text = (props: CustomTextProps) => {
 
   const styles = StyleSheet.create({
     text: {
-      color: colors.textColors.default,
       ...textStyles.textBody14,
+      color: colors.textColors.default,
     },
   });
 

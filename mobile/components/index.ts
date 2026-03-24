@@ -11,6 +11,7 @@ import { AvatarGroup } from './containers/AvatarGroup';
 import ActivityTab from './containers/ActivityTab';
 import PollItem from './trip-activity/PollItem';
 import PollsContainer from './trip-activity/PollsContainer';
+import ProfileAvatar from './ui/ProfileAvatar';
 
 export {
   ScreenContainer,
@@ -26,4 +27,5 @@ export {
   ActivityTab,
   PollItem,
   PollsContainer,
+  ProfileAvatar,
 };

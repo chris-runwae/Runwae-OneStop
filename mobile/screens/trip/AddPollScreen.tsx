@@ -61,8 +61,10 @@ export default function AddPollScreen() {
       .map((label) => ({ label, created_by: user?.id as string }));
     try {
       await createPoll(poll, pollOptions);
+      router.dismiss();
     } catch (error) {
       console.error('Failed to create poll:', error);
+      alert('Failed to create poll. Please try again.');
     }
   };
 
@@ -115,7 +117,7 @@ export default function AddPollScreen() {
       paddingVertical: 16,
       paddingHorizontal: 12,
       borderWidth: 1,
-      borderColor: colors.borderColors.default,
+      borderColor: colors.borderColors.subtle,
       backgroundColor: colors.backgroundColors.subtle,
       borderRadius: 8,
     },
@@ -178,12 +180,12 @@ export default function AddPollScreen() {
           paddingTop: 24,
           paddingBottom: 8,
           borderBottomWidth: 2,
-          borderBottomColor: colors.borderColors.default,
+          borderBottomColor: colors.borderColors.subtle,
         }}>
         <Pressable
           hitSlop={{ top: 30, bottom: 30, left: 30, right: 60 }}
           onPress={() => {
-            router.dismiss();
+            router.back();
           }}
           style={{
             position: 'absolute',
@@ -226,8 +228,8 @@ export default function AddPollScreen() {
         <Text style={{ color: 'red' }}>*</Text> Poll Options
       </Text>
       {options.map((option, index) => (
-        <>
-          <View key={index} style={styles.inputContainer}>
+        <React.Fragment key={index}>
+          <View style={styles.inputContainer}>
             <TextInput
               placeholder={`Option ${index + 1}`}
               labelStyle={styles.labelStyle}
@@ -249,7 +251,7 @@ export default function AddPollScreen() {
             )}
           </View>
           {index < options.length - 1 && <Spacer size={12} vertical />}
-        </>
+        </React.Fragment>
       ))}
 
       <Spacer size={24} vertical />

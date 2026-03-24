@@ -5,9 +5,9 @@ export default function TripsLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="[id]/index" />
+      <Stack.Screen name="[tripId]/index" />
       <Stack.Screen
-        name="[id]/add-poll"
+        name="[tripId]/add-poll"
         options={{
           headerShown: false,
           presentation: 'formSheet',

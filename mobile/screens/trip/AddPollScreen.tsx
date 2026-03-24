@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   useColorScheme,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -17,54 +17,94 @@ import { Colors, textStyles } from '@/constants';
 import usePollActions, { PollType } from '@/hooks/usePollActions';
 import { useAuth } from '@/context/AuthContext';
 
+type OptionState = { id?: string; label: string };
+
 export default function AddPollScreen() {
-  const { tripId } = useLocalSearchParams<{ tripId: string }>();
+  const { tripId, pollId } = useLocalSearchParams<{
+    tripId: string;
+    pollId?: string;
+  }>();
+  const isEditMode = !!pollId;
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   const { user } = useAuth();
-  const { createPoll, isLoading } = usePollActions();
+  const { createPoll, updatePoll, fetchPollById, isLoading } = usePollActions();
 
   const [pollTitle, setPollTitle] = useState('');
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState(false);
   const [anonymousVoting, setAnonymousVoting] = useState(false);
   const [allowAddingOptions, setAllowAddingOptions] = useState(false);
+  const [options, setOptions] = useState<OptionState[]>([
+    { label: '' },
+    { label: '' },
+  ]);
+  const [deletedOptionIds, setDeletedOptionIds] = useState<string[]>([]);
 
-  const [options, setOptions] = useState<string[]>(['', '']);
+  useEffect(() => {
+    if (!pollId) return;
+    fetchPollById(pollId).then((poll) => {
+      setPollTitle(poll.title);
+      setAllowMultipleAnswers(poll.type === 'multiple_choice');
+      setAnonymousVoting(poll.anonymous_voting ?? false);
+      setAllowAddingOptions(poll.allow_add_options ?? false);
+      setOptions(
+        poll.poll_options.map((o) => ({ id: o.id, label: o.label }))
+      );
+    });
+  }, [pollId]);
 
   const addOption = () => {
-    setOptions((prev) => [...prev, '']);
+    setOptions((prev) => [...prev, { label: '' }]);
   };
 
   const removeOption = (index: number) => {
+    const option = options[index];
+    if (option.id) {
+      setDeletedOptionIds((prev) => [...prev, option.id!]);
+    }
     setOptions((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateOption = (index: number, value: string) => {
-    setOptions((prev) => prev.map((opt, i) => (i === index ? value : opt)));
+    setOptions((prev) =>
+      prev.map((opt, i) => (i === index ? { ...opt, label: value } : opt))
+    );
   };
 
-  const handleCreatePoll = async () => {
-    const poll = {
-      group_id: tripId,
+  const handleSubmit = async () => {
+    const pollData = {
       title: pollTitle,
       type: allowMultipleAnswers
         ? ('multiple_choice' as PollType)
         : ('single_choice' as PollType),
       allow_add_options: allowAddingOptions,
       anonymous_voting: anonymousVoting,
-      created_by: user?.id as string,
     };
-    const pollOptions = options
-      .filter((o) => o.trim())
-      .map((label) => ({ label, created_by: user?.id as string }));
+
     try {
-      await createPoll(poll, pollOptions);
+      if (isEditMode) {
+        await updatePoll(
+          pollId,
+          pollData,
+          options
+            .filter((o) => o.label.trim())
+            .map((o) => ({ ...o, created_by: user?.id as string })),
+          deletedOptionIds
+        );
+      } else {
+        await createPoll(
+          { ...pollData, group_id: tripId, created_by: user?.id as string },
+          options
+            .filter((o) => o.label.trim())
+            .map((o) => ({ label: o.label, created_by: user?.id as string }))
+        );
+      }
       router.dismiss();
     } catch (error) {
-      console.error('Failed to create poll:', error);
-      alert('Failed to create poll. Please try again.');
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} poll:`, error);
+      alert(`Failed to ${isEditMode ? 'update' : 'create'} poll. Please try again.`);
     }
   };
 
@@ -121,7 +161,6 @@ export default function AddPollScreen() {
       backgroundColor: colors.backgroundColors.subtle,
       borderRadius: 8,
     },
-
     button: {
       backgroundColor: '#ffdde6',
       borderStyle: 'solid',
@@ -137,11 +176,6 @@ export default function AddPollScreen() {
       width: '100%',
       borderRadius: 8,
     },
-
-    add: {
-      height: 16,
-      width: 16,
-    },
     buttonText: {
       fontSize: 14,
       lineHeight: 20,
@@ -149,7 +183,6 @@ export default function AddPollScreen() {
       color: '#ff2e92',
       textAlign: 'left',
     },
-
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -184,21 +217,13 @@ export default function AddPollScreen() {
         }}>
         <Pressable
           hitSlop={{ top: 30, bottom: 30, left: 30, right: 60 }}
-          onPress={() => {
-            router.back();
-          }}
+          onPress={() => router.dismiss()}
           style={{
             position: 'absolute',
             left: 0,
             top: 24,
           }}>
-          <Text
-            style={{
-              fontSize: 14,
-              textAlign: 'left',
-            }}>
-            Close
-          </Text>
+          <Text style={{ fontSize: 14, textAlign: 'left' }}>Close</Text>
         </Pressable>
         <Text
           style={{
@@ -207,7 +232,7 @@ export default function AddPollScreen() {
             textAlign: 'center',
             flex: 1,
           }}>
-          Add Poll
+          {isEditMode ? 'Edit Poll' : 'Add Poll'}
         </Text>
       </View>
       <Spacer size={24} vertical />
@@ -217,7 +242,7 @@ export default function AddPollScreen() {
         isRequired
         requiredType="asterisk"
         placeholder="What would you like to know?"
-        labelStyle={styles.labelStyle} //TODO: This should be Inter font
+        labelStyle={styles.labelStyle}
         style={styles.inputStyle}
         value={pollTitle}
         onChangeText={(text) => setPollTitle(text)}
@@ -228,20 +253,16 @@ export default function AddPollScreen() {
         <Text style={{ color: 'red' }}>*</Text> Poll Options
       </Text>
       {options.map((option, index) => (
-        <React.Fragment key={index}>
+        <React.Fragment key={option.id ?? `new-${index}`}>
           <View style={styles.inputContainer}>
             <TextInput
               placeholder={`Option ${index + 1}`}
               labelStyle={styles.labelStyle}
               style={styles.inputStyle}
-              value={option}
+              value={option.label}
               onChangeText={(text) => updateOption(index, text)}
-              containerStyle={{
-                flex: 1,
-                width: '100%',
-              }}
+              containerStyle={{ flex: 1, width: '100%' }}
             />
-
             {options.length > 2 && (
               <Pressable
                 onPress={() => removeOption(index)}
@@ -289,7 +310,6 @@ export default function AddPollScreen() {
             onValueChange={() => setAnonymousVoting(!anonymousVoting)}
           />
         </View>
-
         <Spacer size={12} vertical />
         <View style={styles.frameParent}>
           <View style={styles.switchLabelContainer}>
@@ -306,14 +326,13 @@ export default function AddPollScreen() {
       </View>
 
       <Spacer size={24} vertical />
-      <Pressable
-        onPress={handleCreatePoll}
-        disabled={isLoading}
-        style={styles.button}>
+      <Pressable onPress={handleSubmit} disabled={isLoading} style={styles.button}>
         {isLoading ? (
           <ActivityIndicator size={24} color={colors.textColors.default} />
         ) : (
-          <Text style={styles.buttonText}>Create Poll</Text>
+          <Text style={styles.buttonText}>
+            {isEditMode ? 'Update Poll' : 'Create Poll'}
+          </Text>
         )}
       </Pressable>
     </KeyboardAwareScrollView>

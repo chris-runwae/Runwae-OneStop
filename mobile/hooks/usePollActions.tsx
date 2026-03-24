@@ -229,6 +229,70 @@ const usePollActions = () => {
     );
   };
 
+  const fetchPollById = async (pollId: string): Promise<Poll> => {
+    const { data, error } = await supabase
+      .from('polls')
+      .select(
+        '*, creator:profiles!created_by (id, full_name, avatar_url), poll_options(*), poll_votes(*)'
+      )
+      .eq('id', pollId)
+      .single();
+    if (error) throw error;
+    return data as Poll;
+  };
+
+  const updatePoll = async (
+    pollId: string,
+    updates: Pick<
+      CreatePollInput,
+      'title' | 'type' | 'allow_add_options' | 'anonymous_voting'
+    >,
+    options: { id?: string; label: string; created_by: string }[],
+    deletedOptionIds: string[]
+  ): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('polls')
+        .update(updates)
+        .eq('id', pollId);
+      if (error) throw error;
+
+      if (deletedOptionIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from('poll_options')
+          .delete()
+          .in('id', deletedOptionIds);
+        if (delErr) throw delErr;
+      }
+
+      await Promise.all(
+        options
+          .filter((o) => o.id)
+          .map((o) =>
+            supabase
+              .from('poll_options')
+              .update({ label: o.label })
+              .eq('id', o.id!)
+          )
+      );
+
+      await Promise.all(
+        options
+          .filter((o) => !o.id)
+          .map((o) =>
+            addPollOption({
+              label: o.label,
+              created_by: o.created_by,
+              poll_id: pollId,
+            })
+          )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deletePoll = async (pollId: string): Promise<void> => {
     const { error } = await supabase.from('polls').delete().eq('id', pollId);
     if (error) throw error;
@@ -255,7 +319,9 @@ const usePollActions = () => {
   return {
     createPoll,
     addPollOption,
+    fetchPollById,
     fetchPolls,
+    updatePoll,
     castVote,
     removeVote,
     swapVote,

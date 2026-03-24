@@ -11,6 +11,8 @@ import { AvatarGroup } from './containers/AvatarGroup';
 import ActivityTab from './containers/ActivityTab';
 import PollItem from './trip-activity/PollItem';
 import PollsContainer from './trip-activity/PollsContainer';
+import PostItem from './trip-activity/PostItem';
+import PostsContainer from './trip-activity/PostsContainer';
 import ProfileAvatar from './ui/ProfileAvatar';
 
 export {
@@ -27,5 +29,7 @@ export {
   ActivityTab,
   PollItem,
   PollsContainer,
+  PostItem,
+  PostsContainer,
   ProfileAvatar,
 };

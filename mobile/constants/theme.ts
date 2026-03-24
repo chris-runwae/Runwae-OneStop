@@ -214,29 +214,25 @@ export const textStyles: Record<string, TextStyle> = {
   textHeading20: {
     fontFamily: 'BricolageGrotesque_700Bold',
     fontSize: 20,
-    color: Colors.light.textHeading,
     lineHeight: 24,
     letterSpacing: 0,
   },
   textHeading16: {
     fontFamily: 'BricolageGrotesque_600SemiBold',
     fontSize: 16,
-    color: Colors.light.textHeading,
     lineHeight: 20,
     letterSpacing: 0,
   },
   textBody12: {
     fontFamily: 'DMSans_400Regular',
     fontSize: 12,
-    color: Colors.light.textSubtle,
     lineHeight: 16,
     letterSpacing: 0,
   },
   textBody14: {
     fontFamily: 'DMSans_400Regular',
     fontSize: 14,
-    color: Colors.light.textBody,
-    lineHeight: 18,
+    lineHeight: 19.5,
     letterSpacing: 0,
   },
 };

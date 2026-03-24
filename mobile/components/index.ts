@@ -7,6 +7,7 @@ import Text from './ui/Text';
 import TextInput from './containers/TextInput';
 import DateRange from './containers/DateRange';
 import HorizontalTabs from './ui/HorizontalTabs';
+import { AvatarGroup } from './containers/AvatarGroup';
 
 export {
   ScreenContainer,
@@ -18,4 +19,5 @@ export {
   TextInput,
   DateRange,
   HorizontalTabs,
+  AvatarGroup,
 };

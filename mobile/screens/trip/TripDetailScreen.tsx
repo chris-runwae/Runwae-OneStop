@@ -22,7 +22,7 @@ import TripOverviewTab from './tabs/TripOverviewTab';
 import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 import { supabase } from '@/utils/supabase/client';
 
-import { Spacer, DateRange, Text } from '@/components';
+import { Spacer, DateRange, Text, AvatarGroup } from '@/components';
 import { Colors, textStyles } from '@/constants';
 
 // ================================================================
@@ -161,7 +161,6 @@ export default function TripDetailScreen() {
   };
 
   // Dynamic styles
-
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
       borderColor: colors.borderColors.default,
@@ -250,6 +249,7 @@ export default function TripDetailScreen() {
         </View>
       </View>
 
+      {/* ── Content Container ── */}
       <View
         style={[
           styles.contentContainer,
@@ -275,6 +275,22 @@ export default function TripDetailScreen() {
           </View>
         </View>
 
+        {activeTrip?.description && (
+          <>
+            <Spacer size={14} vertical />
+            <Text style={styles.description}>{activeTrip?.description}</Text>
+          </>
+        )}
+
+        <Spacer size={14} vertical />
+        <AvatarGroup
+          members={activeTrip?.group_members ?? []}
+          maxVisible={4}
+          size={30}
+          overlap={12}
+        />
+        <Spacer size={32} vertical />
+
         {/* ── Tab Bar ── */}
 
         {/* ── Tab Content ── */}
@@ -299,6 +315,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 12,
+  },
+  description: {
+    ...textStyles.textBody14,
   },
 
   // Hero

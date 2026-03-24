@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
   useColorScheme,
   View,
@@ -22,7 +23,13 @@ import TripOverviewTab from './tabs/TripOverviewTab';
 import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 import { supabase } from '@/utils/supabase/client';
 
-import { Spacer, DateRange, Text, AvatarGroup } from '@/components';
+import {
+  Spacer,
+  DateRange,
+  Text,
+  AvatarGroup,
+  HorizontalTabs,
+} from '@/components';
 import { Colors, textStyles } from '@/constants';
 
 // ================================================================
@@ -30,15 +37,6 @@ import { Colors, textStyles } from '@/constants';
 // ================================================================
 
 const HERO_HEIGHT = 260;
-
-const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'itinerary', label: 'Itinerary' },
-  { key: 'activity', label: 'Activity' },
-  { key: 'members', label: 'Members' },
-] as const;
-
-type TabKey = (typeof TABS)[number]['key'];
 
 // ================================================================
 // Loading skeleton
@@ -77,7 +75,8 @@ export default function TripDetailScreen() {
 
   const { activeTrip, isLoading, updateTrip } = useTrips();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // const [activeTab, setActiveTab] = useState<TabKey>('ideas');
+  const [activeTab, setActiveTab] = useState<string>('ideas');
   const [coverImage, setCoverImage] = useState<string | null>(null);
 
   // --- Loading state ---
@@ -183,7 +182,7 @@ export default function TripDetailScreen() {
   });
 
   return (
-    <View
+    <ScrollView
       style={[
         styles.container,
         { backgroundColor: dark ? '#000000' : '#ffffff' },
@@ -292,8 +291,49 @@ export default function TripDetailScreen() {
         <Spacer size={32} vertical />
 
         {/* ── Tab Bar ── */}
+        <HorizontalTabs
+          tabs={[
+            { id: 'ideas', label: 'Ideas' },
+            { id: 'saved', label: 'Saved' },
+            { id: 'itinerary', label: 'Itinerary' },
+            { id: 'activity', label: 'Activity' },
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <Spacer size={24} vertical />
 
         {/* ── Tab Content ── */}
+        {activeTab === 'ideas' && (
+          <>
+            {/* <TripItinerary tripId={trip?.id as string} trip={trip as Trip} /> */}
+            <TripOverviewTab trip={activeTrip} />
+            <Spacer size={14} vertical />
+          </>
+        )}
+        {activeTab === 'saved' && (
+          // <TripDiscoverySection
+          //   tripId={trip?.id as string}
+          //   countryCode={countryCode as string}
+          //   city={city as string}
+          //   tripsHotels={tripsHotels}
+          //   placeDisplayName={trip?.place?.displayName}
+          //   startDate={trip?.start_date || undefined}
+          //   endDate={trip?.end_date || undefined}
+          // />
+          <TripOverviewTab trip={activeTrip} />
+        )}
+        {activeTab === 'itinerary' && (
+          // <SavedItemsSection
+          //   tripId={trip?.id as string}
+          //   savedItems={trip?.saved_items as SavedItem[]}
+          //   handleRemoveSavedItem={handleRemoveSavedItem}
+          //   openSaveToItinerarySheet={openSaveToItinerarySheet}
+          // />
+          <TripItineraryTab />
+        )}
+        {activeTab === 'activity' && <TripActivityTab />}
+        <Spacer size={740} vertical />
         {/* <View style={styles.tabContent}>
         {activeTab === 'overview'   && <TripOverviewTab   trip={activeTrip} />}
         {activeTab === 'itinerary'  && <TripItineraryTab  />}
@@ -301,7 +341,7 @@ export default function TripDetailScreen() {
         {activeTab === 'members'    && <TripMembersTab    trip={activeTrip} />}
       </View> */}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 

@@ -7,7 +7,7 @@ import {
   TextStyle,
 } from 'react-native';
 import React from 'react';
-import { Colors } from '@/constants';
+import { Colors, textStyles } from '@/constants';
 
 type CustomTextProps = TextProps & {
   children: string | React.ReactNode;
@@ -22,6 +22,7 @@ const Text = (props: CustomTextProps) => {
   const styles = StyleSheet.create({
     text: {
       color: colors.textColors.default,
+      ...textStyles.textBody14,
     },
   });
 

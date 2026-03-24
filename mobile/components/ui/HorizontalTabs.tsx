@@ -33,8 +33,7 @@ const HorizontalTabs = ({
       borderBottomWidth: 1,
     },
     tabText: {
-      color: colors.textColors.default,
-      fontWeight: '500', // May need this later
+      color: colors.textColors.subtle,
     },
     tabTextActive: {
       color: colors.primaryColors.default,

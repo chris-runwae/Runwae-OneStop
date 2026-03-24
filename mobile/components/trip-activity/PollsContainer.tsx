@@ -18,7 +18,7 @@ import { textStyles, Colors } from '@/constants';
 export default function PollsContainer({ groupId }: { groupId: string }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { polls, fetchPolls, castVote, removeVote, swapVote } = usePollActions();
+  const { polls, fetchPolls, castVote, removeVote, swapVote, deletePoll } = usePollActions();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -85,9 +85,11 @@ export default function PollsContainer({ groupId }: { groupId: string }) {
           <PollItem
             poll={item}
             key={item.id}
+            groupId={groupId}
             onCastVote={castVote}
             onRemoveVote={removeVote}
             onSwapVote={swapVote}
+            onDeletePoll={deletePoll}
           />
         )}
         keyExtractor={(item) => item.id}

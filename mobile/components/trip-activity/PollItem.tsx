@@ -1,9 +1,19 @@
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useColorScheme,
+} from 'react-native';
 import React from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { MoreVertical } from 'lucide-react-native';
+import { router } from 'expo-router';
+
 import PollOptionItem from './PollOptionItem';
 import { ProfileAvatar, Spacer, Text } from '@/components';
-
-import { formatDistanceToNow } from 'date-fns';
 import { Colors, textStyles } from '@/constants';
 import { PollOption, Poll, PollVote } from '@/hooks/usePollActions';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +21,7 @@ import { useTrips } from '@/context/TripsContext';
 
 type PollItemProps = {
   poll: Poll;
+  groupId: string;
   onCastVote: (
     pollId: string,
     optionId: string,
@@ -27,13 +38,16 @@ type PollItemProps = {
     newOptionId: string,
     userId: string
   ) => Promise<void>;
+  onDeletePoll: (pollId: string) => Promise<void>;
 };
 
 const PollItem = ({
   poll,
+  groupId,
   onCastVote,
   onRemoveVote,
   onSwapVote,
+  onDeletePoll,
 }: PollItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -42,10 +56,51 @@ const PollItem = ({
   const { user } = useAuth();
   const { activeTrip } = useTrips();
   const userId = user?.id ?? '';
+  const isCreator = poll.created_by === userId;
 
   const userVotes = poll.poll_votes.filter(
     (vote: PollVote) => vote.user_id === userId && vote.poll_id === poll.id
   );
+
+  const currentVoteOptionId =
+    poll.type === 'single_choice' ? userVotes[0]?.option_id : undefined;
+
+  const handleDelete = () => {
+    Alert.alert('Delete poll', 'Are you sure? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => onDeletePoll(poll.id),
+      },
+    ]);
+  };
+
+  const handleEdit = () => {
+    router.push(`/(tabs)/(trips)/${groupId}/add-poll?pollId=${poll.id}`);
+  };
+
+  const handleEllipsisPress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Edit poll', 'Delete poll'],
+          destructiveButtonIndex: 2,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleEdit();
+          if (buttonIndex === 2) handleDelete();
+        }
+      );
+    } else {
+      Alert.alert('Poll options', undefined, [
+        { text: 'Edit poll', onPress: handleEdit },
+        { text: 'Delete poll', style: 'destructive', onPress: handleDelete },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
 
   const styles = StyleSheet.create({
     creatorContainer: {
@@ -74,21 +129,39 @@ const PollItem = ({
 
   const votesCount = poll.poll_votes.length;
 
-  // The user's current voted option for single_choice polls
-  const currentVoteOptionId =
-    poll.type === 'single_choice' ? userVotes[0]?.option_id : undefined;
-
   return (
     <View>
-      <View style={styles.creatorContainer}>
-        <ProfileAvatar
-          name={poll.creator.full_name}
-          imageUrl={poll.creator.avatar_url}
-        />
-        <View>
-          <Text style={styles.creatorNameText}>{poll.creator.full_name}</Text>
-          <Text style={styles.createdAtText}>{createdAt} ago</Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          width: '100%',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+        <View style={styles.creatorContainer}>
+          <ProfileAvatar
+            name={poll.creator.full_name}
+            imageUrl={poll.creator.avatar_url}
+          />
+          <View>
+            <Text style={styles.creatorNameText}>{poll.creator.full_name}</Text>
+            <Text style={styles.createdAtText}>{createdAt} ago</Text>
+          </View>
         </View>
+
+        {isCreator && (
+          <Pressable
+            onPress={handleEllipsisPress}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{
+              width: 30,
+              height: 30,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <MoreVertical size={20} color={colors.textColors.subtle} />
+          </Pressable>
+        )}
       </View>
 
       <Spacer size={16} vertical />

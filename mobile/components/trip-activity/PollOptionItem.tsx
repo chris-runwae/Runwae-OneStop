@@ -76,8 +76,8 @@ const PollOptionItem = ({
       style={[
         styles.pill,
         {
-          borderColor: isSelected ? '#FF1F8C' : isDark ? '#3a3a3c' : '#e5e7eb',
-          backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
+          borderColor: colors.borderColors.subtle,
+          backgroundColor: colors.backgroundColors.subtle,
         },
       ]}>
       {/* Animated fill */}

@@ -229,6 +229,12 @@ const usePollActions = () => {
     );
   };
 
+  const deletePoll = async (pollId: string): Promise<void> => {
+    const { error } = await supabase.from('polls').delete().eq('id', pollId);
+    if (error) throw error;
+    setPolls((prev) => prev.filter((poll) => poll.id !== pollId));
+  };
+
   const fetchPolls = async (groupId: string): Promise<Poll[]> => {
     try {
       const { data, error } = await supabase
@@ -253,6 +259,7 @@ const usePollActions = () => {
     castVote,
     removeVote,
     swapVote,
+    deletePoll,
     polls,
     isLoading,
   };

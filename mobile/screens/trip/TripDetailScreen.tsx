@@ -2,19 +2,19 @@ import SkeletonBox from '@/components/ui/SkeletonBox';
 import { useTrips } from '@/context/TripsContext';
 import { useTheme } from '@react-navigation/native';
 import { Image, ImageBackground } from 'expo-image';
-import * as ImagePicker from "expo-image-picker";
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { ChevronLeft, MapPin, Pencil } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
   StyleSheet,
-  Text,
+  ScrollView,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 
 import TripActivityTab from './tabs/TripActivityTab';
 import TripItineraryTab from './tabs/TripItineraryTab';
@@ -23,20 +23,21 @@ import TripOverviewTab from './tabs/TripOverviewTab';
 import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 import { supabase } from '@/utils/supabase/client';
 
+import {
+  Spacer,
+  DateRange,
+  Text,
+  AvatarGroup,
+  HorizontalTabs,
+  ActivityTab,
+} from '@/components';
+import { Colors, textStyles } from '@/constants';
+
 // ================================================================
 // Constants
 // ================================================================
 
 const HERO_HEIGHT = 260;
-
-const TABS = [
-  { key: 'overview',   label: 'Overview'   },
-  { key: 'itinerary', label: 'Itinerary'  },
-  { key: 'activity',  label: 'Activity'   },
-  { key: 'members',   label: 'Members'    },
-] as const;
-
-type TabKey = typeof TABS[number]['key'];
 
 // ================================================================
 // Loading skeleton
@@ -70,9 +71,13 @@ function TripDetailSkeleton({ insetTop }: { insetTop: number }) {
 
 export default function TripDetailScreen() {
   const { dark } = useTheme();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+
   const { activeTrip, isLoading, updateTrip } = useTrips();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // const [activeTab, setActiveTab] = useState<TabKey>('ideas');
+  const [activeTab, setActiveTab] = useState<string>('ideas');
   const [coverImage, setCoverImage] = useState<string | null>(null);
 
   // --- Loading state ---
@@ -85,16 +90,16 @@ export default function TripDetailScreen() {
   //Image picker functions
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
+    if (status !== 'granted') {
       Alert.alert(
-        "Permission needed",
-        "We need camera roll permissions to select a profile image.",
+        'Permission needed',
+        'We need camera roll permissions to select a profile image.'
       );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -108,10 +113,10 @@ export default function TripDetailScreen() {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
+    if (status !== 'granted') {
       Alert.alert(
-        "Permission needed",
-        "We need camera permissions to take a photo.",
+        'Permission needed',
+        'We need camera permissions to take a photo.'
       );
       return;
     }
@@ -129,28 +134,60 @@ export default function TripDetailScreen() {
   };
 
   const showImagePicker = () => {
-    Alert.alert("Select Profile Image", "Choose an option", [
-      { text: "Camera", onPress: takePhoto },
-      { text: "Photo Library", onPress: pickImage },
-      { text: "Cancel", style: "cancel" },
+    Alert.alert('Select Profile Image', 'Choose an option', [
+      { text: 'Camera', onPress: takePhoto },
+      { text: 'Photo Library', onPress: pickImage },
+      { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
   const uploadTripCoverImage = async (imageUri: string) => {
     if (!activeTrip) return;
     try {
-      const coverImageUrl = await uploadGroupCoverImage(activeTrip.id, imageUri);
+      const coverImageUrl = await uploadGroupCoverImage(
+        activeTrip.id,
+        imageUri
+      );
       if (coverImageUrl) {
         await updateTrip(activeTrip.id, { cover_image_url: coverImageUrl });
       }
     } catch (err) {
-      console.error("Failed to upload cover image:", err);
-      Alert.alert("Warning", "Failed to upload cover image. You can add it later.");
+      console.error('Failed to upload cover image:', err);
+      Alert.alert(
+        'Warning',
+        'Failed to upload cover image. You can add it later.'
+      );
     }
   };
 
+  // Dynamic styles
+  const dynamicStyles = StyleSheet.create({
+    infoContainer: {
+      borderColor: colors.borderColors.default,
+      maxWidth: 200,
+    },
+    infoText: {
+      color: colors.textColors.default,
+    },
+    emptyText: {
+      color: colors.textColors.subtle,
+    },
+    iconButton: {
+      backgroundColor: colors.backgroundColors.subtle,
+    },
+    iconContentContainer: {
+      top: 0 + insets.top,
+      left: 0,
+      right: 0,
+    },
+  });
+
   return (
-    <View style={[styles.container, { backgroundColor: dark ? '#000000' : '#ffffff' }]}>
+    <ScrollView
+      style={[
+        styles.container,
+        { backgroundColor: dark ? '#000000' : '#ffffff' },
+      ]}>
       {/* ── Hero ── */}
       <View style={[styles.hero, { height: HERO_HEIGHT + insets.top }]}>
         {coverUrl ? (
@@ -160,8 +197,16 @@ export default function TripDetailScreen() {
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.heroPlaceholder, { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' }]}>
-            <MapPin size={48} strokeWidth={1.2} color={dark ? '#4b5563' : '#9ca3af'} />
+          <View
+            style={[
+              styles.heroPlaceholder,
+              { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' },
+            ]}>
+            <MapPin
+              size={48}
+              strokeWidth={1.2}
+              color={dark ? '#4b5563' : '#9ca3af'}
+            />
           </View>
         )}
 
@@ -172,8 +217,7 @@ export default function TripDetailScreen() {
         <TouchableOpacity
           style={[styles.backButton, { top: insets.top + 12 }]}
           onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <ChevronLeft size={22} strokeWidth={2.5} color="#ffffff" />
         </TouchableOpacity>
 
@@ -181,8 +225,7 @@ export default function TripDetailScreen() {
         <TouchableOpacity
           style={[styles.editImageButton, { top: insets.top + 12 }]}
           onPress={showImagePicker}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Pencil size={22} strokeWidth={2.5} color="#ffffff" />
         </TouchableOpacity>
 
@@ -193,7 +236,11 @@ export default function TripDetailScreen() {
           </Text>
           {activeTrip.destination_label ? (
             <View style={styles.heroDestRow}>
-              <MapPin size={13} strokeWidth={1.5} color="rgba(255,255,255,0.8)" />
+              <MapPin
+                size={13}
+                strokeWidth={1.5}
+                color="rgba(255,255,255,0.8)"
+              />
               <Text style={styles.heroDestText} numberOfLines={1}>
                 {activeTrip.destination_label}
               </Text>
@@ -202,43 +249,102 @@ export default function TripDetailScreen() {
         </View>
       </View>
 
-      {/* ── Tab Bar ── */}
-      <View style={[styles.tabBar, { borderBottomColor: dark ? '#2c2c2e' : '#e5e7eb', backgroundColor: dark ? '#000000' : '#ffffff' }]}>
-        {TABS.map(({ key, label }) => {
-          const isActive = activeTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(key)}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  {
-                    color: isActive
-                      ? '#FF1F8C'
-                      : (dark ? '#6b7280' : '#9ca3af'),
-                    fontWeight: isActive ? '600' : '400',
-                  },
-                ]}
-              >
-                {label}
-              </Text>
-              {isActive && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* ── Content Container ── */}
+      <View
+        style={[
+          styles.contentContainer,
+          { backgroundColor: colors.backgroundColors.default },
+        ]}>
+        {/* ── Location and Time Span ── */}
+        <Spacer size={16} vertical />
+        <View style={styles.locationTimeSpan}>
+          <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+            <Text
+              style={[styles.infoText, dynamicStyles.infoText]}
+              numberOfLines={1}>
+              📍 {activeTrip?.destination_label}
+            </Text>
+          </View>
+          <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+            <DateRange
+              startDate={activeTrip?.trip_details?.start_date ?? ''}
+              endDate={activeTrip?.trip_details?.end_date ?? ''}
+              emoji={true}
+              color={colors.textColors.default}
+            />
+          </View>
+        </View>
 
-      {/* ── Tab Content ── */}
-      <View style={styles.tabContent}>
+        {activeTrip?.description && (
+          <>
+            <Spacer size={14} vertical />
+            <Text style={styles.description}>{activeTrip?.description}</Text>
+          </>
+        )}
+
+        <Spacer size={14} vertical />
+        <AvatarGroup
+          members={activeTrip?.group_members ?? []}
+          maxVisible={4}
+          size={30}
+          overlap={12}
+        />
+        <Spacer size={32} vertical />
+
+        {/* ── Tab Bar ── */}
+        <HorizontalTabs
+          tabs={[
+            { id: 'ideas', label: 'Ideas' },
+            { id: 'saved', label: 'Saved' },
+            { id: 'itinerary', label: 'Itinerary' },
+            { id: 'activity', label: 'Activity' },
+          ]}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        <Spacer size={24} vertical />
+
+        {/* ── Tab Content ── */}
+        {activeTab === 'ideas' && (
+          <>
+            {/* <TripItinerary tripId={trip?.id as string} trip={trip as Trip} /> */}
+            <TripOverviewTab trip={activeTrip} />
+            <Spacer size={14} vertical />
+          </>
+        )}
+        {activeTab === 'saved' && (
+          // <TripDiscoverySection
+          //   tripId={trip?.id as string}
+          //   countryCode={countryCode as string}
+          //   city={city as string}
+          //   tripsHotels={tripsHotels}
+          //   placeDisplayName={trip?.place?.displayName}
+          //   startDate={trip?.start_date || undefined}
+          //   endDate={trip?.end_date || undefined}
+          // />
+          <TripOverviewTab trip={activeTrip} />
+        )}
+        {activeTab === 'itinerary' && (
+          // <SavedItemsSection
+          //   tripId={trip?.id as string}
+          //   savedItems={trip?.saved_items as SavedItem[]}
+          //   handleRemoveSavedItem={handleRemoveSavedItem}
+          //   openSaveToItinerarySheet={openSaveToItinerarySheet}
+          // />
+          <TripItineraryTab />
+        )}
+        {activeTab === 'activity' && (
+          <ActivityTab tripId={activeTrip.id} trip={activeTrip} />
+        )}
+        <Spacer size={740} vertical />
+        {/* <View style={styles.tabContent}>
         {activeTab === 'overview'   && <TripOverviewTab   trip={activeTrip} />}
         {activeTab === 'itinerary'  && <TripItineraryTab  />}
         {activeTab === 'activity'   && <TripActivityTab   />}
         {activeTab === 'members'    && <TripMembersTab    trip={activeTrip} />}
+      </View> */}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -249,6 +355,12 @@ export default function TripDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: 12,
+  },
+  description: {
+    ...textStyles.textBody14,
   },
 
   // Hero
@@ -345,5 +457,25 @@ const styles = StyleSheet.create({
   skeletonBody: {
     paddingHorizontal: 16,
     paddingTop: 20,
+  },
+
+  // Location and Time Span
+  locationTimeSpan: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  infoContainer: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 99,
+  },
+  infoText: {
+    ...textStyles.textBody12,
+    fontSize: 13,
+    lineHeight: 19.5,
   },
 });

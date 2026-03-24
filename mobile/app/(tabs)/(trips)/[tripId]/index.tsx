@@ -4,14 +4,16 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
 
 export default function TripDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { loadTrip, clearActiveTrip } = useTrips();
 
   useFocusEffect(
     useCallback(() => {
-      if (id) loadTrip(id);
-      return () => { clearActiveTrip(); };
-    }, [id, loadTrip, clearActiveTrip]),
+      if (tripId) loadTrip(tripId);
+      return () => {
+        clearActiveTrip();
+      };
+    }, [tripId, loadTrip, clearActiveTrip])
   );
 
   return <TripDetailScreen />;

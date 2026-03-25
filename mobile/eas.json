@@ -19,6 +19,19 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "chrisobocha@gmail.com",
+        "ascAppId": "6754623801",
+        "appleTeamId": "VSC85SPZ2A"
+      }
+    },
+    "preview": {
+      "ios": {
+        "appleId": "chrisobocha@gmail.com",
+        "ascAppId": "6754623801",
+        "appleTeamId": "VSC85SPZ2A"
+      }
+    }
   }
 }

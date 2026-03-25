@@ -31,6 +31,23 @@ import {
   UpdateTripDetailsInput,
   UpdateDestinationInput,
 } from '@/hooks/useTripActions';
+import {
+  fetchOrCreateItinerary,
+  fetchDaysWithItems,
+  createDay as createDayAction,
+  updateDay as updateDayAction,
+  deleteDay as deleteDayAction,
+  createItem as createItemAction,
+  updateItem as updateItemAction,
+  deleteItem as deleteItemAction,
+  reorderItems as reorderItemsAction,
+  reorderDays as reorderDaysAction,
+  Itinerary,
+  ItineraryDay,
+  ItineraryDayWithItems,
+  CreateItineraryItemInput,
+  UpdateItineraryItemInput,
+} from '@/hooks/useItineraryActions';
 
 // ================================================================
 // Context shape
@@ -43,6 +60,11 @@ export interface TripsContextType {
   activeTrip:   TripWithEverything | null;
   isLoading:    boolean;
   error:        string | null;
+
+  // Itinerary state
+  itinerary:         Itinerary | null;
+  days:              ItineraryDayWithItems[];
+  itineraryLoading:  boolean;
 
   // Refresh
   refreshMyTrips:     () => Promise<void>;
@@ -61,6 +83,18 @@ export interface TripsContextType {
   leaveTrip:         (groupId: string) => Promise<{ error: string | null }>;
   updateMemberRole:  (groupId: string, userId: string, role: GroupMemberRole) => Promise<{ error: string | null }>;
   removeMember:      (groupId: string, userId: string) => Promise<{ error: string | null }>;
+
+  // Itinerary actions
+  loadItinerary:   (groupId: string) => Promise<void>;
+  refreshItinerary: () => Promise<void>;
+  addDay:          (input: { title?: string; date?: string }) => Promise<void>;
+  updateDayCtx:    (dayId: string, input: Partial<ItineraryDay>) => Promise<void>;
+  removeDay:       (dayId: string) => Promise<void>;
+  addItem:         (dayId: string, input: CreateItineraryItemInput) => Promise<void>;
+  updateItemCtx:   (itemId: string, input: UpdateItineraryItemInput) => Promise<void>;
+  removeItem:      (itemId: string) => Promise<void>;
+  reorderItemsCtx: (dayId: string, orderedIds: string[]) => Promise<void>;
+  reorderDaysCtx:  (orderedIds: string[]) => Promise<void>;
 }
 
 const TripsContext = createContext<TripsContextType | undefined>(undefined);
@@ -77,6 +111,11 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   const [activeTrip,  setActiveTrip]  = useState<TripWithEverything | null>(null);
   const [isLoading,   setIsLoading]   = useState(false);
   const [error,       setError]       = useState<string | null>(null);
+
+  // Itinerary state
+  const [itinerary,        setItinerary]        = useState<Itinerary | null>(null);
+  const [days,             setDays]             = useState<ItineraryDayWithItems[]>([]);
+  const [itineraryLoading, setItineraryLoading] = useState(false);
 
   // Prevent double-fetch on StrictMode double-mount
   const initialFetchDone = useRef(false);
@@ -132,6 +171,145 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.id, refreshMyTrips, refreshJoinedTrips]);
 
   // ----------------------------------------------------------------
+  // Itinerary helpers
+  // ----------------------------------------------------------------
+
+  const loadItinerary = useCallback(async (groupId: string) => {
+    if (!user?.id) return;
+    setItineraryLoading(true);
+    try {
+      const itin = await fetchOrCreateItinerary(groupId, user.id);
+      setItinerary(itin);
+      const daysWithItems = await fetchDaysWithItems(itin.id);
+      setDays(daysWithItems);
+    } catch (err) {
+      console.error('Failed to load itinerary:', err);
+    } finally {
+      setItineraryLoading(false);
+    }
+  }, [user?.id]);
+
+  const refreshItinerary = useCallback(async () => {
+    if (!itinerary) return;
+    const daysWithItems = await fetchDaysWithItems(itinerary.id);
+    setDays(daysWithItems);
+  }, [itinerary]);
+
+  const addDay = useCallback(async (
+    input: { title?: string; date?: string },
+  ) => {
+    if (!itinerary) return;
+    const newDay = await createDayAction(itinerary.id, input);
+    setDays((prev) => [...prev, { ...newDay, itinerary_items: [] }]);
+  }, [itinerary]);
+
+  const updateDayCtx = useCallback(async (
+    dayId: string,
+    input: Partial<ItineraryDay>,
+  ) => {
+    const prevDays = days;
+    setDays((prev) =>
+      prev.map((d) => (d.id === dayId ? { ...d, ...input } : d)),
+    );
+    try {
+      await updateDayAction(dayId, input);
+    } catch (err) {
+      setDays(prevDays);
+      throw err;
+    }
+  }, [days]);
+
+  const removeDay = useCallback(async (dayId: string) => {
+    const prevDays = days;
+    setDays((prev) => prev.filter((d) => d.id !== dayId));
+    try {
+      await deleteDayAction(dayId);
+    } catch (err) {
+      setDays(prevDays);
+      throw err;
+    }
+  }, [days]);
+
+  const addItem = useCallback(async (
+    dayId: string,
+    input: CreateItineraryItemInput,
+  ) => {
+    if (!user?.id) return;
+    const newItem = await createItemAction(dayId, input, user.id);
+    setDays((prev) =>
+      prev.map((d) =>
+        d.id === dayId
+          ? { ...d, itinerary_items: [...d.itinerary_items, newItem] }
+          : d,
+      ),
+    );
+  }, [user?.id]);
+
+  const updateItemCtx = useCallback(async (
+    itemId: string,
+    input: UpdateItineraryItemInput,
+  ) => {
+    const prevDays = days;
+    setDays((prev) =>
+      prev.map((d) => ({
+        ...d,
+        itinerary_items: d.itinerary_items.map((it) =>
+          it.id === itemId ? { ...it, ...input } : it,
+        ),
+      })),
+    );
+    try {
+      await updateItemAction(itemId, input);
+    } catch (err) {
+      setDays(prevDays);
+      throw err;
+    }
+  }, [days]);
+
+  const removeItem = useCallback(async (itemId: string) => {
+    const prevDays = days;
+    setDays((prev) =>
+      prev.map((d) => ({
+        ...d,
+        itinerary_items: d.itinerary_items.filter((it) => it.id !== itemId),
+      })),
+    );
+    try {
+      await deleteItemAction(itemId);
+    } catch (err) {
+      setDays(prevDays);
+      throw err;
+    }
+  }, [days]);
+
+  const reorderItemsCtx = useCallback(async (
+    dayId: string,
+    orderedIds: string[],
+  ) => {
+    setDays((prev) =>
+      prev.map((d) => {
+        if (d.id !== dayId) return d;
+        const sorted = orderedIds
+          .map((id) => d.itinerary_items.find((it) => it.id === id))
+          .filter(Boolean) as typeof d.itinerary_items;
+        return { ...d, itinerary_items: sorted };
+      }),
+    );
+    await reorderItemsAction(dayId, orderedIds);
+  }, []);
+
+  const reorderDaysCtx = useCallback(async (orderedIds: string[]) => {
+    setDays((prev) => {
+      const sorted = orderedIds
+        .map((id) => prev.find((d) => d.id === id))
+        .filter(Boolean) as ItineraryDayWithItems[];
+      return sorted;
+    });
+    if (!itinerary) return;
+    await reorderDaysAction(itinerary.id, orderedIds);
+  }, [itinerary]);
+
+  // ----------------------------------------------------------------
   // Active trip
   // ----------------------------------------------------------------
 
@@ -143,12 +321,16 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       setError(err);
     } else {
       setActiveTrip(data);
+      // Load itinerary alongside the trip data.
+      await loadItinerary(id);
     }
     setIsLoading(false);
-  }, []);
+  }, [loadItinerary]);
 
   const clearActiveTrip = useCallback(() => {
     setActiveTrip(null);
+    setItinerary(null);
+    setDays([]);
   }, []);
 
   // ----------------------------------------------------------------
@@ -395,6 +577,9 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         activeTrip,
         isLoading,
         error,
+        itinerary,
+        days,
+        itineraryLoading,
         refreshMyTrips,
         refreshJoinedTrips,
         loadTrip,
@@ -407,6 +592,16 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         leaveTrip,
         updateMemberRole,
         removeMember,
+        loadItinerary,
+        refreshItinerary,
+        addDay,
+        updateDayCtx,
+        removeDay,
+        addItem,
+        updateItemCtx,
+        removeItem,
+        reorderItemsCtx,
+        reorderDaysCtx,
       }}
     >
       {children}

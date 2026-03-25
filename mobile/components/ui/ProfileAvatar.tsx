@@ -3,7 +3,9 @@ import React from 'react';
 import { Image } from 'expo-image';
 
 import { Text } from '@/components';
-import { Colors } from '@/constants';
+import { COLORS, Colors, textStyles } from '@/constants';
+import { getRandomGradient } from '../containers/AvatarGroup';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type UserAvatarProps = {
   size?: number;
@@ -30,6 +32,10 @@ const UserAvatar = ({ size = 40, imageUrl, name }: UserAvatarProps) => {
       // aspectRatio: 1,
       // borderRadius: 99,
     },
+    textStyle: {
+      ...textStyles.textHeading16,
+      color: COLORS.white.base,
+    },
   });
 
   const initials = name
@@ -37,6 +43,8 @@ const UserAvatar = ({ size = 40, imageUrl, name }: UserAvatarProps) => {
     .map((n: string) => n[0])
     .join('')
     .toUpperCase();
+
+  const gradientColors = getRandomGradient(name);
 
   return (
     <View style={styles.container}>
@@ -47,9 +55,19 @@ const UserAvatar = ({ size = 40, imageUrl, name }: UserAvatarProps) => {
           contentFit="cover"
         />
       ) : (
-        <View style={styles.image}>
-          <Text>{initials}</Text>
-        </View>
+        <LinearGradient
+          colors={gradientColors}
+          start={[0, 0]}
+          end={[1, 1]}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text style={styles.textStyle}>{initials}</Text>
+        </LinearGradient>
       )}
     </View>
   );

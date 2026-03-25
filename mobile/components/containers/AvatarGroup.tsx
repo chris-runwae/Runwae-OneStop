@@ -34,7 +34,7 @@ const GRADIENTS = [
 type GradientTuple = (typeof GRADIENTS)[number];
 
 // deterministic pick
-function getRandomGradient(seed: string): GradientTuple {
+export function getRandomGradient(seed: string): GradientTuple {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = seed.charCodeAt(i) + ((hash << 5) - hash);

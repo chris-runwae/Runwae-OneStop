@@ -78,7 +78,6 @@ function RouteGuard() {
     'experience',
     'create-trip',
     'events',
-    'create-trip',
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -137,10 +136,7 @@ function RouteGuard() {
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
-      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
-      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
         options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}

@@ -48,6 +48,10 @@ export default function TabLayout() {
         <Label>Profile</Label>
         <Icon sf="person" drawable="custom_android_drawable" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="create-trip" role="search">
+        <Label>Create Trip</Label>
+        <Icon sf="plus" drawable="custom_android_drawable" />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

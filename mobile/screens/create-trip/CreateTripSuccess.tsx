@@ -25,8 +25,8 @@ import Animated, {
 export default function CreateTripSuccess() {
   const { dark } = useTheme();
   const params = useLocalSearchParams<{
-    tripId:            string;
-    tripName:          string;
+    tripId: string;
+    tripName: string;
     destination_label: string;
   }>();
 
@@ -38,7 +38,11 @@ export default function CreateTripSuccess() {
   }));
 
   useEffect(() => {
-    scale.value = withDelay(200, withSpring(1, { damping: 12, stiffness: 120 }));
+    scale.value = withDelay(
+      200,
+      withSpring(1, { damping: 12, stiffness: 120 })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ----------------------------------------------------------------
@@ -46,7 +50,7 @@ export default function CreateTripSuccess() {
   // ----------------------------------------------------------------
 
   const handleViewTrip = () => {
-    router.replace(`/(tabs)/(trips)/${params.tripId}` as any);
+    router.push(`/(tabs)/(trips)/${params.tripId}`);
   };
 
   const handleShare = async () => {
@@ -64,11 +68,16 @@ export default function CreateTripSuccess() {
   // ----------------------------------------------------------------
 
   useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      handleViewTrip();
-      return true;
-    });
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        handleViewTrip();
+        return true;
+      }
+    );
     return () => subscription.remove();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.tripId]);
 
   // ----------------------------------------------------------------
@@ -87,17 +96,21 @@ export default function CreateTripSuccess() {
           Trip Created!
         </Text>
 
-        <Text style={[styles.tripName, { color: dark ? '#ffffff' : '#111827' }]}>
+        <Text
+          style={[styles.tripName, { color: dark ? '#ffffff' : '#111827' }]}>
           {params.tripName}
         </Text>
 
-        <Text style={[styles.destination, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+        <Text
+          style={[styles.destination, { color: dark ? '#9ca3af' : '#6b7280' }]}>
           {params.destination_label}
         </Text>
 
         {/* CTA buttons */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleViewTrip}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleViewTrip}>
             <Text style={styles.primaryButtonText}>View Trip</Text>
           </TouchableOpacity>
 
@@ -108,9 +121,12 @@ export default function CreateTripSuccess() {
                 borderColor: dark ? '#2c2c2e' : '#e5e7eb',
               },
             ]}
-            onPress={handleShare}
-          >
-            <Text style={[styles.secondaryButtonText, { color: dark ? '#ffffff' : '#111827' }]}>
+            onPress={handleShare}>
+            <Text
+              style={[
+                styles.secondaryButtonText,
+                { color: dark ? '#ffffff' : '#111827' },
+              ]}>
               Share with friends
             </Text>
           </TouchableOpacity>

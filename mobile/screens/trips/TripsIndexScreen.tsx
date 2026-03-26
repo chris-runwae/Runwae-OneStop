@@ -5,10 +5,8 @@ import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import { MapPin } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import TripCard from '@/components/home/TripCard';
 import { FlashList } from '@shopify/flash-list';
 
@@ -136,7 +134,6 @@ function isSaved(trip: TripWithEverything): boolean {
 // ================================================================
 
 export default function TripsIndexScreen() {
-  const router = useRouter();
   const {
     myTrips,
     joinedTrips,

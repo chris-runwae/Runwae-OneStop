@@ -19,8 +19,6 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
-  // console.log('trip: ', trip);
-
   return (
     <Pressable
       className="overflow-hidden rounded-2xl"
@@ -47,18 +45,26 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
 
           {/* Bottom info */}
           <View>
-            <View className="flex-row items-end justify-between">
+            <View className="flex-row items-end">
               <View className="flex-1">
-                <View className="flex-row items-center justify-between">
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    // flex: 1,
+                    // justifyContent: 'space-between',
+                    gap: 8,
+                  }}>
                   <Text
+                    numberOfLines={1}
                     style={{
                       ...textStyles.textHeading20,
                       color: colors.white,
+                      flex: 0.8, // takes remaining space, won't push AvatarGroup out
                     }}>
                     {trip.name}
                   </Text>
-
-                  <AvatarGroup members={trip.group_members || []} />
+                  <AvatarGroup members={trip.group_members || []} size={20} />
                 </View>
                 <Text style={{ ...textStyles.textBody12, color: colors.white }}>
                   📍 {trip.destination_label}

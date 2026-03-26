@@ -1,15 +1,15 @@
-import { File } from "expo-file-system";
-import { supabase } from "./client";
+import { File } from 'expo-file-system';
+import { supabase } from './client';
 
 export const uploadProfileImage = async (userId: string, imageUri: string) => {
   try {
-    const fileExtension = imageUri.split(".").pop() || "jpg";
+    const fileExtension = imageUri.split('.').pop() || 'jpg';
     const fileName = `${userId}/profile.${fileExtension}`;
     const file = new File(imageUri);
     const bytes = await file.bytes();
 
     const { error } = await supabase.storage
-      .from("profiles")
+      .from('profiles')
       .upload(fileName, bytes, {
         contentType: `image/${fileExtension}`,
         upsert: true,
@@ -20,28 +20,28 @@ export const uploadProfileImage = async (userId: string, imageUri: string) => {
     }
 
     const { data: urlData } = supabase.storage
-      .from("profiles")
+      .from('profiles')
       .getPublicUrl(fileName);
 
     return `${urlData.publicUrl}?t=${Date.now()}`;
   } catch (error) {
-    console.error("Error uploading profile image:", error);
+    console.error('Error uploading profile image:', error);
     throw error;
   }
 };
 
 export const uploadTripImage = async (userId: string, imageUri: string) => {
   try {
-    const fileExtension = imageUri.split(".").pop() || "jpg";
+    const fileExtension = imageUri.split('.').pop() || 'jpg';
     const fileName = `${userId}/${Date.now()}.${fileExtension}`;
     const file = new File(imageUri);
     const bytes = await file.bytes();
 
     const { error } = await supabase.storage
-      .from("trip-images")
+      .from('trip-images')
       .upload(fileName, bytes, {
         contentType: `image/${fileExtension}`,
-        upsert: false,
+        upsert: true,
       });
 
     if (error) {
@@ -49,25 +49,28 @@ export const uploadTripImage = async (userId: string, imageUri: string) => {
     }
 
     const { data: urlData } = supabase.storage
-      .from("trip-images")
+      .from('trip-images')
       .getPublicUrl(fileName);
 
     return urlData.publicUrl;
   } catch (error) {
-    console.error("Error uploading trip image:", error);
+    console.error('Error uploading trip image:', error);
     throw error;
   }
 };
 
-export const uploadGroupCoverImage = async (tripId: string, imageUri: string) => {
+export const uploadGroupCoverImage = async (
+  tripId: string,
+  imageUri: string
+) => {
   try {
-    const fileExtension = imageUri.split(".").pop() || "jpg";
+    const fileExtension = imageUri.split('.').pop() || 'jpg';
     const fileName = `${tripId}/cover.${fileExtension}`;
     const file = new File(imageUri);
     const bytes = await file.bytes();
 
     const { error } = await supabase.storage
-      .from("groups")
+      .from('groups')
       .upload(fileName, bytes, {
         contentType: `image/${fileExtension}`,
         upsert: true,
@@ -76,13 +79,13 @@ export const uploadGroupCoverImage = async (tripId: string, imageUri: string) =>
     if (error) throw error;
 
     const { data: urlData } = supabase.storage
-      .from("groups")
+      .from('groups')
       .getPublicUrl(fileName);
 
     // Cache bust so expo-image treats it as a new image
     return `${urlData.publicUrl}?t=${Date.now()}`;
   } catch (error) {
-    console.error("Error uploading group cover image:", error);
+    console.error('Error uploading group cover image:', error);
     throw error;
   }
 };

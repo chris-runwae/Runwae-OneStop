@@ -13,7 +13,8 @@ import { Plus, Receipt } from 'lucide-react-native';
 
 import useExpenseActions from '@/hooks/useExpenseActions';
 import ExpenseItem from './ExpenseItem';
-import { Spacer, Text } from '@/components';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { textStyles, Colors } from '@/constants';
 
 export default function ExpensesContainer({ groupId }: { groupId: string }) {

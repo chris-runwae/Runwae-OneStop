@@ -12,7 +12,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Vote } from 'lucide-react-native';
 
 import usePollActions from '@/hooks/usePollActions';
-import { PollItem, Spacer, Text } from '@/components';
+import PollItem from '@/components/trip-activity/PollItem';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { textStyles, Colors } from '@/constants';
 
 export default function PollsContainer({ groupId }: { groupId: string }) {

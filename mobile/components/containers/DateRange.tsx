@@ -2,7 +2,7 @@ import { CalendarDays } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 
-import { Text } from '@/components';
+import Text from '@/components/ui/Text';
 import { Colors, textStyles } from '@/constants';
 
 interface DateRangeProps {

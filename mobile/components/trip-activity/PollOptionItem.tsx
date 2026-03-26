@@ -7,7 +7,7 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import { Text } from '@/components';
+import Text from '@/components/ui/Text';
 import { Colors } from '@/constants';
 
 type PollOptionItemProps = {

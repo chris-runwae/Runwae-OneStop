@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   listContentEmpty: {
-    flex: 1,
+    // flex: 1,
   },
 
   // Card

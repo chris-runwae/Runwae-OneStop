@@ -19,6 +19,9 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
+  const visibilityText =
+    trip.trip_details?.visibility === 'public' ? 'Public' : 'Private';
+
   return (
     <Pressable
       className="overflow-hidden rounded-2xl"
@@ -37,7 +40,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
           <View className="flex-row justify-end">
             <View className="rounded-full bg-[#000000A6] px-3 py-1 dark:bg-dark-seconndary">
               <Text style={{ ...textStyles.textBody12, color: colors.white }}>
-                {trip.trip_details?.visibility}
+                {visibilityText}
               </Text>
               {/* TODO: Add role */}
             </View>

@@ -53,18 +53,6 @@ function isSaved(trip: TripWithEverything): boolean {
   return (trip.trip_details as any)?.is_saved === true;
 }
 
-function formatDateRange(
-  startDate?: string | null,
-  endDate?: string | null
-): string {
-  if (!startDate && !endDate) return 'No dates set';
-  const fmt = (d: string) =>
-    new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  if (startDate && endDate) return `${fmt(startDate)} → ${fmt(endDate)}`;
-  if (startDate) return `From ${fmt(startDate)}`;
-  return `Until ${fmt(endDate!)}`;
-}
-
 // ================================================================
 // TripCard
 // ================================================================

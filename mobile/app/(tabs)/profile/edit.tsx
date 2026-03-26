@@ -5,7 +5,7 @@ import { uploadProfileImage } from "@/utils/supabase/storage";
 import { useTheme } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { Camera, Mail, User } from "lucide-react-native";
+import { Camera } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -39,7 +39,7 @@ const ProfileEditScreen = () => {
           if (status !== "granted") {
             Alert.alert(
               "Permission Denied",
-              "We need camera permissions to take a photo."
+              "We need camera permissions to take a photo.",
             );
             return;
           }
@@ -63,7 +63,7 @@ const ProfileEditScreen = () => {
           if (status !== "granted") {
             Alert.alert(
               "Permission Denied",
-              "We need gallery permissions to pick a photo."
+              "We need gallery permissions to pick a photo.",
             );
             return;
           }
@@ -100,7 +100,6 @@ const ProfileEditScreen = () => {
     try {
       let avatarUrl = user.avatar_url;
 
-      // If there's a new image selected, upload it first
       if (tempAvatar) {
         avatarUrl = await uploadProfileImage(user.id, tempAvatar);
       }
@@ -145,7 +144,7 @@ const ProfileEditScreen = () => {
               className="relative"
               onPress={handleImagePick}
             >
-              <View className="h-28 w-28 rounded-full bg-gray-50 dark:bg-dark-seconndary overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800 shadow-sm">
+              <View className="h-28 w-28 rounded-full bg-primary overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800 shadow-sm">
                 {tempAvatar || user?.avatar_url ? (
                   <Image
                     source={{ uri: tempAvatar || user?.avatar_url }}
@@ -153,7 +152,7 @@ const ProfileEditScreen = () => {
                     resizeMode="cover"
                   />
                 ) : (
-                  <Text className="text-3xl font-bold text-gray-400 dark:text-gray-500">
+                  <Text className="text-3xl font-bold text-white">
                     {fullName
                       .split(" ")
                       .map((n: string) => n[0])

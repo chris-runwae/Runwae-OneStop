@@ -1,4 +1,5 @@
 import { tabs } from "@/constants";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { RelativePathString, usePathname, useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
@@ -20,9 +21,22 @@ const FloatingTabBar = () => {
 
   const isTabActive = useCallback(
     (tab: (typeof tabs)[0]) => {
-      if (tab.name === "index") {
+      if (tab.name === "home") {
         return (
-          pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/"
+          pathname === "/" ||
+          pathname === "/home" ||
+          pathname.startsWith("/home/") ||
+          pathname === "/(tabs)" ||
+          pathname === "/(tabs)/home"
+        );
+      }
+
+      if (tab.name === "explore") {
+        return (
+          pathname === "/explore" ||
+          pathname.startsWith("/explore/") ||
+          pathname === "/(tabs)/explore" ||
+          pathname.startsWith("/(tabs)/explore/")
         );
       }
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
@@ -53,7 +67,7 @@ const FloatingTabBar = () => {
           color={isSelected ? "#FF2E92" : "#ADB5BD"}
         />
         <Text
-          className={`text-[10px] font-medium ${isSelected ? "text-pink-600 dark:text-pink-400" : "text-gray-500 dark:text-gray-400"}`}
+          className={`text-[10px] font-medium ${isSelected ? "text-pink-600 dark:text-pink-400" : "text-gray-400 dark:text-gray-400"}`}
         >
           {tab.title}
         </Text>
@@ -63,13 +77,17 @@ const FloatingTabBar = () => {
 
   const handleNewTripPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push("/create-trip/destination" as RelativePathString);
+    router.push("/create-trip" as RelativePathString);
   }, [router]);
 
   return (
     <View className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
       <View className="flex w-[378px] flex-row items-center gap-x-3">
-        <View className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white px-[3px] dark:border-gray-700 dark:bg-black">
+        <BlurView
+          intensity={70}
+          tint="default"
+          className="h-[60px] w-[306px] flex-1 flex-row items-center overflow-hidden rounded-full border-[1.5px] border-gray-200 bg-white/70 px-[3px] dark:border-gray-700 dark:bg-black/70"
+        >
           {tabs.map((tab, index) => {
             const isSelected = isTabActive(tab);
             return (
@@ -82,7 +100,7 @@ const FloatingTabBar = () => {
               />
             );
           })}
-        </View>
+        </BlurView>
         <TouchableOpacity
           onPress={handleNewTripPress}
           className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600"

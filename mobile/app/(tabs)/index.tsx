@@ -1,30 +1,69 @@
-import WelcomeModal from "@/components/WelcomeModal";
-import { useAuth } from "@/context/AuthContext";
-import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import AddOnsForYou from "@/components/home/AddOnsForYou";
+import HomeHeader from "@/components/home/HomeHeader";
+import ItineraryForYou from "@/components/home/IteneryForYou";
+import UpcomingTrips from "@/components/home/UpcomingTrips";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import WelcomeModal from "@/components/WelcomeModal";
+import {
+  ADD_ONS_FOR_YOU,
+  DESTINATIONS_FOR_YOU,
+  ITINERARIES_FOR_YOU,
+  UPCOMING_TRIPS,
+} from "@/constants/home.constant";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
+import { RefreshControl, ScrollView } from "react-native";
+
+import DestinationsForYou from "@/components/home/DestinationsForYou";
 
 export default function HomeScreen() {
-  const { signOut, showWelcomeModal, setShowWelcomeModal } = useAuth();
+  const {
+    showWelcomeModal,
+    setShowWelcomeModal,
+    user,
+    isLoading: authLoading,
+  } = useAuth();
+  const { dark } = useTheme();
 
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
-  };
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Simulate a network request
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1500);
+  }, []);
 
   return (
-    <AppSafeAreaView className="items-center justify-center">
-      <Text className="text-2xl font-bold mb-8 dark:text-white">Home</Text>
-      <Pressable
-        onPress={handleSignOut}
-        className="bg-red-500 px-6 py-3 rounded-lg"
+    <AppSafeAreaView edges={["top"]}>
+      <HomeHeader user={user} isLoading={authLoading} dark={dark} />
+
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={dark ? "#ffffff" : "#000000"}
+          />
+        }
       >
-        <Text className="text-white font-semibold">Sign Out</Text>
-      </Pressable>
+        <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
+        <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
+        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
+        <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
+      </ScrollView>
 
       <WelcomeModal
         visible={showWelcomeModal}

@@ -30,7 +30,39 @@ export const uploadProfileImage = async (userId: string, imageUri: string) => {
   }
 };
 
-export const uploadGroupCoverImage = async (tripId: string, imageUri: string) => {
+export const uploadTripImage = async (userId: string, imageUri: string) => {
+  try {
+    const fileExtension = imageUri.split(".").pop() || "jpg";
+    const fileName = `${userId}/${Date.now()}.${fileExtension}`;
+    const file = new File(imageUri);
+    const bytes = await file.bytes();
+
+    const { error } = await supabase.storage
+      .from("groups")
+      .upload(fileName, bytes, {
+        contentType: `image/${fileExtension}`,
+        upsert: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("groups")
+      .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("Error uploading trip image:", error);
+    throw error;
+  }
+};
+
+export const uploadGroupCoverImage = async (
+  tripId: string,
+  imageUri: string,
+) => {
   try {
     const fileExtension = imageUri.split(".").pop() || "jpg";
     const fileName = `${tripId}/cover.${fileExtension}`;

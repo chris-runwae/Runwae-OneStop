@@ -15,9 +15,10 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments, Redirect } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import "react-native-reanimated";
 import ToastManager from "toastify-react-native";
@@ -50,19 +51,16 @@ function RouteGuard() {
   const AUTH_ROUTES = new Set([
     "(auth)",
     "login",
+    "signup",
     "register",
     "forgot-password",
     "check-email",
     "reset-password",
     "onboarding",
+    "onboarding-steps",
   ]);
 
-  const ONBOARDING_STEPS = new Set([
-    "onboarding",
-    "onboarding-step-1",
-    "onboarding-step-2",
-    "onboarding-step-3",
-  ]);
+  const ONBOARDING_STEPS = new Set(["onboarding", "onboarding-steps"]);
 
   const BOARDING_STEPS = new Set([
     "boarding",
@@ -76,10 +74,13 @@ function RouteGuard() {
     "(tabs)",
     "notifications",
     "modal",
+    "itinerary",
+    "experience",
     "create-trip",
+    "events",
   ]);
 
-  const [currentSegment, secondSegment] = segments;
+  const [currentSegment, secondSegment] = segments as string[];
   const isInAuthFlow =
     AUTH_ROUTES.has(currentSegment) ||
     (currentSegment === "(auth)" &&
@@ -95,23 +96,23 @@ function RouteGuard() {
     BOARDING_STEPS.has(secondSegment);
   const isInTabs = currentSegment === "(tabs)";
   const isInOnboarding = currentSegment === "onboarding";
-  const isInAuthorizedRoot = AUTHORIZED_ROOT_ROUTES.has(currentSegment);
+  const isInAuthorizedRoot = [
+    undefined,
+    "(tabs)",
+    "notifications",
+    "modal",
+    "itinerary",
+    "experience",
+    "destination",
+    "create-trip",
+    "events",
+  ].includes(currentSegment as any);
 
   // Redirection Logic
-  if (!isAuthenticated && hasSeenOnboarding && !isInAuthFlow) {
-    return <Redirect href="/(auth)/login" />;
-  } 
-  
-  if (
-    !isAuthenticated &&
-    !hasSeenOnboarding &&
-    !isInOnboarding &&
-    !isInOnboardingSteps &&
-    !isInAuthFlow
-  ) {
+  if (!isAuthenticated && !isInAuthFlow) {
     return <Redirect href="/(auth)/onboarding" />;
-  } 
-  
+  }
+
   if (
     isAuthenticated &&
     !hasCompletedBoarding &&
@@ -119,19 +120,24 @@ function RouteGuard() {
     !isInBoardingSteps
   ) {
     return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
-  } 
-  
+  }
+
   if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
     return <Redirect href="/(tabs)" />;
   }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* <Stack.Screen name="onboarding" /> Does not exist in folder structure */}
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary" options={{ headerShown: false }} />
+      <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
         options={{ presentation: "modal", headerShown: true, title: "Modal" }}
@@ -169,19 +175,21 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <KeyboardProvider>
-        <AuthProvider>
-          <TripsProvider>
-            <StatusBar style="auto" />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardProvider>
+          <AuthProvider>
+            <TripsProvider>
+              <StatusBar style="auto" />
             <ToastManager
               showProgressBar={false}
               style={{ borderRadius: 20, boxShadow: "none" }}
               theme={colorScheme === "dark" ? "dark" : "light"}
             />
             <RouteGuard />
-          </TripsProvider>
-        </AuthProvider>
-      </KeyboardProvider>
+            </TripsProvider>
+          </AuthProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </ThemeProvider>
   );
 }

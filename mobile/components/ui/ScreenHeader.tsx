@@ -8,17 +8,27 @@ interface ScreenHeaderProps {
   title: string;
   subtitle?: string;
   onBack?: () => void;
+  hasBorder?: boolean;
 }
 
 const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   title,
   subtitle,
   onBack,
+  hasBorder = true,
 }) => {
   const { dark } = useTheme();
 
   return (
-    <View className="flex flex-row items-center gap-x-5 py-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary px-[20px]">
+    <View
+      className={`flex flex-row items-center gap-x-5 pt-5 px-[20px] ${
+        hasBorder
+          ? "pb-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary"
+          : "pb-0"
+      }`}
+    >
+
+
       <TouchableOpacity
         onPress={onBack || (() => router.back())}
         className="h-[35px] w-[35px] flex items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary"

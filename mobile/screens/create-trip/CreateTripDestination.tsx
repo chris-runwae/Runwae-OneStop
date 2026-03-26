@@ -1,5 +1,8 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
-import { LiteAPIPlace, usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
+import {
+  LiteAPIPlace,
+  usePlacesAutocomplete,
+} from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -16,6 +19,7 @@ import {
 } from 'react-native';
 import { Toast } from 'toastify-react-native';
 import CreateStepHeader from './CreateStepHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ================================================================
 // Suggested destinations shown when input is empty
@@ -38,8 +42,10 @@ const SUGGESTED_DESTINATIONS = [
 
 export default function CreateTripDestination() {
   const { dark } = useTheme();
-  const { query, setQuery, results, loading, error, clearResults } = usePlacesAutocomplete();
+  const { query, setQuery, results, loading, error, clearResults } =
+    usePlacesAutocomplete();
   const [selectedPlace, setSelectedPlace] = useState<LiteAPIPlace | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!error) return;
@@ -74,14 +80,14 @@ export default function CreateTripDestination() {
     router.push({
       pathname: '/create-trip/days' as any,
       params: {
-        destination_label:    `${selectedPlace.displayName}, ${selectedPlace.formattedAddress}`,
+        destination_label: `${selectedPlace.displayName}, ${selectedPlace.formattedAddress}`,
         destination_place_id: selectedPlace.placeId,
-        destination_address:  selectedPlace.formattedAddress,
+        destination_address: selectedPlace.formattedAddress,
       },
     });
   };
 
-  const showResults  = results.length > 0 && !selectedPlace;
+  const showResults = results.length > 0 && !selectedPlace;
   const showSuggested = !query && !selectedPlace;
 
   return (
@@ -90,26 +96,31 @@ export default function CreateTripDestination() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <CreateStepHeader currentStep={1} totalSteps={3} />
 
         <Text style={[styles.title, { color: dark ? '#ffffff' : '#111827' }]}>
           Where are you headed?
         </Text>
-        <Text style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+        <Text
+          style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
           Search for a city or destination.
         </Text>
 
         {/* Search input */}
-        <View style={[
-          styles.inputWrapper,
-          {
-            backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-            borderColor:     dark ? '#2c2c2e' : '#e5e7eb',
-          },
-        ]}>
-          <Search size={16} strokeWidth={1.5} color={dark ? '#6b7280' : '#9ca3af'} />
+        <View
+          style={[
+            styles.inputWrapper,
+            {
+              backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
+              borderColor: dark ? '#2c2c2e' : '#e5e7eb',
+            },
+          ]}>
+          <Search
+            size={16}
+            strokeWidth={1.5}
+            color={dark ? '#6b7280' : '#9ca3af'}
+          />
           <TextInput
             style={[styles.input, { color: dark ? '#ffffff' : '#111827' }]}
             placeholder="Search destinations…"
@@ -121,8 +132,17 @@ export default function CreateTripDestination() {
             returnKeyType="search"
           />
           {(query.length > 0 || selectedPlace) && (
-            <TouchableOpacity onPress={() => { setQuery(''); clearResults(); setSelectedPlace(null); }}>
-              <X size={16} strokeWidth={1.5} color={dark ? '#6b7280' : '#9ca3af'} />
+            <TouchableOpacity
+              onPress={() => {
+                setQuery('');
+                clearResults();
+                setSelectedPlace(null);
+              }}>
+              <X
+                size={16}
+                strokeWidth={1.5}
+                color={dark ? '#6b7280' : '#9ca3af'}
+              />
             </TouchableOpacity>
           )}
           {loading && <ActivityIndicator size="small" color="#FF1F8C" />}
@@ -130,35 +150,71 @@ export default function CreateTripDestination() {
 
         {/* Selected place pill */}
         {selectedPlace && (
-          <View style={[styles.pill, { backgroundColor: dark ? '#2c2c2e' : '#fdf2f8' }]}>
+          <View
+            style={[
+              styles.pill,
+              { backgroundColor: dark ? '#2c2c2e' : '#fdf2f8' },
+            ]}>
             <MapPin size={14} strokeWidth={1.5} color="#FF1F8C" />
-            <Text style={[styles.pillText, { color: dark ? '#ffffff' : '#111827' }]} numberOfLines={1}>
+            <Text
+              style={[styles.pillText, { color: dark ? '#ffffff' : '#111827' }]}
+              numberOfLines={1}>
               {selectedPlace.displayName}
             </Text>
-            <TouchableOpacity onPress={handleClearSelection} style={styles.pillClose}>
-              <X size={14} strokeWidth={1.5} color={dark ? '#9ca3af' : '#6b7280'} />
+            <TouchableOpacity
+              onPress={handleClearSelection}
+              style={styles.pillClose}>
+              <X
+                size={14}
+                strokeWidth={1.5}
+                color={dark ? '#9ca3af' : '#6b7280'}
+              />
             </TouchableOpacity>
           </View>
         )}
 
         {/* Results list */}
         {showResults && (
-          <View style={[styles.resultsList, { backgroundColor: dark ? '#1c1c1e' : '#ffffff', borderColor: dark ? '#2c2c2e' : '#e5e7eb' }]}>
+          <View
+            style={[
+              styles.resultsList,
+              {
+                backgroundColor: dark ? '#1c1c1e' : '#ffffff',
+                borderColor: dark ? '#2c2c2e' : '#e5e7eb',
+              },
+            ]}>
             {results.map((place, index) => (
               <TouchableOpacity
                 key={place.placeId || index}
                 style={[
                   styles.resultRow,
-                  index < results.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: dark ? '#2c2c2e' : '#f3f4f6' },
+                  index < results.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: dark ? '#2c2c2e' : '#f3f4f6',
+                  },
                 ]}
-                onPress={() => handleSelect(place)}
-              >
-                <MapPin size={15} strokeWidth={1.5} color={dark ? '#6b7280' : '#9ca3af'} style={styles.resultIcon} />
+                onPress={() => handleSelect(place)}>
+                <MapPin
+                  size={15}
+                  strokeWidth={1.5}
+                  color={dark ? '#6b7280' : '#9ca3af'}
+                  style={styles.resultIcon}
+                />
                 <View style={styles.resultTextCol}>
-                  <Text style={[styles.resultPrimary, { color: dark ? '#ffffff' : '#111827' }]} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.resultPrimary,
+                      { color: dark ? '#ffffff' : '#111827' },
+                    ]}
+                    numberOfLines={1}>
                     {place.displayName}
                   </Text>
-                  <Text style={[styles.resultSecondary, { color: dark ? '#6b7280' : '#9ca3af' }]} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.resultSecondary,
+                      { color: dark ? '#6b7280' : '#9ca3af' },
+                    ]}
+                    numberOfLines={1}>
                     {place.formattedAddress}
                   </Text>
                 </View>
@@ -170,17 +226,32 @@ export default function CreateTripDestination() {
         {/* Suggested destinations */}
         {showSuggested && (
           <View style={styles.suggestedSection}>
-            <Text style={[styles.suggestedLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+            <Text
+              style={[
+                styles.suggestedLabel,
+                { color: dark ? '#9ca3af' : '#6b7280' },
+              ]}>
               Popular destinations
             </Text>
             <View style={styles.chipsRow}>
               {SUGGESTED_DESTINATIONS.map((name) => (
                 <TouchableOpacity
                   key={name}
-                  style={[styles.chip, { backgroundColor: dark ? '#1c1c1e' : '#f3f4f6', borderColor: dark ? '#2c2c2e' : '#e5e7eb' }]}
-                  onPress={() => setQuery(name)}
-                >
-                  <Text style={[styles.chipText, { color: dark ? '#d1d5db' : '#374151' }]}>{name}</Text>
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: dark ? '#1c1c1e' : '#f3f4f6',
+                      borderColor: dark ? '#2c2c2e' : '#e5e7eb',
+                    },
+                  ]}
+                  onPress={() => setQuery(name)}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: dark ? '#d1d5db' : '#374151' },
+                    ]}>
+                    {name}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -189,12 +260,21 @@ export default function CreateTripDestination() {
       </ScrollView>
 
       {/* Next button */}
-      <View style={[styles.footer, { borderTopColor: dark ? '#2c2c2e' : '#f3f4f6' }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            borderTopColor: dark ? '#2c2c2e' : '#f3f4f6',
+            marginBottom: insets.bottom + 16,
+          },
+        ]}>
         <TouchableOpacity
-          style={[styles.nextButton, !selectedPlace && styles.nextButtonDisabled]}
+          style={[
+            styles.nextButton,
+            !selectedPlace && styles.nextButtonDisabled,
+          ]}
           onPress={handleNext}
-          disabled={!selectedPlace}
-        >
+          disabled={!selectedPlace}>
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
       </View>

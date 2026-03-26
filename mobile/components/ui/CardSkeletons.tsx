@@ -8,10 +8,36 @@ export const TripCardSkeleton = ({
   fullWidth?: boolean;
 }) => (
   <View
-    className="rounded-2xl overflow-hidden"
-    style={{ width: fullWidth ? "100%" : 360, height: 210 }}
+    className="overflow-hidden rounded-[20px] bg-white p-[13px] dark:bg-dark-seconndary/50"
+    style={{ width: fullWidth ? '100%' : 320 }}
   >
-    <SkeletonBox width={fullWidth ? "100%" : 360} height={210} borderRadius={16} />
+    <View className="h-[138px] w-full overflow-hidden rounded-[13px] border-[3px] border-white dark:border-dark-seconndary">
+      <SkeletonBox width={"100%"} height={"100%"} borderRadius={10} />
+    </View>
+
+    <View className="pt-3">
+      <View className="mb-2">
+        <SkeletonBox width={200} height={20} borderRadius={6} />
+      </View>
+
+      <View className="mb-4 flex-row items-center gap-x-2">
+        <SkeletonBox width={100} height={14} borderRadius={4} />
+        <SkeletonBox width={80} height={14} borderRadius={4} />
+      </View>
+
+      <View className="flex-row items-center justify-between">
+        <SkeletonBox width={160} height={32} borderRadius={10} />
+        <View className="flex-row items-center">
+          <SkeletonBox width={28} height={28} borderRadius={14} />
+          <View className="-ml-3">
+            <SkeletonBox width={28} height={28} borderRadius={14} />
+          </View>
+          <View className="-ml-3">
+            <SkeletonBox width={28} height={28} borderRadius={14} />
+          </View>
+        </View>
+      </View>
+    </View>
   </View>
 );
 
@@ -117,20 +143,20 @@ export const DestinationCardSkeleton = ({
   </View>
 );
 
-export const EventCardSkeleton = () => (
-  <View className="flex-row items-center py-3 border-b border-b-gray-200 dark:border-b-dark-seconndary">
-    <SkeletonBox width={80} height={80} borderRadius={12} />
-    <View className="flex-1 ml-4 justify-center space-y-2">
-      <View className="flex-row justify-between items-start">
-        <SkeletonBox width={150} height={22} borderRadius={4} />
-        <SkeletonBox width={60} height={18} borderRadius={4} />
+export const EventCardSkeleton = ({ index = 0, fullWidth = false }: { index?: number, fullWidth?: boolean }) => {
+  const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';
+  return (
+    <View className={fullWidth ? "" : "mr-3"} style={{ flex: fullWidth ? 1 : undefined, width: fullWidth ? '100%' : 160 }}>
+      <View 
+        className={`overflow-hidden rounded-[15px] bg-white p-1 dark:bg-dark-seconndary/50 ${fullWidth ? 'w-[96%] aspect-[4/4.5] ml-[2%]' : 'h-[145px] w-[128px]'}`}
+        style={[{ transform: [{ rotate: rotation }] }]}
+      >
+        <SkeletonBox width={"100%"} height={"100%"} borderRadius={10} />
       </View>
-      <View className="mt-1">
-        <SkeletonBox width={120} height={14} borderRadius={4} />
-      </View>
-      <View className="mt-2">
-        <SkeletonBox width={100} height={12} borderRadius={4} />
+      <View className="mt-2 flex-col gap-y-2">
+        <SkeletonBox width={fullWidth ? "80%" : 130} height={16} borderRadius={4} />
+        <SkeletonBox width={fullWidth ? "60%" : 90} height={12} borderRadius={4} />
       </View>
     </View>
-  </View>
-);
+  );
+};

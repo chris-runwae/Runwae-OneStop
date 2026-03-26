@@ -1,11 +1,11 @@
-import AddOnsForYou from "@/components/home/AddOnsForYou";
-import HomeHeader from "@/components/home/HomeHeader";
+import UpcomingEvents from "@/components/home/UpcomingEvents";
+import HomeTopSection from "@/components/home/HomeTopSection";
 import ItineraryForYou from "@/components/home/IteneryForYou";
 import UpcomingTrips from "@/components/home/UpcomingTrips";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import WelcomeModal from "@/components/WelcomeModal";
 import {
-  ADD_ONS_FOR_YOU,
+  UPCOMING_EVENTS,
   DESTINATIONS_FOR_YOU,
   ITINERARIES_FOR_YOU,
   UPCOMING_TRIPS,
@@ -46,8 +46,6 @@ export default function HomeScreen() {
 
   return (
     <AppSafeAreaView edges={["top"]}>
-      <HomeHeader user={user} isLoading={authLoading} dark={dark} />
-
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -59,9 +57,10 @@ export default function HomeScreen() {
           />
         }
       >
+        <HomeTopSection user={user} dark={dark} />
         <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
+        <UpcomingEvents data={UPCOMING_EVENTS} title="Featured Events" showSubtitle={false} loading={loading} />
         <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
-        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
         <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
       </ScrollView>
 

@@ -1,91 +1,108 @@
-import { Event } from "@/constants/home.constant";
-import { router } from "expo-router";
-import { MapPin } from "lucide-react-native";
-import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Event } from '@/constants/home.constant';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, Platform, Pressable, Text, View } from 'react-native';
 
 interface EventCardProps {
   event: Event;
-  isLast?: boolean;
+  index?: number;
+  fullWidth?: boolean;
+  inlineEmoji?: boolean;
 }
 
-const EventCard = ({ event, isLast }: EventCardProps) => {
+const getCategoryEmoji = (category: string) => {
+  const cat = category.toLowerCase();
+  if (cat.includes('food') || cat.includes('culinary')) return '🍽️';
+  if (cat.includes('music') || cat.includes('culture') || cat.includes('fest'))
+    return '🎶';
+  if (
+    cat.includes('art') ||
+    cat.includes('exhibition') ||
+    cat.includes('cultural')
+  )
+    return '🌈';
+  if (cat.includes('adventure') || cat.includes('outdoor')) return '🏜️';
+  if (cat.includes('water') || cat.includes('boat') || cat.includes('cruise'))
+    return '⛵';
+  if (cat.includes('sport')) return '🏉';
+  return '✨';
+};
+
+const EventCard = ({ event, index = 0, fullWidth = false, inlineEmoji = false }: EventCardProps) => {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push(`/events/${event.id}` as any);
+  };
+
+  const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';
+  const emoji = getCategoryEmoji(event.category);
+
+  const formattedDate = event.date.split(' 20')[0].split('-')[0].trim();
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={() => router.push(`/events/${event.id}` as any)}
-      className={`flex-row items-center py-3 ${
-        !isLast
-          ? "border-b border-b-gray-200 dark:border-b-dark-seconndary"
-          : ""
-      }`}
-    >
-      <Image
-        source={{ uri: event.image }}
-        className="w-[80px] h-[80px] rounded-l-[12px]"
-        resizeMode="cover"
-      />
+    <Pressable onPress={handlePress} className={fullWidth ? "" : "mr-3"} style={{ flex: fullWidth ? 1 : undefined, width: fullWidth ? '100%' : 160 }}>
+      <View className="relative w-full">
+        <View
+          className={`overflow-hidden rounded-[15px] bg-white dark:bg-dark-seconndary ${fullWidth ? 'w-[96%] aspect-[4/4.5] ml-[2%]' : 'h-[145px] w-[128px]'}`}
+          style={[
+            { transform: [{ rotate: rotation }] },
+            Platform.OS === 'ios'
+              ? {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.5,
+                  shadowRadius: 8,
+                }
+              : { elevation: 3 },
+          ]}>
+          <Image
+            source={{ uri: event.image }}
+            className="h-full w-full rounded-[15px] border-[4px] border-white dark:border-dark-seconndary"
+            resizeMode="cover"
+          />
+        </View>
 
-      {/* Event Info */}
-      <View className="flex-1 ml-4 justify-center">
-        <View className="flex-row justify-between items-start">
-          <Text
-            className="text-lg font-bold text-black dark:text-white flex-1"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
-            {event.title}
-          </Text>
+        {!inlineEmoji && (
           <View
-            className={`px-2 py-0.5 rounded-md border ${
-              event.category === "CULTURAL"
-                ? "bg-fuchsia-100 border-fuchsia-500"
-                : event.category === "FOOD"
-                  ? "bg-indigo-100 border-indigo-500"
-                  : event.category === "SPORT"
-                    ? "bg-sky-100 border-sky-500"
-                    : event.category === "MUSIC FEST"
-                      ? "bg-green-100 border-green-500"
-                      : "bg-gray-100 border-gray-500"
-            }`}
-          >
-            <Text
-              className={`text-[10px] font-bold ${
-                event.category === "CULTURAL"
-                  ? "text-fuchsia-600"
-                  : event.category === "FOOD"
-                    ? "text-indigo-600"
-                    : event.category === "SPORT"
-                      ? "text-sky-600"
-                      : event.category === "MUSIC FEST"
-                        ? "text-green-600"
-                        : "text-gray-600"
-              }`}
-            >
-              {event.category}
-            </Text>
+            className="absolute right-[15px] top-[40%]"
+            style={
+              Platform.OS === 'ios'
+                ? {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                  }
+                : { elevation: 2 }
+            }>
+            <Text className="text-4xl">{emoji}</Text>
           </View>
-        </View>
-
-        <View className="flex-row items-center">
-          <MapPin size={14} color="#9ca3af" />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-            {event.location}
-          </Text>
-        </View>
-
-        <View className="flex-row items-center mt-3">
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
-            {event.date}
-          </Text>
-          <Text className="mx-2 text-gray-300">|</Text>
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
-            {event.time}
-          </Text>
-        </View>
+        )}
       </View>
-    </TouchableOpacity>
+
+      <View className={`mb-1 mt-2 flex-row items-center ${inlineEmoji ? 'justify-between' : ''}`}>
+        <Text
+          className={`leading-tight text-black dark:text-white font-bold flex-1 ${inlineEmoji ? 'text-[14px] mr-2' : 'text-[13px] mr-1'}`}
+          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
+          numberOfLines={1}>
+          {event.title}
+        </Text>
+        {inlineEmoji && <Text className="text-2xl">{emoji}</Text>}
+      </View>
+
+      <View className="flex-row items-center">
+        <Text className="border-r border-gray-300 pr-1.5 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400">
+          {formattedDate}
+        </Text>
+        <Text
+          className="flex-1 pl-1.5 text-xs text-gray-500 dark:text-gray-400"
+          numberOfLines={1}>
+          {event.location.split(',')[0]}
+        </Text>
+      </View>
+    </Pressable>
   );
 };
 
 export default EventCard;
-

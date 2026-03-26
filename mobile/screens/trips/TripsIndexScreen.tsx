@@ -3,21 +3,14 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
-import { TripWithDetails, TripWithEverything } from '@/hooks/useTripActions';
+import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { MapPin } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import TripCard from '@/components/home/TripCard';
-import FlashList from '@shopify/flash-list';
+import { FlashList } from '@shopify/flash-list';
 
 // ================================================================
 // Types & constants
@@ -44,19 +37,19 @@ const DARK_SEC = '#212529';
 // Helpers
 // ================================================================
 
-function isActive(trip: TripWithDetails): boolean {
+function isActive(trip: TripWithEverything): boolean {
   const endDate = trip.trip_details?.end_date;
   if (!endDate) return true;
   return new Date(endDate) >= new Date(new Date().toDateString());
 }
 
-function isPast(trip: TripWithDetails): boolean {
+function isPast(trip: TripWithEverything): boolean {
   const endDate = trip.trip_details?.end_date;
   if (!endDate) return false;
   return new Date(endDate) < new Date(new Date().toDateString());
 }
 
-function isSaved(trip: TripWithDetails): boolean {
+function isSaved(trip: TripWithEverything): boolean {
   return (trip.trip_details as any)?.is_saved === true;
 }
 
@@ -155,6 +148,7 @@ function formatDateRange(
 // ================================================================
 
 export default function TripsIndexScreen() {
+  const router = useRouter();
   const {
     myTrips,
     joinedTrips,
@@ -177,11 +171,11 @@ export default function TripsIndexScreen() {
   const segmentedTrips = useMemo(() => {
     switch (activeSegment) {
       case 'active':
-        return allTrips.filter(isActive);
+        return allTrips.filter((t) => isActive(t as TripWithEverything));
       case 'past':
-        return allTrips.filter(isPast);
+        return allTrips.filter((t) => isPast(t as TripWithEverything));
       case 'saved':
-        return allTrips.filter(isSaved);
+        return allTrips.filter((t) => isSaved(t as TripWithEverything));
     }
   }, [allTrips, activeSegment]);
 
@@ -217,6 +211,60 @@ export default function TripsIndexScreen() {
         : activeSegment === 'saved'
           ? 'Trips you save will appear here for easy planning.'
           : 'Completed trips will show up here as your history.';
+
+  const ListHeaderComponent = () => {
+    if (activeSegment !== 'active') return null;
+
+    return (
+      <View style={styles.filterRow}>
+        <FlashList
+          data={ROLE_FILTERS}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.filterListContent}
+          ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
+          renderItem={({ item: filter }) => {
+            const isSelected = activeRoleFilter === filter.id;
+            return (
+              <TouchableOpacity
+                onPress={() => setActiveRoleFilter(filter.id)}
+                style={[
+                  styles.filterPill,
+                  {
+                    backgroundColor: isSelected
+                      ? PRIMARY
+                      : dark
+                        ? DARK_SEC
+                        : '#ffffff',
+                    borderColor: isSelected
+                      ? PRIMARY
+                      : dark
+                        ? 'rgba(255,255,255,0.1)'
+                        : '#e5e7eb',
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    {
+                      color: isSelected
+                        ? '#ffffff'
+                        : dark
+                          ? '#ffffff'
+                          : '#4b5563',
+                    },
+                  ]}>
+                  {filter.emoji ? `${filter.emoji} ` : ''}
+                  {filter.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
+    );
+  };
 
   return (
     <AppSafeAreaView edges={['top']}>
@@ -273,56 +321,6 @@ export default function TripsIndexScreen() {
         </View>
       </View>
 
-      {/* Role filters — Active tab only */}
-      {activeSegment === 'active' && (
-        <View style={styles.filterRow}>
-          <FlatList
-            data={ROLE_FILTERS}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.filterListContent}
-            renderItem={({ item: filter }) => {
-              const isSelected = activeRoleFilter === filter.id;
-              return (
-                <TouchableOpacity
-                  onPress={() => setActiveRoleFilter(filter.id)}
-                  style={[
-                    styles.filterPill,
-                    {
-                      backgroundColor: isSelected
-                        ? PRIMARY
-                        : dark
-                          ? DARK_SEC
-                          : '#ffffff',
-                      borderColor: isSelected
-                        ? PRIMARY
-                        : dark
-                          ? 'rgba(255,255,255,0.1)'
-                          : '#e5e7eb',
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.filterPillText,
-                      {
-                        color: isSelected
-                          ? '#ffffff'
-                          : dark
-                            ? '#ffffff'
-                            : '#4b5563',
-                      },
-                    ]}>
-                    {filter.emoji ? `${filter.emoji} ` : ''}
-                    {filter.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
-      )}
-
       {/* Content */}
       {isLoading && !refreshing ? (
         <View style={styles.skeletonContainer}>
@@ -331,7 +329,7 @@ export default function TripsIndexScreen() {
           ))}
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filteredTrips}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
@@ -342,8 +340,10 @@ export default function TripsIndexScreen() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           renderItem={({ item }) => (
-            <TripCard trip={item as TripWithEverything} />
+            <TripCard trip={item as TripWithEverything} fullWidth={true} />
           )}
+          ItemSeparatorComponent={() => <View className="h-4" />}
+          ListHeaderComponent={ListHeaderComponent}
           ListEmptyComponent={
             <EmptyTripsState
               title={emptyTitle}
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   headerTitle: {
@@ -381,12 +381,12 @@ const styles = StyleSheet.create({
   // Tab pills
   tabRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     gap: 8,
     paddingBottom: 16,
   },
   tabPill: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
   },
@@ -397,12 +397,8 @@ const styles = StyleSheet.create({
   // Role filters
   filterRow: {
     paddingTop: 16,
-    paddingBottom: 20,
   },
-  filterListContent: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
+  filterListContent: {},
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -417,15 +413,14 @@ const styles = StyleSheet.create({
 
   // Loading skeletons
   skeletonContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     gap: 16,
   },
 
   // List
   listContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 16,
     paddingBottom: 120,
     gap: 12,
   },

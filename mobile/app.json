@@ -12,7 +12,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "io.runwae.app",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:app.runwae.io"]
+      "associatedDomains": [
+        "applinks:app.runwae.io",
+        "applinks:app.runwae.io"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -51,8 +57,47 @@
               "pathPrefix": "/invite"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/trip"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/hotel"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/destination"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/invite"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {

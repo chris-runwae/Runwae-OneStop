@@ -121,8 +121,8 @@ export default function AddPollScreen() {
       textAlign: 'left',
     },
     frameParent: {
-      backgroundColor: '#f8f9fa',
-      borderColor: '#e9ecef',
+      backgroundColor: colors.backgroundColors.subtle,
+      borderColor: colors.borderColors.subtle,
       borderWidth: 1,
       flex: 1,
       padding: 10,
@@ -165,9 +165,9 @@ export default function AddPollScreen() {
       borderRadius: 8,
     },
     button: {
-      backgroundColor: '#ffdde6',
+      backgroundColor: colors.primaryColors.default,
       borderStyle: 'solid',
-      borderColor: '#ffdde6',
+      borderColor: colors.primaryColors.border,
       borderWidth: 1,
       flex: 1,
       flexDirection: 'row',
@@ -183,7 +183,7 @@ export default function AddPollScreen() {
       fontSize: 14,
       lineHeight: 20,
       fontFamily: 'Inter-Regular',
-      color: '#ff2e92',
+      color: colors.white,
       textAlign: 'left',
     },
     inputContainer: {

@@ -52,8 +52,8 @@ export default function AddPostScreen() {
 
   const styles = StyleSheet.create({
     button: {
-      backgroundColor: '#ffdde6',
-      borderColor: '#ffdde6',
+      backgroundColor: colors.primaryColors.default,
+      borderColor: colors.primaryColors.border,
       borderWidth: 1,
       flexDirection: 'row',
       alignItems: 'center',
@@ -65,8 +65,7 @@ export default function AddPostScreen() {
     buttonText: {
       fontSize: 14,
       lineHeight: 20,
-      fontFamily: 'Inter-Regular',
-      color: '#ff2e92',
+      color: colors.white,
     },
     contentInput: {
       fontSize: 15,

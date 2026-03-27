@@ -38,7 +38,7 @@ const ItineraryForYou = ({
 
   return (
     <View
-      className={`mt-10 ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
+      className={`mt-5 ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
       <SectionHeader
         title={title}
         subtitle={subtitle}

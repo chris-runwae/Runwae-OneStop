@@ -28,7 +28,12 @@ const getCategoryEmoji = (category: string) => {
   return '✨';
 };
 
-const EventCard = ({ event, index = 0, fullWidth = false, inlineEmoji = false }: EventCardProps) => {
+const EventCard = ({
+  event,
+  index = 0,
+  fullWidth = false,
+  inlineEmoji = false,
+}: EventCardProps) => {
   const router = useRouter();
 
   const handlePress = () => {
@@ -41,10 +46,16 @@ const EventCard = ({ event, index = 0, fullWidth = false, inlineEmoji = false }:
   const formattedDate = event.date.split(' 20')[0].split('-')[0].trim();
 
   return (
-    <Pressable onPress={handlePress} className={fullWidth ? "" : "mr-3"} style={{ flex: fullWidth ? 1 : undefined, width: fullWidth ? '100%' : 160 }}>
+    <Pressable
+      onPress={handlePress}
+      className={fullWidth ? '' : 'mr-3'}
+      style={{
+        flex: fullWidth ? 1 : undefined,
+        width: fullWidth ? '100%' : 160,
+      }}>
       <View className="relative w-full">
         <View
-          className={`overflow-hidden rounded-[15px] bg-white dark:bg-dark-seconndary ${fullWidth ? 'w-[96%] aspect-[4/4.5] ml-[2%]' : 'h-[145px] w-[128px]'}`}
+          className={`overflow-hidden rounded-[15px] bg-white dark:bg-dark-seconndary ${fullWidth ? 'ml-[2%] aspect-[4/4.5] w-[96%]' : 'h-[145px] w-[128px]'}`}
           style={[
             { transform: [{ rotate: rotation }] },
             Platform.OS === 'ios'
@@ -81,14 +92,14 @@ const EventCard = ({ event, index = 0, fullWidth = false, inlineEmoji = false }:
         )}
       </View>
 
-      <View className={`mb-1 mt-2 flex-row items-center ${inlineEmoji ? 'justify-between' : ''}`}>
+      <View className={`mb-1 mt-2 flex-row items-center`}>
         <Text
-          className={`leading-tight text-black dark:text-white font-bold flex-1 ${inlineEmoji ? 'text-[14px] mr-2' : 'text-[13px] mr-1'}`}
+          className={`flex-1 text-[14px] font-bold leading-tight text-black dark:text-white`}
           style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
           numberOfLines={1}>
           {event.title}
         </Text>
-        {inlineEmoji && <Text className="text-2xl">{emoji}</Text>}
+        {inlineEmoji && <Text className="text-[14px]">{emoji}</Text>}
       </View>
 
       <View className="flex-row items-center">

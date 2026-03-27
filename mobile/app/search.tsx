@@ -1,6 +1,6 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import SkeletonBox from '@/components/ui/SkeletonBox';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getLinkPreview } from 'link-preview-js';
 import {
@@ -119,7 +119,7 @@ export default function SearchScreen() {
   const renderSearchBar = (
     placeholderText: string = 'https://www.youtube.com/watch...'
   ) => (
-    <View className="relative z-50">
+    <Animated.View className="relative z-50">
       <View
         className="h-[54px] flex-row items-center gap-x-3 rounded-full border border-gray-100 bg-white px-4 dark:border-dark-seconndary dark:bg-dark-seconndary"
         style={shadowStyles}>
@@ -225,16 +225,17 @@ export default function SearchScreen() {
           </Pressable>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 
   return (
     <AppSafeAreaView
       edges={['top']}
       className="dark:bg-dark-background flex-1 bg-[#F8F9FA]">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
+      <Animated.View entering={FadeInRight.duration(300)} exiting={FadeOutLeft.duration(300)} className="flex-1">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1">
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}>
@@ -463,6 +464,7 @@ export default function SearchScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </AppSafeAreaView>
+    </Animated.View>
+  </AppSafeAreaView>
   );
 }

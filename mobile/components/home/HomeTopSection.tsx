@@ -1,9 +1,9 @@
+import CategoryItem from '@/components/ui/CategoryItem';
 import { useRouter } from 'expo-router';
 import { getLinkPreview } from 'link-preview-js';
 import { MoveRight, Search, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
-import CategoryItem from '@/components/ui/CategoryItem';
 
 interface HomeTopSectionProps {
   user: any;
@@ -69,17 +69,23 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
         <CategoryItem
           imageSrc={require('@/assets/images/plane.png')}
           label="Flights"
-          onPress={() => router.push({ pathname: '/search', params: { tab: 'flights' } })}
+          onPress={() =>
+            router.push({ pathname: '/search', params: { tab: 'flights' } })
+          }
         />
         <CategoryItem
           imageSrc={require('@/assets/images/house.png')}
           label="Stays"
-          onPress={() => router.push({ pathname: '/search', params: { tab: 'stays' } })}
+          onPress={() =>
+            router.push({ pathname: '/search', params: { tab: 'stays' } })
+          }
         />
         <CategoryItem
           imageSrc={require('@/assets/images/map.png')}
           label="Experiences"
-          onPress={() => router.push({ pathname: '/search', params: { tab: 'experiences' } })}
+          onPress={() =>
+            router.push({ pathname: '/search', params: { tab: 'experiences' } })
+          }
         />
       </View>
 

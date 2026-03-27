@@ -31,11 +31,11 @@ const AddOnCard = ({ item, index = 0, fullWidth = false }: AddOnCardProps) => {
       onPress={handlePress}
       className={`mr-4 bg-white/0`}
       style={{ width: fullWidth ? '100%' : 300 }}>
-      <View className="relative mb-3 h-[180px] w-full">
+      <View className="relative mb-3 h-[180px] w-full rounded-[10px] bg-gray-100 dark:bg-dark-seconndary/50">
         <View className="h-full w-full overflow-hidden rounded-[10px]">
           <Image
             source={{ uri: item.image }}
-            className="h-full w-full rounded-[16px]"
+            className="h-full w-full rounded-[10px]"
             resizeMode="cover"
           />
         </View>

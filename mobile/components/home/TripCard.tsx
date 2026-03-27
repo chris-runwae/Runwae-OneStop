@@ -12,7 +12,7 @@ interface TripCardProps {
 const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   return (
     <Pressable
-      className="overflow-hidden rounded-[20px] bg-white p-[13px] dark:bg-dark-seconndary/50"
+      className="overflow-hidden rounded-[20px] bg-white p-[13px] dark:bg-dark-seconndary"
       onPress={() => {}}
       style={[
         { width: fullWidth ? '100%' : 320 },

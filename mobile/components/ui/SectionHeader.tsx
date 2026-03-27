@@ -31,7 +31,7 @@ const SectionHeader = ({
       {onPress && (
         <TouchableOpacity
           onPress={onPress}
-          className="h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
+          className="h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
           <MoveRight
             size={14}
             strokeWidth={2}

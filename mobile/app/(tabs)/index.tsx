@@ -1,12 +1,11 @@
+import AddOnsForYou from '@/components/home/AddOnsForYou';
 import HomeTopSection from '@/components/home/HomeTopSection';
-import ItineraryForYou from '@/components/home/IteneryForYou';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
 import {
-  DESTINATIONS_FOR_YOU,
-  ITINERARIES_FOR_YOU,
+  ADD_ONS_FOR_YOU,
   UPCOMING_EVENTS,
   UPCOMING_TRIPS,
 } from '@/constants/home.constant';
@@ -14,8 +13,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
-
-import DestinationsForYou from '@/components/home/DestinationsForYou';
 
 export default function HomeScreen() {
   const {
@@ -64,8 +61,8 @@ export default function HomeScreen() {
           showSubtitle={false}
           loading={loading}
         />
-        <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
-        <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
+        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
+        {/* <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} /> */}
       </ScrollView>
 
       <WelcomeModal

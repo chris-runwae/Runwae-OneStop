@@ -78,6 +78,7 @@ function RouteGuard() {
     "experience",
     "create-trip",
     "events",
+    "search",
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -106,6 +107,7 @@ function RouteGuard() {
     "destination",
     "create-trip",
     "events",
+    "search",
   ].includes(currentSegment as any);
 
   // Redirection Logic
@@ -136,6 +138,7 @@ function RouteGuard() {
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen

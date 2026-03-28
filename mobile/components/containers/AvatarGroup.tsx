@@ -8,11 +8,12 @@ import {
   LayoutAnimation,
   UIManager,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { GroupMember } from '@/hooks/useTripActions';
-import { COLORS, textStyles } from '@/constants';
+import { Colors, COLORS, textStyles } from '@/constants';
 
 // define gradient tuples
 const GRADIENTS = [
@@ -34,7 +35,7 @@ const GRADIENTS = [
 type GradientTuple = (typeof GRADIENTS)[number];
 
 // deterministic pick
-function getRandomGradient(seed: string): GradientTuple {
+export function getRandomGradient(seed: string): GradientTuple {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = seed.charCodeAt(i) + ((hash << 5) - hash);
@@ -65,12 +66,35 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
   overlap = 12,
   onPressAvatar,
 }) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [members]);
 
   const visible = members.slice(0, maxVisible);
   const remaining = members.length - maxVisible;
+
+  const styles = StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      position: 'relative',
+    },
+    avatarWrapper: {
+      position: 'absolute',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.white,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    textStyle: {
+      ...textStyles.regular_12,
+      fontSize: size > 20 ? 12 : 10,
+      color: COLORS.white.base,
+    },
+  });
 
   return (
     <View style={[styles.container, { height: size }]}>
@@ -144,21 +168,3 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  avatarWrapper: {
-    position: 'absolute',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#fff',
-  },
-  textStyle: {
-    fontWeight: 'bold',
-    ...textStyles.regular_12,
-    color: COLORS.white.base,
-  },
-});

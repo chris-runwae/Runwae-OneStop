@@ -13,7 +13,8 @@ import { Plus, FileText } from 'lucide-react-native';
 
 import usePostActions from '@/hooks/usePostActions';
 import PostItem from './PostItem';
-import { Spacer, Text } from '@/components';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { textStyles, Colors } from '@/constants';
 
 export default function PostsContainer({ groupId }: { groupId: string }) {

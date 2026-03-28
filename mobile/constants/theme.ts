@@ -10,6 +10,8 @@ const ios = Platform.OS === 'ios';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+const primaryColor = '#FF2E92';
+
 export const COLORS = {
   black: {
     default: '#000000',
@@ -93,7 +95,7 @@ export const Colors = {
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    tabIconSelected: '#FF2E92',
     primary: '#FF2E92',
     borderDefault: '#F8F9FA',
     textBody: '#212529',
@@ -142,7 +144,8 @@ export const Colors = {
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    // tabIconSelected: addOpacity(primaryColor, 0.9),
+    tabIconSelected: primaryColor,
     primary: '#FF2E92',
     borderDefault: '#E9ECEF',
     textBody: '#6C757D',

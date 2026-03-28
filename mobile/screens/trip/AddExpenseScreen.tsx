@@ -7,9 +7,10 @@ import {
   ScrollView,
   ActionSheetIOS,
   Alert,
-  Platform,
+  Platform, 
+  TextStyle,
   useColorScheme,
-  Switch,
+  ViewStyle,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,7 +30,7 @@ import {
 } from 'lucide-react-native';
 
 import { Text, Spacer, ProfileAvatar } from '@/components';
-import { Colors, textStyles } from '@/constants';
+import { addOpacity, Colors, textStyles } from '@/constants';
 import useExpenseActions, {
   DEFAULT_CATEGORIES,
   SplitType,
@@ -45,12 +46,12 @@ const CURRENCIES = [
 ];
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  flight: <Plane size={14} />,
-  food: <Utensils size={14} />,
-  drinks: <Wine size={14} />,
-  stays: <BedDouble size={14} />,
-  activity: <Zap size={14} />,
-  other: <Tag size={14} />,
+  flight: <Plane size={14} color={'#ffffff'} />,
+  food: <Utensils size={14} color={'#ffffff'} />,
+  drinks: <Wine size={14} color={'#ffffff'} />,
+  stays: <BedDouble size={14} color={'#ffffff'} />,
+  activity: <Zap size={14} color={'#ffffff'} />,
+  other: <Tag size={14} color={'#ffffff'} />,
 };
 
 export default function AddExpenseScreen() {
@@ -62,7 +63,6 @@ export default function AddExpenseScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const isDark = colorScheme === 'dark';
 
   const { user } = useAuth();
   const {
@@ -275,7 +275,7 @@ export default function AddExpenseScreen() {
     splitType === 'custom' && Math.abs(customTotal - parsedAmount) <= 0.01;
 
   // ── Styles ─────────────────────────────────────────────────────
-  const s = StyleSheet.create({
+  const styles = StyleSheet.create({
     input: {
       fontSize: 14,
       paddingVertical: 12,
@@ -297,26 +297,6 @@ export default function AddExpenseScreen() {
       color: colors.textColors.default,
       marginBottom: 10,
     },
-    categoryPill: (active: boolean) => ({
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      gap: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
-      borderRadius: 20,
-      borderWidth: 1.5,
-      borderColor: active ? '#FF1F8C' : colors.borderColors.subtle,
-      backgroundColor: active
-        ? 'rgba(255,31,140,0.08)'
-        : colors.backgroundColors.subtle,
-    }),
-    splitTab: (active: boolean) => ({
-      flex: 1,
-      paddingVertical: 9,
-      alignItems: 'center' as const,
-      borderRadius: 8,
-      backgroundColor: active ? '#FF1F8C' : 'transparent',
-    }),
     memberRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
@@ -324,8 +304,8 @@ export default function AddExpenseScreen() {
       gap: 10,
     },
     submitButton: {
-      backgroundColor: '#ffdde6',
-      borderColor: '#ffdde6',
+      backgroundColor: colors.primaryColors.default,
+      borderColor: colors.primaryColors.border,
       borderWidth: 1,
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
@@ -336,10 +316,32 @@ export default function AddExpenseScreen() {
     },
     submitText: {
       fontSize: 14,
-      fontFamily: 'Inter-Regular',
-      color: '#ff2e92',
+      color: colors.white,
     },
   });
+
+  const dynamicStyles = {
+    categoryPill: (active: boolean): ViewStyle => ({
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: active ? colors.primaryColors.default : colors.borderColors.subtle,
+      backgroundColor: active
+        ? addOpacity(colors.primaryColors.default, 0.8)
+        : colors.backgroundColors.subtle,
+    }),
+    splitTab: (active: boolean) => ({
+      flex: 1,
+      paddingVertical: 9,
+      alignItems: 'center' as const,
+      borderRadius: 8,
+      backgroundColor: active ? '#FF1F8C' : 'transparent',
+    }),
+  }
 
   return (
     <ScrollView
@@ -382,9 +384,9 @@ export default function AddExpenseScreen() {
       <Spacer size={24} vertical />
 
       {/* Title */}
-      <Text style={s.label}>Title</Text>
+      <Text style={styles.label}>Title</Text>
       <TextInput
-        style={s.input}
+        style={styles.input}
         placeholder="e.g. Dinner at La Piazza"
         placeholderTextColor={colors.textColors.subtle}
         value={title}
@@ -394,10 +396,10 @@ export default function AddExpenseScreen() {
       <Spacer size={16} vertical />
 
       {/* Amount + Currency */}
-      <Text style={s.label}>Amount</Text>
+      <Text style={styles.label}>Amount</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput
-          style={[s.input, { flex: 1 }]}
+          style={[styles.input, { flex: 1 }]}
           placeholder="0.00"
           placeholderTextColor={colors.textColors.subtle}
           keyboardType="decimal-pad"
@@ -407,7 +409,7 @@ export default function AddExpenseScreen() {
         <Pressable
           onPress={handleCurrencyPress}
           style={[
-            s.input,
+            styles.input,
             {
               minWidth: 70,
               alignItems: 'center',
@@ -428,7 +430,7 @@ export default function AddExpenseScreen() {
       <Spacer size={16} vertical />
 
       {/* Category */}
-      <Text style={s.label}>Category</Text>
+      <Text style={styles.label}>Category</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -440,10 +442,10 @@ export default function AddExpenseScreen() {
             <Pressable
               key={cat}
               onPress={() => handleCategoryPress(cat)}
-              style={s.categoryPill(isActive)}>
+              style={dynamicStyles.categoryPill(isActive)}>
               <View style={{ opacity: isActive ? 1 : 0.5 }}>
                 {cat === 'custom' ? (
-                  <Plus size={14} color={isActive ? '#FF1F8C' : colors.textColors.default} />
+                  <Plus size={14} color={colors.white} />
                 ) : (
                   CATEGORY_ICONS[cat] ?? <Tag size={14} />
                 )}
@@ -452,7 +454,7 @@ export default function AddExpenseScreen() {
                 style={{
                   fontSize: 12,
                   fontWeight: '500',
-                  color: isActive ? '#FF1F8C' : colors.textColors.default,
+                  color: colors.white,
                 }}>
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </Text>
@@ -464,7 +466,7 @@ export default function AddExpenseScreen() {
         <>
           <Spacer size={8} vertical />
           <TextInput
-            style={s.input}
+            style={styles.input}
             placeholder="Custom category name"
             placeholderTextColor={colors.textColors.subtle}
             value={customCategory}
@@ -477,11 +479,11 @@ export default function AddExpenseScreen() {
       <Spacer size={16} vertical />
 
       {/* Date */}
-      <Text style={s.label}>Date</Text>
+      <Text style={styles.label}>Date</Text>
       <Pressable
         onPress={() => setShowDatePicker(true)}
         style={[
-          s.input,
+          styles.input,
           { flexDirection: 'row', alignItems: 'center', gap: 8 },
         ]}>
         <CalendarDays size={16} color={colors.textColors.subtle} />
@@ -508,9 +510,9 @@ export default function AddExpenseScreen() {
       <Spacer size={16} vertical />
 
       {/* Description */}
-      <Text style={s.label}>Description (optional)</Text>
+      <Text style={styles.label}>Description (optional)</Text>
       <TextInput
-        style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
+        style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
         placeholder="Add any notes..."
         placeholderTextColor={colors.textColors.subtle}
         multiline
@@ -528,7 +530,7 @@ export default function AddExpenseScreen() {
           alignItems: 'center',
           marginBottom: 10,
         }}>
-        <Text style={s.sectionHeading}>Split with</Text>
+        <Text style={styles.sectionHeading}>Split with</Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable onPress={selectAll}>
             <Text style={{ fontSize: 13, color: '#FF1F8C' }}>All</Text>
@@ -550,7 +552,7 @@ export default function AddExpenseScreen() {
           <Pressable
             key={member.user_id}
             onPress={() => toggleMember(member.user_id)}
-            style={s.memberRow}>
+            style={styles.memberRow}>
             <ProfileAvatar name={name} imageUrl={avatarUrl} />
             <Text
               style={{
@@ -585,7 +587,7 @@ export default function AddExpenseScreen() {
       {/* Split Type */}
       {selectedMemberIds.size > 0 && (
         <>
-          <Text style={s.sectionHeading}>Split type</Text>
+          <Text style={styles.sectionHeading}>Split type</Text>
           <View
             style={{
               flexDirection: 'row',
@@ -598,7 +600,7 @@ export default function AddExpenseScreen() {
               <Pressable
                 key={type}
                 onPress={() => setSplitType(type)}
-                style={s.splitTab(splitType === type)}>
+                style={dynamicStyles.splitTab(splitType === type)}>
                 <Text
                   style={{
                     fontSize: 13,
@@ -675,7 +677,7 @@ export default function AddExpenseScreen() {
                     </Pressable>
                     <TextInput
                       style={[
-                        s.input,
+                        styles.input,
                         { width: 80, textAlign: 'center', paddingVertical: 8 },
                       ]}
                       keyboardType="decimal-pad"
@@ -758,11 +760,11 @@ export default function AddExpenseScreen() {
       <Pressable
         onPress={handleSubmit}
         disabled={isLoading}
-        style={s.submitButton}>
+        style={styles.submitButton}>
         {isLoading ? (
           <ActivityIndicator size={24} color={colors.textColors.default} />
         ) : (
-          <Text style={s.submitText}>
+          <Text style={styles.submitText}>
             {isEditMode ? 'Update Expense' : 'Add Expense'}
           </Text>
         )}

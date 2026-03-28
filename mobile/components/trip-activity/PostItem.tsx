@@ -11,7 +11,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { MoreVertical } from 'lucide-react-native';
 import { router } from 'expo-router';
 
-import { ProfileAvatar, Spacer, Text } from '@/components';
+import ProfileAvatar from '@/components/ui/ProfileAvatar';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { Colors, textStyles } from '@/constants';
 import { Post } from '@/hooks/usePostActions';
 import { useAuth } from '@/hooks/useAuth';

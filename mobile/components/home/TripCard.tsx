@@ -1,90 +1,90 @@
-import { Trip } from '@/constants/home.constant';
-import { FileText, Users } from 'lucide-react-native';
 import React from 'react';
-import { Image, Platform, Pressable, Text, View } from 'react-native';
-import AvatarGroup from './AvatarGroup';
+import { ImageBackground, Pressable, View, useColorScheme } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { TripWithEverything } from '@/hooks/useTripActions';
+import { AvatarGroup } from '../containers/AvatarGroup';
+import Text from '../ui/Text';
+import Spacer from '../utils/Spacer';
+import { Colors, textStyles } from '@/constants/theme';
+import { formatDateRange } from '@/utils/date';
 
 interface TripCardProps {
-  trip: Trip;
+  trip: TripWithEverything;
   fullWidth?: boolean;
 }
 
 const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme ?? 'light'];
+  const router = useRouter();
+
+  const visibilityText =
+    trip.trip_details?.visibility === 'public' ? 'Public' : 'Private';
+
   return (
     <Pressable
-      className="overflow-hidden rounded-[20px] bg-white p-[13px] dark:bg-dark-seconndary"
-      onPress={() => {}}
-      style={[
-        { width: fullWidth ? '100%' : 320 },
-        Platform.OS === 'ios'
-          ? {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.15,
-              shadowRadius: 20,
-            }
-          : { elevation: 12 },
-      ]}>
-      <View className="h-[138px] w-full overflow-hidden rounded-[13px] border-[3px] border-white dark:border-dark-seconndary">
-        <Image
-          source={{ uri: trip.image }}
-          className="h-full w-full"
-          resizeMode="cover"
-        />
-      </View>
-
-      <View className="pt-3">
-        <Text
-          className="mb-1 text-lg font-extrabold text-black dark:text-white"
-          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
-          numberOfLines={1}>
-          {trip.title}
-        </Text>
-
-        <View className="mb-4 flex-row items-center">
-          <View className="flex-row items-center border-r border-gray-200 pr-2 dark:border-gray-700">
-            <Text className="mr-1 text-xs text-gray-500">📍</Text>
-            <Text className="text-xs font-medium text-gray-500">
-              {trip.location}
-            </Text>
-          </View>
-          <View className="flex-row items-center pl-2">
-            <Text className="mr-1 text-xs text-gray-500">⏳</Text>
-            <Text className="text-xs font-medium text-gray-500">
-              {trip.duration} to go!
-            </Text>
-          </View>
-        </View>
-
-        {/* Bottom Row: Pills & Avatars */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center rounded-[10px] border border-pink-200 bg-pink-50/80 px-2.5 py-1.5 dark:border-pink-900/50 dark:bg-pink-900/20">
-            <View className="flex-row items-center">
-              <Users size={14} color="#ec4899" strokeWidth={2.5} />
-              <Text className="ml-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-                {trip.members.length + trip.extraMembers} people
+      className="overflow-hidden rounded-2xl"
+      onPress={() => {
+        router.push(`/(tabs)/(trips)/${trip.id}`);
+      }}
+      style={{ width: fullWidth ? '100%' : 360, height: 210 }}>
+      <ImageBackground
+        source={{ uri: trip.cover_image_url ?? undefined }}
+        className="flex-1"
+        resizeMode="cover">
+        <View
+          className="flex-1 justify-between p-3"
+          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          {/* Role badge */}
+          <View className="flex-row justify-end">
+            <View className="rounded-full bg-[#000000A6] px-3 py-1 dark:bg-dark-seconndary">
+              <Text style={{ ...textStyles.textBody12, color: colors.white }}>
+                {visibilityText}
               </Text>
-            </View>
-
-            <View className="mx-2 h-3 w-[1px] bg-gray-300 dark:bg-gray-600" />
-
-            <View className="flex-row items-center">
-              <FileText size={14} color="#ec4899" strokeWidth={2.5} />
-              <Text className="ml-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-                {trip.items} items booked
-              </Text>
+              {/* TODO: Add role */}
             </View>
           </View>
 
-          <View className="ml-2">
-            <AvatarGroup
-              members={trip.members}
-              extraMembers={trip.extraMembers}
-              maxDisplay={3}
-            />
+          {/* Bottom info */}
+          <View>
+            <View className="flex-row items-end">
+              <View className="flex-1">
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    // flex: 1,
+                    // justifyContent: 'space-between',
+                    gap: 8,
+                  }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      ...textStyles.textHeading20,
+                      color: colors.white,
+                      flex: 0.8, // takes remaining space, won't push AvatarGroup out
+                    }}>
+                    {trip.name}
+                  </Text>
+                  <AvatarGroup members={trip.group_members || []} size={20} />
+                </View>
+                <Text style={{ ...textStyles.textBody12, color: colors.white }}>
+                  📍 {trip.destination_label}
+                </Text>
+              </View>
+            </View>
+
+            <Spacer size={4} vertical />
+            <Text style={{ ...textStyles.textBody12, color: colors.white }}>
+              {formatDateRange(
+                trip.trip_details?.start_date ?? '',
+                trip.trip_details?.end_date ?? ''
+              )}
+            </Text>
           </View>
         </View>
-      </View>
+      </ImageBackground>
     </Pressable>
   );
 };

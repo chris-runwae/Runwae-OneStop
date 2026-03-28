@@ -19,7 +19,11 @@ import * as Haptics from 'expo-haptics';
 // import AnnouncementsList from './announcements/AnnouncementsList';
 
 import { Colors, textStyles } from '@/constants';
-import { ExpensesContainer, PollsContainer, PostsContainer, Spacer, Text } from '@/components';
+import ExpensesContainer from '@/components/trip-activity/ExpensesContainer';
+import PollsContainer from '@/components/trip-activity/PollsContainer';
+import PostsContainer from '@/components/trip-activity/PostsContainer';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { TripWithEverything } from '@/hooks/useTripActions';
 
 type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';

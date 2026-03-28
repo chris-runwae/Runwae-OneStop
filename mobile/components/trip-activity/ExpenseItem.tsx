@@ -24,7 +24,9 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 
-import { ProfileAvatar, Spacer, Text } from '@/components';
+import ProfileAvatar from '@/components/ui/ProfileAvatar';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
 import { Colors, textStyles } from '@/constants';
 import { Expense, ExpenseParticipant } from '@/hooks/useExpenseActions';
 import { useAuth } from '@/hooks/useAuth';

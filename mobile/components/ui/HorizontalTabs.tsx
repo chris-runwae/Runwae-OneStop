@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { textStyles } from '@/constants';
-import { Text } from '@/components';
+import Text from '@/components/ui/Text';
 
 type Tab = {
   id: string;

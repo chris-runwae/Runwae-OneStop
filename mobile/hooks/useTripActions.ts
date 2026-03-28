@@ -29,54 +29,54 @@ import { supabase } from '@/utils/supabase/client';
 // ================================================================
 
 export type GroupMemberRole = 'member' | 'admin' | 'owner';
-export type TripVisibility  = 'private' | 'invite_only' | 'public';
+export type TripVisibility = 'private' | 'invite_only' | 'public';
 
 // ================================================================
 // Row types (match DB schema exactly, including pending columns)
 // ================================================================
 
 export interface Trip {
-  id:                    string;
-  type:                  'trip';
-  name:                  string;
-  description:           string | null;
-  created_by:            string;
-  group_id:               string | null;  // self-ref: parent trip-group
+  id: string;
+  type: 'trip';
+  name: string;
+  description: string | null;
+  created_by: string;
+  group_id: string | null; // self-ref: parent trip-group
   // Pending columns (see SCHEMA NOTES above):
-  destination_label:     string | null;
-  destination_place_id:  string | null;
-  destination_address:   string | null;
-  created_at:            string;
-  updated_at:            string;
-  cover_image_url:       string | null;
+  destination_label: string | null;
+  destination_place_id: string | null;
+  destination_address: string | null;
+  created_at: string;
+  updated_at: string;
+  cover_image_url: string | null;
 }
 
 export interface TripDetails {
-  id:              string;
-  group_id:         string;
-  budget:          number | null;
-  currency:        string;
-  notes:           string | null;
+  id: string;
+  group_id: string;
+  budget: number | null;
+  currency: string;
+  notes: string | null;
   cover_image_url: string | null;
-  visibility:      TripVisibility;
+  visibility: TripVisibility;
   // Pending columns (see SCHEMA NOTES above):
-  start_date:      string | null;
-  end_date:        string | null;
-  created_at:      string;
-  updated_at:      string;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MemberProfile {
-  id:         string;
-  full_name:  string | null;
+  id: string;
+  full_name: string | null;
   avatar_url: string | null;
 }
 
 export interface GroupMember {
-  id:        string;
-  group_id:  string;
-  user_id:   string;
-  role:      GroupMemberRole;
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: GroupMemberRole;
   joined_at: string;
   profiles?: MemberProfile | null;
 }
@@ -98,30 +98,30 @@ export interface TripWithEverything extends TripWithDetails {
 // ================================================================
 
 export interface CreateTripInput {
-  name:         string;
+  name: string;
   description?: string;
 }
 
 export interface UpdateTripInput {
-  name?:        string;
+  name?: string;
   description?: string;
   cover_image_url?: string | null;
 }
 
 export interface UpdateTripDetailsInput {
-  start_date?:       string | null;
-  end_date?:         string | null;
-  budget?:           number | null;
-  currency?:         string;
-  notes?:            string | null;
-  cover_image_url?:  string | null;
-  visibility?:       TripVisibility;
+  start_date?: string | null;
+  end_date?: string | null;
+  budget?: number | null;
+  currency?: string;
+  notes?: string | null;
+  cover_image_url?: string | null;
+  visibility?: TripVisibility;
 }
 
 export interface UpdateDestinationInput {
-  destination_label:     string;
+  destination_label: string;
   destination_place_id?: string;
-  destination_address?:  string;
+  destination_address?: string;
 }
 
 // ================================================================
@@ -129,7 +129,7 @@ export interface UpdateDestinationInput {
 // ================================================================
 
 export interface ActionResult<T> {
-  data:  T | null;
+  data: T | null;
   error: string | null;
 }
 
@@ -145,16 +145,15 @@ export interface ActionResult<T> {
 
 export async function createTrip(
   userId: string,
-  input: CreateTripInput,
+  input: CreateTripInput
 ): Promise<ActionResult<TripWithDetails>> {
-
   const { data: group, error: groupError } = await supabase
     .from('groups')
     .insert({
-      type:        'trip',
-      name:        input.name,
+      type: 'trip',
+      name: input.name,
       description: input.description ?? null,
-      created_by:  userId,
+      created_by: userId,
     })
     .select('*, trip_details(*)')
     .single();
@@ -174,17 +173,19 @@ export async function createTrip(
 // ================================================================
 
 export async function fetchMyTrips(
-  userId: string,
-): Promise<ActionResult<TripWithDetails[]>> {
+  userId: string
+): Promise<ActionResult<TripWithEverything[]>> {
   const { data, error } = await supabase
     .from('groups')
-    .select('*, trip_details(*)')
+    .select(
+      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
+    )
     .eq('type', 'trip')
     .eq('created_by', userId)
     .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };
-  return { data: (data ?? []) as TripWithDetails[], error: null };
+  return { data: (data ?? []) as TripWithEverything[], error: null };
 }
 
 // ================================================================
@@ -196,18 +197,20 @@ export async function fetchMyTrips(
 // ================================================================
 
 export async function fetchJoinedTrips(
-  userId: string,
-): Promise<ActionResult<TripWithDetails[]>> {
+  userId: string
+): Promise<ActionResult<TripWithEverything[]>> {
   const { data, error } = await supabase
     .from('group_members')
-    .select('groups!inner(*, trip_details(*))')
+    .select(
+      'groups!inner(*, trip_details(*)), group_members(*, profiles(id, full_name, avatar_url))'
+    )
     .eq('user_id', userId)
     .eq('groups.type', 'trip');
 
   if (error) return { data: null, error: error.message };
 
   const trips = (data ?? [])
-    .map((row: any) => row.groups as TripWithDetails)
+    .map((row: any) => row.groups as TripWithEverything)
     .filter((trip) => trip.created_by !== userId);
 
   return { data: trips, error: null };
@@ -220,11 +223,13 @@ export async function fetchJoinedTrips(
 // ================================================================
 
 export async function fetchTripById(
-  groupId: string,
+  groupId: string
 ): Promise<ActionResult<TripWithEverything>> {
   const { data, error } = await supabase
     .from('groups')
-    .select('*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))')
+    .select(
+      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
+    )
     .eq('id', groupId)
     .single();
 
@@ -240,7 +245,7 @@ export async function fetchTripById(
 
 export async function updateTrip(
   groupId: string,
-  input: UpdateTripInput,
+  input: UpdateTripInput
 ): Promise<ActionResult<Trip>> {
   const { data, error } = await supabase
     .from('groups')
@@ -265,7 +270,7 @@ export async function updateTrip(
 
 export async function updateTripDetails(
   groupId: string,
-  input: UpdateTripDetailsInput,
+  input: UpdateTripDetailsInput
 ): Promise<ActionResult<TripDetails>> {
   const { data, error } = await supabase
     .from('trip_details')
@@ -290,15 +295,15 @@ export async function updateTripDetails(
 
 export async function updateDestination(
   groupId: string,
-  place: UpdateDestinationInput,
+  place: UpdateDestinationInput
 ): Promise<ActionResult<Trip>> {
   const { data, error } = await supabase
     .from('groups')
     .update({
-      destination_label:    place.destination_label,
+      destination_label: place.destination_label,
       destination_place_id: place.destination_place_id ?? null,
-      destination_address:  place.destination_address  ?? null,
-      updated_at:           new Date().toISOString(),
+      destination_address: place.destination_address ?? null,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', groupId)
     .select()
@@ -316,13 +321,8 @@ export async function updateDestination(
 // CASCADE.
 // ================================================================
 
-export async function deleteTrip(
-  groupId: string,
-): Promise<ActionResult<null>> {
-  const { error } = await supabase
-    .from('groups')
-    .delete()
-    .eq('id', groupId);
+export async function deleteTrip(groupId: string): Promise<ActionResult<null>> {
+  const { error } = await supabase.from('groups').delete().eq('id', groupId);
 
   if (error) return { data: null, error: error.message };
   return { data: null, error: null };
@@ -337,7 +337,7 @@ export async function deleteTrip(
 
 export async function leaveTrip(
   groupId: string,
-  userId: string,
+  userId: string
 ): Promise<ActionResult<null>> {
   const { error } = await supabase
     .from('group_members')
@@ -358,7 +358,7 @@ export async function leaveTrip(
 export async function addMember(
   groupId: string,
   userId: string,
-  role: GroupMemberRole = 'member',
+  role: GroupMemberRole = 'member'
 ): Promise<ActionResult<GroupMember>> {
   const { data, error } = await supabase
     .from('group_members')
@@ -380,7 +380,7 @@ export async function addMember(
 export async function updateMemberRole(
   groupId: string,
   userId: string,
-  role: GroupMemberRole,
+  role: GroupMemberRole
 ): Promise<ActionResult<GroupMember>> {
   const { data, error } = await supabase
     .from('group_members')
@@ -404,7 +404,7 @@ export async function updateMemberRole(
 
 export async function removeMember(
   groupId: string,
-  userId: string,
+  userId: string
 ): Promise<ActionResult<null>> {
   const { error } = await supabase
     .from('group_members')

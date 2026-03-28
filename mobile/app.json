@@ -1,17 +1,23 @@
 {
   "expo": {
     "name": "Runwae",
-    "slug": "Runwae",
+    "slug": "runwae-rn",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "Runwae",
+    "scheme": "runwae",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chrisobocha.Runwae",
-      "buildNumber": "1"
+      "bundleIdentifier": "io.runwae.app",
+      "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:app.runwae.io"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,8 +28,44 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.chrisobocha.Runwae",
-      "versionCode": 1
+      "package": "io.runwae.app",
+      "versionCode": 1,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/trip"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/hotel"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/destination"
+            },
+            {
+              "scheme": "https",
+              "host": "app.runwae.io",
+              "pathPrefix": "/invite"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -53,6 +95,7 @@
         }
       ],
       "expo-font",
+      "@react-native-community/datetimepicker",
       [
         "expo-maps",
         {
@@ -105,8 +148,14 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0a8997b2-7e55-46d1-9a6d-2db2e2145668"
+        "projectId": "06ce5302-3e4b-43dd-bcdc-7ea53aa4e45d"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/06ce5302-3e4b-43dd-bcdc-7ea53aa4e45d",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     }
   }
 }

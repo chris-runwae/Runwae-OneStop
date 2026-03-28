@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TripActivityTab from './tabs/TripActivityTab';
+import SavedItemsSection from '@/components/trips/SavedItemsSection';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripMembersTab from './tabs/TripMembersTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
@@ -322,8 +323,18 @@ export default function TripDetailScreen() {
           //   startDate={trip?.start_date || undefined}
           //   endDate={trip?.end_date || undefined}
           // />
-          <TripOverviewTab trip={activeTrip} />
-        )}
+          <SavedItemsSection 
+            tripId={activeTrip.id} 
+            savedItems={[{
+              id: '1',
+              title: 'Test',
+              description: 'Test',
+              location: 'Test',
+              cover_image: 'https://images.unsplash.com/photo-1773929484011-13d062a73b24?q=80&w=1035&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+              source_type: 'user_created',
+            }]} 
+            handleRemoveSavedItem={() => {}} openSaveToItinerarySheet={() => {}} />
+          )}
         {activeTab === 'itinerary' && (
           // <SavedItemsSection
           //   tripId={trip?.id as string}

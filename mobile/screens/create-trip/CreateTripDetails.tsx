@@ -6,7 +6,9 @@ import { useTheme } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  Alert,
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
@@ -18,6 +20,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 import CreateStepHeader from './CreateStepHeader';
 
 // ================================================================
@@ -26,28 +30,30 @@ import CreateStepHeader from './CreateStepHeader';
 
 export default function CreateTripDetails() {
   const { dark } = useTheme();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
-    destination_label:    string;
+    destination_label: string;
     destination_place_id: string;
-    destination_address:  string;
-    start_date:           string;
-    end_date:             string;
+    destination_address: string;
+    start_date: string;
+    end_date: string;
   }>();
 
-  const { createTrip, updateTripDetails, updateDestination } = useTrips();
+  const { createTrip, updateTripDetails, updateDestination, updateTrip } =
+    useTrips();
 
   // Trip name — pre-filled from destination_label until user types
-  const [tripName, setTripName]       = useState(params.destination_label ?? '');
-  const touchedName                   = useRef(false);
+  const [tripName, setTripName] = useState(params.destination_label ?? '');
+  const touchedName = useRef(false);
 
   // Visibility
-  const [visibility, setVisibility]   = useState<TripVisibility>('private');
+  const [visibility, setVisibility] = useState<TripVisibility>('public');
 
   // Cover image
-  const [coverUri, setCoverUri]       = useState<string | null>(null);
+  const [coverUri, setCoverUri] = useState<string | null>(null);
 
   // Submission state
-  const [submitting, setSubmitting]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
   // ----------------------------------------------------------------
@@ -59,18 +65,54 @@ export default function CreateTripDetails() {
     setTripName(text);
   }, []);
 
-  const handlePickImage = useCallback(async () => {
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission needed',
+        'We need camera roll permissions to select a profile image.'
+      );
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [16, 9],
+      aspect: [1, 1],
       quality: 0.8,
     });
-
-    if (!result.canceled && result.assets.length > 0) {
+    if (!result.canceled && result.assets[0]) {
       setCoverUri(result.assets[0].uri);
     }
-  }, []);
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission needed',
+        'We need camera permissions to take a photo.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCoverUri(result.assets[0].uri);
+    }
+  };
+
+  const showImagePicker = () => {
+    Alert.alert('Select Cover Image', 'Choose an option', [
+      { text: 'Camera', onPress: takePhoto },
+      { text: 'Photo Library', onPress: pickImage },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const handleCreateTrip = useCallback(async () => {
     if (submitting) return;
@@ -79,9 +121,12 @@ export default function CreateTripDetails() {
 
     try {
       // Step 1: Create the trip (inserts groups row)
-      const { groupId, error: createError } = await createTrip({ name: tripName.trim() || (params.destination_label ?? 'My Trip') });
+      const { groupId, error: createError } = await createTrip({
+        name: tripName.trim() || (params.destination_label ?? 'My Trip'),
+      });
       if (createError || !groupId) {
-        setInlineError(createError ?? 'Failed to create trip. Please try again.');
+        setInlineError('Failed to create trip. Please try again.');
+        console.error('Error creating trip: ', createError);
         setSubmitting(false);
         return;
       }
@@ -89,7 +134,7 @@ export default function CreateTripDetails() {
       // Step 2: Update trip details with dates and visibility
       const { error: detailsError } = await updateTripDetails(groupId, {
         start_date: params.start_date || null,
-        end_date:   params.end_date   || null,
+        end_date: params.end_date || null,
         visibility,
       });
       if (detailsError) {
@@ -100,9 +145,9 @@ export default function CreateTripDetails() {
 
       // Step 3: Update destination fields
       const { error: destError } = await updateDestination(groupId, {
-        destination_label:    params.destination_label    ?? '',
+        destination_label: params.destination_label ?? '',
         destination_place_id: params.destination_place_id ?? undefined,
-        destination_address:  params.destination_address  ?? undefined,
+        destination_address: params.destination_address ?? undefined,
       });
       if (destError) {
         setInlineError(destError);
@@ -111,35 +156,35 @@ export default function CreateTripDetails() {
       }
 
       // Step 4: Upload cover image if selected
+      let coverImageUrl: string | undefined;
       if (coverUri) {
         try {
-          const blob     = await fetch(coverUri).then((r) => r.blob());
-          const path     = `${groupId}/cover.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from('groups')
-            .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
-
-          if (!uploadError) {
-            const publicUrl = supabase.storage.from('groups').getPublicUrl(path).data.publicUrl;
-            await updateTripDetails(groupId, { cover_image_url: publicUrl });
-          }
-          // If upload fails we proceed anyway — cover image is non-critical
-        } catch {
-          // Non-critical: proceed without cover image
+          coverImageUrl = await uploadGroupCoverImage(groupId, coverUri);
+        } catch (error) {
+          console.error('Error uploading cover image: ', error);
+          Alert.alert(
+            'Warning',
+            'Failed to upload cover image. You can add it later.'
+          );
         }
       }
 
+      //Update trip with cover image url
+      await updateTrip(groupId, { cover_image_url: coverImageUrl });
+
       // Step 5: Navigate to success screen
       router.push({
-        pathname: '/create-trip/success' as any,
+        pathname: '(tabs)/create-trip/success' as any,
         params: {
-          tripId:            groupId,
-          tripName:          tripName.trim() || (params.destination_label ?? 'My Trip'),
+          tripId: groupId,
+          tripName: tripName.trim() || (params.destination_label ?? 'My Trip'),
           destination_label: params.destination_label ?? '',
         },
       });
     } catch (err: any) {
       setInlineError(err?.message ?? 'Something went wrong. Please try again.');
+      console.error('Error creating trip: ', err);
+    } finally {
       setSubmitting(false);
     }
   }, [
@@ -151,6 +196,7 @@ export default function CreateTripDetails() {
     createTrip,
     updateTripDetails,
     updateDestination,
+    updateTrip,
   ]);
 
   // ----------------------------------------------------------------
@@ -162,34 +208,38 @@ export default function CreateTripDetails() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
+        keyboardVerticalOffset={0}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           <CreateStepHeader currentStep={3} totalSteps={3} />
 
           <Text style={[styles.title, { color: dark ? '#ffffff' : '#111827' }]}>
             Name your trip
           </Text>
-          <Text style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+          <Text
+            style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
             Give it a name and personalise it.
           </Text>
 
           {/* Trip name input */}
-          <Text style={[styles.fieldLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+          <Text
+            style={[
+              styles.fieldLabel,
+              { color: dark ? '#9ca3af' : '#6b7280' },
+            ]}>
             Trip name
           </Text>
-          <View style={[
-            styles.inputWrapper,
-            {
-              backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-              borderColor:     dark ? '#2c2c2e' : '#e5e7eb',
-            },
-          ]}>
+          <View
+            style={[
+              styles.inputWrapper,
+              {
+                backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
+                borderColor: dark ? '#2c2c2e' : '#e5e7eb',
+              },
+            ]}>
             <TextInput
               style={[styles.input, { color: dark ? '#ffffff' : '#111827' }]}
               placeholder="e.g. Summer in Tokyo"
@@ -202,7 +252,11 @@ export default function CreateTripDetails() {
           </View>
 
           {/* Visibility toggle */}
-          <Text style={[styles.fieldLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+          <Text
+            style={[
+              styles.fieldLabel,
+              { color: dark ? '#9ca3af' : '#6b7280' },
+            ]}>
             Visibility
           </Text>
           <View style={styles.visibilityRow}>
@@ -210,20 +264,33 @@ export default function CreateTripDetails() {
               style={[
                 styles.visibilityPill,
                 {
-                  backgroundColor: visibility === 'private'
-                    ? '#FF1F8C'
-                    : (dark ? '#1c1c1e' : '#f3f4f6'),
-                  borderColor: visibility === 'private'
-                    ? '#FF1F8C'
-                    : (dark ? '#2c2c2e' : '#e5e7eb'),
+                  backgroundColor:
+                    visibility === 'private'
+                      ? '#FF1F8C'
+                      : dark
+                        ? '#1c1c1e'
+                        : '#f3f4f6',
+                  borderColor:
+                    visibility === 'private'
+                      ? '#FF1F8C'
+                      : dark
+                        ? '#2c2c2e'
+                        : '#e5e7eb',
                 },
               ]}
-              onPress={() => setVisibility('private')}
-            >
-              <Text style={[
-                styles.visibilityPillText,
-                { color: visibility === 'private' ? '#ffffff' : (dark ? '#9ca3af' : '#6b7280') },
-              ]}>
+              onPress={() => setVisibility('private')}>
+              <Text
+                style={[
+                  styles.visibilityPillText,
+                  {
+                    color:
+                      visibility === 'private'
+                        ? '#ffffff'
+                        : dark
+                          ? '#9ca3af'
+                          : '#6b7280',
+                  },
+                ]}>
                 Private
               </Text>
             </TouchableOpacity>
@@ -232,27 +299,44 @@ export default function CreateTripDetails() {
               style={[
                 styles.visibilityPill,
                 {
-                  backgroundColor: visibility === 'public'
-                    ? '#FF1F8C'
-                    : (dark ? '#1c1c1e' : '#f3f4f6'),
-                  borderColor: visibility === 'public'
-                    ? '#FF1F8C'
-                    : (dark ? '#2c2c2e' : '#e5e7eb'),
+                  backgroundColor:
+                    visibility === 'public'
+                      ? '#FF1F8C'
+                      : dark
+                        ? '#1c1c1e'
+                        : '#f3f4f6',
+                  borderColor:
+                    visibility === 'public'
+                      ? '#FF1F8C'
+                      : dark
+                        ? '#2c2c2e'
+                        : '#e5e7eb',
                 },
               ]}
-              onPress={() => setVisibility('public')}
-            >
-              <Text style={[
-                styles.visibilityPillText,
-                { color: visibility === 'public' ? '#ffffff' : (dark ? '#9ca3af' : '#6b7280') },
-              ]}>
+              onPress={() => setVisibility('public')}>
+              <Text
+                style={[
+                  styles.visibilityPillText,
+                  {
+                    color:
+                      visibility === 'public'
+                        ? '#ffffff'
+                        : dark
+                          ? '#9ca3af'
+                          : '#6b7280',
+                  },
+                ]}>
                 Public
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Cover image */}
-          <Text style={[styles.fieldLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+          <Text
+            style={[
+              styles.fieldLabel,
+              { color: dark ? '#9ca3af' : '#6b7280' },
+            ]}>
             Cover image
           </Text>
           <TouchableOpacity
@@ -260,23 +344,38 @@ export default function CreateTripDetails() {
               styles.coverImageArea,
               {
                 backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-                borderColor:     dark ? '#2c2c2e' : '#e5e7eb',
+                borderColor: dark ? '#2c2c2e' : '#e5e7eb',
               },
             ]}
-            onPress={handlePickImage}
-            activeOpacity={0.8}
-          >
+            onPress={showImagePicker}
+            activeOpacity={0.8}>
             {coverUri ? (
-              <Image source={{ uri: coverUri }} style={styles.coverPreview} resizeMode="cover" />
+              <Image
+                source={{ uri: coverUri }}
+                style={styles.coverPreview}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.coverPlaceholder}>
-                <Text style={[styles.coverPlaceholderIcon, { color: dark ? '#4b5563' : '#d1d5db' }]}>
+                <Text
+                  style={[
+                    styles.coverPlaceholderIcon,
+                    { color: dark ? '#4b5563' : '#d1d5db' },
+                  ]}>
                   🖼
                 </Text>
-                <Text style={[styles.coverPlaceholderText, { color: dark ? '#6b7280' : '#9ca3af' }]}>
+                <Text
+                  style={[
+                    styles.coverPlaceholderText,
+                    { color: dark ? '#6b7280' : '#9ca3af' },
+                  ]}>
                   Tap to add a cover image
                 </Text>
-                <Text style={[styles.coverPlaceholderHint, { color: dark ? '#4b5563' : '#d1d5db' }]}>
+                <Text
+                  style={[
+                    styles.coverPlaceholderHint,
+                    { color: dark ? '#4b5563' : '#d1d5db' },
+                  ]}>
                   Optional · 16:9 recommended
                 </Text>
               </View>
@@ -285,12 +384,21 @@ export default function CreateTripDetails() {
         </ScrollView>
 
         {/* Footer — create button */}
-        <View style={[styles.footer, { borderTopColor: dark ? '#2c2c2e' : '#f3f4f6' }]}>
+        <View
+          style={[
+            styles.footer,
+            {
+              borderTopColor: dark ? '#2c2c2e' : '#f3f4f6',
+              marginBottom: insets.bottom + 16,
+            },
+          ]}>
           <TouchableOpacity
-            style={[styles.createButton, submitting && styles.createButtonDisabled]}
+            style={[
+              styles.createButton,
+              submitting && styles.createButtonDisabled,
+            ]}
             onPress={handleCreateTrip}
-            disabled={submitting}
-          >
+            disabled={submitting}>
             {submitting ? (
               <ActivityIndicator color="#ffffff" size="small" />
             ) : (
@@ -298,9 +406,7 @@ export default function CreateTripDetails() {
             )}
           </TouchableOpacity>
 
-          {inlineError && (
-            <Text style={styles.inlineError}>{inlineError}</Text>
-          )}
+          {inlineError && <Text style={styles.inlineError}>{inlineError}</Text>}
         </View>
       </KeyboardAvoidingView>
     </AppSafeAreaView>

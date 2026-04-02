@@ -1,11 +1,11 @@
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
 // import { Trip } from '@/constants/home.constant';
+import { TripWithEverything } from '@/hooks/useTripActions';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { TripWithEverything } from '@/hooks/useTripActions';
 
 import TripCard from './TripCard';
 
@@ -22,7 +22,7 @@ const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
     <View>
       <SectionHeader
         title={`Active Trips (${trips.length})`}
-        onPress={() => router.push('/(trips)')}
+        onPress={() => router.push('/(trips)/trip')}
       />
 
       <FlashList

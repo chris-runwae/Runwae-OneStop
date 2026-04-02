@@ -32,7 +32,7 @@ export const tabs: Tab[] = [
     name: 'trips',
     title: 'Trips',
     icon: PlaneIcon,
-    route: '/(trips)',
+    route: '/(trips)/trip',
   },
   {
     name: 'profile',

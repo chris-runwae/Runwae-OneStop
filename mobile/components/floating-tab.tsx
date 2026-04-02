@@ -1,7 +1,12 @@
 import { tabs } from '@/constants';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { RelativePathString, usePathname, useRouter } from 'expo-router';
+import {
+  RelativePathString,
+  usePathname,
+  useRouter,
+  useSegments,
+} from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useCallback } from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
@@ -18,41 +23,39 @@ const FloatingTabBar = () => {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const router = useRouter();
+  const segments = useSegments();
 
   const isTabActive = useCallback(
     (tab: (typeof tabs)[0]) => {
-      if (tab.name === 'home') {
-        return (
-          pathname === '/' ||
-          pathname === '/home' ||
-          pathname.startsWith('/home/') ||
-          pathname === '/(tabs)' ||
-          pathname === '/(tabs)/home'
-        );
-      }
+      const s = segments as string[];
 
+      // Explore
       if (tab.name === 'explore') {
-        return (
-          pathname === '/explore' ||
-          pathname.startsWith('/explore/') ||
-          pathname === '/(tabs)/explore' ||
-          pathname.startsWith('/(tabs)/explore/')
-        );
+        return s.includes('explore');
       }
 
+      // Trips
       if (tab.name === 'trips') {
-        return (
-          pathname === '/trips' ||
-          pathname.startsWith('/trips/') ||
-          pathname === '/(trips)' ||
-          pathname.startsWith('/(trips)/') ||
-          pathname === '/(tabs)/(trips)' ||
-          pathname.startsWith('/(tabs)/(trips)/')
-        );
+        return s.includes('(trips)');
       }
+
+      // Profile
+      if (tab.name === 'profile') {
+        return s.includes('profile');
+      }
+
+      // Home (Active ONLY if no other tab group is present)
+      if (tab.name === 'home') {
+        const isOtherRootTab =
+          s.includes('(trips)') ||
+          s.includes('explore') ||
+          s.includes('profile');
+        return !isOtherRootTab && (pathname === '/' || pathname === '/home');
+      }
+
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
     },
-    [pathname]
+    [pathname, segments]
   );
 
   const handlePress = (route: string, isSelected: boolean, index: number) => {

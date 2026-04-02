@@ -1,9 +1,9 @@
+import { useTheme } from '@react-navigation/native';
 import React from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
-import { textStyles } from '@/constants';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+
 import Text from '@/components/ui/Text';
+import { textStyles } from '@/constants';
 
 type Tab = {
   id: string;
@@ -21,79 +21,85 @@ const HorizontalTabs = ({
   activeTab,
   onTabChange,
 }: HorizontalTabsProps) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
+  const { dark } = useTheme();
 
-  const dynamicStyles = StyleSheet.create({
-    tabButton: {
-      borderBottomColor: colors.borderColors.subtle,
-    },
-    tabButtonActive: {
-      borderBottomColor: colors.primaryColors.default,
-      borderBottomWidth: 1,
-    },
-    tabText: {
-      color: colors.textColors.subtle,
-    },
-    tabTextActive: {
-      color: colors.primaryColors.default,
-    },
-  });
+  const activeColor = '#FF1F8C';
+  const inactiveColor = dark ? '#6B7280' : '#A8A8A8';
+  const borderColor = dark ? '#262626' : '#E9ECEF';
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <Pressable
-              key={tab.id}
-              onPress={() => onTabChange(tab.id)}
-              style={[
-                styles.tabButton,
-                isActive
-                  ? dynamicStyles.tabButtonActive
-                  : dynamicStyles.tabButton,
-              ]}>
-              <Text
-                style={[
-                  styles.tabText,
-                  isActive
-                    ? dynamicStyles.tabTextActive
-                    : dynamicStyles.tabText,
-                ]}>
-                {tab.label.toUpperCase()}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <View style={[styles.mainContainer, { borderBottomColor: borderColor }]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <Pressable
+                key={tab.id}
+                onPress={() => onTabChange(tab.id)}
+                style={styles.tabButton}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    { color: isActive ? activeColor : inactiveColor },
+                    isActive && styles.tabTextActive,
+                  ]}>
+                  {tab.label.toUpperCase()}
+                </Text>
+                {isActive && (
+                  <View
+                    style={[styles.indicator, { backgroundColor: activeColor }]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 export default HorizontalTabs;
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    width: '100%',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   scrollContainer: {
     flexGrow: 1,
   },
   container: {
     flexDirection: 'row',
     width: '100%',
-    // gap: 16, May need this later
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   tabText: {
     ...textStyles.textBody14,
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0.5,
+  },
+  tabTextActive: {
+    fontWeight: '600',
+  },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 8,
+    right: 8,
+    height: 2,
+    borderRadius: 1,
   },
 });

@@ -1,8 +1,7 @@
+import { Colors, textStyles } from '@/constants';
 import React from 'react';
 import { Image, StyleSheet, useColorScheme, View } from 'react-native';
 import Text from '../ui/Text';
-import Spacer from '../utils/Spacer';
-import { Colors, textStyles } from '@/constants';
 
 interface EmptyTripsStateProps {
   title?: string;
@@ -17,12 +16,7 @@ const EmptyTripsState = ({
   const colors = Colors[colorScheme ?? 'light'];
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.backgroundColors.default },
-      ]}>
-      <Spacer size={40} vertical />
+    <View style={[styles.container]}>
       <Image
         source={require('@/assets/images/trip-empty-state-2.png')}
         style={styles.image}
@@ -38,21 +32,23 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 50,
+    height: 50,
     marginBottom: 24,
   },
   title: {
     ...textStyles.textHeading20,
     textAlign: 'center',
-    marginBottom: 8,
+    fontSize: 16,
   },
   description: {
     ...textStyles.textBody14,
     textAlign: 'center',
     lineHeight: 20,
+    fontSize: 12,
   },
 });
 

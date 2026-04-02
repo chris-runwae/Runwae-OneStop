@@ -1,6 +1,6 @@
-import React from "react";
-import { Platform, View } from "react-native";
-import SkeletonBox from "./SkeletonBox";
+import React from 'react';
+import { Platform, View } from 'react-native';
+import SkeletonBox from './SkeletonBox';
 
 export const TripCardSkeleton = ({
   fullWidth = false,
@@ -9,10 +9,9 @@ export const TripCardSkeleton = ({
 }) => (
   <View
     className="overflow-hidden rounded-[20px] bg-white p-[13px] dark:bg-dark-seconndary/50"
-    style={{ width: fullWidth ? '100%' : 320 }}
-  >
+    style={{ width: fullWidth ? '100%' : 320 }}>
     <View className="h-[138px] w-full overflow-hidden rounded-[13px] border-[3px] border-white dark:border-dark-seconndary">
-      <SkeletonBox width={"100%"} height={"100%"} borderRadius={10} />
+      <SkeletonBox width={'100%'} height={'100%'} borderRadius={10} />
     </View>
 
     <View className="pt-3">
@@ -26,7 +25,7 @@ export const TripCardSkeleton = ({
       </View>
 
       <View className="flex-row items-center justify-between">
-        <SkeletonBox width={160} height={32} borderRadius={10} />
+        <SkeletonBox width={170} height={32} borderRadius={10} />
         <View className="flex-row items-center">
           <SkeletonBox width={28} height={28} borderRadius={14} />
           <View className="-ml-3">
@@ -41,7 +40,6 @@ export const TripCardSkeleton = ({
   </View>
 );
 
-
 export const ItineraryCardSkeleton = ({
   fullWidth = false,
   height = 245,
@@ -50,11 +48,10 @@ export const ItineraryCardSkeleton = ({
   height?: number;
 }) => (
   <View
-    className="rounded-[24px] overflow-hidden bg-white dark:bg-dark-seconndary/50 p-1"
-    style={{ width: fullWidth ? "100%" : 338, height }}
-  >
+    className="overflow-hidden rounded-[24px] bg-white p-1 dark:bg-dark-seconndary/50"
+    style={{ width: fullWidth ? '100%' : 338, height }}>
     <SkeletonBox
-      width={fullWidth ? "100%" : 330}
+      width={fullWidth ? '100%' : 330}
       height={height - 10}
       borderRadius={20}
     />
@@ -69,19 +66,14 @@ export const AddOnCardSkeleton = ({
   index?: number;
 }) => {
   const isEven = index % 2 === 0;
-  
+
   return (
     <View
       className="mr-4 bg-white/0"
-      style={{ width: fullWidth ? '100%' : 300 }}
-    >
+      style={{ width: fullWidth ? '100%' : 300 }}>
       <View className="relative mb-3 h-[180px] w-full">
         <View className="h-full w-full overflow-hidden rounded-[10px] bg-white dark:bg-dark-seconndary/50">
-          <SkeletonBox
-            width={"100%"}
-            height={"100%"}
-            borderRadius={10}
-          />
+          <SkeletonBox width={'100%'} height={'100%'} borderRadius={10} />
         </View>
 
         <View
@@ -99,17 +91,20 @@ export const AddOnCardSkeleton = ({
                   shadowRadius: 8,
                 }
               : { elevation: 4 }
-          }
-        >
-          <SkeletonBox width={"100%"} height={"100%"} borderRadius={8} />
+          }>
+          <SkeletonBox width={'100%'} height={'100%'} borderRadius={8} />
         </View>
       </View>
 
       <View className="mb-1.5 mt-3 px-2">
-        <SkeletonBox width={fullWidth ? '80%' : 220} height={16} borderRadius={4} />
+        <SkeletonBox
+          width={fullWidth ? '80%' : 220}
+          height={16}
+          borderRadius={4}
+        />
       </View>
 
-      <View className="flex-row items-center px-2 mt-1">
+      <View className="mt-1 flex-row items-center px-2">
         <SkeletonBox width={60} height={12} borderRadius={4} />
         <View className="mx-2 h-3 w-[1px] bg-gray-300 dark:bg-gray-600" />
         <SkeletonBox width={80} height={12} borderRadius={4} />
@@ -126,22 +121,21 @@ export const DestinationCardSkeleton = ({
   fullWidth?: boolean;
 }) => (
   <View
-    className={fullWidth ? "" : "mr-3"}
-    style={{ width: fullWidth ? "100%" : 240 }}
-  >
+    className={fullWidth ? '' : 'mr-3'}
+    style={{ width: fullWidth ? '100%' : 240 }}>
     <SkeletonBox
-      width={fullWidth ? "100%" : 240}
+      width={fullWidth ? '100%' : 240}
       height={200}
       borderRadius={16}
     />
     <View className="mt-3 gap-y-2">
       <SkeletonBox
-        width={fullWidth ? "80%" : 150}
+        width={fullWidth ? '80%' : 150}
         height={20}
         borderRadius={4}
       />
       <SkeletonBox
-        width={fullWidth ? "60%" : 100}
+        width={fullWidth ? '60%' : 100}
         height={14}
         borderRadius={4}
       />
@@ -149,19 +143,37 @@ export const DestinationCardSkeleton = ({
   </View>
 );
 
-export const EventCardSkeleton = ({ index = 0, fullWidth = false }: { index?: number, fullWidth?: boolean }) => {
+export const EventCardSkeleton = ({
+  index = 0,
+  fullWidth = false,
+}: {
+  index?: number;
+  fullWidth?: boolean;
+}) => {
   const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';
   return (
-    <View className={fullWidth ? "" : "mr-3"} style={{ flex: fullWidth ? 1 : undefined, width: fullWidth ? '100%' : 160 }}>
-      <View 
-        className={`overflow-hidden rounded-[15px] bg-white p-1 dark:bg-dark-seconndary/50 ${fullWidth ? 'w-[96%] aspect-[4/4.5] ml-[2%]' : 'h-[145px] w-[128px]'}`}
-        style={[{ transform: [{ rotate: rotation }] }]}
-      >
-        <SkeletonBox width={"100%"} height={"100%"} borderRadius={10} />
+    <View
+      className={fullWidth ? '' : 'mr-3'}
+      style={{
+        flex: fullWidth ? 1 : undefined,
+        width: fullWidth ? '100%' : 160,
+      }}>
+      <View
+        className={`overflow-hidden rounded-[15px] bg-white p-1 dark:bg-dark-seconndary/50 ${fullWidth ? 'ml-[2%] aspect-[4/4.5] w-[96%]' : 'h-[145px] w-[128px]'}`}
+        style={[{ transform: [{ rotate: rotation }] }]}>
+        <SkeletonBox width={'100%'} height={'100%'} borderRadius={10} />
       </View>
       <View className="mt-2 flex-col gap-y-2">
-        <SkeletonBox width={fullWidth ? "80%" : 130} height={16} borderRadius={4} />
-        <SkeletonBox width={fullWidth ? "60%" : 90} height={12} borderRadius={4} />
+        <SkeletonBox
+          width={fullWidth ? '80%' : 130}
+          height={16}
+          borderRadius={4}
+        />
+        <SkeletonBox
+          width={fullWidth ? '60%' : 90}
+          height={12}
+          borderRadius={4}
+        />
       </View>
     </View>
   );

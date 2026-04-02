@@ -39,6 +39,17 @@ const FloatingTabBar = () => {
           pathname.startsWith('/(tabs)/explore/')
         );
       }
+
+      if (tab.name === 'trips') {
+        return (
+          pathname === '/trips' ||
+          pathname.startsWith('/trips/') ||
+          pathname === '/(trips)' ||
+          pathname.startsWith('/(trips)/') ||
+          pathname === '/(tabs)/(trips)' ||
+          pathname.startsWith('/(tabs)/(trips)/')
+        );
+      }
       return pathname === tab.route || pathname.includes(`/${tab.name}`);
     },
     [pathname]

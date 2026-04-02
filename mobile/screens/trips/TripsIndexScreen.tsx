@@ -1,3 +1,4 @@
+import TripCard from '@/components/home/TripCard';
 import EmptyTripsState from '@/components/trips/EmptyTripsState';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
@@ -5,10 +6,9 @@ import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
+import { FlashList } from '@shopify/flash-list';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import TripCard from '@/components/home/TripCard';
-import { FlashList } from '@shopify/flash-list';
 
 // ================================================================
 // Types & constants
@@ -238,6 +238,7 @@ export default function TripsIndexScreen() {
                         : dark
                           ? '#ffffff'
                           : '#4b5563',
+                      fontSize: 12,
                     },
                   ]}>
                   {filter.emoji ? `${filter.emoji} ` : ''}
@@ -296,6 +297,7 @@ export default function TripsIndexScreen() {
                         : dark
                           ? '#ffffff'
                           : '#9ca3af',
+                      fontSize: 12,
                     },
                   ]}>
                   {label}
@@ -410,7 +412,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   listContentEmpty: {
-    // flex: 1,
+    flexGrow: 0.7,
+    paddingBottom: 0,
   },
 
   // Card

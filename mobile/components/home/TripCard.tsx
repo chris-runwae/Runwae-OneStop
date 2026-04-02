@@ -1,13 +1,21 @@
-import React from 'react';
-import { ImageBackground, Pressable, View, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FileText, Users } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 
+import { AppFonts, COLORS } from '@/constants/theme';
+import { fetchItineraryItemsCount } from '@/hooks/useItineraryActions';
 import { TripWithEverything } from '@/hooks/useTripActions';
-import { AvatarGroup } from '../containers/AvatarGroup';
-import Text from '../ui/Text';
-import Spacer from '../utils/Spacer';
-import { Colors, textStyles } from '@/constants/theme';
-import { formatDateRange } from '@/utils/date';
+import { calculateDuration, getDaysUntil, formatDaysToGo } from '@/utils/date';
+import AvatarGroup from './AvatarGroup';
 
 interface TripCardProps {
   trip: TripWithEverything;
@@ -16,77 +24,236 @@ interface TripCardProps {
 
 const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme ?? 'light'];
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
 
-  const visibilityText =
-    trip.trip_details?.visibility === 'public' ? 'Public' : 'Private';
+  console.log(trip);
+
+  const [itemsCount, setItemsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const getItemsCount = async () => {
+      try {
+        const count = await fetchItineraryItemsCount(trip.id);
+        setItemsCount(count);
+      } catch (err) {
+        console.error('Error fetching itinerary items count:', err);
+      }
+    };
+    getItemsCount();
+  }, [trip.id]);
+
+  const daysUntil = getDaysUntil(trip.trip_details?.start_date ?? '');
+  const countdown = formatDaysToGo(daysUntil);
+
+  // Map real group_members to the AvatarGroup props
+  const displayMembers = (trip.group_members || []).slice(0, 3).map((m) => ({
+    image: m.profiles?.avatar_url || undefined,
+    initials: m.profiles?.full_name?.charAt(0) || '?',
+  }));
+  const extraCount = Math.max(0, (trip.group_members?.length || 0) - 3);
 
   return (
     <Pressable
-      className="overflow-hidden rounded-2xl"
       onPress={() => {
         router.push(`/(tabs)/(trips)/${trip.id}`);
       }}
-      style={{ width: fullWidth ? '100%' : 360, height: 210 }}>
-      <ImageBackground
-        source={{ uri: trip.cover_image_url ?? undefined }}
-        className="flex-1"
-        resizeMode="cover">
-        <View
-          className="flex-1 justify-between p-3"
-          style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-          {/* Role badge */}
-          <View className="flex-row justify-end">
-            <View className="rounded-full bg-[#000000A6] px-3 py-1 dark:bg-dark-seconndary">
-              <Text style={{ ...textStyles.textBody12, color: colors.white }}>
-                {visibilityText}
-              </Text>
-              {/* TODO: Add role */}
-            </View>
-          </View>
+      style={[
+        styles.card,
+        {
+          width: fullWidth ? '100%' : 340,
+          backgroundColor: isDark ? COLORS.black.dark880 : COLORS.white.default,
+        },
+        Platform.OS === 'ios' ? styles.shadowIos : styles.shadowAndroid,
+      ]}>
+      <View
+        style={[
+          styles.imageContainer,
+          { borderColor: isDark ? COLORS.black.dark880 : COLORS.white.default },
+        ]}>
+        <Image
+          source={{
+            uri:
+              trip.cover_image_url ??
+              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
+          }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+      </View>
 
-          {/* Bottom info */}
-          <View>
-            <View className="flex-row items-end">
-              <View className="flex-1">
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    // flex: 1,
-                    // justifyContent: 'space-between',
-                    gap: 8,
-                  }}>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      ...textStyles.textHeading20,
-                      color: colors.white,
-                      flex: 0.8, // takes remaining space, won't push AvatarGroup out
-                    }}>
-                    {trip.name}
-                  </Text>
-                  <AvatarGroup members={trip.group_members || []} size={20} />
-                </View>
-                <Text style={{ ...textStyles.textBody12, color: colors.white }}>
-                  📍 {trip.destination_label}
-                </Text>
-              </View>
-            </View>
+      <View style={styles.infoContainer}>
+        <Text
+          style={[
+            styles.title,
+            { color: isDark ? COLORS.white.default : COLORS.black.default },
+          ]}
+          numberOfLines={1}>
+          {trip.name}
+        </Text>
 
-            <Spacer size={4} vertical />
-            <Text style={{ ...textStyles.textBody12, color: colors.white }}>
-              {formatDateRange(
-                trip.trip_details?.start_date ?? '',
-                trip.trip_details?.end_date ?? ''
-              )}
+        <View style={styles.metadataRow}>
+          <View
+            style={[
+              styles.metadataCol,
+              { borderRightColor: isDark ? '#374151' : '#E5E5E5' },
+            ]}>
+            <Text style={styles.emoji}>📍</Text>
+            <Text style={styles.metadataText}>
+              {trip.destination_label || 'TBD'}
             </Text>
           </View>
+          <View
+            style={[
+              styles.metadataCol,
+              { paddingLeft: 8, borderRightWidth: 0 },
+            ]}>
+            <Text style={styles.emoji}>⏳</Text>
+            <Text style={styles.metadataText}>{countdown}!</Text>
+          </View>
         </View>
-      </ImageBackground>
+
+        {/* Bottom Row: Pills & Avatars */}
+        <View style={styles.bottomRow}>
+          <View
+            style={[
+              styles.pillContainer,
+              {
+                borderColor: isDark ? 'rgba(131, 24, 67, 0.5)' : '#FBCFE8',
+                backgroundColor: isDark
+                  ? 'rgba(131, 24, 67, 0.2)'
+                  : 'rgba(253, 242, 248, 0.8)',
+              },
+            ]}>
+            <View style={styles.pillItem}>
+              <Users size={14} color="#ec4899" strokeWidth={2.5} />
+              <Text
+                style={[
+                  styles.pillText,
+                  { color: isDark ? '#D1D5DB' : '#374151' },
+                ]}>
+                {trip.group_members?.length || 0}{' '}
+                {(trip.group_members?.length || 0) === 1 ? 'person' : 'people'}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.separator,
+                { backgroundColor: isDark ? '#4B5563' : '#D1D5DB' },
+              ]}
+            />
+
+            <View style={styles.pillItem}>
+              <FileText size={14} color="#ec4899" strokeWidth={2.5} />
+              <Text
+                style={[
+                  styles.pillText,
+                  { color: isDark ? '#D1D5DB' : '#374151' },
+                ]}>
+                {itemsCount === null ? '...' : itemsCount}{' '}
+                {itemsCount === 1 ? 'item' : 'items'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.avatarWrapper}>
+            <AvatarGroup
+              members={displayMembers as any}
+              extraMembers={extraCount}
+              maxDisplay={3}
+            />
+          </View>
+        </View>
+      </View>
     </Pressable>
   );
 };
 
 export default TripCard;
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 20,
+    padding: 13,
+  },
+  shadowIos: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+  },
+  shadowAndroid: {
+    elevation: 12,
+  },
+  imageContainer: {
+    height: 170,
+    width: '100%',
+    overflow: 'hidden',
+    borderRadius: 13,
+    borderWidth: 3,
+  },
+  image: {
+    height: '100%',
+    width: '100%',
+    objectFit: 'cover',
+  },
+  infoContainer: {
+    paddingTop: 12,
+  },
+  title: {
+    marginBottom: 4,
+    fontSize: 18,
+    fontFamily: AppFonts.bricolage.extraBold,
+  },
+  metadataRow: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metadataCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    paddingRight: 8,
+  },
+  emoji: {
+    marginRight: 4,
+    fontSize: 12,
+  },
+  metadataText: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.medium,
+    color: '#6B7280',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pillContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  pillItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pillText: {
+    marginLeft: 6,
+    fontSize: 11,
+    fontFamily: AppFonts.inter.medium,
+  },
+  separator: {
+    marginHorizontal: 8,
+    height: 12,
+    width: 1,
+  },
+  avatarWrapper: {
+    marginLeft: 8,
+  },
+});

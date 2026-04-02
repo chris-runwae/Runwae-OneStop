@@ -1,81 +1,33 @@
-import React from 'react';
+import { Image } from 'expo-image';
 import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-  useColorScheme,
-  ActionSheetIOS,
-} from 'react-native';
-import {
-  Calendar,
-  Car,
-  Compass,
-  GripVertical,
-  Hotel,
-  MoreVertical,
-  Plane,
-  Ship,
-  Utensils,
+  ChevronDown,
+  ChevronUp,
+  Ellipsis,
+  ImageIcon,
 } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { Text } from '@/components';
-import { Colors, textStyles } from '@/constants';
-import { ItineraryItem, ItemType } from '@/hooks/useItineraryActions';
+import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
+import { AppFonts, Colors } from '@/constants';
+import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 
-// ----------------------------------------------------------------
-// Type icon map
-// ----------------------------------------------------------------
-
-const TYPE_ICONS: Record<ItemType, (color: string) => React.ReactNode> = {
-  flight:     (c) => <Plane     size={16} color={c} />,
-  hotel:      (c) => <Hotel     size={16} color={c} />,
-  activity:   (c) => <Compass   size={16} color={c} />,
-  restaurant: (c) => <Utensils  size={16} color={c} />,
-  transport:  (c) => <Car       size={16} color={c} />,
-  cruise:     (c) => <Ship      size={16} color={c} />,
-  event:      (c) => <Calendar  size={16} color={c} />,
-  other:      (c) => <MoreVertical size={16} color={c} />,
+type TypeConfig = {
+  label: string;
+  emoji: string;
 };
 
-const TYPE_COLORS: Record<ItemType, string> = {
-  flight:     '#3b82f6',
-  hotel:      '#8b5cf6',
-  activity:   '#f59e0b',
-  restaurant: '#ef4444',
-  transport:  '#6b7280',
-  cruise:     '#06b6d4',
-  event:      '#ec4899',
-  other:      '#9ca3af',
+const TYPE_CONFIG: Record<ItemType, TypeConfig> = {
+  flight: { label: 'Flight', emoji: '✈️' },
+  hotel: { label: 'Stay', emoji: '🏨' },
+  activity: { label: 'Relax', emoji: '🏝' },
+  restaurant: { label: 'Dine', emoji: '🍽' },
+  transport: { label: 'Transport', emoji: '🚗' },
+  cruise: { label: 'Cruise', emoji: '🚢' },
+  event: { label: 'Event', emoji: '🎫' },
+  other: { label: 'Other', emoji: '📌' },
 };
-
-// ----------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------
-
-function formatTime(time: string | null): string | null {
-  if (!time) return null;
-  // time is stored as HH:MM:SS — trim seconds
-  return time.slice(0, 5);
-}
-
-function formatCost(cost: number | null, currency: string): string | null {
-  if (cost == null) return null;
-  try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(cost);
-  } catch {
-    return `${currency} ${cost}`;
-  }
-}
-
-// ----------------------------------------------------------------
-// Component
-// ----------------------------------------------------------------
 
 type Props = {
   item: ItineraryItem;
@@ -84,6 +36,8 @@ type Props = {
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onMoveToPrevDay?: () => void;
+  onMoveToNextDay?: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
 };
@@ -95,142 +49,123 @@ const ItineraryItemCard = ({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onMoveToPrevDay,
+  onMoveToNextDay,
   canMoveUp,
   canMoveDown,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
 
-  const typeColor = TYPE_COLORS[item.type] ?? '#9ca3af';
-  const icon = TYPE_ICONS[item.type]?.(typeColor) ?? null;
+  const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
+  const hasImage = !!item.image_url;
 
-  const start = formatTime(item.start_time);
-  const end   = formatTime(item.end_time);
-  const timeRange = start
-    ? end
-      ? `${start} – ${end}`
-      : start
-    : null;
-
-  const cost = formatCost(item.cost, item.currency);
-
-  const handleOptions = () => {
+  const handleOptionsPress = (event: any) => {
     if (!isCreator) return;
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Delete item'],
-          destructiveButtonIndex: 1,
-          cancelButtonIndex: 0,
-        },
-        (i) => {
-          if (i === 1) onDelete();
-        },
-      );
-    } else {
-      Alert.alert('Item options', undefined, [
-        { text: 'Delete item', style: 'destructive', onPress: onDelete },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
+    const { pageY } = event.nativeEvent;
+    setMenuAnchor({ top: pageY + 10, right: 24 });
+    setMenuVisible(true);
   };
 
+  const menuOptions: ActionOption[] = [
+    { label: 'View notes', onPress: () => {} },
+    { label: 'Adjust', onPress: () => {} },
+    { label: 'Move to previous day', onPress: onMoveToPrevDay || (() => {}) },
+    { label: 'Move to next day', onPress: onMoveToNextDay || (() => {}) },
+    {
+      label: 'Remove',
+      onPress: onDelete,
+      isDestructive: true,
+      isBold: true,
+      hasSeparator: true,
+    },
+  ];
+
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.backgroundColors.subtle,
-          borderColor: isReordering
-            ? typeColor + '40'
-            : colors.borderColors.subtle,
-          borderWidth: isReordering ? 1.5 : 1,
-        },
-      ]}>
-      {/* Left: type dot */}
-      <View style={[styles.typeDot, { backgroundColor: typeColor + '20' }]}>
-        {icon}
-      </View>
-
-      {/* Centre: content */}
-      <View style={styles.content}>
-        <Text
-          style={[styles.title, { color: colors.textColors.default }]}
-          numberOfLines={1}>
-          {item.title}
-        </Text>
-
-        {(item.location || timeRange) && (
-          <View style={styles.meta}>
-            {timeRange ? (
-              <Text style={[styles.metaText, { color: typeColor }]}>
-                {timeRange}
-              </Text>
-            ) : null}
-            {item.location ? (
-              <Text
-                style={[styles.metaText, { color: colors.textColors.subtle }]}
-                numberOfLines={1}>
-                {item.location}
-              </Text>
-            ) : null}
-          </View>
-        )}
-      </View>
-
-      {/* Right: cost + actions */}
-      <View style={styles.right}>
-        {cost ? (
-          <Text style={[styles.cost, { color: colors.textColors.default }]}>
-            {cost}
-          </Text>
-        ) : null}
-
-        {isReordering ? (
-          <View style={styles.reorderButtons}>
-            <Pressable
-              onPress={onMoveUp}
-              disabled={!canMoveUp}
-              hitSlop={8}
-              style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: canMoveUp ? typeColor : colors.textColors.subtle,
-                }}>
-                ↑
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={onMoveDown}
-              disabled={!canMoveDown}
-              hitSlop={8}
-              style={[styles.arrowBtn, !canMoveDown && styles.arrowDisabled]}>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: canMoveDown ? typeColor : colors.textColors.subtle,
-                }}>
-                ↓
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <GripVertical
-            size={16}
-            color={colors.textColors.subtle}
-            style={{ opacity: 0.5 }}
+    <View>
+      <View
+        style={[
+          styles.card,
+          {
+            borderColor: '#F0F0F0',
+          },
+        ]}>
+        {hasImage ? (
+          <Image
+            source={{ uri: item.image_url! }}
+            style={styles.thumbnail}
+            contentFit="cover"
           />
+        ) : (
+          <View style={styles.thumbnailPlaceholder}>
+            <ImageIcon size={20} color="#D0D0D0" />
+          </View>
         )}
 
-        {isCreator && !isReordering && (
-          <Pressable
-            onPress={handleOptions}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MoreVertical size={16} color={colors.textColors.subtle} />
-          </Pressable>
-        )}
+        <View style={styles.content}>
+          <View style={styles.typeBadge}>
+            <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
+            <Text style={styles.typeBadgeLabel}>{config.label}</Text>
+          </View>
+
+          <Text
+            style={[styles.title, { color: colors.textColors.default }]}
+            numberOfLines={1}>
+            {item.title}
+          </Text>
+
+          {item.location ? (
+            <Text
+              style={[styles.locationText, { color: '#AEAEAE' }]}
+              numberOfLines={1}>
+              {item.location}
+            </Text>
+          ) : null}
+        </View>
+
+        <View style={styles.right}>
+          {isReordering ? (
+            <View style={styles.reorderButtons}>
+              <Pressable
+                onPress={onMoveUp}
+                disabled={!canMoveUp}
+                style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
+                <ChevronUp size={20} color={canMoveUp ? '#000' : '#D0D0D0'} />
+              </Pressable>
+              <Pressable
+                onPress={onMoveDown}
+                disabled={!canMoveDown}
+                style={[styles.arrowBtn, !canMoveDown && styles.arrowDisabled]}>
+                <ChevronDown
+                  size={18}
+                  strokeWidth={1.5}
+                  color={canMoveDown ? '#000' : '#D0D0D0'}
+                />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable hitSlop={12} onPress={handleOptionsPress}>
+              <Ellipsis size={18} strokeWidth={1.5} color="#AEAEAE" />
+            </Pressable>
+          )}
+        </View>
       </View>
+
+      <View style={styles.notesContainer}>
+        <Text
+          style={[styles.notesText, !item.notes && styles.notesPlaceholder]}>
+          {item.notes || 'Add notes, links, etc here.'}
+        </Text>
+      </View>
+
+      <ActionMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={menuOptions}
+        anchorPosition={menuAnchor}
+      />
     </View>
   );
 };
@@ -241,15 +176,22 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 10,
-    gap: 10,
-    marginBottom: 6,
+    paddingBottom: 5,
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1,
   },
-  typeDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  thumbnail: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    flexShrink: 0,
+  },
+  thumbnailPlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -258,36 +200,67 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  title: {
-    fontSize: 14,
-    fontFamily: 'BricolageGrotesque-SemiBold',
-  },
-  meta: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  metaText: {
-    fontSize: 12,
-  },
-  right: {
+  typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
+    alignSelf: 'flex-start',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
+    marginBottom: 4,
   },
-  cost: {
-    fontSize: 13,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+  typeBadgeEmoji: {
+    fontSize: 12,
+  },
+  typeBadgeLabel: {
+    fontSize: 10,
+    fontFamily: AppFonts.inter.medium,
+    color: '#00',
+  },
+  title: {
+    fontSize: 14,
+    fontFamily: AppFonts.bricolage.semiBold,
+  },
+  locationText: {
+    fontSize: 11,
+    fontFamily: AppFonts.inter.regular,
+  },
+  right: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 24,
   },
   reorderButtons: {
     flexDirection: 'column',
-    gap: 2,
+    gap: 4,
   },
   arrowBtn: {
     padding: 2,
   },
   arrowDisabled: {
     opacity: 0.3,
+  },
+  notesContainer: {
+    backgroundColor: '#F9F9F9',
+    marginTop: 5,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  notesText: {
+    fontSize: 13,
+    fontFamily: AppFonts.inter.regular,
+    color: '#666',
+    lineHeight: 16,
+  },
+  notesPlaceholder: {
+    color: '#BFBFBF',
   },
 });

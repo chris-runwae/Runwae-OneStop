@@ -66,6 +66,8 @@ export type CreateItineraryItemInput = {
   cost?: number | null;
   currency?: string;
   notes?: string | null;
+  image_url?: string | null;
+  external_id?: string | null;
 };
 
 export type UpdateItineraryItemInput = Partial<CreateItineraryItemInput>;
@@ -101,6 +103,33 @@ export const fetchOrCreateItinerary = async (
 
   if (createErr) throw createErr;
   return created as Itinerary;
+};
+
+/**
+ * Returns the total count of itinerary items for a given group.
+ */
+export const fetchItineraryItemsCount = async (groupId: string): Promise<number> => {
+  const { data: itin, error: itinErr } = await supabase
+    .from('itineraries')
+    .select('id')
+    .eq('group_id', groupId)
+    .maybeSingle();
+
+  if (itinErr || !itin) return 0;
+
+  const { data, error } = await supabase
+    .from('itinerary_day')
+    .select('itinerary_items(id)')
+    .eq('itinerary_id', itin.id);
+
+  if (error) return 0;
+
+  const totalCount = (data as any[]).reduce(
+    (acc, day) => acc + (day.itinerary_items?.length || 0),
+    0
+  );
+
+  return totalCount;
 };
 
 /**
@@ -275,6 +304,22 @@ export const reorderItems = async (
         .eq('id', id),
     ),
   );
+};
+
+/**
+ * Moves an item to a different day and updates its position.
+ */
+export const moveItemToDay = async (
+  itemId: string,
+  targetDayId: string,
+  newPosition: number = 0
+): Promise<void> => {
+  const { error } = await supabase
+    .from('itinerary_items')
+    .update({ day_id: targetDayId, position: newPosition })
+    .eq('id', itemId);
+
+  if (error) throw error;
 };
 
 /**

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
+  Alert,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
@@ -14,50 +15,98 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import {
   Calendar,
+  Camera,
   Car,
+  Clock,
   Compass,
+  DollarSign,
   Hotel,
+  ImageIcon,
+  MapPin,
   Plane,
   Ship,
+  StickyNote,
   Utensils,
   X,
 } from 'lucide-react-native';
 
 import { Text } from '@/components';
-import { Colors } from '@/constants';
-import { CreateItineraryItemInput, ItemType } from '@/hooks/useItineraryActions';
+import { AppFonts, Colors } from '@/constants';
+import {
+  CreateItineraryItemInput,
+  ItemType,
+} from '@/hooks/useItineraryActions';
+import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 
 // ----------------------------------------------------------------
 // Constants
 // ----------------------------------------------------------------
 
-type TypeOption = { value: ItemType; label: string; icon: (c: string) => React.ReactNode };
+type TypeOption = {
+  value: ItemType;
+  label: string;
+  icon: (c: string, s: number) => React.ReactNode;
+  color: string;
+};
 
 const TYPE_OPTIONS: TypeOption[] = [
-  { value: 'flight',     label: 'Flight',     icon: (c) => <Plane    size={16} color={c} /> },
-  { value: 'hotel',      label: 'Hotel',      icon: (c) => <Hotel    size={16} color={c} /> },
-  { value: 'activity',   label: 'Activity',   icon: (c) => <Compass  size={16} color={c} /> },
-  { value: 'restaurant', label: 'Restaurant', icon: (c) => <Utensils size={16} color={c} /> },
-  { value: 'transport',  label: 'Transport',  icon: (c) => <Car      size={16} color={c} /> },
-  { value: 'cruise',     label: 'Cruise',     icon: (c) => <Ship     size={16} color={c} /> },
-  { value: 'event',      label: 'Event',      icon: (c) => <Calendar size={16} color={c} /> },
-  { value: 'other',      label: 'Other',      icon: (c) => <Compass  size={16} color={c} /> },
+  {
+    value: 'activity',
+    label: 'Activity',
+    icon: (c, s) => <Compass size={s} color={c} />,
+    color: '#FF1F8C',
+  },
+  {
+    value: 'flight',
+    label: 'Flight',
+    icon: (c, s) => <Plane size={s} color={c} />,
+    color: '#3b82f6',
+  },
+  {
+    value: 'hotel',
+    label: 'Hotel',
+    icon: (c, s) => <Hotel size={s} color={c} />,
+    color: '#8b5cf6',
+  },
+  {
+    value: 'restaurant',
+    label: 'Eat',
+    icon: (c, s) => <Utensils size={s} color={c} />,
+    color: '#ef4444',
+  },
+  {
+    value: 'transport',
+    label: 'Transport',
+    icon: (c, s) => <Car size={s} color={c} />,
+    color: '#6b7280',
+  },
+  {
+    value: 'cruise',
+    label: 'Cruise',
+    icon: (c, s) => <Ship size={s} color={c} />,
+    color: '#06b6d4',
+  },
+  {
+    value: 'event',
+    label: 'Event',
+    icon: (c, s) => <Calendar size={s} color={c} />,
+    color: '#f59e0b',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    icon: (c, s) => <Compass size={s} color={c} />,
+    color: '#9ca3af',
+  },
 ];
 
 const CURRENCIES = ['GBP', 'USD', 'EUR', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
-
-const TYPE_COLORS: Record<ItemType, string> = {
-  flight:     '#3b82f6',
-  hotel:      '#8b5cf6',
-  activity:   '#f59e0b',
-  restaurant: '#ef4444',
-  transport:  '#6b7280',
-  cruise:     '#06b6d4',
-  event:      '#ec4899',
-  other:      '#9ca3af',
-};
 
 // ----------------------------------------------------------------
 // Props
@@ -78,16 +127,24 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
   const colors = Colors[colorScheme];
   const translateY = useRef(new Animated.Value(500)).current;
 
-  const [type,      setType]      = useState<ItemType>('activity');
-  const [title,     setTitle]     = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime,   setEndTime]   = useState('');
-  const [location,  setLocation]  = useState('');
-  const [cost,      setCost]      = useState('');
-  const [currency,  setCurrency]  = useState('GBP');
-  const [notes,     setNotes]     = useState('');
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState('');
+  const [type, setType] = useState<ItemType>('activity');
+  const [title, setTitle] = useState('');
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [startTimeValue, setStartTimeValue] = useState(new Date());
+  const [endTimeValue, setEndTimeValue] = useState(new Date());
+  const [location, setLocation] = useState('');
+  const [cost, setCost] = useState('');
+  const [currency, setCurrency] = useState('GBP');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [currencyMenuVisible, setCurrencyMenuVisible] = useState(false);
+  const [currencyAnchor, setCurrencyAnchor] = useState({ top: 0, right: 0 });
+ 
+  const titleInputRef = useRef<TextInput>(null);
+  const currencyRef = useRef<View>(null);
 
   // Animate in/out
   useEffect(() => {
@@ -97,14 +154,16 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
         useNativeDriver: true,
         tension: 65,
         friction: 11,
-      }).start();
+      }).start(() => {
+        // Auto-focus the title input after animation
+        setTimeout(() => titleInputRef.current?.focus(), 100);
+      });
     } else {
       Animated.timing(translateY, {
         toValue: 600,
         duration: 220,
         useNativeDriver: true,
       }).start();
-      // Reset form when closing
       setTimeout(resetForm, 250);
     }
   }, [visible]);
@@ -112,32 +171,53 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
   const resetForm = () => {
     setType('activity');
     setTitle('');
-    setStartTime('');
-    setEndTime('');
+    setStartTimeValue(new Date());
+    setEndTimeValue(new Date());
     setLocation('');
     setCost('');
     setCurrency('GBP');
     setNotes('');
     setError('');
+    setImageUri(null);
   };
 
-  const handleCurrencyPick = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', ...CURRENCIES],
-          cancelButtonIndex: 0,
-        },
-        (i) => {
-          if (i > 0) setCurrency(CURRENCIES[i - 1]);
-        },
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission needed',
+        'We need photo library access to add images.'
       );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setImageUri(result.assets[0].uri);
     }
   };
 
+  const handleCurrencyPick = () => {
+    currencyRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      setCurrencyAnchor({ top: pageY + height, right: 20 });
+      setCurrencyMenuVisible(true);
+    });
+  };
+ 
+  const currencyOptions: ActionOption[] = CURRENCIES.map((c) => ({
+    label: c,
+    onPress: () => setCurrency(c),
+  }));
+
   const handleSubmit = async () => {
     if (!title.trim()) {
-      setError('Title is required');
+      setError('Please add a title');
       return;
     }
     setError('');
@@ -146,12 +226,13 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
       await onSubmit({
         title: title.trim(),
         type,
-        start_time: startTime.trim() || null,
-        end_time:   endTime.trim()   || null,
-        location:   location.trim()  || null,
-        cost:       cost ? parseFloat(cost) : null,
+        start_time: format(startTimeValue, 'HH:mm'),
+        end_time: format(endTimeValue, 'HH:mm'),
+        location: location.trim() || null,
+        cost: cost ? parseFloat(cost) : null,
         currency,
-        notes:      notes.trim()     || null,
+        notes: notes.trim() || null,
+        image_url: imageUri || null,
       });
       onClose();
     } catch (err) {
@@ -161,7 +242,8 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
     }
   };
 
-  const activeColor = TYPE_COLORS[type];
+  const activeOption = TYPE_OPTIONS.find((o) => o.value === type)!;
+  const activeColor = activeOption.color;
 
   return (
     <Modal
@@ -169,7 +251,11 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
       transparent
       animationType="fade"
       onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); onClose(); }}>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+          onClose();
+        }}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
@@ -185,50 +271,66 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
               transform: [{ translateY }],
             },
           ]}>
+          {/* Drag handle */}
+          <View style={styles.handleBar} />
+
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: colors.textColors.default }]}>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.textColors.default },
+              ]}>
               Add to Itinerary
             </Text>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color={colors.textColors.subtle} />
+            <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn}>
+              <X size={18} color={colors.textColors.subtle} />
             </Pressable>
           </View>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
-            {/* Type selector */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.typeRow}
-              style={{ marginBottom: 16 }}>
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}>
+            {/* ── Type Grid ── */}
+            <View style={styles.typeGrid}>
               {TYPE_OPTIONS.map((opt) => {
                 const isActive = opt.value === type;
-                const chipColor = TYPE_COLORS[opt.value];
                 return (
                   <Pressable
                     key={opt.value}
                     onPress={() => setType(opt.value)}
                     style={[
-                      styles.typeChip,
+                      styles.typeGridItem,
                       {
                         backgroundColor: isActive
-                          ? chipColor + '20'
-                          : colors.backgroundColors.subtle,
-                        borderColor: isActive ? chipColor : 'transparent',
-                        borderWidth: 1.5,
+                          ? opt.color + '15'
+                          : '#F7F7F7',
+                        borderColor: isActive ? opt.color + '40' : 'transparent',
                       },
                     ]}>
-                    {opt.icon(isActive ? chipColor : colors.textColors.subtle)}
+                    <View
+                      style={[
+                        styles.typeIconCircle,
+                        {
+                          backgroundColor: isActive
+                            ? opt.color + '20'
+                            : '#EFEFEF',
+                        },
+                      ]}>
+                      {opt.icon(
+                        isActive ? opt.color : '#AEAEAE',
+                        18
+                      )}
+                    </View>
                     <Text
                       style={[
-                        styles.typeChipLabel,
+                        styles.typeGridLabel,
                         {
-                          color: isActive
-                            ? chipColor
-                            : colors.textColors.subtle,
+                          color: isActive ? opt.color : '#999',
+                          fontFamily: isActive
+                            ? AppFonts.inter.semiBold
+                            : AppFonts.inter.medium,
                         },
                       ]}>
                       {opt.label}
@@ -236,181 +338,244 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
 
-            {/* Title */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                Title *
-              </Text>
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                placeholder="e.g. Check in at hotel"
-                placeholderTextColor={colors.textColors.subtle}
+            {/* ── Title ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>What's the plan?</Text>
+              <View
                 style={[
-                  styles.input,
+                  styles.inputRow,
                   {
-                    color: colors.textColors.default,
-                    backgroundColor: colors.backgroundColors.subtle,
-                    borderColor: error && !title.trim()
-                      ? '#ef4444'
-                      : colors.borderColors.subtle,
+                    borderColor:
+                      error && !title.trim() ? '#FF4444' : '#F0F0F0',
                   },
-                ]}
-              />
-            </View>
-
-            {/* Time row */}
-            <View style={styles.row}>
-              <View style={[styles.field, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                  Start time
-                </Text>
-                <TextInput
-                  value={startTime}
-                  onChangeText={setStartTime}
-                  placeholder="09:00"
-                  placeholderTextColor={colors.textColors.subtle}
-                  keyboardType="numbers-and-punctuation"
+                ]}>
+                <View
                   style={[
-                    styles.input,
-                    {
-                      color: colors.textColors.default,
-                      backgroundColor: colors.backgroundColors.subtle,
-                      borderColor: colors.borderColors.subtle,
-                    },
-                  ]}
-                />
-              </View>
-              <View style={[styles.field, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                  End time
-                </Text>
-                <TextInput
-                  value={endTime}
-                  onChangeText={setEndTime}
-                  placeholder="11:00"
-                  placeholderTextColor={colors.textColors.subtle}
-                  keyboardType="numbers-and-punctuation"
-                  style={[
-                    styles.input,
-                    {
-                      color: colors.textColors.default,
-                      backgroundColor: colors.backgroundColors.subtle,
-                      borderColor: colors.borderColors.subtle,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-
-            {/* Location */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                Location
-              </Text>
-              <TextInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder="e.g. Heathrow Terminal 5"
-                placeholderTextColor={colors.textColors.subtle}
-                style={[
-                  styles.input,
-                  {
-                    color: colors.textColors.default,
-                    backgroundColor: colors.backgroundColors.subtle,
-                    borderColor: colors.borderColors.subtle,
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Cost + currency */}
-            <View style={styles.row}>
-              <View style={[styles.field, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                  Cost
-                </Text>
-                <TextInput
-                  value={cost}
-                  onChangeText={setCost}
-                  placeholder="0.00"
-                  placeholderTextColor={colors.textColors.subtle}
-                  keyboardType="decimal-pad"
-                  style={[
-                    styles.input,
-                    {
-                      color: colors.textColors.default,
-                      backgroundColor: colors.backgroundColors.subtle,
-                      borderColor: colors.borderColors.subtle,
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                  Currency
-                </Text>
-                <Pressable
-                  onPress={handleCurrencyPick}
-                  style={[
-                    styles.input,
-                    styles.currencyBtn,
-                    {
-                      backgroundColor: colors.backgroundColors.subtle,
-                      borderColor: colors.borderColors.subtle,
-                    },
+                    styles.inputIcon,
+                    { backgroundColor: activeColor + '12' },
                   ]}>
-                  <Text style={{ color: colors.textColors.default, fontSize: 15 }}>
-                    {currency}
+                  {activeOption.icon(activeColor, 16)}
+                </View>
+                <TextInput
+                  ref={titleInputRef}
+                  value={title}
+                  onChangeText={(t) => {
+                    setTitle(t);
+                    if (error) setError('');
+                  }}
+                  placeholder="What's the plan?"
+                  placeholderTextColor="#C5C5C5"
+                  style={styles.inputText}
+                />
+              </View>
+            </View>
+
+            {/* ── Time Row ── */}
+            <View style={styles.inputGroup}>
+              <View style={styles.twoCol}>
+                {/* Start Time */}
+                <View style={styles.halfInput}>
+                  <Text style={styles.inputLabel}>Start Time</Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowStartPicker(!showStartPicker);
+                      setShowEndPicker(false);
+                    }}
+                    style={styles.inputRow}>
+                  <View
+                    style={[
+                      styles.inputIcon,
+                      { backgroundColor: '#F0F0F0' },
+                    ]}>
+                    <Clock size={14} color="#AEAEAE" />
+                  </View>
+                  <Text style={styles.timeValueText}>
+                    {format(startTimeValue, 'hh:mm a')}
                   </Text>
                 </Pressable>
+ 
+                </View>
+ 
+                {/* End Time */}
+                <View style={styles.halfInput}>
+                  <Text style={styles.inputLabel}>End Time</Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowEndPicker(!showEndPicker);
+                      setShowStartPicker(false);
+                    }}
+                    style={styles.inputRow}>
+                    <View
+                      style={[
+                        styles.inputIcon,
+                        { backgroundColor: '#F0F0F0' },
+                      ]}>
+                      <Clock size={14} color="#AEAEAE" />
+                    </View>
+                    <Text style={styles.timeValueText}>
+                      {format(endTimeValue, 'hh:mm a')}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+ 
+            {/* Native Pickers */}
+            {showStartPicker && (
+              <DateTimePicker
+                value={startTimeValue}
+                mode="time"
+                is24Hour={false}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  setShowStartPicker(Platform.OS === 'ios');
+                  if (selectedDate) setStartTimeValue(selectedDate);
+                }}
+              />
+            )}
+ 
+            {showEndPicker && (
+              <DateTimePicker
+                value={endTimeValue}
+                mode="time"
+                is24Hour={false}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  setShowEndPicker(Platform.OS === 'ios');
+                  if (selectedDate) setEndTimeValue(selectedDate);
+                }}
+              />
+            )}
+
+            {/* ── Location ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Location</Text>
+              <View style={styles.inputRow}>
+                <View
+                  style={[
+                    styles.inputIcon,
+                    { backgroundColor: '#F0F0F0' },
+                  ]}>
+                  <MapPin size={14} color="#AEAEAE" />
+                </View>
+                <TextInput
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="Add location"
+                  placeholderTextColor="#C5C5C5"
+                  style={styles.inputText}
+                />
               </View>
             </View>
 
-            {/* Notes */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textColors.subtle }]}>
-                Notes
-              </Text>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Any extra details..."
-                placeholderTextColor={colors.textColors.subtle}
-                multiline
-                numberOfLines={3}
-                style={[
-                  styles.input,
-                  styles.notesInput,
-                  {
-                    color: colors.textColors.default,
-                    backgroundColor: colors.backgroundColors.subtle,
-                    borderColor: colors.borderColors.subtle,
-                  },
-                ]}
-              />
+            {/* ── Cost + Currency ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Cost</Text>
+              <View style={styles.twoCol}>
+                <View style={[styles.inputRow, { flex: 1 }]}>
+                  <View
+                    style={[
+                      styles.inputIcon,
+                      { backgroundColor: '#F0F0F0' },
+                    ]}>
+                    <DollarSign size={14} color="#AEAEAE" />
+                  </View>
+                  <TextInput
+                    value={cost}
+                    onChangeText={setCost}
+                    placeholder="Cost"
+                    placeholderTextColor="#C5C5C5"
+                    keyboardType="decimal-pad"
+                    style={styles.inputText}
+                  />
+                </View>
+                <View ref={currencyRef}>
+                  <Pressable
+                    onPress={handleCurrencyPick}
+                    style={[styles.currencyChip]}>
+                    <Text style={styles.currencyText}>{currency}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+ 
+            <ActionMenu
+              visible={currencyMenuVisible}
+              onClose={() => setCurrencyMenuVisible(false)}
+              options={currencyOptions}
+              anchorPosition={currencyAnchor}
+            />
+
+            {/* ── Image ── */}
+            <View style={styles.inputGroup}>
+              {imageUri ? (
+                <View style={styles.imagePreviewRow}>
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.imagePreview}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    onPress={() => setImageUri(null)}
+                    style={styles.imageRemoveBtn}>
+                    <X size={14} color="#fff" />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={handlePickImage}
+                  style={styles.imagePickerBtn}>
+                  <Camera size={18} color="#AEAEAE" />
+                  <Text style={styles.imagePickerText}>Add a photo</Text>
+                </Pressable>
+              )}
             </View>
 
-            {error ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : null}
+            {/* ── Notes ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Notes</Text>
+              <View style={[styles.inputRow, { alignItems: 'flex-start' }]}>
+                <View
+                  style={[
+                    styles.inputIcon,
+                    { backgroundColor: '#F0F0F0', marginTop: 2 },
+                  ]}>
+                  <StickyNote size={14} color="#AEAEAE" />
+                </View>
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Add notes..."
+                  placeholderTextColor="#C5C5C5"
+                  multiline
+                  numberOfLines={3}
+                  style={[styles.inputText, styles.notesText]}
+                />
+              </View>
+            </View>
 
-            {/* Submit */}
+            {/* Error */}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            {/* ── Submit ── */}
             <Pressable
               onPress={handleSubmit}
               disabled={saving}
               style={[
                 styles.submitBtn,
-                { backgroundColor: activeColor, opacity: saving ? 0.6 : 1 },
+                {
+                  backgroundColor: activeColor,
+                  opacity: saving ? 0.6 : 1,
+                },
               ]}>
               <Text style={styles.submitLabel}>
                 {saving ? 'Adding…' : 'Add to Itinerary'}
               </Text>
             </Pressable>
 
-            <View style={{ height: 24 }} />
+            <View style={{ height: 30 }} />
           </ScrollView>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -423,87 +588,215 @@ export default AddItineraryItemSheet;
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   avoidingView: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    maxHeight: '90%',
+    paddingTop: 8,
+    maxHeight: '88%',
+  },
+  handleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E0E0E0',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 17,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+    fontSize: 20,
+    fontFamily: AppFonts.bricolage.semiBold,
+    letterSpacing: -0.5,
   },
-  typeRow: {
-    gap: 8,
-    paddingRight: 8,
-  },
-  typeChip: {
-    flexDirection: 'row',
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  typeChipLabel: {
-    fontSize: 13,
-    fontFamily: 'BricolageGrotesque-Medium',
-  },
-  field: {
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 12,
-    marginBottom: 5,
-    fontFamily: 'BricolageGrotesque-Medium',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
-  notesInput: {
-    height: 80,
-    textAlignVertical: 'top',
-    paddingTop: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  currencyBtn: {
     justifyContent: 'center',
-    minWidth: 80,
   },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 13,
-    marginBottom: 8,
+  scrollContent: {
+    paddingBottom: 8,
   },
-  submitBtn: {
-    borderRadius: 14,
-    paddingVertical: 14,
+
+  // ── Type Grid ──
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  typeGridItem: {
+    width: '23%',
+    aspectRatio: 0.95,
+    borderRadius: 20,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    gap: 4,
+  },
+  typeIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeGridLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+
+  // ── Input Rows ──
+  inputGroup: {
+    marginBottom: 10,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    paddingHorizontal: 4,
+    minHeight: 48,
+  },
+  inputIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontFamily: AppFonts.inter.semiBold,
+    color: '#999',
+    marginBottom: 6,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: AppFonts.inter.medium,
+    color: '#1A1A1A',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  timeValueText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: AppFonts.inter.medium,
+    color: '#1A1A1A',
+    paddingHorizontal: 12,
+  },
+  notesText: {
+    minHeight: 70,
+    textAlignVertical: 'top',
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  halfInput: {
+    flex: 1,
+  },
+
+  // ── Currency ──
+  currencyChip: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  currencyText: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.semiBold,
+    color: '#333',
+  },
+
+  // ── Error ──
+  errorText: {
+    color: '#FF4444',
+    fontSize: 13,
+    fontFamily: AppFonts.inter.medium,
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+
+  // ── Submit ──
+  submitBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 6,
+    shadowColor: '#FF1F8C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitLabel: {
     color: '#fff',
     fontSize: 16,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+    fontFamily: AppFonts.bricolage.semiBold,
+  },
+
+  // ── Image Picker ──
+  imagePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    borderStyle: 'dashed',
+    paddingVertical: 16,
+  },
+  imagePickerText: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.medium,
+    color: '#AEAEAE',
+  },
+  imagePreviewRow: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+  },
+  imageRemoveBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

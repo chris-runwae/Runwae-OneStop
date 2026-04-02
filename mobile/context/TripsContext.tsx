@@ -42,12 +42,20 @@ import {
   deleteItem as deleteItemAction,
   reorderItems as reorderItemsAction,
   reorderDays as reorderDaysAction,
+  moveItemToDay as moveItemToDayAction,
   Itinerary,
   ItineraryDay,
   ItineraryDayWithItems,
   CreateItineraryItemInput,
   UpdateItineraryItemInput,
 } from '@/hooks/useItineraryActions';
+import {
+  fetchSavedItems,
+  createSavedItem,
+  deleteSavedItem,
+  SavedItineraryItem,
+  CreateSavedItemInput,
+} from '@/hooks/useIdeaActions';
 
 // ================================================================
 // Context shape
@@ -61,10 +69,12 @@ export interface TripsContextType {
   isLoading: boolean;
   error: string | null;
 
-  // Itinerary state
+  // Itinerary & Ideas state
   itinerary: Itinerary | null;
   days: ItineraryDayWithItems[];
   itineraryLoading: boolean;
+  ideas: SavedItineraryItem[];
+  ideasLoading: boolean;
 
   // Refresh
   refreshMyTrips: () => Promise<void>;
@@ -116,6 +126,12 @@ export interface TripsContextType {
   removeItem: (itemId: string) => Promise<void>;
   reorderItemsCtx: (dayId: string, orderedIds: string[]) => Promise<void>;
   reorderDaysCtx: (orderedIds: string[]) => Promise<void>;
+  moveItemToDayCtx: (itemId: string, fromDayId: string, toDayId: string) => Promise<void>;
+ 
+  // Ideas actions
+  loadIdeas: (groupId: string) => Promise<void>;
+  addIdea: (input: CreateSavedItemInput) => Promise<void>;
+  removeIdea: (ideaId: string) => Promise<void>;
 }
 
 const TripsContext = createContext<TripsContextType | undefined>(undefined);
@@ -133,10 +149,12 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Itinerary state
+  // Itinerary & Ideas state
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [days, setDays] = useState<ItineraryDayWithItems[]>([]);
   const [itineraryLoading, setItineraryLoading] = useState(false);
+  const [ideas, setIdeas] = useState<SavedItineraryItem[]>([]);
+  const [ideasLoading, setIdeasLoading] = useState(false);
 
   // Prevent double-fetch on StrictMode double-mount
   const initialFetchDone = useRef(false);
@@ -343,6 +361,78 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     [itinerary]
   );
 
+  const moveItemToDayCtx = useCallback(
+    async (itemId: string, fromDayId: string, toDayId: string) => {
+      const prevDays = days;
+      setDays((prev) => {
+        const item = prev.flatMap((d) => d.itinerary_items).find((it) => it.id === itemId);
+        if (!item) return prev;
+        
+        return prev.map((d) => {
+          if (d.id === fromDayId) {
+            return {
+              ...d,
+              itinerary_items: d.itinerary_items.filter((it) => it.id !== itemId),
+            };
+          }
+          if (d.id === toDayId) {
+            return {
+              ...d,
+              itinerary_items: [...d.itinerary_items, { ...item, day_id: toDayId }],
+            };
+          }
+          return d;
+        });
+      });
+ 
+      try {
+        await moveItemToDayAction(itemId, toDayId);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+ 
+  // ----------------------------------------------------------------
+  // Ideas / saved items helpers
+  // ----------------------------------------------------------------
+ 
+  const loadIdeas = useCallback(async (groupId: string) => {
+    setIdeasLoading(true);
+    try {
+      const data = await fetchSavedItems(groupId);
+      setIdeas(data);
+    } catch (err) {
+      console.error('Failed to load ideas:', err);
+    } finally {
+      setIdeasLoading(false);
+    }
+  }, []);
+ 
+  const addIdea = useCallback(
+    async (input: CreateSavedItemInput) => {
+      if (!user?.id || !activeTrip) return;
+      try {
+        const newItem = await createSavedItem(activeTrip.id, user.id, input);
+        setIdeas((prev) => [newItem, ...prev]);
+      } catch (err) {
+        console.error('Failed to add idea:', err);
+      }
+    },
+    [user?.id, activeTrip]
+  );
+ 
+  const removeIdea = useCallback(async (ideaId: string) => {
+    setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
+    try {
+      await deleteSavedItem(ideaId);
+    } catch (err) {
+      console.error('Failed to remove idea:', err);
+    }
+  }, []);
+ 
   // ----------------------------------------------------------------
   // Active trip
   // ----------------------------------------------------------------
@@ -356,18 +446,19 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         setError(err);
       } else {
         setActiveTrip(data);
-        // Load itinerary alongside the trip data.
-        await loadItinerary(id);
+        // Load itinerary and ideas alongside the trip data.
+        await Promise.all([loadItinerary(id), loadIdeas(id)]);
       }
       setIsLoading(false);
     },
-    [loadItinerary]
+    [loadItinerary, loadIdeas]
   );
-
+ 
   const clearActiveTrip = useCallback(() => {
     setActiveTrip(null);
     setItinerary(null);
     setDays([]);
+    setIdeas([]);
   }, []);
 
   // ----------------------------------------------------------------
@@ -676,6 +767,12 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         removeItem,
         reorderItemsCtx,
         reorderDaysCtx,
+        moveItemToDayCtx,
+        ideas,
+        ideasLoading,
+        loadIdeas,
+        addIdea,
+        removeIdea,
       }}>
       {children}
     </TripsContext.Provider>

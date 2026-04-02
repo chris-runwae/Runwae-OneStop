@@ -1,13 +1,16 @@
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
-import { Trip } from '@/constants/home.constant';
+// import { Trip } from '@/constants/home.constant';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, Image, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { TripWithEverything } from '@/hooks/useTripActions';
+
 import TripCard from './TripCard';
 
 interface UpcomingTripsProps {
-  trips: Trip[];
+  trips: TripWithEverything[];
   loading?: boolean;
 }
 
@@ -22,7 +25,7 @@ const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
         onPress={() => router.push('/trips')}
       />
 
-      <FlatList
+      <FlashList
         data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -51,8 +54,8 @@ const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
               No trips planned yet
             </Text>
             <Text className="mt-1 text-center text-sm text-gray-400 dark:text-gray-500">
-              No upcoming trips. Let's start exploring and plan{'\n'} your first
-              adventure!
+              No upcoming trips. Let&apos;s start exploring and plan{'\n'} your
+              first adventure!
             </Text>
           </View>
         }

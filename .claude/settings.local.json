@@ -23,7 +23,8 @@
       "Read(//Users/christopherobocha/.supabase/**)",
       "Read(//Users/christopherobocha/.config/supabase/**)",
       "Read(//Users/christopherobocha/**)",
-      "Read(//Users/christopherobocha/.config/**)"
+      "Read(//Users/christopherobocha/.config/**)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }

@@ -4,15 +4,14 @@ import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
-import {
-  ADD_ONS_FOR_YOU,
-  UPCOMING_EVENTS,
-  UPCOMING_TRIPS,
-} from '@/constants/home.constant';
+import { ADD_ONS_FOR_YOU, UPCOMING_EVENTS } from '@/constants/home.constant';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
+
+import { useTrips } from '@/context/TripsContext';
+import { TripWithEverything } from '@/hooks/useTripActions';
 
 export default function HomeScreen() {
   const {
@@ -25,6 +24,23 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { myTrips, joinedTrips } = useTrips();
+
+  function isActive(trip: TripWithEverything): boolean {
+    const endDate = trip.trip_details?.end_date;
+    if (!endDate) return true;
+    return new Date(endDate) >= new Date(new Date().toDateString());
+  }
+
+  const allTrips = useMemo(
+    () => [...myTrips, ...joinedTrips],
+    [myTrips, joinedTrips]
+  );
+
+  const upcomingTrips = useMemo(
+    () => allTrips.filter((t) => isActive(t as TripWithEverything)),
+    [allTrips]
+  );
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -54,7 +70,7 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
-        <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
+        <UpcomingTrips trips={upcomingTrips} loading={loading} />
         <UpcomingEvents
           data={UPCOMING_EVENTS}
           title="Featured Events"

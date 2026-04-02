@@ -1,30 +1,35 @@
+import { Spacer } from '@/components';
 import AddOnsForYou from '@/components/home/AddOnsForYou';
 import HomeTopSection from '@/components/home/HomeTopSection';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
-import { ADD_ONS_FOR_YOU, UPCOMING_EVENTS } from '@/constants/home.constant';
 import { useAuth } from '@/context/AuthContext';
+import { useTrips } from '@/context/TripsContext';
+import { useEvents } from '@/hooks/useEvents';
+import { useExperiences } from '@/hooks/useExperiences';
+import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 
-import { useTrips } from '@/context/TripsContext';
-import { TripWithEverything } from '@/hooks/useTripActions';
-
 export default function HomeScreen() {
-  const {
-    showWelcomeModal,
-    setShowWelcomeModal,
-    user,
-    isLoading: authLoading,
-  } = useAuth();
+  const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { myTrips, joinedTrips } = useTrips();
+  const {
+    data: events,
+    loading: eventsLoading,
+    refresh: refreshEvents,
+  } = useEvents();
+  const {
+    data: experiences,
+    loading: experiencesLoading,
+    refresh: refreshExperiences,
+  } = useExperiences();
 
   function isActive(trip: TripWithEverything): boolean {
     const endDate = trip.trip_details?.end_date;
@@ -42,20 +47,12 @@ export default function HomeScreen() {
     [allTrips]
   );
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Simulate a network request
-    setTimeout(() => {
+    Promise.all([refreshEvents(), refreshExperiences()]).finally(() => {
       setRefreshing(false);
-    }, 1500);
-  }, []);
+    });
+  }, [refreshEvents, refreshExperiences]);
 
   return (
     <AppSafeAreaView>
@@ -70,15 +67,17 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
-        <UpcomingTrips trips={upcomingTrips} loading={loading} />
+        <UpcomingTrips trips={upcomingTrips} loading={false} />
+
+        <Spacer vertical size={32} />
         <UpcomingEvents
-          data={UPCOMING_EVENTS}
+          data={events}
           title="Featured Events"
           showSubtitle={false}
-          loading={loading}
+          loading={eventsLoading}
         />
-        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
-        {/* <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} /> */}
+        <Spacer vertical size={32} />
+        <AddOnsForYou data={experiences} loading={experiencesLoading} />
       </ScrollView>
 
       <WelcomeModal

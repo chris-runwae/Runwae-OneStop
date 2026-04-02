@@ -3,8 +3,9 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import { Event } from '@/constants/home.constant';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, View } from 'react-native';
+import { View } from 'react-native';
 import EventCard from './EventCard';
+import { FlashList } from '@shopify/flash-list';
 
 interface UpcomingEventsProps {
   data: Event[];
@@ -25,14 +26,14 @@ const UpcomingEvents = ({
   const displayData = loading ? (Array(5).fill({}) as Event[]) : data;
 
   return (
-    <View className="mt-5 pb-5">
+    <View>
       <SectionHeader
         title={title}
         subtitle={showSubtitle ? subtitle : undefined}
         onPress={() => router.push('/events' as any)}
       />
 
-      <FlatList
+      <FlashList
         data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}

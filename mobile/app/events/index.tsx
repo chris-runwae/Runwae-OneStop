@@ -3,7 +3,8 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { EventCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { Event, UPCOMING_EVENTS } from "@/constants/home.constant";
+import { useEvents } from "@/hooks/useEvents";
+import { Event } from "@/types/content.types";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
@@ -28,24 +29,17 @@ const EmptyState = () => (
 
 const EventsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data, loading } = useEvents();
 
   const filteredEvents = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return UPCOMING_EVENTS.filter(
+    return data.filter(
       (item) =>
         item.title.toLowerCase().includes(query) ||
         item.location.toLowerCase().includes(query) ||
         item.category.toLowerCase().includes(query),
     );
-  }, [searchQuery]);
+  }, [searchQuery, data]);
 
   const displayData = loading ? Array(6).fill({}) : filteredEvents;
 

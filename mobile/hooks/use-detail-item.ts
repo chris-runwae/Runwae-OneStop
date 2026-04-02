@@ -1,10 +1,10 @@
-import { getDestinationById } from "@/utils/supabase/destinations.service";
-import { getExperienceById } from "@/utils/supabase/experiences.service";
-import { getItineraryTemplateById } from "@/utils/supabase/itinerary-templates.service";
-import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { getDestinationById } from '@/utils/supabase/destinations.service';
+import { getExperienceById } from '@/utils/supabase/experiences.service';
+import { getItineraryTemplateById } from '@/utils/supabase/itinerary-templates.service';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 
-type DetailType = "itinerary" | "experience" | "destination";
+type DetailType = 'itinerary' | 'experience' | 'destination';
 
 export function useDetailItem(type: DetailType) {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,16 +22,19 @@ export function useDetailItem(type: DetailType) {
     const fetch = async () => {
       try {
         let result: any = null;
-        if (type === "itinerary") {
+        if (type === 'itinerary') {
           result = await getItineraryTemplateById(id as string);
-        } else if (type === "experience") {
+        } else if (type === 'experience') {
           result = await getExperienceById(id as string);
-        } else {
+        } else if (type === 'destination') {
+          console.log('getDestinationById: ', id);
           result = await getDestinationById(id as string);
+        } else {
+          result = null;
         }
         if (!cancelled) setItem(result);
       } catch (e: any) {
-        if (!cancelled) setError(e.message ?? "Failed to load");
+        if (!cancelled) setError(e.message ?? 'Failed to load');
       } finally {
         if (!cancelled) setLoading(false);
       }

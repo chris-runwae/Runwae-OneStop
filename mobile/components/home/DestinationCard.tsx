@@ -1,7 +1,7 @@
-import { Destination } from "@/constants/home.constant";
-import { useRouter } from "expo-router";
-import React from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Destination } from '@/constants/home.constant';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, Pressable, Text, View } from 'react-native';
 
 interface DestinationCardProps {
   item: Destination;
@@ -19,6 +19,8 @@ const DestinationCard = ({
   const router = useRouter();
   const isNavigating = React.useRef(false);
 
+  console.log('item: ', JSON.stringify(item?.id, null, 2));
+
   const handlePress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
@@ -31,9 +33,8 @@ const DestinationCard = ({
   return (
     <Pressable
       onPress={handlePress}
-      className={fullWidth ? "" : "mr-3"}
-      style={{ width: fullWidth ? "100%" : width }}
-    >
+      className={fullWidth ? '' : 'mr-3'}
+      style={{ width: fullWidth ? '100%' : width }}>
       <Image
         source={{ uri: item.image }}
         className={`w-full h-[${imageHieght}px] rounded-t-[16px]`}
@@ -41,17 +42,15 @@ const DestinationCard = ({
       />
       <View className="mt-3">
         <Text
-          className="text-black dark:text-white font-semibold text-lg leading-tight mb-1"
+          className="mb-1 text-lg font-semibold leading-tight text-black dark:text-white"
           numberOfLines={1}
-          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-        >
+          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
           {item.title}
         </Text>
 
         <Text
-          className="text-gray-500 dark:text-gray-400 text-sm leading-snug"
-          numberOfLines={1}
-        >
+          className="text-sm leading-snug text-gray-500 dark:text-gray-400"
+          numberOfLines={1}>
           {item.location}
         </Text>
       </View>

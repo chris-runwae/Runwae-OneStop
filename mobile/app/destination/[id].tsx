@@ -1,28 +1,42 @@
-import DestinationInfo from "@/components/destination/DestinationInfo";
-import RecommendationsSection from "@/components/destination/RecommendationsSection";
-import DetailNotFound from "@/components/experience/DetailNotFound";
-import AddOnsForYou from "@/components/home/AddOnsForYou";
-import DestinationCard from "@/components/home/DestinationCard";
-import ItineraryForYou from "@/components/home/IteneryForYou";
-import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
+import DetailNotFound from '@/components/experience/DetailNotFound';
+import DestinationInfo from '@/components/destination/DestinationInfo';
+import RecommendationsSection from '@/components/destination/RecommendationsSection';
+import AddOnsForYou from '@/components/home/AddOnsForYou';
+import DestinationCard from '@/components/home/DestinationCard';
+import ItineraryForYou from '@/components/home/IteneryForYou';
+import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
+import { Colors } from '@/constants';
 import {
-  ADD_ONS_FOR_YOU,
   DESTINATIONS_FOR_YOU,
   EXPERIENCE_HIGHLIGHTS,
   FEATURED_ITINERARIES,
-} from "@/constants/home.constant";
-import { useDetailItem } from "@/hooks/use-detail-item";
-import React, { useMemo } from "react";
+} from '@/constants/home.constant';
+import { useDetailItem } from '@/hooks/use-detail-item';
+import React, { useMemo } from 'react';
 
-import { FlatList, Image, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DestinationDetailScreen = () => {
-  const { id, item: destination, loading } = useDetailItem("destination") as {
+  const colorScheme = useColorScheme() as 'light' | 'dark';
+  const colors = Colors[colorScheme];
+
+  const {
+    id,
+    item: destination,
+    loading,
+  } = useDetailItem('destination') as {
     id: string;
     item: any;
     loading: boolean;
@@ -42,8 +56,18 @@ const DestinationDetailScreen = () => {
 
   const similarDestinations = useMemo(() => {
     return DESTINATIONS_FOR_YOU.filter((d) => d.id !== id);
-  }, [id, DESTINATIONS_FOR_YOU]);
+  }, [id]);
 
+  // console.log('destination: ', JSON.stringify(destination, null, 2), loading);
+  if (loading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   if (!loading && !destination) {
     return <DetailNotFound type="itinerary" />;
@@ -62,11 +86,10 @@ const DestinationDetailScreen = () => {
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
-      >
+        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}>
         <Image
           source={{ uri: destination.image }}
-          className="w-full h-[300px]"
+          className="h-[300px] w-full"
           resizeMode="cover"
         />
 
@@ -74,10 +97,10 @@ const DestinationDetailScreen = () => {
           title={destination.title}
           location={destination.location}
           rating={destination.rating || 4.5}
-          description={destination.description || ""}
+          description={destination.description || ''}
         />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-5" />
+        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <ItineraryForYou
           data={featuredItineraries}
@@ -87,7 +110,7 @@ const DestinationDetailScreen = () => {
           loading={loading}
         />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-5" />
+        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <View>
           <AddOnsForYou
@@ -99,18 +122,16 @@ const DestinationDetailScreen = () => {
           />
         </View>
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-5" />
+        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <RecommendationsSection />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-5" />
-
+        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <View className="mt-8 pb-10">
           <Text
-            className="px-5 text-xl font-bold dark:text-white mb-6"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
+            className="mb-6 px-5 text-xl font-bold dark:text-white"
+            style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
             Similar Destinations
           </Text>
 
@@ -130,7 +151,6 @@ const DestinationDetailScreen = () => {
               />
             )}
           />
-
         </View>
       </Animated.ScrollView>
     </View>

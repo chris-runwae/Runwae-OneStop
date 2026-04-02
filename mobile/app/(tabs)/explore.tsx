@@ -1,29 +1,39 @@
-import AddOnsForYou from "@/components/home/AddOnsForYou";
-import DestinationsForYou from "@/components/home/DestinationsForYou";
-import ExploreCategories from "@/components/home/ExploreCategories";
-import ItineraryForYou from "@/components/home/IteneryForYou";
-import UpcomingEvents from "@/components/home/UpcomingEvents";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import CustomModal from "@/components/ui/CustomModal";
-import MainTabHeader from "@/components/ui/MainTabHeader";
-import SearchInput from "@/components/ui/SearchInput";
+import AddOnsForYou from '@/components/home/AddOnsForYou';
+import DestinationsForYou from '@/components/home/DestinationsForYou';
+import ExploreCategories from '@/components/home/ExploreCategories';
+import ItineraryForYou from '@/components/home/IteneryForYou';
+import UpcomingEvents from '@/components/home/UpcomingEvents';
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import CustomModal from '@/components/ui/CustomModal';
+import MainTabHeader from '@/components/ui/MainTabHeader';
+import SearchInput from '@/components/ui/SearchInput';
 import {
   DESTINATION_HIGHLIGHTS,
   EXPERIENCE_HIGHLIGHTS,
   EXPLORE_CATEGORIES,
   FEATURED_ITINERARIES,
   UPCOMING_EVENTS,
-} from "@/constants/home.constant";
-import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+} from '@/constants/home.constant';
+
+import React, { useMemo, useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+
+import { useDestinations } from '@/hooks/useDestinations';
+import { useEvents } from '@/hooks/useEvents';
+import { useExperiences } from '@/hooks/useExperiences';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [selectedSubCategory, setSelectedSubCategory] = useState("All");
-  const [selectedTopCategory, setSelectedTopCategory] = useState("All");
-  const [selectedPrice, setSelectedPrice] = useState("$50 - $200");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState('All');
+  const [selectedTopCategory, setSelectedTopCategory] = useState('All');
+  const [selectedPrice, setSelectedPrice] = useState('$50 - $200');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const { data: destinations, loading: destinationsLoading } =
+    useDestinations();
+  const { data: events, loading: eventsLoading } = useEvents();
+  const { data: experiences, loading: experiencesLoading } = useExperiences();
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -33,7 +43,7 @@ const ExploreScreen = () => {
   }, []);
 
   const handleApplyFilters = () => {
-    console.log("Applying filters:", { selectedTopCategory, selectedPrice });
+    console.log('Applying filters:', { selectedTopCategory, selectedPrice });
     setIsFilterModalVisible(false);
   };
 
@@ -45,12 +55,13 @@ const ExploreScreen = () => {
 
   // Helper for sub-category matching
   const matchesSubCategory = (itemCategory: string, selected: string) => {
-    if (selected === "All") return true;
+    if (selected === 'All') return true;
     return itemCategory === selected;
   };
 
   const filteredItineraries = useMemo(() => {
-    if (selectedTopCategory !== "All" && selectedTopCategory !== "Trips") return [];
+    if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
+      return [];
     return FEATURED_ITINERARIES.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
@@ -58,41 +69,34 @@ const ExploreScreen = () => {
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory]);
 
-  const filteredEvents = useMemo(() => {
-    if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
-    return UPCOMING_EVENTS.filter(
-      (item) =>
-        matchesSearch(item.title + item.location, searchQuery) &&
-        matchesSubCategory(item.category, selectedSubCategory)
-    );
-  }, [searchQuery, selectedSubCategory, selectedTopCategory]);
+  // const filteredEvents = useMemo(() => {
+  //   if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
+  //   return UPCOMING_EVENTS.filter(
+  //     (item) =>
+  //       matchesSearch(item.title + item.location, searchQuery) &&
+  //       matchesSubCategory(item.category, selectedSubCategory)
+  //   );
+  // }, [searchQuery, selectedSubCategory, selectedTopCategory]);
 
-  const filteredExperiences = useMemo(() => {
-    if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
-    
-    // Parse price range from string e.g., "$50 - $200"
-    const getPriceBounds = (range: string) => {
-      if (range === "$500+") return [500, Infinity];
-      const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
-      return [numbers[0], numbers[1] || Infinity];
-    };
-    
-    const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
+  // const filteredExperiences = useMemo(() => {
+  //   if (selectedTopCategory !== "All" && selectedTopCategory !== "Experiences") return [];
 
-    return EXPERIENCE_HIGHLIGHTS.filter(
-      (item) =>
-        matchesSearch(item.title, searchQuery) &&
-        matchesSubCategory(item.category, selectedSubCategory) &&
-        item.price >= minPrice && item.price <= maxPrice
-    );
-  }, [searchQuery, selectedSubCategory, selectedTopCategory, selectedPrice]);
+  //   // Parse price range from string e.g., "$50 - $200"
+  //   const getPriceBounds = (range: string) => {
+  //     if (range === "$500+") return [500, Infinity];
+  //     const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
+  //     return [numbers[0], numbers[1] || Infinity];
+  //   };
 
-  const filteredDestinations = useMemo(() => {
-    if (selectedTopCategory !== "All" && selectedTopCategory !== "Trips") return [];
-    return DESTINATION_HIGHLIGHTS.filter(
-      (item) => matchesSearch(item.title + item.location, searchQuery)
-    );
-  }, [searchQuery, selectedTopCategory]);
+  //   const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
+
+  //   return EXPERIENCE_HIGHLIGHTS.filter(
+  //     (item) =>
+  //       matchesSearch(item.title, searchQuery) &&
+  //       matchesSubCategory(item.category, selectedSubCategory) &&
+  //       item.price >= minPrice && item.price <= maxPrice
+  //   );
+  // }, [searchQuery, selectedSubCategory, selectedTopCategory, selectedPrice]);
 
   return (
     <AppSafeAreaView>
@@ -112,19 +116,19 @@ const ExploreScreen = () => {
           selectedCategory={selectedSubCategory}
           onCategoryPress={(cat) => setSelectedSubCategory(cat)}
           showClear={
-            searchQuery !== "" || 
-            selectedSubCategory !== "All" || 
-            selectedTopCategory !== "All" || 
-            selectedPrice !== "$50 - $200"
+            searchQuery !== '' ||
+            selectedSubCategory !== 'All' ||
+            selectedTopCategory !== 'All' ||
+            selectedPrice !== '$50 - $200'
           }
           onClear={() => {
-            setSearchQuery("");
-            setSelectedSubCategory("All");
-            setSelectedTopCategory("All");
-            setSelectedPrice("$50 - $200");
+            setSearchQuery('');
+            setSelectedSubCategory('All');
+            setSelectedTopCategory('All');
+            setSelectedPrice('$50 - $200');
           }}
         />
-        
+
         {filteredItineraries.length > 0 && (
           <ItineraryForYou
             data={filteredItineraries}
@@ -134,80 +138,77 @@ const ExploreScreen = () => {
           />
         )}
 
-        {filteredEvents.length > 0 && (
-          <UpcomingEvents data={filteredEvents} loading={loading} />
+        {events.length > 0 && (
+          <UpcomingEvents data={events} loading={eventsLoading} />
         )}
 
-        {filteredExperiences.length > 0 && (
+        {experiences.length > 0 && (
           <AddOnsForYou
-            data={filteredExperiences}
+            data={experiences}
             title="Experience Highlights"
             subtitle="Top picks for you"
             loading={loading}
           />
         )}
 
-        {filteredDestinations.length > 0 && (
+        {destinations.length > 0 && (
           <DestinationsForYou
-            data={filteredDestinations}
+            data={destinations}
             title="Popular Destinations"
             subtitle="Places that everyone else is crazy about"
             loading={loading}
           />
         )}
 
-        {filteredItineraries.length === 0 && 
-         filteredEvents.length === 0 && 
-         filteredExperiences.length === 0 && 
-         filteredDestinations.length === 0 && (
-          <View className="items-center justify-center py-10 px-5">
-            <Text className="text-gray-400 text-center text-lg font-medium">
-              No results found for "{searchQuery}"
-            </Text>
-            <TouchableOpacity 
-              onPress={() => {
-                setSearchQuery("");
-                setSelectedSubCategory("All");
-                setSelectedTopCategory("All");
-              }}
-              className="mt-4"
-            >
-              <Text className="text-primary font-semibold">Clear all filters</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
+        {filteredItineraries.length === 0 &&
+          events.length === 0 &&
+          experiences.length === 0 &&
+          destinations.length === 0 && (
+            <View className="items-center justify-center px-5 py-10">
+              <Text className="text-center text-lg font-medium text-gray-400">
+                No results found for &quot;{searchQuery}&quot;
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setSelectedSubCategory('All');
+                  setSelectedTopCategory('All');
+                }}
+                className="mt-4">
+                <Text className="font-semibold text-primary">
+                  Clear all filters
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
       </ScrollView>
 
       <CustomModal
         isVisible={isFilterModalVisible}
         onClose={() => setIsFilterModalVisible(false)}
-        title="Filter Options"
-      >
-        <View className="py-2 flex-col gap-y-6">
+        title="Filter Options">
+        <View className="flex-col gap-y-6 py-2">
           {/* Category Filter */}
           <View>
-            <Text className="font-semibold text-lg text-black dark:text-white mb-3">
+            <Text className="mb-3 text-lg font-semibold text-black dark:text-white">
               Category
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {["All", "Trips", "Hotels", "Experiences"].map((cat, i) => (
+              {['All', 'Trips', 'Hotels', 'Experiences'].map((cat, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => setSelectedTopCategory(cat)}
-                  className={`px-4 py-2 rounded-full border ${
+                  className={`rounded-full border px-4 py-2 ${
                     cat === selectedTopCategory
-                      ? "bg-primary border-primary"
-                      : "bg-transparent border-gray-200 dark:border-gray-600"
-                  }`}
-                >
+                      ? 'border-primary bg-primary'
+                      : 'border-gray-200 bg-transparent dark:border-gray-600'
+                  }`}>
                   <Text
                     className={`${
                       cat === selectedTopCategory
-                        ? "text-white"
-                        : "text-black dark:text-white text-sm"
-                    }`}
-                  >
+                        ? 'text-white'
+                        : 'text-sm text-black dark:text-white'
+                    }`}>
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -217,42 +218,39 @@ const ExploreScreen = () => {
 
           {/* Price Range */}
           <View>
-            <Text className="font-semibold text-lg text-black dark:text-white mb-3">
+            <Text className="mb-3 text-lg font-semibold text-black dark:text-white">
               Price Range
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {["$0 - $50", "$50 - $200", "$200 - $500", "$500+"].map(
+              {['$0 - $50', '$50 - $200', '$200 - $500', '$500+'].map(
                 (price, i) => (
                   <TouchableOpacity
                     key={i}
                     onPress={() => setSelectedPrice(price)}
-                    className={`px-4 py-2 rounded-full border ${
+                    className={`rounded-full border px-4 py-2 ${
                       price === selectedPrice
-                        ? "bg-primary border-primary"
-                        : "bg-transparent border-gray-200 dark:border-gray-600"
-                    }`}
-                  >
+                        ? 'border-primary bg-primary'
+                        : 'border-gray-200 bg-transparent dark:border-gray-600'
+                    }`}>
                     <Text
                       className={`${
                         price === selectedPrice
-                          ? "text-white"
-                          : "text-black dark:text-white text-sm"
-                      }`}
-                    >
+                          ? 'text-white'
+                          : 'text-sm text-black dark:text-white'
+                      }`}>
                       {price}
                     </Text>
                   </TouchableOpacity>
-                ),
+                )
               )}
             </View>
           </View>
 
           {/* Apply Button */}
           <TouchableOpacity
-            className="w-full bg-primary py-3.5 rounded-[6px] items-center mt-4"
-            onPress={handleApplyFilters}
-          >
-            <Text className="text-white font-semibold text-base">
+            className="mt-4 w-full items-center rounded-[6px] bg-primary py-3.5"
+            onPress={handleApplyFilters}>
+            <Text className="text-base font-semibold text-white">
               Apply Filters
             </Text>
           </TouchableOpacity>

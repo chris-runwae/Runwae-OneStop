@@ -30,9 +30,9 @@ const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
-          flexGrow: 1,
-          marginTop: 10,
+          marginTop: 16,
           paddingHorizontal: 20,
+          height: 210,
         }}
         keyExtractor={(item, index) =>
           loading ? `skeleton-${index}` : item.id

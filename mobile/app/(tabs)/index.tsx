@@ -19,7 +19,7 @@ export default function HomeScreen() {
   const { dark } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
-  const { myTrips, joinedTrips } = useTrips();
+  const { myTrips, joinedTrips, isLoading: tripsLoading } = useTrips();
   const {
     data: events,
     loading: eventsLoading,
@@ -67,7 +67,7 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
-        <UpcomingTrips trips={upcomingTrips} loading={false} />
+        <UpcomingTrips trips={upcomingTrips} loading={tripsLoading} />
 
         <Spacer vertical size={32} />
         <UpcomingEvents

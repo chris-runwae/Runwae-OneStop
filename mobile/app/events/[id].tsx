@@ -1,14 +1,14 @@
-import EventInfo from "@/components/event/EventInfo";
-import DetailNotFound from "@/components/experience/DetailNotFound";
-import UpcomingEvents from "@/components/home/UpcomingEvents";
-import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
-import { Event, UPCOMING_EVENTS } from "@/constants/home.constant";
-import { useTheme } from "@react-navigation/native";
-import { AppleMaps, GoogleMaps } from "expo-maps";
-import { useLocalSearchParams } from "expo-router";
-import { MapPin, Navigation, X } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import EventInfo from '@/components/event/EventInfo';
+import UpcomingEvents from '@/components/home/UpcomingEvents';
+import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
+
+import { useTheme } from '@react-navigation/native';
+import { AppleMaps, GoogleMaps } from 'expo-maps';
+import { useLocalSearchParams } from 'expo-router';
+import { MapPin, Navigation, X } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Linking,
   Modal,
@@ -17,22 +17,36 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+  useColorScheme,
+} from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useEvents } from '@/hooks/useEvents';
+import { Colors } from '@/constants';
 
 const MapComponent = (props: any) => {
-  if (Platform.OS === "ios") {
+  if (Platform.OS === 'ios') {
     return <AppleMaps.View {...props} />;
   }
   return <GoogleMaps.View {...props} />;
 };
 
 const EventDetailScreen = () => {
+  const { dark } = useTheme();
+  const colorScheme = useColorScheme() as 'light' | 'dark';
+  const colors = Colors[colorScheme];
+
   const { id } = useLocalSearchParams();
+  const { data, event, fetchEventById, loading } = useEvents();
+
+  useEffect(() => {
+    fetchEventById(id as string);
+  }, [id, fetchEventById]);
+
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const [showFullMap, setShowFullMap] = useState(false);
@@ -43,23 +57,21 @@ const EventDetailScreen = () => {
     },
   });
 
-  const event = useMemo(() => {
-    return UPCOMING_EVENTS.find((e) => e.id === id) as Event | undefined;
-  }, [id]);
-
   const relatedEvents = useMemo(() => {
     if (!event) return [];
-    return UPCOMING_EVENTS.filter(
-      (e) => e.id !== id && e.category === event.category,
+    return (
+      data?.filter((e) => e.id !== id && e.category === event.category) ?? []
     );
-  }, [id, event]);
+  }, [id, event, data]);
 
   const otherEvents = useMemo(() => {
     if (!event) return [];
-    return UPCOMING_EVENTS.filter(
-      (e) => e.id !== id && e.category !== event.category,
-    ).slice(0, 6);
-  }, [id, event]);
+    return (
+      data
+        ?.filter((e) => e.id !== id && e.category !== event.category)
+        ?.slice(0, 6) ?? []
+    );
+  }, [id, event, data]);
 
   const handleGetDirections = () => {
     if (!event) return;
@@ -84,11 +96,13 @@ const EventDetailScreen = () => {
     }
   };
 
-  if (!event) {
-    return <DetailNotFound type="experience" />;
+  if (loading || !event) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
-
-  const { dark } = useTheme();
 
   return (
     <View className="flex-1">
@@ -103,12 +117,11 @@ const EventDetailScreen = () => {
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
-      >
+        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}>
         {/* Hero Image */}
         <Image
           source={{ uri: event.image }}
-          className="w-full h-[300px]"
+          className="h-[300px] w-full"
           resizeMode="cover"
         />
 
@@ -121,23 +134,21 @@ const EventDetailScreen = () => {
           category={event.category}
         />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        <View className="mt-8 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         {/* About Section */}
         <View className="px-5 py-6">
           <Text
-            className="text-lg font-bold dark:text-white mb-3"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
+            className="mb-3 text-lg font-bold dark:text-white"
+            style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
             About this event
           </Text>
           <Text
-            className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
-            style={{ fontFamily: "Inter" }}
-          >
-            Join us for {event.title} in {event.location}. This{" "}
-            {event.category.toLowerCase()} event takes place on {event.date}{" "}
-            starting at {event.time}. Don't miss out on this incredible
+            className="text-sm leading-6 text-gray-500 dark:text-gray-400"
+            style={{ fontFamily: 'Inter' }}>
+            Join us for {event.title} in {event.location}. This{' '}
+            {event.category.toLowerCase()} event takes place on {event.date}{' '}
+            starting at {event.time}. Don&apos;t miss out on this incredible
             experience — gather your friends, plan your trip, and get ready for
             an unforgettable time.
           </Text>
@@ -147,18 +158,16 @@ const EventDetailScreen = () => {
 
         <View className="px-5 py-6">
           <Text
-            className="text-lg font-bold dark:text-white mb-4"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
+            className="mb-4 text-lg font-bold dark:text-white"
+            style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
             Location
           </Text>
           <Pressable
             onPress={() => setShowFullMap(true)}
-            className="bg-gray-100 dark:bg-dark-seconndary rounded-xl overflow-hidden border border-gray-200 dark:border-white/10"
-          >
+            className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-white/10 dark:bg-dark-seconndary">
             <View pointerEvents="none">
               <MapComponent
-                style={{ width: "100%", height: 180 }}
+                style={{ width: '100%', height: 180 }}
                 cameraPosition={{
                   coordinates: {
                     latitude: event.latitude,
@@ -177,13 +186,12 @@ const EventDetailScreen = () => {
                 ]}
               />
             </View>
-            <View className="px-4 py-3 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-x-2 flex-1">
+            <View className="flex-row items-center justify-between px-4 py-3">
+              <View className="flex-1 flex-row items-center gap-x-2">
                 <MapPin size={15} color="#9ca3af" />
                 <Text
-                  className="text-sm text-gray-600 dark:text-gray-300 flex-1"
-                  numberOfLines={1}
-                >
+                  className="flex-1 text-sm text-gray-600 dark:text-gray-300"
+                  numberOfLines={1}>
                   {event.location}
                 </Text>
               </View>
@@ -192,8 +200,7 @@ const EventDetailScreen = () => {
                   e.stopPropagation();
                   handleGetDirections();
                 }}
-                className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center gap-x-1"
-              >
+                className="flex-row items-center gap-x-1 rounded-full bg-primary/10 px-3 py-1.5">
                 <Text className="text-xs font-semibold text-primary">
                   Directions
                 </Text>
@@ -230,8 +237,7 @@ const EventDetailScreen = () => {
         visible={showFullMap}
         animationType="slide"
         presentationStyle="fullScreen"
-        onRequestClose={() => setShowFullMap(false)}
-      >
+        onRequestClose={() => setShowFullMap(false)}>
         <View className="flex-1 bg-white dark:bg-black">
           <MapComponent
             style={{ flex: 1 }}
@@ -256,24 +262,22 @@ const EventDetailScreen = () => {
 
           <View
             style={{ paddingTop: insets.top || 20 }}
-            className="absolute top-0 left-0 right-0 px-5 flex-row items-center justify-between"
-          >
+            className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-5">
             <TouchableOpacity
               onPress={() => setShowFullMap(false)}
-              className="w-10 h-10 bg-white/90 dark:bg-black/80 rounded-full items-center justify-center shadow-sm"
-            >
-              <X size={20} color={dark ? "#FFFFFF" : "#000000"} />
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-black/80">
+              <X size={20} color={dark ? '#FFFFFF' : '#000000'} />
             </TouchableOpacity>
           </View>
 
-          <View className="absolute bottom-6 left-5 right-5 bg-white dark:bg-dark-seconndary rounded-[30px] p-5 shadow-xl border border-gray-100 dark:border-white/10 flex-row items-center justify-between">
+          <View className="absolute bottom-6 left-5 right-5 flex-row items-center justify-between rounded-[30px] border border-gray-100 bg-white p-5 shadow-xl dark:border-white/10 dark:bg-dark-seconndary">
             <View>
-              <Text className="text-xl font-bold dark:text-white mb-1">
+              <Text className="mb-1 text-xl font-bold dark:text-white">
                 {event.title}
               </Text>
               <View className="flex-row items-center gap-x-2">
                 <MapPin size={13} color="#9ca3af" />
-                <Text className="text-gray-500 text-sm dark:text-gray-400 flex-1">
+                <Text className="flex-1 text-sm text-gray-500 dark:text-gray-400">
                   {event.location}
                 </Text>
               </View>
@@ -281,10 +285,9 @@ const EventDetailScreen = () => {
 
             <TouchableOpacity
               onPress={handleGetDirections}
-              className="bg-primary px-4 py-4 rounded-full flex-row items-center gap-x-2"
-            >
+              className="flex-row items-center gap-x-2 rounded-full bg-primary px-4 py-4">
               <Navigation size={16} color="#fff" />
-              <Text className="text-white font-bold">Directions</Text>
+              <Text className="font-bold text-white">Directions</Text>
             </TouchableOpacity>
           </View>
         </View>

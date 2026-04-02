@@ -1,29 +1,38 @@
-import DetailNotFound from "@/components/experience/DetailNotFound";
-import ExperienceGallery from "@/components/experience/ExperienceGallery";
-import ExperienceIncluded from "@/components/experience/ExperienceIncluded";
-import ExperienceInfo from "@/components/experience/ExperienceInfo";
-import ExperienceItinerary from "@/components/experience/ExperienceItinerary";
-import ImagePreviewModal from "@/components/experience/ImagePreviewModal";
-import ReviewList from "@/components/experience/ReviewList";
-import WhatToKnow from "@/components/experience/WhatToKnow";
-import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
-import { useDetailItem } from "@/hooks/use-detail-item";
-import React, { useEffect, useMemo, useState } from "react";
-import { TouchableOpacity, View } from "react-native";
+import ExperienceGallery from '@/components/experience/ExperienceGallery';
+import ExperienceIncluded from '@/components/experience/ExperienceIncluded';
+import ExperienceInfo from '@/components/experience/ExperienceInfo';
+import ExperienceItinerary from '@/components/experience/ExperienceItinerary';
+import ImagePreviewModal from '@/components/experience/ImagePreviewModal';
+import ReviewList from '@/components/experience/ReviewList';
+import WhatToKnow from '@/components/experience/WhatToKnow';
+import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
+import { useDetailItem } from '@/hooks/use-detail-item';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
   useAnimatedScrollHandler,
   useSharedValue,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors } from '@/constants';
 
 const ExperienceDetailScreen = () => {
-  const { id, item: experience, loading } = useDetailItem("experience") as {
+  const colorScheme = useColorScheme() as 'light' | 'dark';
+  const colors = Colors[colorScheme];
+
+  const { item: experience, loading } = useDetailItem('experience') as {
     id: string;
     item: any;
     loading: boolean;
   };
+
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
 
@@ -59,35 +68,37 @@ const ExperienceDetailScreen = () => {
     setIsPreviewVisible(true);
   };
 
-  if (!loading && !experience) {
-    return <DetailNotFound type="experience" />;
+  if (loading || !experience) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
     <View className="flex-1">
       <ItineraryHeader
         scrollY={scrollY}
-        imageUri={allImages[currentImageIndex] || experience.image}
-        title={experience.title}
+        imageUri={allImages[currentImageIndex] || experience?.image}
+        title={experience?.title}
       />
 
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
-      >
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => openPreview(currentImageIndex)}
-          className="w-full h-[300px] bg-gray-100 overflow-hidden"
-        >
+          className="h-[300px] w-full overflow-hidden bg-gray-100">
           <Animated.Image
             key={currentImageIndex}
             entering={FadeIn.duration(1000)}
             exiting={FadeOut.duration(1000)}
             source={{ uri: allImages[currentImageIndex] || experience.image }}
-            className="w-full h-full absolute"
+            className="absolute h-full w-full"
             resizeMode="cover"
           />
         </TouchableOpacity>
@@ -104,16 +115,16 @@ const ExperienceDetailScreen = () => {
           description={experience.description}
           category={experience.category}
         />
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        <View className="mt-8 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <ExperienceItinerary items={experience.itinerary || []} />
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        <View className="mt-8 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <ExperienceIncluded items={experience.included || []} />
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        <View className="mt-8 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <WhatToKnow items={experience.whatToKnow || []} />
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        <View className="mt-8 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
         <ReviewList
           reviews={experience.reviews || []}

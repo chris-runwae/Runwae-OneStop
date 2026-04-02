@@ -5,7 +5,8 @@ import ScreenHeader from '@/components/ui/ScreenHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import { useExperiences } from '@/hooks/useExperiences';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
 const EmptyState = () => (
   <View className="w-full flex-1 items-center justify-center bg-gray-200 dark:bg-dark-seconndary/50">
@@ -56,7 +57,7 @@ const ExperienceScreen = () => {
       {!loading && filteredExperiences.length === 0 ? (
         <EmptyState />
       ) : (
-        <FlatList
+        <FlashList
           data={displayData}
           className="flex-1"
           showsVerticalScrollIndicator={false}

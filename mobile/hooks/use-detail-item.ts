@@ -1,31 +1,47 @@
-import { useMemo } from "react";
+import { getDestinationById } from "@/utils/supabase/destinations.service";
+import { getExperienceById } from "@/utils/supabase/experiences.service";
+import { getItineraryTemplateById } from "@/utils/supabase/itinerary-templates.service";
 import { useLocalSearchParams } from "expo-router";
-import {
-  ADD_ONS_FOR_YOU,
-  DESTINATION_HIGHLIGHTS,
-  DESTINATIONS_FOR_YOU,
-  EXPERIENCE_HIGHLIGHTS,
-  FEATURED_ITINERARIES,
-  ITINERARIES_FOR_YOU,
-} from "@/constants/home.constant";
+import { useEffect, useState } from "react";
 
 type DetailType = "itinerary" | "experience" | "destination";
 
 export function useDetailItem(type: DetailType) {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const item = useMemo(() => {
-    if (type === "itinerary") {
-      const all = [...ITINERARIES_FOR_YOU, ...FEATURED_ITINERARIES];
-      return all.find((i) => i.id === id);
-    } else if (type === "experience") {
-      const all = [...ADD_ONS_FOR_YOU, ...EXPERIENCE_HIGHLIGHTS];
-      return all.find((i) => i.id === id);
-    } else {
-      const all = [...DESTINATIONS_FOR_YOU, ...DESTINATION_HIGHLIGHTS];
-      return all.find((i) => i.id === id);
-    }
+  useEffect(() => {
+    if (!id) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const fetch = async () => {
+      try {
+        let result: any = null;
+        if (type === "itinerary") {
+          result = await getItineraryTemplateById(id as string);
+        } else if (type === "experience") {
+          result = await getExperienceById(id as string);
+        } else {
+          result = await getDestinationById(id as string);
+        }
+        if (!cancelled) setItem(result);
+      } catch (e: any) {
+        if (!cancelled) setError(e.message ?? "Failed to load");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetch();
+    return () => {
+      cancelled = true;
+    };
   }, [id, type]);
 
-  return { id, item };
+  return { id, item, loading, error };
 }

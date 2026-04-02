@@ -68,6 +68,8 @@ const EventsScreen = () => {
           data={displayData}
           className="flex-1"
           showsVerticalScrollIndicator={false}
+          numColumns={2}
+          columnWrapperStyle={{ gap: 16, marginBottom: 20 }}
           contentContainerStyle={{
             paddingBottom: 100,
             paddingHorizontal: 20,
@@ -78,12 +80,18 @@ const EventsScreen = () => {
           }
           renderItem={({ item, index }) =>
             loading ? (
-              <EventCardSkeleton key={`skeleton-${index}`} />
+              <View className="flex-1" style={{ maxWidth: '48%' }}>
+                <EventCardSkeleton index={index} fullWidth />
+              </View>
             ) : (
-              <EventCard
-                event={item as Event}
-                isLast={index === displayData.length - 1}
-              />
+              <View className="flex-1" style={{ maxWidth: '48%' }}>
+                <EventCard
+                  event={item as Event}
+                  index={index}
+                  fullWidth
+                  inlineEmoji
+                />
+              </View>
             )
           }
           ListEmptyComponent={<View />}

@@ -19,9 +19,10 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ExperienceDetailScreen = () => {
-  const { id, item: experience } = useDetailItem("experience") as {
+  const { id, item: experience, loading } = useDetailItem("experience") as {
     id: string;
     item: any;
+    loading: boolean;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -58,7 +59,7 @@ const ExperienceDetailScreen = () => {
     setIsPreviewVisible(true);
   };
 
-  if (!experience) {
+  if (!loading && !experience) {
     return <DetailNotFound type="experience" />;
   }
 

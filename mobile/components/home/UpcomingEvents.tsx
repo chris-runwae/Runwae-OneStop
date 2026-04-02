@@ -1,68 +1,55 @@
-import { EventCardSkeleton } from "@/components/ui/CardSkeletons";
-import SectionHeader from "@/components/ui/SectionHeader";
-import { Event } from "@/constants/home.constant";
-import { router } from "expo-router";
-import React from "react";
-import { Dimensions, FlatList, View } from "react-native";
-import EventCard from "./EventCard";
-
-const { width } = Dimensions.get("window");
+import { EventCardSkeleton } from '@/components/ui/CardSkeletons';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { Event } from '@/constants/home.constant';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { FlatList, View } from 'react-native';
+import EventCard from './EventCard';
 
 interface UpcomingEventsProps {
   data: Event[];
   title?: string;
   subtitle?: string;
   loading?: boolean;
+  showSubtitle?: boolean;
 }
 
 const UpcomingEvents = ({
   data,
-  title = "Upcoming Events",
-  subtitle = "Find events that match your vibe",
+  title = 'Upcoming Events',
+  subtitle = 'Find events that match your vibe',
   loading = false,
+  showSubtitle = true,
 }: UpcomingEventsProps) => {
-  const columns = [];
-  if (loading) {
-    columns.push([{}, {}, {}]);
-    columns.push([{}, {}, {}]);
-  } else {
-    for (let i = 0; i < data.length; i += 3) {
-      columns.push(data.slice(i, i + 3));
-    }
-  }
+  const router = useRouter();
+  const displayData = loading ? (Array(5).fill({}) as Event[]) : data;
 
   return (
-    <View className="mt-5 border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-2">
-      <SectionHeader title={title} subtitle={subtitle} onPress={() => router.push("/events" as any)} />
+    <View className="mt-5 pb-5">
+      <SectionHeader
+        title={title}
+        subtitle={showSubtitle ? subtitle : undefined}
+        onPress={() => router.push('/events' as any)}
+      />
 
       <FlatList
-        data={columns}
+        data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        snapToAlignment="start"
-        decelerationRate="fast"
-        snapToInterval={width}
         contentContainerStyle={{
           paddingHorizontal: 20,
           marginTop: 16,
         }}
-        keyExtractor={(_, index) => `col-${index}`}
-        renderItem={({ item: column }) => (
-          <View style={{ width: width - 40 }} className="mr-5">
-            {column.map((event, index) =>
-              loading ? (
-                <EventCardSkeleton key={`skeleton-${index}`} />
-              ) : (
-                <EventCard
-                  key={(event as Event).id}
-                  event={event as Event}
-                  isLast={index === column.length - 1}
-                />
-              ),
-            )}
-          </View>
-        )}
+        keyExtractor={(item, index) =>
+          loading ? `skeleton-${index}` : item.id
+        }
+        renderItem={({ item, index }) =>
+          loading ? (
+            <EventCardSkeleton index={index} />
+          ) : (
+            <EventCard event={item} index={index} />
+          )
+        }
       />
     </View>
   );

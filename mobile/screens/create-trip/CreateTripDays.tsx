@@ -1,9 +1,12 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useTheme } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Modal,
   Platform,
@@ -24,17 +27,19 @@ type ActivePicker = 'start' | 'end' | null;
 
 export default function CreateTripDays() {
   const { dark } = useTheme();
+  const insets = useSafeAreaInsets();
+
   const params = useLocalSearchParams<{
-    destination_label:    string;
+    destination_label: string;
     destination_place_id: string;
-    destination_address:  string;
+    destination_address: string;
   }>();
 
-  const [startDate,     setStartDate]     = useState<Date | null>(null);
-  const [endDate,       setEndDate]       = useState<Date | null>(null);
-  const [activePicker,  setActivePicker]  = useState<ActivePicker>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   // iOS: temp date while the modal is open, committed on Done
-  const [pendingDate,   setPendingDate]   = useState<Date>(new Date());
+  const [pendingDate, setPendingDate] = useState<Date>(new Date());
 
   // ----------------------------------------------------------------
   // Derived values
@@ -93,7 +98,7 @@ export default function CreateTripDays() {
       params: {
         ...params,
         start_date: start ? start.toISOString().split('T')[0] : '',
-        end_date:   end   ? end.toISOString().split('T')[0]   : '',
+        end_date: end ? end.toISOString().split('T')[0] : '',
       },
     });
   };
@@ -106,23 +111,28 @@ export default function CreateTripDays() {
   // ----------------------------------------------------------------
 
   const formatDate = (d: Date) =>
-    d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
 
-  const minDate = activePicker === 'end' ? (startDate ?? new Date()) : new Date();
+  const minDate =
+    activePicker === 'end' ? (startDate ?? new Date()) : new Date();
 
   return (
     <AppSafeAreaView>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <CreateStepHeader currentStep={2} totalSteps={3} />
 
         <Text style={[styles.title, { color: dark ? '#ffffff' : '#111827' }]}>
-          When's the trip?
+          When&apos;s the trip?
         </Text>
-        <Text style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
+        <Text
+          style={[styles.subtitle, { color: dark ? '#9ca3af' : '#6b7280' }]}>
           Set your travel dates or skip for now.
         </Text>
 
@@ -134,15 +144,40 @@ export default function CreateTripDays() {
               styles.dateCard,
               {
                 backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-                borderColor: startDate ? '#FF1F8C' : (dark ? '#2c2c2e' : '#e5e7eb'),
+                borderColor: startDate
+                  ? '#FF1F8C'
+                  : dark
+                    ? '#2c2c2e'
+                    : '#e5e7eb',
               },
             ]}
-            onPress={() => openPicker('start')}
-          >
-            <Calendar size={18} strokeWidth={1.5} color={startDate ? '#FF1F8C' : (dark ? '#6b7280' : '#9ca3af')} />
+            onPress={() => openPicker('start')}>
+            <Calendar
+              size={18}
+              strokeWidth={1.5}
+              color={startDate ? '#FF1F8C' : dark ? '#6b7280' : '#9ca3af'}
+            />
             <View style={styles.dateCardText}>
-              <Text style={[styles.dateLabel, { color: dark ? '#6b7280' : '#9ca3af' }]}>Start</Text>
-              <Text style={[styles.dateValue, { color: startDate ? (dark ? '#ffffff' : '#111827') : (dark ? '#4b5563' : '#d1d5db') }]}>
+              <Text
+                style={[
+                  styles.dateLabel,
+                  { color: dark ? '#6b7280' : '#9ca3af' },
+                ]}>
+                Start
+              </Text>
+              <Text
+                style={[
+                  styles.dateValue,
+                  {
+                    color: startDate
+                      ? dark
+                        ? '#ffffff'
+                        : '#111827'
+                      : dark
+                        ? '#4b5563'
+                        : '#d1d5db',
+                  },
+                ]}>
                 {startDate ? formatDate(startDate) : 'Select date'}
               </Text>
             </View>
@@ -154,15 +189,36 @@ export default function CreateTripDays() {
               styles.dateCard,
               {
                 backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-                borderColor: endDate ? '#FF1F8C' : (dark ? '#2c2c2e' : '#e5e7eb'),
+                borderColor: endDate ? '#FF1F8C' : dark ? '#2c2c2e' : '#e5e7eb',
               },
             ]}
-            onPress={() => openPicker('end')}
-          >
-            <Calendar size={18} strokeWidth={1.5} color={endDate ? '#FF1F8C' : (dark ? '#6b7280' : '#9ca3af')} />
+            onPress={() => openPicker('end')}>
+            <Calendar
+              size={18}
+              strokeWidth={1.5}
+              color={endDate ? '#FF1F8C' : dark ? '#6b7280' : '#9ca3af'}
+            />
             <View style={styles.dateCardText}>
-              <Text style={[styles.dateLabel, { color: dark ? '#6b7280' : '#9ca3af' }]}>End</Text>
-              <Text style={[styles.dateValue, { color: endDate ? (dark ? '#ffffff' : '#111827') : (dark ? '#4b5563' : '#d1d5db') }]}>
+              <Text
+                style={[
+                  styles.dateLabel,
+                  { color: dark ? '#6b7280' : '#9ca3af' },
+                ]}>
+                End
+              </Text>
+              <Text
+                style={[
+                  styles.dateValue,
+                  {
+                    color: endDate
+                      ? dark
+                        ? '#ffffff'
+                        : '#111827'
+                      : dark
+                        ? '#4b5563'
+                        : '#d1d5db',
+                  },
+                ]}>
                 {endDate ? formatDate(endDate) : 'Select date'}
               </Text>
             </View>
@@ -185,20 +241,45 @@ export default function CreateTripDays() {
           visible={activePicker !== null}
           transparent
           animationType="slide"
-          onRequestClose={dismissPicker}
-        >
+          onRequestClose={dismissPicker}>
           <Pressable style={styles.modalBackdrop} onPress={dismissPicker} />
-          <View style={[styles.modalSheet, { backgroundColor: dark ? '#1c1c1e' : '#ffffff' }]}>
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: dark ? '#1c1c1e' : '#ffffff' },
+            ]}>
             {/* Sheet header */}
-            <View style={[styles.sheetHeader, { borderBottomColor: dark ? '#2c2c2e' : '#f3f4f6' }]}>
-              <TouchableOpacity onPress={dismissPicker} style={styles.sheetAction}>
-                <Text style={[styles.sheetActionText, { color: dark ? '#9ca3af' : '#6b7280' }]}>Cancel</Text>
+            <View
+              style={[
+                styles.sheetHeader,
+                { borderBottomColor: dark ? '#2c2c2e' : '#f3f4f6' },
+              ]}>
+              <TouchableOpacity
+                onPress={dismissPicker}
+                style={styles.sheetAction}>
+                <Text
+                  style={[
+                    styles.sheetActionText,
+                    { color: dark ? '#9ca3af' : '#6b7280' },
+                  ]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: dark ? '#ffffff' : '#111827' }]}>
+              <Text
+                style={[
+                  styles.sheetTitle,
+                  { color: dark ? '#ffffff' : '#111827' },
+                ]}>
                 {activePicker === 'start' ? 'Start date' : 'End date'}
               </Text>
               <TouchableOpacity onPress={commitDate} style={styles.sheetAction}>
-                <Text style={[styles.sheetActionText, { color: '#FF1F8C', fontWeight: '600' }]}>Done</Text>
+                <Text
+                  style={[
+                    styles.sheetActionText,
+                    { color: '#FF1F8C', fontWeight: '600' },
+                  ]}>
+                  Done
+                </Text>
               </TouchableOpacity>
             </View>
             <DateTimePicker
@@ -206,7 +287,9 @@ export default function CreateTripDays() {
               mode="date"
               display="inline"
               minimumDate={minDate}
-              onChange={(_, date) => { if (date) setPendingDate(date); }}
+              onChange={(_, date) => {
+                if (date) setPendingDate(date);
+              }}
               themeVariant={dark ? 'dark' : 'light'}
               style={styles.iosPicker}
             />
@@ -226,9 +309,19 @@ export default function CreateTripDays() {
       )}
 
       {/* Footer */}
-      <View style={[styles.footer, { borderTopColor: dark ? '#2c2c2e' : '#f3f4f6' }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            borderTopColor: dark ? '#2c2c2e' : '#f3f4f6',
+            marginBottom: insets.bottom + 16,
+          },
+        ]}>
         <TouchableOpacity onPress={handleSkip} style={styles.skipLink}>
-          <Text style={[styles.skipText, { color: dark ? '#6b7280' : '#9ca3af' }]}>Skip for now</Text>
+          <Text
+            style={[styles.skipText, { color: dark ? '#6b7280' : '#9ca3af' }]}>
+            Skip for now
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>Next</Text>

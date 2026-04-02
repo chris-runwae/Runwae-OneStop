@@ -1,273 +1,248 @@
-import { useAuth } from '@/context/AuthContext';
-import { GroupMember, TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { Calendar, DollarSign, Edit2, MapPin } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Plus, Trash2, MapPin, CalendarPlus } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, ScrollView, View, Pressable, Alert } from 'react-native';
 
-// ================================================================
-// Helpers
-// ================================================================
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: '£', USD: '$', EUR: '€', JPY: '¥',
-  AUD: 'A$', CAD: 'C$', CHF: 'Fr', CNY: '¥', INR: '₹',
-};
-
-function formatBudget(budget: number | null, currency: string): string {
-  if (budget === null) return 'No budget set';
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-  return `${symbol}${budget.toLocaleString()}`;
-}
-
-function formatDateRange(start?: string | null, end?: string | null): string {
-  if (!start && !end) return 'Dates not set';
-  const fmt = (d: string) =>
-    new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  if (start && end) return `${fmt(start)} → ${fmt(end)}`;
-  if (start) return `From ${fmt(start)}`;
-  return `Until ${fmt(end!)}`;
-}
-
-const AVATAR_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-  '#DDA0DD', '#F4A261', '#2A9D8F', '#E76F51',
-];
-
-function avatarColor(userId: string): string {
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function initials(member: GroupMember): string {
-  const name = member.profiles?.full_name;
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  return parts.length >= 2
-    ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-    : parts[0][0].toUpperCase();
-}
-
-// ================================================================
-// TripOverviewTab
-// ================================================================
+import { TripWithEverything } from '@/hooks/useTripActions';
+import { useTrips } from '@/context/TripsContext';
+import { AppFonts, Colors } from '@/constants';
+import SearchIdeasSheet from '@/components/trip-activity/SearchIdeasSheet';
+import { SavedItineraryItem } from '@/hooks/useIdeaActions';
 
 interface Props {
   trip: TripWithEverything;
 }
 
-const MAX_VISIBLE_AVATARS = 5;
-
 export default function TripOverviewTab({ trip }: Props) {
   const { dark } = useTheme();
-  const { user } = useAuth();
-  const details = trip.trip_details;
-  const members = trip.group_members;
+  const colors = Colors[dark ? 'dark' : 'light'];
+  const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
+  const [searchVisible, setSearchVisible] = useState(false);
 
-  const myRole = members.find((m) => m.user_id === user?.id)?.role;
-  const canEdit = myRole === 'owner' || myRole === 'admin';
+  const handleAddToItinerary = (idea: SavedItineraryItem) => {
+    if (days.length === 0) {
+      Alert.alert(
+        'No Days',
+        'You need to create at least one day in your itinerary first.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Itinerary', onPress: () => {} }, // Parent logic handles tab switching
+        ]
+      );
+      return;
+    }
 
-  const visibleMembers = members.slice(0, MAX_VISIBLE_AVATARS);
-  const extraCount = members.length - MAX_VISIBLE_AVATARS;
+    // Show a picker or just add to Day 1 for now (simplified for this task)
+    const firstDay = days[0];
+    addItem(firstDay.id, {
+      title: idea.title,
+      type: idea.type,
+      location: idea.location,
+      external_id: idea.external_id,
+      image_url: idea.image_url,
+    });
+    Alert.alert('Success', `Added "${idea.title}" to Day 1`);
+  };
+
+  const handleDeleteIdea = (id: string) => {
+    Alert.alert('Delete Idea', 'Are you sure you want to remove this idea?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => removeIdea(id) },
+    ]);
+  };
+
+  if (ideas.length === 0 && !ideasLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyStateContainer}>
+          <Image
+            source={require('@/assets/images/clipboard-empty.png')}
+            style={styles.illustration}
+            contentFit="contain"
+          />
+          <Text
+            style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
+            Start Planning Your Dream Trip
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+            Looking for what to do? Add them to Ideas now.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
+            activeOpacity={0.8}
+            onPress={() => setSearchVisible(true)}>
+            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+            <Text style={styles.searchButtonText}>Start Searching</Text>
+          </TouchableOpacity>
+        </View>
+
+        <SearchIdeasSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      </View>
+    );
+  }
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Destination */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <MapPin size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Destination
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {trip.destination_label ?? 'No destination set'}
+    <View style={styles.container}>
+      <View style={styles.listHeader}>
+        <Text style={[styles.listTitle, { color: colors.textColors.default }]}>
+          Your Trip Ideas
         </Text>
+        <TouchableOpacity
+          onPress={() => setSearchVisible(true)}
+          style={styles.addBtnSmall}>
+          <Plus size={18} color="#FF1F8C" strokeWidth={2} />
+        </TouchableOpacity>
       </View>
 
-      {/* Dates */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <Calendar size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Dates
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {formatDateRange(details?.start_date, details?.end_date)}
-        </Text>
-      </View>
-
-      {/* Budget */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <DollarSign size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Budget
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {formatBudget(details?.budget ?? null, details?.currency ?? 'GBP')}
-        </Text>
-      </View>
-
-      {/* Description */}
-      {trip.description ? (
-        <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280', marginBottom: 6 }]}>
-            About this trip
-          </Text>
-          <Text style={[styles.description, { color: dark ? '#d1d5db' : '#374151' }]}>
-            {trip.description}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Members */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280', marginBottom: 12 }]}>
-          {members.length} {members.length === 1 ? 'Member' : 'Members'}
-        </Text>
-        <View style={styles.avatarRow}>
-          {visibleMembers.map((m) => (
-            <View
-              key={m.id}
-              style={[styles.avatar, { borderColor: dark ? '#1c1c1e' : '#f9fafb' }]}
-            >
-              {m.profiles?.avatar_url ? (
-                <Image
-                  source={{ uri: m.profiles.avatar_url }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[styles.avatarInitials, { backgroundColor: avatarColor(m.user_id) }]}>
-                  <Text style={styles.avatarInitialsText}>{initials(m)}</Text>
-                </View>
-              )}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}>
+        {ideas.map((idea) => (
+          <View key={idea.id} style={styles.ideaCard}>
+            <View style={styles.ideaIconBox}>
+              <MapPin size={18} color="#FF1F8C" />
             </View>
-          ))}
-          {extraCount > 0 && (
-            <View style={[styles.avatar, styles.avatarExtra, { borderColor: dark ? '#1c1c1e' : '#f9fafb', backgroundColor: dark ? '#374151' : '#e5e7eb' }]}>
-              <Text style={[styles.avatarExtraText, { color: dark ? '#d1d5db' : '#374151' }]}>
-                +{extraCount}
+            <View style={styles.ideaInfo}>
+              <Text style={styles.ideaTitleText}>{idea.title}</Text>
+              <Text style={styles.ideaLocationText} numberOfLines={1}>
+                {idea.location || 'No location set'}
               </Text>
             </View>
-          )}
-        </View>
-      </View>
+            <View style={styles.ideaActions}>
+              <TouchableOpacity
+                onPress={() => handleAddToItinerary(idea)}
+                style={styles.actionIconBtn}>
+                <CalendarPlus size={20} color="#AEAEAE" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDeleteIdea(idea.id)}
+                style={styles.actionIconBtn}>
+                <Trash2 size={20} color="#FF4D4D" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+        <View style={{ height: 40 }} />
+      </ScrollView>
 
-      {/* Edit button (owner / admin only) */}
-      {canEdit && (
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push(`/(tabs)/(trips)/${trip.id}/edit` as any)}
-        >
-          <Edit2 size={16} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={styles.editButtonText}>Edit trip details</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
+      <SearchIdeasSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </View>
   );
 }
 
-// ================================================================
-// Styles
-// ================================================================
-
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-    gap: 10,
+  container: {
+    flex: 1,
+    minHeight: 400,
   },
-
-  card: {
-    borderRadius: 12,
-    padding: 14,
-  },
-  cardRow: {
-    flexDirection: 'row',
+  emptyStateContainer: {
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    justifyContent: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 32,
   },
-  cardLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  illustration: {
+    width: 50,
+    height: 49,
+    marginBottom: 24,
+    opacity: 0.8,
   },
-  cardValue: {
-    fontSize: 15,
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '500',
-    lineHeight: 22,
+    textAlign: 'center',
   },
-  description: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-
-  avatarRow: {
-    flexDirection: 'row',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    overflow: 'hidden',
-    marginRight: -10,
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarInitials: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitialsText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  avatarExtra: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarExtraText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#FF1F8C',
-    marginTop: 4,
-  },
-  editButtonText: {
-    color: '#FF1F8C',
+  emptySubtitle: {
     fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 5,
+    paddingHorizontal: 20,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 99,
+    gap: 5,
+  },
+  searchButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
     fontWeight: '600',
+  },
+ 
+  // List Styles
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginBottom: 16,
+  },
+  listTitle: {
+    fontSize: 20,
+    fontFamily: AppFonts.bricolage.semiBold,
+    letterSpacing: -0.5,
+  },
+  addBtnSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFF0F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  ideaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F3F5',
+  },
+  ideaIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F8F9FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  ideaInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  ideaTitleText: {
+    fontSize: 15,
+    fontFamily: AppFonts.inter.semiBold,
+    color: '#1A1A1A',
+    marginBottom: 2,
+  },
+  ideaLocationText: {
+    fontSize: 13,
+    fontFamily: AppFonts.inter.regular,
+    color: '#AEAEAE',
+  },
+  ideaActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

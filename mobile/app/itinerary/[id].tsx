@@ -15,9 +15,10 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ItineraryDetail = () => {
-  const { id, item: itinerary } = useDetailItem("itinerary") as {
+  const { id, item: itinerary, loading } = useDetailItem("itinerary") as {
     id: string;
     item: any;
+    loading: boolean;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -32,7 +33,7 @@ const ItineraryDetail = () => {
     return FEATURED_ITINERARIES.slice(0, 3);
   }, []);
 
-  if (!itinerary) {
+  if (!loading && !itinerary) {
     return <DetailNotFound type="itinerary" />;
   }
 

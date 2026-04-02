@@ -1,7 +1,7 @@
-import { useTheme } from "@react-navigation/native";
-import { ChevronRight } from "lucide-react-native";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from '@react-navigation/native';
+import { MoveRight } from 'lucide-react-native';
+import React from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 interface SectionHeaderProps {
   title: string;
@@ -19,34 +19,27 @@ const SectionHeader = ({
   const { dark } = useTheme();
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={!onPress}
-      className="px-[20px] flex-row items-center gap-x-2"
-    >
-      <View>
-        <View className="flex-row items-center gap-x-1">
-          <Text
-            className="font-semibold text-lg dark:text-white"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
-            {title}
-          </Text>
-          {onPress && (
-            <ChevronRight
-              size={17}
-              strokeWidth={1.5}
-              color={dark ? "#ffffff" : "#000000"}
-            />
-          )}
-        </View>
+    <View className="flex-row items-center justify-between px-[20px]">
+      <View className="flex-1">
+        <Text className="text-base font-medium dark:text-white">{title}</Text>
         {subtitle && showSubtitle && (
-          <Text className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+          <Text className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
             {subtitle}
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+      {onPress && (
+        <TouchableOpacity
+          onPress={onPress}
+          className="h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+          <MoveRight
+            size={14}
+            strokeWidth={2}
+            color={dark ? '#ffffff' : '#000000'}
+          />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 

@@ -35,15 +35,14 @@ import {
 } from '@/components';
 import { Colors, textStyles } from '@/constants';
 
-const HERO_HEIGHT = 260;
-
 function TripDetailSkeleton({ insetTop }: { insetTop: number }) {
+  const HERO_HEIGHT_FIXED = 300;
   return (
     <View style={styles.container}>
-      <View style={{ height: HERO_HEIGHT + insetTop }}>
+      <View style={{ height: HERO_HEIGHT_FIXED }}>
         <SkeletonBox
-          width={9999}
-          height={HERO_HEIGHT + insetTop}
+          width="100%"
+          height={HERO_HEIGHT_FIXED}
           borderRadius={0}
         />
 
@@ -55,16 +54,54 @@ function TripDetailSkeleton({ insetTop }: { insetTop: number }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.skeletonBody}>
-        <SkeletonBox width={200} height={24} borderRadius={6} />
-        <View style={{ height: 8 }} />
-        <SkeletonBox width={140} height={16} borderRadius={6} />
-        <View style={{ height: 24 }} />
-        <SkeletonBox width={9999} height={72} borderRadius={12} />
-        <View style={{ height: 10 }} />
-        <SkeletonBox width={9999} height={72} borderRadius={12} />
-        <View style={{ height: 10 }} />
-        <SkeletonBox width={9999} height={72} borderRadius={12} />
+      <View style={[styles.contentContainer, { paddingTop: 24 }]}>
+        {/* Title */}
+        <SkeletonBox width={220} height={28} borderRadius={6} />
+        
+        <Spacer size={16} vertical />
+        
+        {/* Destination & Date Pills */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <SkeletonBox width={120} height={24} borderRadius={20} />
+          <SkeletonBox width={140} height={24} borderRadius={20} />
+        </View>
+
+        <Spacer size={14} vertical />
+        
+        {/* Description Lines */}
+        <View style={{ gap: 6 }}>
+          <SkeletonBox width="95%" height={14} borderRadius={4} />
+          <SkeletonBox width="90%" height={14} borderRadius={4} />
+          <SkeletonBox width="60%" height={14} borderRadius={4} />
+        </View>
+
+        <Spacer size={14} vertical />
+        
+        {/* Solo Badge / Avatar Placeholder */}
+        <SkeletonBox width={80} height={24} borderRadius={20} />
+
+        <Spacer size={32} vertical />
+
+        {/* Tabs Bar */}
+        <View style={{ flexDirection: 'row', gap: 20 }}>
+          <SkeletonBox width={50} height={16} borderRadius={4} />
+          <SkeletonBox width={70} height={16} borderRadius={4} />
+          <SkeletonBox width={70} height={16} borderRadius={4} />
+          <SkeletonBox width={40} height={16} borderRadius={4} />
+        </View>
+
+        <Spacer size={24} vertical />
+
+        {/* Idea Cards Grid Placeholder */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ width: '48%', gap: 8, marginBottom: 16 }}>
+              <SkeletonBox width="100%" height={160} borderRadius={10} />
+              <SkeletonBox width="80%" height={14} borderRadius={4} />
+              <SkeletonBox width="100%" height={10} borderRadius={4} />
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -425,11 +462,6 @@ const styles = StyleSheet.create({
   },
 
   // Skeleton
-  skeletonBody: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-
   locationTimeSpan: {
     flexDirection: 'row',
     alignItems: 'center',

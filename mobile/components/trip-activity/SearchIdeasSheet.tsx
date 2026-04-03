@@ -1,11 +1,11 @@
 import { useTrips } from '@/context/TripsContext';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
-import { Search, X, MapPin, Plus, Loader2 } from 'lucide-react-native';
+import { Loader2, Search, SlidersHorizontal } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Keyboard,
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,24 +16,89 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
- 
+
 import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
- 
+import IdeaCard from './IdeaCard';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
 }
- 
+
+export const MOCK_CATEGORIES = [
+  { id: 'All', label: 'All' },
+  { id: 'Eat/Drink', label: '🍹 Eat/Drink' },
+  { id: 'Stay', label: '🏨 Stay' },
+  { id: 'Do', label: '🎭 Do' },
+  { id: 'Shop', label: '🛍️ Shop' },
+];
+
+export const MOCK_IDEAS = [
+  {
+    id: '1',
+    category: 'Eat/Drink',
+    categoryLabel: '🍹 Eat/Drink',
+    title: 'Sunset Cocktails',
+    description: 'Savor exotic flavors and stunning views at a beachside bar.',
+    imageUri:
+      'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600&auto=format&fit=crop',
+  },
+  {
+    id: '2',
+    category: 'Stay',
+    categoryLabel: '🏨 Stay',
+    title: 'Boutique Hotel',
+    description:
+      'Rejuvenate your body and mind with amazing room overlooking the serene ocean.',
+    imageUri:
+      'https://images.unsplash.com/photo-1542314831-c6a4d14b1b36?q=80&w=600&auto=format&fit=crop',
+  },
+  {
+    id: '3',
+    category: 'Do',
+    categoryLabel: '🎭 Do',
+    title: 'Local Artisans Market',
+    description:
+      'Discover handmade crafts and unique souvenirs from talented local artists.',
+    imageUri:
+      'https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?q=80&w=600&auto=format&fit=crop',
+  },
+  {
+    id: '4',
+    category: 'Shop',
+    categoryLabel: '🛍️ Shop',
+    title: 'Food Tour',
+    description:
+      "Embark on a culinary adventure sampling dishes from the region's best eateries.",
+    imageUri:
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=600&auto=format&fit=crop',
+  },
+  {
+    id: '5',
+    category: 'Attend',
+    categoryLabel: '🎟️ Attend',
+    title: 'Sunset Cruise',
+    description:
+      'Experience breathtaking sunsets while sailing on the serene waters of the bay.',
+    imageUri:
+      'https://images.unsplash.com/photo-1514886675239-6d654497e875?q=80&w=600&auto=format&fit=crop',
+  },
+];
+
 export default function SearchIdeasSheet({ visible, onClose }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { addIdea } = useTrips();
- 
-  const { query, setQuery, results, loading, clearResults } = usePlacesAutocomplete();
-  const translateY = useRef(new Animated.Value(600)).current;
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [localQuery, setLocalQuery] = useState('');
+
+  const { query, setQuery, results, loading, clearResults } =
+    usePlacesAutocomplete();
+  const translateY = useRef(new Animated.Value(900)).current;
+
   const inputRef = useRef<TextInput>(null);
- 
+
   useEffect(() => {
     if (visible) {
       Animated.spring(translateY, {
@@ -50,26 +115,33 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
         useNativeDriver: true,
       }).start();
       setQuery('');
+      setLocalQuery('');
       clearResults();
+      setActiveCategory('All');
     }
   }, [visible]);
- 
-  const handleSaveIdea = async (place: any) => {
+
+  const handleSaveMockIdea = async (idea: (typeof MOCK_IDEAS)[0]) => {
     await addIdea({
-      title: place.displayName,
-      type: 'activity', 
-      location: place.formattedAddress,
-      external_id: place.placeId,
+      name: idea.title,
+      type: 'activity',
+      location: idea.category,
+      external_id: idea.id,
+      notes: idea.description,
     });
     onClose();
   };
- 
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
- 
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.avoidingView}
@@ -83,63 +155,82 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
             },
           ]}>
           <View style={styles.handleBar} />
- 
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: colors.textColors.default }]}>
-              Search for Ideas
-            </Text>
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={colors.textColors.subtle} />
-            </Pressable>
-          </View>
- 
+
           <View style={styles.searchContainer}>
             <Search size={18} color="#AEAEAE" style={styles.searchIcon} />
             <TextInput
               ref={inputRef}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search places, restaurants, activities..."
+              value={localQuery}
+              onChangeText={(txt) => {
+                setLocalQuery(txt);
+                setQuery(txt); // Still power the hook behind the scenes
+              }}
+              placeholder="Search trips, hotels, experiences..."
               placeholderTextColor="#AEAEAE"
               style={[styles.searchInput, { color: colors.textColors.default }]}
             />
-            {loading && <Loader2 size={18} color="#FF1F8C" style={styles.loader} />}
+            {loading ? (
+              <Loader2 size={18} color="#FF1F8C" style={styles.loader} />
+            ) : (
+              <SlidersHorizontal size={18} color="#AEAEAE" />
+            )}
           </View>
- 
-          <ScrollView
-            style={styles.resultsList}
+
+          <View style={styles.categoriesWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesContainer}>
+              {MOCK_CATEGORIES.map((cat) => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => setActiveCategory(cat.id)}
+                    style={[
+                      styles.categoryPill,
+                      isActive && styles.categoryPillActive,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.categoryPillText,
+                        isActive && styles.categoryPillTextActive,
+                      ]}>
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <FlatList
+            data={MOCK_IDEAS.filter(
+              (idea) =>
+                activeCategory === 'All' || idea.category === activeCategory
+            )}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.ideaGridRow}
+            contentContainerStyle={styles.ideaGridContent}
+            showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            {results.map((place) => (
-              <Pressable
-                key={place.placeId}
-                onPress={() => handleSaveIdea(place)}
-                style={({ pressed }) => [
-                  styles.resultItem,
-                  pressed && { backgroundColor: '#F8F9FA' },
-                ]}>
-                <View style={styles.resultIconBox}>
-                  <MapPin size={18} color="#FF1F8C" />
-                </View>
-                <View style={styles.resultContent}>
-                  <Text style={styles.placeName}>{place.displayName}</Text>
-                  <Text style={styles.placeAddress} numberOfLines={1}>
-                    {place.formattedAddress}
-                  </Text>
-                </View>
-                <View style={styles.addIconBox}>
-                  <Plus size={16} color="#AEAEAE" />
-                </View>
-              </Pressable>
-            ))}
-            <View style={{ height: 40 }} />
-          </ScrollView>
+            renderItem={({ item }) => (
+              <IdeaCard
+                imageUri={item.imageUri}
+                categoryLabel={item.categoryLabel}
+                title={item.title}
+                description={item.description}
+                onAdd={() => handleSaveMockIdea(item)}
+              />
+            )}
+          />
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
- 
+
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -160,33 +251,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E9ECEF',
+    backgroundColor: '#D1D5DB', // slightly darker grey based on mockup
     alignSelf: 'center',
     marginBottom: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: AppFonts.bricolage.semiBold,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8F9FA',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+    borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
     marginBottom: 16,
@@ -196,50 +271,42 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: AppFonts.inter.medium,
-  },
-  loader: {
-    marginLeft: 10,
-  },
-  resultsList: {
-    flex: 1,
-  },
-  resultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F5',
-  },
-  resultIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF0F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  resultContent: {
-    flex: 1,
-  },
-  placeName: {
-    fontSize: 15,
-    fontFamily: AppFonts.inter.semiBold,
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  placeAddress: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: AppFonts.inter.regular,
-    color: '#868E96',
   },
-  addIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  loader: {},
+  categoriesWrapper: {
+    marginHorizontal: -20, // Negative margin to allow ScrollView to stretch full width but item padding manages safety
+  },
+  categoriesContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    gap: 8,
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 99,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+  },
+  categoryPillActive: {
+    backgroundColor: '#FF2E92',
+    borderColor: '#FF2E92',
+  },
+  categoryPillText: {
+    fontSize: 13,
+    fontFamily: AppFonts.inter.medium,
+    color: '#6B7280',
+  },
+  categoryPillTextActive: {
+    color: '#ffffff',
+  },
+  ideaGridContent: {
+    paddingBottom: 40,
+  },
+  ideaGridRow: {
+    justifyContent: 'space-between',
   },
 });

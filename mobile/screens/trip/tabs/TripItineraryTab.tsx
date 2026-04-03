@@ -11,22 +11,19 @@ import {
   startOfDay,
   startOfMonth,
 } from 'date-fns';
-import {
-  CalendarDays,
-  ChevronDown,
-  ChevronRight,
-  Ellipsis,
-  Plus,
-} from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { ChevronDown, ChevronRight, Ellipsis, Plus } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
+  Text as RNText,
   ScrollView,
   StyleSheet,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -328,20 +325,27 @@ export default function TripItineraryTab() {
 
   if (!itineraryLoading && days.length === 0) {
     return (
-      <View style={styles.centered}>
-        <CalendarDays
-          size={52}
-          strokeWidth={1}
-          color={dark ? '#4b5563' : '#d1d5db'}
+      <View style={styles.emptyStateContainer}>
+        <Image
+          source={require('@/assets/images/clipboard-empty.png')}
+          style={styles.illustration}
+          contentFit="contain"
         />
-        <Text style={styles.emptyHeading}>No itinerary yet</Text>
-        <Text style={styles.emptySubtext}>
-          Start planning your trip day by day
-        </Text>
-        <Pressable onPress={() => addDay({})} style={styles.createDayBtn}>
-          <Plus size={16} color="#fff" />
-          <Text style={styles.createDayLabel}>Create Day 1</Text>
-        </Pressable>
+        <RNText
+          style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
+          No itinerary yet
+        </RNText>
+        <RNText style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+          Every adventure begins with an empty page. Start planning now.
+        </RNText>
+
+        <TouchableOpacity
+          onPress={() => addDay({})}
+          style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
+          activeOpacity={0.8}>
+          <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+          <RNText style={styles.createDayLabel}>Create Day 1</RNText>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -434,7 +438,33 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    // padding: 40,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: '#fff',
+    minHeight: 250,
+  },
+  illustration: {
+    width: 50,
+    height: 49,
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 5,
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   dateStripContainer: {
     paddingVertical: 14,
@@ -448,8 +478,8 @@ const styles = StyleSheet.create({
     width: DATE_COLUMN_WIDTH,
   },
   dayLetter: {
-    fontSize: 10,
-    fontFamily: AppFonts.inter.medium,
+    fontSize: 12,
+    fontFamily: AppFonts.inter.regular,
     color: '#AEAEAE',
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -461,25 +491,26 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#F0F5FA',
   },
-  dateCircleSelected: { backgroundColor: '#FF1F8C' },
+  dateCircleSelected: { backgroundColor: '#FF1F8C', borderColor: '#FF1F8C' },
   dateNumber: {
     fontSize: 14,
-    fontFamily: AppFonts.inter.semiBold,
-    color: '#000',
+    fontFamily: AppFonts.inter.regular,
+    color: '#ADB5BD',
   },
   dateNumberSelected: { color: '#fff' },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // paddingHorizontal: 16,
     paddingVertical: 5,
   },
   dayHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dayTitle: {
     fontSize: 14,
-    // fontFamily: AppFonts.bricolage.semiBold,
     color: '#000',
   },
   titleInput: {
@@ -529,30 +560,18 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  emptyHeading: {
-    fontSize: 18,
-    fontFamily: AppFonts.bricolage.semiBold,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 8,
-  },
   createDayBtn: {
-    backgroundColor: '#FF1F8C',
-    padding: 16,
-    borderRadius: 16,
-    marginTop: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 99,
+    gap: 5,
   },
   createDayLabel: {
     color: '#fff',
-    fontSize: 14,
-    fontFamily: AppFonts.bricolage.semiBold,
+    fontSize: 13,
+    fontWeight: '600',
   },
   addDayPill: {
     flexDirection: 'row',

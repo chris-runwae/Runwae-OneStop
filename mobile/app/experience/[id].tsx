@@ -59,7 +59,11 @@ const ExperienceDetailScreen = () => {
     setIsPreviewVisible(true);
   };
 
-  if (!loading && !experience) {
+  if (loading) {
+    return null; // Or a loading spinner if preferred, but usually returning null prevents the flash before mounting content.
+  }
+
+  if (!experience) {
     return <DetailNotFound type="experience" />;
   }
 

@@ -6,7 +6,7 @@ import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, MapPin, Pencil, Share, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -189,13 +189,25 @@ export default function TripDetailScreen() {
 
   const isOwner = activeTrip.created_by === user?.id;
   const dropdownOptions = [
-    ...(isOwner ? [{ 
-      label: 'Edit Trip', 
-      onPress: () => router.push(`/(tabs)/(trips)/${tripId}/edit`), 
-      icon: Pencil 
-    }] : []),
-    { label: 'Share Trip', onPress: () => {}, icon: Share },
-    ...(isOwner ? [{ label: 'Delete Trip', onPress: () => {}, icon: Trash2, isDestructive: true }] : []),
+    ...(isOwner
+      ? [
+          {
+            label: 'Edit Trip',
+            onPress: () => router.push(`/(tabs)/(trips)/${tripId}/edit`),
+            icon: Pencil,
+          },
+        ]
+      : []),
+    ...(isOwner
+      ? [
+          {
+            label: 'Delete Trip',
+            onPress: () => {},
+            icon: Trash2,
+            isDestructive: true,
+          },
+        ]
+      : []),
   ];
 
   return (

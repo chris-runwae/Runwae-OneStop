@@ -1,27 +1,31 @@
 import { useTheme } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Camera, MapPin, Calendar, Check } from 'lucide-react-native';
-import React, { useState, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Camera, MapPin, Calendar } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useColorScheme,
-  ActivityIndicator,
-  ViewStyle,
   TextStyle,
+  ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 
+import DateRange from '@/components/containers/DateRange';
 import { Colors } from '@/constants/theme';
 import { useTrips } from '@/context/TripsContext';
-import DateRange from '@/components/containers/DateRange';
+import { Ionicons } from '@expo/vector-icons';
+
+import EditTripField from '@/components/trips/edit/EditTripField';
+import DestinationModal from '@/components/trips/edit/DestinationModal';
+import DateModal from '@/components/trips/edit/DateModal';
 
 export default function EditTripScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -31,25 +35,59 @@ export default function EditTripScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const { activeTrip, updateTrip, isLoading } = useTrips();
+  const {
+    activeTrip,
+    updateTrip,
+    updateTripDetails,
+    updateDestination,
+    loadTrip,
+  } = useTrips();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [coverImage, setCoverImage] = useState<string | null>(null);
+  // Basic trip info state
+  const isCorrectTrip = activeTrip?.id === tripId;
+  const [name, setName] = useState(isCorrectTrip ? (activeTrip?.name ?? '') : '');
+  const [description, setDescription] = useState(isCorrectTrip ? (activeTrip?.description ?? '') : '');
+  const [coverImage, setCoverImage] = useState<string | null>(isCorrectTrip ? (activeTrip?.cover_image_url ?? null) : null);
+
+  // Destination state
+  const [destinationLabel, setDestinationLabel] = useState(isCorrectTrip ? (activeTrip?.destination_label ?? '') : '');
+  const [destinationPlaceId, setDestinationPlaceId] = useState(isCorrectTrip ? (activeTrip?.destination_place_id ?? '') : '');
+  const [destinationAddress, setDestinationAddress] = useState(isCorrectTrip ? (activeTrip?.destination_address ?? '') : '');
+
+  // Date state
+  const [startDate, setStartDate] = useState(isCorrectTrip ? (activeTrip?.trip_details?.start_date ?? '') : '');
+  const [endDate, setEndDate] = useState(isCorrectTrip ? (activeTrip?.trip_details?.end_date ?? '') : '');
+
+  // UI state
   const [isSaving, setIsSaving] = useState(false);
+  const [isDestinationModalVisible, setIsDestinationModalVisible] = useState(false);
+  const [isDateModalVisible, setIsDateModalVisible] = useState(false);
 
+  // Initial load
   useEffect(() => {
-    if (activeTrip) {
-      setName(activeTrip.name || '');
-      setDescription(activeTrip.description || '');
-      setCoverImage(activeTrip.cover_image_url || null);
+    if (tripId && activeTrip?.id !== tripId) {
+      loadTrip(tripId);
+    }
+  }, [tripId]);
+
+  // Sync state when activeTrip updates
+  useEffect(() => {
+    if (activeTrip?.id === tripId) {
+      setName(activeTrip.name ?? '');
+      setDescription(activeTrip.description ?? '');
+      setCoverImage(activeTrip.cover_image_url ?? null);
+      setDestinationLabel(activeTrip.destination_label ?? '');
+      setDestinationPlaceId(activeTrip.destination_place_id ?? '');
+      setDestinationAddress(activeTrip.destination_address ?? '');
+      setStartDate(activeTrip.trip_details?.start_date ?? '');
+      setEndDate(activeTrip.trip_details?.end_date ?? '');
     }
   }, [activeTrip]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'We need camera roll permissions to change the cover image.');
+      Alert.alert('Permission needed', 'We need access to your photos to change the cover image.');
       return;
     }
 
@@ -61,75 +99,67 @@ export default function EditTripScreen() {
     });
 
     if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setCoverImage(uri);
+      setCoverImage(result.assets[0].uri);
     }
   };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a trip name.');
+      Alert.alert('Error', 'Trip name cannot be empty.');
       return;
     }
 
     setIsSaving(true);
     try {
-      const { error } = await updateTrip(tripId!, {
-        name: name.trim(),
-        description: description.trim(),
-        cover_image_url: coverImage,
-      });
+      const results = await Promise.all([
+        updateTrip(tripId!, {
+          name: name.trim(),
+          description: description.trim(),
+          cover_image_url: coverImage,
+        }),
+        updateDestination(tripId!, {
+          destination_label: destinationLabel,
+          destination_place_id: destinationPlaceId,
+          destination_address: destinationAddress,
+        }),
+        updateTripDetails(tripId!, {
+          start_date: startDate || null,
+          end_date: endDate || startDate || null,
+        }),
+      ]);
 
-      if (error) {
-        Alert.alert('Error', error);
+      const err = results.find((r) => r?.error)?.error;
+      if (err) {
+        Alert.alert('Sync Error', 'Failed to save some changes.');
       } else {
         router.back();
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Save Failed', err.message || 'An unexpected error occurred.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading || !activeTrip) {
-    return (
-      <View style={[styles.centerContainer as ViewStyle, { backgroundColor: colors.backgroundColors.default }]}>
-        <ActivityIndicator size="large" color="#FF1F8C" />
-      </View>
-    );
-  }
-
-  const containerStyle = [styles.container, { backgroundColor: colors.backgroundColors.default }];
-  const headerTitleStyle = [styles.headerTitle, { color: dark ? '#fff' : '#111827' }];
-  const inputStyle = [
-    styles.input,
-    { 
-      color: dark ? '#fff' : '#111827',
-      backgroundColor: dark ? '#1c1c1e' : '#f3f4f6',
-    }
-  ];
-  const textAreaStyle = [inputStyle, styles.textArea];
-
   return (
-    <View style={containerStyle}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundColors.default }]}>
       {/* Header */}
-      <View style={[styles.header as ViewStyle, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Text style={[styles.headerButtonLabel as TextStyle, { color: dark ? '#fff' : '#000' }]}>Cancel</Text>
+          <Text style={[styles.headerButtonLabel, { color: dark ? '#fff' : '#000' }]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle as TextStyle}>Edit Trip</Text>
+        <Text style={[styles.headerTitle, { color: dark ? '#fff' : '#000' }]}>Edit Trip</Text>
         <TouchableOpacity onPress={handleSave} disabled={isSaving} style={styles.headerButton}>
           {isSaving ? (
             <ActivityIndicator size="small" color="#FF1F8C" />
           ) : (
-            <Text style={[styles.headerButtonLabel as TextStyle, { color: '#FF1F8C', fontWeight: '600' }]}>Save</Text>
+            <Text style={[styles.headerButtonLabel, { color: '#FF1F8C', fontWeight: 'bold' }]}>Save</Text>
           )}
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Cover Image Section */}
+        {/* Cover Image */}
         <TouchableOpacity onPress={pickImage} activeOpacity={0.9} style={styles.imageContainer}>
           <Image
             source={coverImage ? { uri: coverImage } : require('@/assets/images/trip-empty-state.png')}
@@ -138,79 +168,91 @@ export default function EditTripScreen() {
           />
           <View style={styles.imageOverlay}>
             <View style={styles.cameraIcon}>
-              <Camera size={24} color="#fff" strokeWidth={2} />
+              <Camera size={22} color="#fff" strokeWidth={2.5} />
             </View>
             <Text style={styles.changePhotoText}>Change Cover Photo</Text>
           </View>
         </TouchableOpacity>
 
         <View style={styles.form}>
-          {/* Trip Name */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: dark ? '#9ca3af' : '#6b7280' }]}>Trip Name</Text>
-            <TextInput
-              style={inputStyle}
-              value={name}
-              onChangeText={setName}
-              placeholder="Summer Vacation 2024"
-              placeholderTextColor={dark ? '#4b5563' : '#9ca3af'}
-            />
-          </View>
+          {/* Editable Fields */}
+          <EditTripField
+            label="Trip Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Summer in Tokyo"
+          />
 
-          {/* Description */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: dark ? '#9ca3af' : '#6b7280' }]}>Description</Text>
-            <TextInput
-              style={textAreaStyle}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Write a short summary of your trip..."
-              placeholderTextColor={dark ? '#4b5563' : '#9ca3af'}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
+          <EditTripField
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            placeholder="What's the vibe? ✨"
+            multiline
+            numberOfLines={4}
+          />
 
-          {/* Location (Read-only for now) */}
-          <View style={styles.infoRow}>
-            <View style={styles.infoIcon}>
-              <MapPin size={20} color={dark ? '#9ca3af' : '#6b7280'} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Destination</Text>
-              <Text style={[styles.infoValue, { color: dark ? '#fff' : '#111827' }]}>
-                {activeTrip.destination_label || 'No destination set'}
-              </Text>
-            </View>
-          </View>
+          {/* Interactive Selection Rows */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.infoRow}
+              onPress={() => setIsDestinationModalVisible(true)}>
+              <View style={[styles.infoIcon, { backgroundColor: dark ? '#131313' : '#f8f9fa' }]}>
+                <MapPin size={18} color={dark ? '#fff' : '#6b7280'} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Destination</Text>
+                <Text style={[styles.infoValue, { color: dark ? '#fff' : '#111827' }]}>
+                  {destinationLabel || 'Select a destination'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={dark ? '#4b5563' : '#9ca3af'} />
+            </TouchableOpacity>
 
-          {/* Dates (Read-only for now) */}
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.infoIcon}>
-              <Calendar size={20} color={dark ? '#9ca3af' : '#6b7280'} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Dates</Text>
-              <DateRange
-                startDate={activeTrip.trip_details?.start_date || ''}
-                endDate={activeTrip.trip_details?.end_date || ''}
-                fontSize={15}
-              />
-            </View>
+            <TouchableOpacity
+              style={[styles.infoRow, { borderBottomWidth: 0 }]}
+              onPress={() => setIsDateModalVisible(true)}>
+              <View style={[styles.infoIcon, { backgroundColor: dark ? '#131313' : '#f8f9fa' }]}>
+                <Calendar size={18} color={dark ? '#fff' : '#6b7280'} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Dates</Text>
+                <DateRange startDate={startDate} endDate={endDate} fontSize={15} />
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={dark ? '#4b5563' : '#9ca3af'} />
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      {/* Modals */}
+      <DestinationModal
+        visible={isDestinationModalVisible}
+        onClose={() => setIsDestinationModalVisible(false)}
+        initialQuery={destinationLabel}
+        onSelect={(place) => {
+          setDestinationLabel(place.displayName);
+          setDestinationPlaceId(place.placeId);
+          setDestinationAddress(place.formattedAddress || '');
+          setIsDestinationModalVisible(false);
+        }}
+      />
+
+      <DateModal
+        visible={isDateModalVisible}
+        onClose={() => setIsDateModalVisible(false)}
+        initialStartDate={startDate}
+        initialEndDate={endDate}
+        onSelect={(start, end) => {
+          setStartDate(start);
+          setEndDate(end);
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   container: {
     flex: 1,
   },
@@ -221,11 +263,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 15,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#33333311',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   headerButton: {
     minWidth: 60,
@@ -237,67 +280,57 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   imageContainer: {
-    height: 200,
+    height: 220,
     width: '100%',
     position: 'relative',
+    overflow: 'hidden',
   },
   coverImage: {
     flex: 1,
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   cameraIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   changePhotoText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   form: {
-    padding: 20,
+    padding: 24,
   },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
+  section: {
+    marginTop: 8,
+    backgroundColor: 'transparent',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#33333311',
   },
   infoIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -307,7 +340,10 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   infoValue: {
     fontSize: 15,

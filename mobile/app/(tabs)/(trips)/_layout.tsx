@@ -26,8 +26,6 @@ export default function TripsLayout() {
         name="[tripId]/edit"
         options={{
           headerShown: false,
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.9, 1],
         }}
       />
       <Stack.Screen

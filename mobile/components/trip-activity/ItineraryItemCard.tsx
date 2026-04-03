@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
+import { MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 
@@ -60,7 +61,11 @@ const ItineraryItemCard = ({
   const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
-  const hasImage = !!item.image_url;
+  
+  const displayImageUrl = item.image_url || 
+    (item.external_id ? MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri : null);
+    
+  const hasImage = !!displayImageUrl;
 
   const handleOptionsPress = (event: any) => {
     if (!isCreator) return;
@@ -94,7 +99,7 @@ const ItineraryItemCard = ({
         ]}>
         {hasImage ? (
           <Image
-            source={{ uri: item.image_url! }}
+            source={{ uri: displayImageUrl! }}
             style={styles.thumbnail}
             contentFit="cover"
           />

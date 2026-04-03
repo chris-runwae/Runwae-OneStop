@@ -24,7 +24,7 @@ interface ActionMenuProps {
   onClose: () => void;
   options: ActionOption[];
   title?: string;
-  anchorPosition?: { top: number; right: number };
+  anchorPosition?: { top: number; right?: number; left?: number };
 }
 
 const ActionMenu = ({
@@ -43,10 +43,14 @@ const ActionMenu = ({
             style={[
               styles.menuContainer,
               anchorPosition
-                ? { top: anchorPosition.top, right: anchorPosition.right }
+                ? { 
+                    top: anchorPosition.top, 
+                    ...(anchorPosition.left !== undefined ? { left: anchorPosition.left } : {}),
+                    ...(anchorPosition.right !== undefined ? { right: anchorPosition.right } : {}),
+                  }
                 : { top: insets.top + 100, right: 24 },
             ]}>
-            <BlurView intensity={5} tint="light" style={styles.blurContainer}>
+            <BlurView intensity={30} tint="light" style={styles.blurContainer}>
               {options.map((option, index) => (
                 <View key={index}>
                   {option.hasSeparator && <View style={styles.separator} />}
@@ -83,8 +87,8 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     position: 'absolute',
-    width: 200,
-    borderRadius: 50,
+    width: 170,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 2,
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   option: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   optionText: {

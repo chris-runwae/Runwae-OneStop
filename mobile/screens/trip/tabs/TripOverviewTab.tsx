@@ -1,24 +1,59 @@
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import { Plus, Trash2, MapPin, CalendarPlus } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, ScrollView, View, Pressable, Alert } from 'react-native';
+import { ChevronDown, Plus } from 'lucide-react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { router } from 'expo-router';
 
-import { TripWithEverything } from '@/hooks/useTripActions';
-import { useTrips } from '@/context/TripsContext';
+import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
+import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
+import IdeaCard from '@/components/trip-activity/IdeaCard';
+import SearchIdeasSheet, { MOCK_CATEGORIES, MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
-import SearchIdeasSheet from '@/components/trip-activity/SearchIdeasSheet';
+import { useTrips } from '@/context/TripsContext';
 import { SavedItineraryItem } from '@/hooks/useIdeaActions';
+import { TripWithEverything } from '@/hooks/useTripActions';
 
 interface Props {
   trip: TripWithEverything;
 }
+
+const getCategoryWithEmoji = (category: string | null) => {
+  if (!category) return '💡 Idea';
+  const c = category.toLowerCase();
+  if (c.includes('eat') || c.includes('drink')) return '🍹 Eat/Drink';
+  if (c.includes('stay')) return '🏨 Stay';
+  if (c.includes('do')) return '🎭 Do';
+  if (c.includes('shop')) return '🛍️ Shop';
+  if (c.includes('attend')) return '🎫 Attend';
+  return `💡 ${category}`;
+};
 
 export default function TripOverviewTab({ trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
   const [searchVisible, setSearchVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
+    null
+  );
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
+  
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const [filterAnchor, setFilterAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
+  const filterBtnRef = useRef<View>(null);
+
+  const [showAddToItinerarySheet, setShowAddToItinerarySheet] = useState(false);
 
   const handleAddToItinerary = (idea: SavedItineraryItem) => {
     if (days.length === 0) {
@@ -33,16 +68,8 @@ export default function TripOverviewTab({ trip }: Props) {
       return;
     }
 
-    // Show a picker or just add to Day 1 for now (simplified for this task)
-    const firstDay = days[0];
-    addItem(firstDay.id, {
-      title: idea.title,
-      type: idea.type,
-      location: idea.location,
-      external_id: idea.external_id,
-      image_url: idea.image_url,
-    });
-    Alert.alert('Success', `Added "${idea.title}" to Day 1`);
+    setSelectedIdea(idea);
+    setShowAddToItinerarySheet(true);
   };
 
   const handleDeleteIdea = (id: string) => {
@@ -51,6 +78,47 @@ export default function TripOverviewTab({ trip }: Props) {
       { text: 'Delete', style: 'destructive', onPress: () => removeIdea(id) },
     ]);
   };
+
+  const actionOptions: ActionOption[] = [
+    {
+      label: 'View Details',
+      onPress: () => {
+        if (selectedIdea?.external_id) {
+          router.push({
+            pathname: '/experience/[id]',
+            params: { id: selectedIdea.external_id },
+          });
+        }
+      },
+    },
+    {
+      label: 'Add to Itinerary',
+      onPress: () => {
+        if (selectedIdea) handleAddToItinerary(selectedIdea);
+      },
+    },
+    {
+      label: 'Remove',
+      isDestructive: true,
+      hasSeparator: true,
+      onPress: () => {
+        if (selectedIdea) handleDeleteIdea(selectedIdea.id);
+      },
+    },
+  ];
+
+  const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
+    label: cat.label,
+    isBold: activeFilter === cat.id,
+    onPress: () => {
+      setActiveFilter(cat.id);
+      setFilterMenuVisible(false);
+    },
+  }));
+
+  const filteredIdeas = activeFilter === 'All' 
+    ? ideas 
+    : ideas.filter(idea => idea.location === activeFilter);
 
   if (ideas.length === 0 && !ideasLoading) {
     return (
@@ -62,7 +130,10 @@ export default function TripOverviewTab({ trip }: Props) {
             contentFit="contain"
           />
           <Text
-            style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
+            style={[
+              styles.emptyTitle,
+              { color: dark ? '#ffffff' : '#111827' },
+            ]}>
             Start Planning Your Dream Trip
           </Text>
           <Text style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
@@ -78,56 +149,103 @@ export default function TripOverviewTab({ trip }: Props) {
           </TouchableOpacity>
         </View>
 
-        <SearchIdeasSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+        <SearchIdeasSheet
+          visible={searchVisible}
+          onClose={() => setSearchVisible(false)}
+        />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <View style={styles.listHeader}>
-        <Text style={[styles.listTitle, { color: colors.textColors.default }]}>
-          Your Trip Ideas
-        </Text>
+        <TouchableOpacity 
+          ref={filterBtnRef}
+          onPress={() => {
+            if (filterBtnRef.current) {
+              filterBtnRef.current.measure(
+                (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                  setFilterAnchor({
+                    top: pageY + height + 8, // Place right below the button
+                    left: pageX, // align perfectly with the left edge of the button
+                  });
+                  setFilterMenuVisible(true);
+                }
+              );
+            } else {
+              setFilterMenuVisible(true);
+            }
+          }}
+          style={styles.filterBtn}>
+          <Text style={styles.filterText}>{activeFilter === 'All' ? 'All' : (MOCK_CATEGORIES.find(c => c.id === activeFilter)?.label || 'All')}</Text>
+          <ChevronDown size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => setSearchVisible(true)}
-          style={styles.addBtnSmall}>
-          <Plus size={18} color="#FF1F8C" strokeWidth={2} />
+          style={styles.addPillBtn}>
+          <Text style={styles.addPillText}>+ Add</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}>
-        {ideas.map((idea) => (
-          <View key={idea.id} style={styles.ideaCard}>
-            <View style={styles.ideaIconBox}>
-              <MapPin size={18} color="#FF1F8C" />
-            </View>
-            <View style={styles.ideaInfo}>
-              <Text style={styles.ideaTitleText}>{idea.title}</Text>
-              <Text style={styles.ideaLocationText} numberOfLines={1}>
-                {idea.location || 'No location set'}
-              </Text>
-            </View>
-            <View style={styles.ideaActions}>
-              <TouchableOpacity
-                onPress={() => handleAddToItinerary(idea)}
-                style={styles.actionIconBtn}>
-                <CalendarPlus size={20} color="#AEAEAE" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleDeleteIdea(idea.id)}
-                style={styles.actionIconBtn}>
-                <Trash2 size={20} color="#FF4D4D" />
-              </TouchableOpacity>
-            </View>
-          </View>
+      <View style={styles.ideaGridContent}>
+        {filteredIdeas.map((item) => (
+          <IdeaCard
+            key={item.id}
+            imageUri={
+              item.image_url ||
+              MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
+              'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
+            }
+            categoryLabel={getCategoryWithEmoji(item.location)}
+            title={item.name}
+            description={item.notes || ''}
+            onOptionsPress={(position: { top: number; right?: number; left?: number }) => {
+              setSelectedIdea(item);
+              setMenuAnchor(position);
+              setMenuVisible(true);
+            }}
+          />
         ))}
-        <View style={{ height: 40 }} />
-      </ScrollView>
+      </View>
 
-      <SearchIdeasSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      <SearchIdeasSheet
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
+      />
+
+      <AddToItinerarySheet
+        visible={showAddToItinerarySheet}
+        onClose={() => setShowAddToItinerarySheet(false)}
+        idea={selectedIdea}
+        days={days}
+        onSubmit={async (dayId: string, startTime?: string | null, endTime?: string | null) => {
+          if (!selectedIdea) return;
+          await addItem(dayId, {
+            title: selectedIdea.name,
+            type: selectedIdea.type as any, // Cast to ItemType
+            location: selectedIdea.location,
+            external_id: selectedIdea.external_id,
+            image_url: selectedIdea.image_url,
+            start_time: startTime,
+            end_time: endTime,
+          });
+        }}
+      />
+
+      <ActionMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={actionOptions}
+        anchorPosition={menuAnchor}
+      />
+      <ActionMenu
+        visible={filterMenuVisible}
+        onClose={() => setFilterMenuVisible(false)}
+        options={filterOptions}
+        anchorPosition={filterAnchor}
+      />
     </View>
   );
 }
@@ -175,74 +293,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
- 
+
   // List Styles
   listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 4,
     marginBottom: 16,
   },
-  listTitle: {
-    fontSize: 20,
-    fontFamily: AppFonts.bricolage.semiBold,
-    letterSpacing: -0.5,
-  },
-  addBtnSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFF0F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  ideaCard: {
+  filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
+  },
+  filterText: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.medium,
+    color: '#6B7280',
+  },
+  addPillBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 99,
     borderWidth: 1,
-    borderColor: '#F1F3F5',
+    borderColor: '#EFEFEF',
+    backgroundColor: '#fff',
   },
-  ideaIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F8F9FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  ideaInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  ideaTitleText: {
-    fontSize: 15,
-    fontFamily: AppFonts.inter.semiBold,
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  ideaLocationText: {
-    fontSize: 13,
+  addPillText: {
+    fontSize: 12,
     fontFamily: AppFonts.inter.regular,
-    color: '#AEAEAE',
+    color: '#343A40',
   },
-  ideaActions: {
+  ideaGridContent: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-  },
-  actionIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingBottom: 100, // accommodate FAR tab
   },
 });

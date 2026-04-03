@@ -5,20 +5,10 @@ import {
   ChevronLeft,
   EllipsisVertical,
   Heart,
-  Pencil,
-  Share,
-  Trash2,
   Upload,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -27,6 +17,7 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ActionMenu, { ActionOption } from '../common/ActionMenu';
 import ShareModal from './ShareModal';
 
 interface DropdownOption {
@@ -81,13 +72,23 @@ const ItineraryHeader = ({
   const { dark } = useTheme();
 
   const handleOptionPress = (option: DropdownOption) => {
-    setIsMenuOpen(false);
-    if (option.label === "Share Trip") {
+    if (option.label === 'Share Trip') {
       setIsShareModalVisible(true);
     } else {
       option.onPress();
     }
   };
+
+  // Map DropdownOption[] -> ActionOption[] for ActionMenu
+  const actionOptions: ActionOption[] = (dropdownOptions ?? []).map(
+    (opt, i, arr) => ({
+      label: opt.label,
+      isDestructive: opt.isDestructive,
+      // Add a separator before the first destructive item
+      hasSeparator: opt.isDestructive && i > 0 && !arr[i - 1].isDestructive,
+      onPress: () => handleOptionPress(opt),
+    })
+  );
 
   return (
     <>
@@ -131,17 +132,18 @@ const ItineraryHeader = ({
             </TouchableOpacity>
           )}
 
+          <TouchableOpacity
+            onPress={() => setIsShareModalVisible(true)}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
+            <Upload
+              size={17}
+              strokeWidth={1.5}
+              color={dark ? '#fff' : '#000'}
+            />
+          </TouchableOpacity>
+
           {!showMoreOptions && (
             <>
-              <TouchableOpacity
-                onPress={() => setIsShareModalVisible(true)}
-                className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-                <Upload
-                  size={17}
-                  strokeWidth={1.5}
-                  color={dark ? '#fff' : '#000'}
-                />
-              </TouchableOpacity>
               {!hideFavorite && (
                 <TouchableOpacity
                   onPress={() => setIsFavorite(!isFavorite)}
@@ -171,41 +173,14 @@ const ItineraryHeader = ({
         </View>
       </View>
 
-      <Modal visible={isMenuOpen} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setIsMenuOpen(false)}>
-          <View className="flex-1">
-            <View
-              className="absolute right-6 overflow-hidden bg-white/70 dark:bg-black/60"
-              style={{
-                top: insets.top + 60,
-                width: 220,
-                borderRadius: 32,
-              }}>
-              <BlurView intensity={80} tint={dark ? 'dark' : 'light'} className="p-1">
-                {dropdownOptions?.map((option, index) => (
-                  <React.Fragment key={index}>
-                    {option.isDestructive && (
-                      <View className="mx-4 h-[0.5px] bg-gray-200 dark:bg-white/10 my-1" />
-                    )}
-                    <TouchableOpacity
-                      onPress={() => handleOptionPress(option)}
-                      className="px-5 py-4 flex-row items-center justify-between">
-                      <Text
-                        className={`text-[17px] font-medium ${
-                          option.isDestructive
-                            ? 'text-[#FF3B30]'
-                            : 'text-gray-900 dark:text-white'
-                        }`}>
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                ))}
-              </BlurView>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      {dropdownOptions && (
+        <ActionMenu
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          options={actionOptions}
+          anchorPosition={{ top: insets.top + 60, right: 20 }}
+        />
+      )}
 
       <ShareModal
         isVisible={isShareModalVisible}

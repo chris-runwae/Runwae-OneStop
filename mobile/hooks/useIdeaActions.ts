@@ -4,18 +4,18 @@ import { ItemType } from './useItineraryActions';
 export interface SavedItineraryItem {
   id: string;
   trip_id: string;
-  title: string;
+  name: string;
   type: ItemType;
   location: string | null;
   external_id: string | null;
   image_url: string | null;
   notes: string | null;
-  created_by: string;
+  user_id: string;
   created_at: string;
 }
  
 export type CreateSavedItemInput = {
-  title: string;
+  name: string;
   type: ItemType;
   location?: string | null;
   external_id?: string | null;
@@ -51,7 +51,7 @@ export const createSavedItem = async (
     .from('saved_itinerary_items')
     .insert({
       trip_id: tripId,
-      created_by: userId,
+      user_id: userId,
       ...input,
     })
     .select('*')

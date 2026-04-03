@@ -27,6 +27,8 @@ export interface Destination {
 
 export interface ExperienceIncluded {
   title: string;
+  icon?: string;
+  subtitle?: string;
 }
 
 export interface ExperienceKnow {
@@ -76,7 +78,9 @@ export interface Event {
 // ─── Itinerary Template (home-screen suggested packages) ────────────────────
 
 export interface ItineraryTemplateIncluded {
+  icon: string;
   title: string;
+  subtitle: string;
 }
 
 export interface ItineraryTemplateActivity {

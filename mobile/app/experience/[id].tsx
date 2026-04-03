@@ -18,10 +18,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Experience } from "@/types/content.types";
+
 const ExperienceDetailScreen = () => {
   const { id, item: experience, loading } = useDetailItem("experience") as {
     id: string;
-    item: any;
+    item: Experience | null;
     loading: boolean;
   };
   const insets = useSafeAreaInsets();

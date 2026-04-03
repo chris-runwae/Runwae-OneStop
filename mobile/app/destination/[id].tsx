@@ -21,10 +21,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Destination } from "@/types/content.types";
+
 const DestinationDetailScreen = () => {
   const { id, item: destination, loading } = useDetailItem("destination") as {
     id: string;
-    item: any;
+    item: Destination | null;
     loading: boolean;
   };
   const insets = useSafeAreaInsets();
@@ -45,8 +47,12 @@ const DestinationDetailScreen = () => {
   }, [id, DESTINATIONS_FOR_YOU]);
 
 
-  if (!loading && !destination) {
-    return <DetailNotFound type="itinerary" />;
+  if (loading) {
+    return null;
+  }
+
+  if (!destination) {
+    return <DetailNotFound type="destination" />;
   }
 
   return (

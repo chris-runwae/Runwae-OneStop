@@ -11,6 +11,7 @@ interface DateRangeProps {
   icon?: boolean;
   emoji?: boolean;
   color?: string;
+  fontSize?: number;
 }
 
 const DateRange = ({
@@ -19,6 +20,7 @@ const DateRange = ({
   icon = false,
   emoji = false,
   color,
+  fontSize,
 }: DateRangeProps) => {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -32,11 +34,11 @@ const DateRange = ({
       flex: 1,
     },
     infoText: {
-      ...textStyles.subtitle_Regular,
-      fontSize: 13,
+      ...textStyles.textBody14,
+      fontSize: fontSize || 14,
       fontWeight: '400',
-      lineHeight: 19.5,
-      color: color || colors.white,
+      lineHeight: 21,
+      color: color || colors.textColors.subtle,
     },
   });
 
@@ -53,7 +55,7 @@ const DateRange = ({
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      // If same year, format as "Apr 26 - May 15, 2026"
+      // If same year, format as "Apr 26-May 15 2026"
       if (start.getFullYear() === end.getFullYear()) {
         const startMonth = start.toLocaleString('default', { month: 'short' });
         const startDay = start.getDate();
@@ -62,16 +64,16 @@ const DateRange = ({
         const year = start.getFullYear();
 
         if (startMonth === endMonth) {
-          return `${startMonth} ${startDay} - ${endDay}, ${year}`;
+          return `${startMonth} ${startDay}-${endDay} ${year}`;
         } else {
-          return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+          return `${startMonth} ${startDay}-${endMonth} ${endDay} ${year}`;
         }
       } else {
         // Different years
         return `${formatDate(startDate)} - ${formatDate(endDate)}`;
       }
     }
-    return 'Dec 19 - 25, 2025';
+    return 'Feb 14-21 2026';
   })();
 
   return (

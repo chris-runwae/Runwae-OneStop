@@ -14,10 +14,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ItineraryTemplate } from "@/types/content.types";
+
 const ItineraryDetail = () => {
   const { id, item: itinerary, loading } = useDetailItem("itinerary") as {
     id: string;
-    item: any;
+    item: ItineraryTemplate | null;
     loading: boolean;
   };
   const insets = useSafeAreaInsets();
@@ -33,7 +35,11 @@ const ItineraryDetail = () => {
     return FEATURED_ITINERARIES.slice(0, 3);
   }, []);
 
-  if (!loading && !itinerary) {
+  if (loading) {
+    return null;
+  }
+
+  if (!itinerary) {
     return <DetailNotFound type="itinerary" />;
   }
 

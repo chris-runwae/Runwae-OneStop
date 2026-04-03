@@ -1,273 +1,332 @@
-import { useAuth } from '@/context/AuthContext';
-import { GroupMember, TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import { ChevronDown, Plus } from 'lucide-react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
-import { Calendar, DollarSign, Edit2, MapPin } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// ================================================================
-// Helpers
-// ================================================================
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: '£', USD: '$', EUR: '€', JPY: '¥',
-  AUD: 'A$', CAD: 'C$', CHF: 'Fr', CNY: '¥', INR: '₹',
-};
-
-function formatBudget(budget: number | null, currency: string): string {
-  if (budget === null) return 'No budget set';
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-  return `${symbol}${budget.toLocaleString()}`;
-}
-
-function formatDateRange(start?: string | null, end?: string | null): string {
-  if (!start && !end) return 'Dates not set';
-  const fmt = (d: string) =>
-    new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  if (start && end) return `${fmt(start)} → ${fmt(end)}`;
-  if (start) return `From ${fmt(start)}`;
-  return `Until ${fmt(end!)}`;
-}
-
-const AVATAR_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-  '#DDA0DD', '#F4A261', '#2A9D8F', '#E76F51',
-];
-
-function avatarColor(userId: string): string {
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function initials(member: GroupMember): string {
-  const name = member.profiles?.full_name;
-  if (!name) return '?';
-  const parts = name.trim().split(' ');
-  return parts.length >= 2
-    ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-    : parts[0][0].toUpperCase();
-}
-
-// ================================================================
-// TripOverviewTab
-// ================================================================
+import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
+import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
+import IdeaCard from '@/components/trip-activity/IdeaCard';
+import SearchIdeasSheet, { MOCK_CATEGORIES, MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
+import { AppFonts, Colors } from '@/constants';
+import { useTrips } from '@/context/TripsContext';
+import { SavedItineraryItem } from '@/hooks/useIdeaActions';
+import { TripWithEverything } from '@/hooks/useTripActions';
 
 interface Props {
   trip: TripWithEverything;
 }
 
-const MAX_VISIBLE_AVATARS = 5;
+const getCategoryWithEmoji = (category: string | null) => {
+  if (!category) return '💡 Idea';
+  const c = category.toLowerCase();
+  if (c.includes('eat') || c.includes('drink')) return '🍹 Eat/Drink';
+  if (c.includes('stay')) return '🏨 Stay';
+  if (c.includes('do')) return '🎭 Do';
+  if (c.includes('shop')) return '🛍️ Shop';
+  if (c.includes('attend')) return '🎫 Attend';
+  return `💡 ${category}`;
+};
 
 export default function TripOverviewTab({ trip }: Props) {
   const { dark } = useTheme();
-  const { user } = useAuth();
-  const details = trip.trip_details;
-  const members = trip.group_members;
+  const colors = Colors[dark ? 'dark' : 'light'];
+  const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
+    null
+  );
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
+  
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const [filterAnchor, setFilterAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
+  const filterBtnRef = useRef<View>(null);
 
-  const myRole = members.find((m) => m.user_id === user?.id)?.role;
-  const canEdit = myRole === 'owner' || myRole === 'admin';
+  const [showAddToItinerarySheet, setShowAddToItinerarySheet] = useState(false);
 
-  const visibleMembers = members.slice(0, MAX_VISIBLE_AVATARS);
-  const extraCount = members.length - MAX_VISIBLE_AVATARS;
+  const handleAddToItinerary = (idea: SavedItineraryItem) => {
+    if (days.length === 0) {
+      Alert.alert(
+        'No Days',
+        'You need to create at least one day in your itinerary first.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Itinerary', onPress: () => {} }, // Parent logic handles tab switching
+        ]
+      );
+      return;
+    }
+
+    setSelectedIdea(idea);
+    setShowAddToItinerarySheet(true);
+  };
+
+  const handleDeleteIdea = (id: string) => {
+    Alert.alert('Delete Idea', 'Are you sure you want to remove this idea?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => removeIdea(id) },
+    ]);
+  };
+
+  const actionOptions: ActionOption[] = [
+    {
+      label: 'View Details',
+      onPress: () => {
+        if (selectedIdea?.external_id) {
+          router.push({
+            pathname: '/experience/[id]',
+            params: { id: selectedIdea.external_id },
+          });
+        }
+      },
+    },
+    {
+      label: 'Add to Itinerary',
+      onPress: () => {
+        if (selectedIdea) handleAddToItinerary(selectedIdea);
+      },
+    },
+    {
+      label: 'Remove',
+      isDestructive: true,
+      hasSeparator: true,
+      onPress: () => {
+        if (selectedIdea) handleDeleteIdea(selectedIdea.id);
+      },
+    },
+  ];
+
+  const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
+    label: cat.label,
+    isBold: activeFilter === cat.id,
+    onPress: () => {
+      setActiveFilter(cat.id);
+      setFilterMenuVisible(false);
+    },
+  }));
+
+  const filteredIdeas = activeFilter === 'All' 
+    ? ideas 
+    : ideas.filter(idea => idea.location === activeFilter);
+
+  if (ideas.length === 0 && !ideasLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyStateContainer}>
+          <Image
+            source={require('@/assets/images/clipboard-empty.png')}
+            style={styles.illustration}
+            contentFit="contain"
+          />
+          <Text
+            style={[
+              styles.emptyTitle,
+              { color: dark ? '#ffffff' : '#111827' },
+            ]}>
+            Start Planning Your Dream Trip
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+            Looking for what to do? Add them to Ideas now.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
+            activeOpacity={0.8}
+            onPress={() => setSearchVisible(true)}>
+            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+            <Text style={styles.searchButtonText}>Start Searching</Text>
+          </TouchableOpacity>
+        </View>
+
+        <SearchIdeasSheet
+          visible={searchVisible}
+          onClose={() => setSearchVisible(false)}
+        />
+      </View>
+    );
+  }
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Destination */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <MapPin size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Destination
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {trip.destination_label ?? 'No destination set'}
-        </Text>
-      </View>
-
-      {/* Dates */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <Calendar size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Dates
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {formatDateRange(details?.start_date, details?.end_date)}
-        </Text>
-      </View>
-
-      {/* Budget */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <View style={styles.cardRow}>
-          <DollarSign size={18} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>
-            Budget
-          </Text>
-        </View>
-        <Text style={[styles.cardValue, { color: dark ? '#ffffff' : '#111827' }]}>
-          {formatBudget(details?.budget ?? null, details?.currency ?? 'GBP')}
-        </Text>
-      </View>
-
-      {/* Description */}
-      {trip.description ? (
-        <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-          <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280', marginBottom: 6 }]}>
-            About this trip
-          </Text>
-          <Text style={[styles.description, { color: dark ? '#d1d5db' : '#374151' }]}>
-            {trip.description}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Members */}
-      <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb' }]}>
-        <Text style={[styles.cardLabel, { color: dark ? '#9ca3af' : '#6b7280', marginBottom: 12 }]}>
-          {members.length} {members.length === 1 ? 'Member' : 'Members'}
-        </Text>
-        <View style={styles.avatarRow}>
-          {visibleMembers.map((m) => (
-            <View
-              key={m.id}
-              style={[styles.avatar, { borderColor: dark ? '#1c1c1e' : '#f9fafb' }]}
-            >
-              {m.profiles?.avatar_url ? (
-                <Image
-                  source={{ uri: m.profiles.avatar_url }}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[styles.avatarInitials, { backgroundColor: avatarColor(m.user_id) }]}>
-                  <Text style={styles.avatarInitialsText}>{initials(m)}</Text>
-                </View>
-              )}
-            </View>
-          ))}
-          {extraCount > 0 && (
-            <View style={[styles.avatar, styles.avatarExtra, { borderColor: dark ? '#1c1c1e' : '#f9fafb', backgroundColor: dark ? '#374151' : '#e5e7eb' }]}>
-              <Text style={[styles.avatarExtraText, { color: dark ? '#d1d5db' : '#374151' }]}>
-                +{extraCount}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Edit button (owner / admin only) */}
-      {canEdit && (
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push(`/(tabs)/(trips)/${trip.id}/edit` as any)}
-        >
-          <Edit2 size={16} strokeWidth={1.5} color="#FF1F8C" />
-          <Text style={styles.editButtonText}>Edit trip details</Text>
+    <View style={[styles.container]}>
+      <View style={styles.listHeader}>
+        <TouchableOpacity 
+          ref={filterBtnRef}
+          onPress={() => {
+            if (filterBtnRef.current) {
+              filterBtnRef.current.measure(
+                (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                  setFilterAnchor({
+                    top: pageY + height + 8, // Place right below the button
+                    left: pageX, // align perfectly with the left edge of the button
+                  });
+                  setFilterMenuVisible(true);
+                }
+              );
+            } else {
+              setFilterMenuVisible(true);
+            }
+          }}
+          style={styles.filterBtn}>
+          <Text style={styles.filterText}>{activeFilter === 'All' ? 'All' : (MOCK_CATEGORIES.find(c => c.id === activeFilter)?.label || 'All')}</Text>
+          <ChevronDown size={14} color="#6B7280" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
-      )}
-    </ScrollView>
+
+        <TouchableOpacity
+          onPress={() => setSearchVisible(true)}
+          style={styles.addPillBtn}>
+          <Text style={styles.addPillText}>+ Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.ideaGridContent}>
+        {filteredIdeas.map((item) => (
+          <IdeaCard
+            key={item.id}
+            imageUri={
+              item.image_url ||
+              MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
+              'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
+            }
+            categoryLabel={getCategoryWithEmoji(item.location)}
+            title={item.name}
+            description={item.notes || ''}
+            onOptionsPress={(position: { top: number; right?: number; left?: number }) => {
+              setSelectedIdea(item);
+              setMenuAnchor(position);
+              setMenuVisible(true);
+            }}
+          />
+        ))}
+      </View>
+
+      <SearchIdeasSheet
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
+      />
+
+      <AddToItinerarySheet
+        visible={showAddToItinerarySheet}
+        onClose={() => setShowAddToItinerarySheet(false)}
+        idea={selectedIdea}
+        days={days}
+        onSubmit={async (dayId: string, startTime?: string | null, endTime?: string | null) => {
+          if (!selectedIdea) return;
+          await addItem(dayId, {
+            title: selectedIdea.name,
+            type: selectedIdea.type as any, // Cast to ItemType
+            location: selectedIdea.location,
+            external_id: selectedIdea.external_id,
+            image_url: selectedIdea.image_url,
+            start_time: startTime,
+            end_time: endTime,
+          });
+        }}
+      />
+
+      <ActionMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={actionOptions}
+        anchorPosition={menuAnchor}
+      />
+      <ActionMenu
+        visible={filterMenuVisible}
+        onClose={() => setFilterMenuVisible(false)}
+        options={filterOptions}
+        anchorPosition={filterAnchor}
+      />
+    </View>
   );
 }
 
-// ================================================================
-// Styles
-// ================================================================
-
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-    gap: 10,
+  container: {
+    flex: 1,
+    minHeight: 400,
   },
-
-  card: {
-    borderRadius: 12,
-    padding: 14,
-  },
-  cardRow: {
-    flexDirection: 'row',
+  emptyStateContainer: {
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    justifyContent: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 32,
   },
-  cardLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  illustration: {
+    width: 50,
+    height: 49,
+    marginBottom: 24,
+    opacity: 0.8,
   },
-  cardValue: {
-    fontSize: 15,
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '500',
-    lineHeight: 22,
+    textAlign: 'center',
   },
-  description: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
-
-  avatarRow: {
-    flexDirection: 'row',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    overflow: 'hidden',
-    marginRight: -10,
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarInitials: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitialsText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  avatarExtra: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarExtraText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#FF1F8C',
-    marginTop: 4,
-  },
-  editButtonText: {
-    color: '#FF1F8C',
+  emptySubtitle: {
     fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 5,
+    paddingHorizontal: 20,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 99,
+    gap: 5,
+  },
+  searchButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
     fontWeight: '600',
+  },
+
+  // List Styles
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterText: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.medium,
+    color: '#6B7280',
+  },
+  addPillBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+    backgroundColor: '#fff',
+  },
+  addPillText: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.regular,
+    color: '#343A40',
+  },
+  ideaGridContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 100, // accommodate FAR tab
   },
 });

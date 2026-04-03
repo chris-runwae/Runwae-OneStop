@@ -1,68 +1,129 @@
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
-import { ItineraryDayWithItems, ItineraryItem } from '@/hooks/useItineraryActions';
+import { ItineraryDayWithItems } from '@/hooks/useItineraryActions';
 import { useTheme } from '@react-navigation/native';
-import { format, parseISO } from 'date-fns';
-import { CalendarDays, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  getDate,
+  isSameDay,
+  startOfDay,
+  startOfMonth,
+} from 'date-fns';
+import { Image } from 'expo-image';
+import { ChevronDown, ChevronRight, Ellipsis, Plus } from 'lucide-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Dimensions,
+  FlatList,
   Pressable,
-  RefreshControl,
+  Text as RNText,
   ScrollView,
   StyleSheet,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
+import { Text } from '@/components';
+import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
-import { Text } from '@/components';
-import { Colors } from '@/constants';
+import { AppFonts, Colors } from '@/constants';
 import { CreateItineraryItemInput } from '@/hooks/useItineraryActions';
+import { uploadItineraryItemImage } from '@/utils/supabase/storage';
 
-// ================================================================
-// Day cost helper
-// ================================================================
+const DATE_COLUMN_WIDTH = 55;
 
-function dayTotalCost(day: ItineraryDayWithItems): number {
-  return day.itinerary_items.reduce(
-    (sum, item) => sum + (item.cost ?? 0),
-    0,
+type DateStripProps = {
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+};
+
+function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
+  const flatListRef = useRef<FlatList>(null);
+  const [containerWidth, setContainerWidth] = useState(
+    Dimensions.get('window').width
+  );
+  const hasScrolled = useRef(false);
+  const today = useMemo(() => startOfDay(new Date()), []);
+
+  const dates = useMemo(() => {
+    const start = startOfMonth(today);
+    const end = endOfMonth(today);
+    return eachDayOfInterval({ start, end });
+  }, [today]);
+
+  const todayIndex = getDate(today) - 1;
+
+  useEffect(() => {
+    if (hasScrolled.current) return;
+    const timer = setTimeout(() => {
+      const offset =
+        todayIndex * DATE_COLUMN_WIDTH -
+        containerWidth / 2 +
+        DATE_COLUMN_WIDTH / 2;
+      flatListRef.current?.scrollToOffset({
+        offset: Math.max(0, offset),
+        animated: false,
+      });
+      hasScrolled.current = true;
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [containerWidth, todayIndex]);
+
+  const renderItem = ({ item: date }: { item: Date }) => {
+    const isSelected = isSameDay(date, selectedDate);
+    const dayLetter = format(date, 'EEEEE');
+    const dayNum = format(date, 'd');
+
+    return (
+      <Pressable onPress={() => onSelectDate(date)} style={styles.dateColumn}>
+        <Text
+          style={[styles.dayLetter, isSelected && styles.dayLetterSelected]}>
+          {dayLetter}
+        </Text>
+        <View
+          style={[styles.dateCircle, isSelected && styles.dateCircleSelected]}>
+          <Text
+            style={[
+              styles.dateNumber,
+              isSelected && styles.dateNumberSelected,
+            ]}>
+            {dayNum}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View
+      style={styles.dateStripContainer}
+      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+      <FlatList
+        ref={flatListRef}
+        data={dates}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.toISOString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.dateStripContent}
+        getItemLayout={(_, index) => ({
+          length: DATE_COLUMN_WIDTH,
+          offset: DATE_COLUMN_WIDTH * index,
+          index,
+        })}
+      />
+    </View>
   );
 }
-
-function formatDayCost(cost: number, currency = 'GBP'): string | null {
-  if (cost === 0) return null;
-  try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(cost);
-  } catch {
-    return `${cost}`;
-  }
-}
-
-function formatDate(dateStr: string | null): string | null {
-  if (!dateStr) return null;
-  try {
-    return format(parseISO(dateStr), 'EEE, MMM d');
-  } catch {
-    return dateStr;
-  }
-}
-
-// ================================================================
-// DaySection
-// ================================================================
 
 type DaySectionProps = {
   day: ItineraryDayWithItems;
   index: number;
-  totalDays: number;
   userId: string;
   reorderingDayId: string | null;
   onToggleReorder: (dayId: string | null) => void;
@@ -70,9 +131,12 @@ type DaySectionProps = {
   onDeleteItem: (itemId: string) => Promise<void>;
   onMoveItemUp: (dayId: string, itemId: string) => Promise<void>;
   onMoveItemDown: (dayId: string, itemId: string) => Promise<void>;
+  onMoveItemToPrevDay?: (itemId: string) => void;
+  onMoveItemToNextDay?: (itemId: string) => void;
   onUpdateTitle: (dayId: string, title: string) => Promise<void>;
   onDeleteDay: (day: ItineraryDayWithItems) => void;
-  isLastDay: boolean;
+  onClearDay: (dayId: string) => void;
+  isFirstDay: boolean;
 };
 
 function DaySection({
@@ -85,23 +149,21 @@ function DaySection({
   onDeleteItem,
   onMoveItemUp,
   onMoveItemDown,
+  onMoveItemToPrevDay,
+  onMoveItemToNextDay,
   onUpdateTitle,
   onDeleteDay,
-  isLastDay,
+  onClearDay,
+  isFirstDay,
 }: DaySectionProps) {
-  const { dark } = useTheme();
-  const colorScheme = dark ? 'dark' : 'light';
-  const colors = Colors[colorScheme];
-
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [titleEdit,   setTitleEdit]   = useState(false);
-  const [titleVal,    setTitleVal]    = useState(day.title ?? '');
-  const [showSheet,   setShowSheet]   = useState(false);
+  const [collapsed, setCollapsed] = useState(!isFirstDay);
+  const [titleEdit, setTitleEdit] = useState(false);
+  const [titleVal, setTitleVal] = useState(day.title ?? '');
+  const [showSheet, setShowSheet] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
 
   const isReordering = reorderingDayId === day.id;
-  const totalCost = dayTotalCost(day);
-  const dayCostLabel = formatDayCost(totalCost);
-  const dateLabel = formatDate(day.date);
 
   const handleTitleBlur = async () => {
     setTitleEdit(false);
@@ -110,167 +172,88 @@ function DaySection({
     }
   };
 
-  const handleAddItem = async (input: CreateItineraryItemInput) => {
-    await onAddItem(day.id, input);
+  const handleDayMenuPress = (event: any) => {
+    const { pageY } = event.nativeEvent;
+    setMenuAnchor({ top: pageY + 10, right: 24 });
+    setMenuVisible(true);
   };
 
-  const handleLongPress = () => {
-    if (day.itinerary_items.length < 2) return;
-    onToggleReorder(isReordering ? null : day.id);
-  };
+  const menuOptions: ActionOption[] = [
+    { label: 'Edit Day', onPress: () => setTitleEdit(true) },
+    { label: 'Add day before', onPress: () => {} },
+    { label: 'Add day after', onPress: () => {} },
+    {
+      label: 'Clear day',
+      onPress: () => onClearDay(day.id),
+      isDestructive: true,
+      hasSeparator: true,
+    },
+    {
+      label: 'Delete day',
+      onPress: () => onDeleteDay(day),
+      isDestructive: true,
+      isBold: true,
+      hasSeparator: true,
+    },
+  ];
 
   return (
-    <View
-      style={[
-        styles.daySection,
-        {
-          backgroundColor: colors.backgroundColors.default,
-          borderColor: colors.borderColors.subtle,
-        },
-      ]}>
-      {/* Day header */}
+    <View>
       <Pressable
         style={styles.dayHeader}
-        onPress={() => setCollapsed((c) => !c)}
-        onLongPress={handleLongPress}
-        delayLongPress={400}>
-
-        {/* Left: day number + date */}
-        <View style={styles.dayLeft}>
-          <View
-            style={[
-              styles.dayNumberBadge,
-              { backgroundColor: '#FF1F8C' + '15' },
-            ]}>
-            <Text style={[styles.dayNumberText, { color: '#FF1F8C' }]}>
-              {index + 1}
-            </Text>
-          </View>
-          <View>
-            {titleEdit ? (
-              <TextInput
-                value={titleVal}
-                onChangeText={setTitleVal}
-                onBlur={handleTitleBlur}
-                autoFocus
-                style={[
-                  styles.titleInput,
-                  { color: colors.textColors.default },
-                ]}
-                onSubmitEditing={handleTitleBlur}
-              />
-            ) : (
-              <Pressable onPress={() => setTitleEdit(true)}>
-                <Text
-                  style={[
-                    styles.dayTitle,
-                    { color: colors.textColors.default },
-                  ]}>
-                  {day.title || `Day ${index + 1}`}
-                </Text>
-              </Pressable>
-            )}
-            {dateLabel ? (
-              <Text
-                style={[
-                  styles.dayDate,
-                  { color: colors.textColors.subtle },
-                ]}>
-                {dateLabel}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Right: cost + reorder indicator + chevron */}
-        <View style={styles.dayRight}>
-          {dayCostLabel ? (
-            <Text style={[styles.dayCost, { color: colors.textColors.subtle }]}>
-              {dayCostLabel}
-            </Text>
-          ) : null}
-
-          {isReordering ? (
-            <Pressable
-              onPress={() => onToggleReorder(null)}
-              style={[
-                styles.doneBtn,
-                { borderColor: '#FF1F8C' },
-              ]}>
-              <Text style={{ fontSize: 11, color: '#FF1F8C', fontFamily: 'BricolageGrotesque-SemiBold' }}>
-                Done
-              </Text>
-            </Pressable>
+        onPress={() => setCollapsed((c) => !c)}>
+        <View style={styles.dayHeaderLeft}>
+          {collapsed ? (
+            <ChevronRight size={18} color="#000" />
           ) : (
-            <>
-              <Text
-                style={[
-                  styles.itemCount,
-                  { color: colors.textColors.subtle },
-                ]}>
-                {day.itinerary_items.length}
-              </Text>
-              {collapsed
-                ? <ChevronRight size={16} color={colors.textColors.subtle} />
-                : <ChevronDown  size={16} color={colors.textColors.subtle} />
-              }
-            </>
+            <ChevronDown size={18} color="#000" />
           )}
-
-          {!isLastDay && (
-            <Pressable
-              hitSlop={8}
-              onPress={() => onDeleteDay(day)}>
-              <Trash2 size={14} color={colors.textColors.subtle} />
-            </Pressable>
+          {titleEdit ? (
+            <TextInput
+              value={titleVal}
+              onChangeText={setTitleVal}
+              onBlur={handleTitleBlur}
+              autoFocus
+              style={styles.titleInput}
+              onSubmitEditing={handleTitleBlur}
+            />
+          ) : (
+            <Text style={styles.dayTitle}>
+              {day.title || `Day ${index + 1}`}
+            </Text>
           )}
         </View>
+        <Pressable
+          hitSlop={12}
+          onPress={handleDayMenuPress}
+          style={styles.ellipsisBtn}>
+          <Ellipsis size={18} strokeWidth={1.5} color="#AEAEAE" />
+        </Pressable>
       </Pressable>
 
-      {/* Items */}
       {!collapsed && (
-        <View style={styles.itemsContainer}>
-          {day.itinerary_items.length === 0 ? (
-            <Text
-              style={[
-                styles.emptyDayText,
-                { color: colors.textColors.subtle },
-              ]}>
-              Nothing planned yet — tap + to add
-            </Text>
-          ) : (
-            day.itinerary_items.map((item, i) => (
-              <ItineraryItemCard
-                key={item.id}
-                item={item}
-                isReordering={isReordering}
-                isCreator={item.created_by === userId}
-                onDelete={() => onDeleteItem(item.id)}
-                onMoveUp={() => onMoveItemUp(day.id, item.id)}
-                onMoveDown={() => onMoveItemDown(day.id, item.id)}
-                canMoveUp={i > 0}
-                canMoveDown={i < day.itinerary_items.length - 1}
-              />
-            ))
-          )}
+        <View style={{ gap: 15 }}>
+          {day.itinerary_items.map((item, i) => (
+            <ItineraryItemCard
+              key={item.id}
+              item={item}
+              isReordering={isReordering}
+              isCreator={item.created_by === userId}
+              onDelete={() => onDeleteItem(item.id)}
+              onMoveUp={() => onMoveItemUp(day.id, item.id)}
+              onMoveDown={() => onMoveItemDown(day.id, item.id)}
+              onMoveToPrevDay={() => onMoveItemToPrevDay?.(item.id)}
+              onMoveToNextDay={() => onMoveItemToNextDay?.(item.id)}
+              canMoveUp={i > 0}
+              canMoveDown={i < day.itinerary_items.length - 1}
+            />
+          ))}
 
-          {/* Add item */}
           <Pressable
             onPress={() => setShowSheet(true)}
-            style={[
-              styles.addItemBtn,
-              {
-                borderColor: colors.borderColors.subtle,
-              },
-            ]}>
-            <Plus size={14} color={colors.textColors.subtle} />
-            <Text
-              style={[
-                styles.addItemLabel,
-                { color: colors.textColors.subtle },
-              ]}>
-              Add item
-            </Text>
+            style={styles.addItemPill}>
+            <Plus size={16} color="#000" />
+            <Text style={styles.addItemPillText}>Add</Text>
           </Pressable>
         </View>
       )}
@@ -278,133 +261,59 @@ function DaySection({
       <AddItineraryItemSheet
         visible={showSheet}
         onClose={() => setShowSheet(false)}
-        onSubmit={handleAddItem}
+        onSubmit={(input) => onAddItem(day.id, input)}
+      />
+
+      <ActionMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        options={menuOptions}
+        anchorPosition={menuAnchor}
       />
     </View>
   );
 }
 
-// ================================================================
-// TripItineraryTab
-// ================================================================
-
 export default function TripItineraryTab() {
   const { dark } = useTheme();
-  const colorScheme = dark ? 'dark' : 'light';
-  const colors = Colors[colorScheme];
-
+  const colors = Colors[dark ? 'dark' : 'light'];
   const { user } = useAuth();
-  const userId = user?.id ?? '';
-
   const {
-    activeTrip,
     days,
     itineraryLoading,
-    refreshItinerary,
     addDay,
     updateDayCtx,
     removeDay,
     addItem,
     removeItem,
     reorderItemsCtx,
+    reorderDaysCtx,
+    moveItemToDayCtx,
   } = useTrips();
 
-  const [refreshing,      setRefreshing]      = useState(false);
   const [reorderingDayId, setReorderingDayId] = useState<string | null>(null);
-
-  // ----------------------------------------------------------------
-  // Pull to refresh
-  // ----------------------------------------------------------------
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshItinerary();
-    setRefreshing(false);
-  };
-
-  // ----------------------------------------------------------------
-  // Day actions
-  // ----------------------------------------------------------------
-
-  const handleAddDay = async () => {
-    await addDay({});
-  };
-
-  const handleUpdateTitle = async (dayId: string, title: string) => {
-    await updateDayCtx(dayId, { title: title || null });
-  };
-
-  const handleDeleteDay = (day: ItineraryDayWithItems) => {
-    if (days.length <= 1) return; // guard: never delete last day
-
-    const hasItems = day.itinerary_items.length > 0;
-
-    if (!hasItems) {
-      removeDay(day.id);
-      return;
-    }
-
-    Alert.alert(
-      `Delete Day ${days.indexOf(day) + 1}?`,
-      `This day has ${day.itinerary_items.length} item${day.itinerary_items.length === 1 ? '' : 's'}. They will all be deleted.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete day and all items',
-          style: 'destructive',
-          onPress: () => removeDay(day.id),
-        },
-      ],
-    );
-  };
-
-  // ----------------------------------------------------------------
-  // Item actions
-  // ----------------------------------------------------------------
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    startOfDay(new Date())
+  );
 
   const handleAddItem = async (
     dayId: string,
-    input: CreateItineraryItemInput,
+    input: CreateItineraryItemInput
   ) => {
-    await addItem(dayId, input);
+    let finalInput = { ...input };
+    if (input.image_url?.startsWith('file://')) {
+      try {
+        const remoteUrl = await uploadItineraryItemImage(
+          `${dayId}-${Date.now()}`,
+          input.image_url
+        );
+        finalInput.image_url = remoteUrl;
+      } catch (err) {
+        finalInput.image_url = null;
+      }
+    }
+    await addItem(dayId, finalInput);
   };
-
-  const handleDeleteItem = async (itemId: string) => {
-    Alert.alert('Delete item?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => removeItem(itemId),
-      },
-    ]);
-  };
-
-  const handleMoveItemUp = async (dayId: string, itemId: string) => {
-    const day = days.find((d) => d.id === dayId);
-    if (!day) return;
-    const items = day.itinerary_items;
-    const idx = items.findIndex((it) => it.id === itemId);
-    if (idx <= 0) return;
-    const newOrder = [...items];
-    [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
-    await reorderItemsCtx(dayId, newOrder.map((it) => it.id));
-  };
-
-  const handleMoveItemDown = async (dayId: string, itemId: string) => {
-    const day = days.find((d) => d.id === dayId);
-    if (!day) return;
-    const items = day.itinerary_items;
-    const idx = items.findIndex((it) => it.id === itemId);
-    if (idx < 0 || idx >= items.length - 1) return;
-    const newOrder = [...items];
-    [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
-    await reorderItemsCtx(dayId, newOrder.map((it) => it.id));
-  };
-
-  // ----------------------------------------------------------------
-  // Loading state
-  // ----------------------------------------------------------------
 
   if (itineraryLoading && days.length === 0) {
     return (
@@ -414,249 +323,274 @@ export default function TripItineraryTab() {
     );
   }
 
-  // ----------------------------------------------------------------
-  // Empty state
-  // ----------------------------------------------------------------
-
   if (!itineraryLoading && days.length === 0) {
     return (
-      <View style={styles.centered}>
-        <CalendarDays
-          size={52}
-          strokeWidth={1}
-          color={dark ? '#4b5563' : '#d1d5db'}
+      <View style={styles.emptyStateContainer}>
+        <Image
+          source={require('@/assets/images/clipboard-empty.png')}
+          style={styles.illustration}
+          contentFit="contain"
         />
-        <Text
-          style={[
-            styles.emptyHeading,
-            { color: dark ? '#ffffff' : '#111827' },
-          ]}>
+        <RNText
+          style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
           No itinerary yet
-        </Text>
-        <Text
-          style={[
-            styles.emptySubtext,
-            { color: dark ? '#6b7280' : '#9ca3af' },
-          ]}>
-          Start planning your trip day by day
-        </Text>
-        <Pressable
-          onPress={handleAddDay}
-          style={styles.createDayBtn}>
-          <Plus size={16} color="#fff" />
-          <Text style={styles.createDayLabel}>Create Day 1</Text>
-        </Pressable>
+        </RNText>
+        <RNText style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+          Every adventure begins with an empty page. Start planning now.
+        </RNText>
+
+        <TouchableOpacity
+          onPress={() => addDay({})}
+          style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
+          activeOpacity={0.8}>
+          <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+          <RNText style={styles.createDayLabel}>Create Day 1</RNText>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // ----------------------------------------------------------------
-  // Main render
-  // ----------------------------------------------------------------
-
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.backgroundColors.default }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor="#FF1F8C"
-        />
-      }>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      {days.map((day, index) => (
-        <DaySection
-          key={day.id}
-          day={day}
-          index={index}
-          totalDays={days.length}
-          userId={userId}
-          reorderingDayId={reorderingDayId}
-          onToggleReorder={setReorderingDayId}
-          onAddItem={handleAddItem}
-          onDeleteItem={handleDeleteItem}
-          onMoveItemUp={handleMoveItemUp}
-          onMoveItemDown={handleMoveItemDown}
-          onUpdateTitle={handleUpdateTitle}
-          onDeleteDay={handleDeleteDay}
-          isLastDay={days.length === 1}
-        />
-      ))}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+        {days.map((day, index) => (
+          <DaySection
+            key={day.id}
+            day={day}
+            index={index}
+            userId={user?.id ?? ''}
+            reorderingDayId={reorderingDayId}
+            onToggleReorder={setReorderingDayId}
+            onAddItem={handleAddItem}
+            onDeleteItem={removeItem}
+            onMoveItemUp={async (dId, iId) => {
+              const dayItems = day.itinerary_items;
+              const idx = dayItems.findIndex((it) => it.id === iId);
+              if (idx <= 0) return;
+              const newOrder = [...dayItems];
+              [newOrder[idx - 1], newOrder[idx]] = [
+                newOrder[idx],
+                newOrder[idx - 1],
+              ];
+              await reorderItemsCtx(
+                dId,
+                newOrder.map((it) => it.id)
+              );
+            }}
+            onMoveItemDown={async (dId, iId) => {
+              const dayItems = day.itinerary_items;
+              const idx = dayItems.findIndex((it) => it.id === iId);
+              if (idx < 0 || idx >= dayItems.length - 1) return;
+              const newOrder = [...dayItems];
+              [newOrder[idx], newOrder[idx + 1]] = [
+                newOrder[idx + 1],
+                newOrder[idx],
+              ];
+              await reorderItemsCtx(
+                dId,
+                newOrder.map((it) => it.id)
+              );
+            }}
+            onMoveItemToPrevDay={async (itemId) => {
+              if (index > 0) {
+                const prevDay = days[index - 1];
+                await moveItemToDayCtx(itemId, day.id, prevDay.id);
+              }
+            }}
+            onMoveItemToNextDay={async (itemId) => {
+              if (index < days.length - 1) {
+                const nextDay = days[index + 1];
+                await moveItemToDayCtx(itemId, day.id, nextDay.id);
+              }
+            }}
+            onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
+            onDeleteDay={(d) => removeDay(d.id)}
+            onClearDay={(dId) => {
+              // For each item in the day, remove it
+              day.itinerary_items.forEach((it) => removeItem(it.id));
+            }}
+            isFirstDay={index === 0}
+          />
+        ))}
 
-      {/* Add Day */}
-      <Pressable
-        onPress={handleAddDay}
-        style={[
-          styles.addDayBtn,
-          { borderColor: colors.borderColors.subtle },
-        ]}>
-        <Plus size={16} color={colors.textColors.subtle} />
-        <Text
-          style={[
-            styles.addDayLabel,
-            { color: colors.textColors.subtle },
-          ]}>
-          Add Day
-        </Text>
-      </Pressable>
+        <Pressable
+          onPress={() => addDay({ title: `Day ${days.length + 1}` })}
+          style={styles.addDayPill}>
+          <Plus size={14} color="#AEAEAE" strokeWidth={2} />
+          <Text style={styles.addDayPillText}>Add Day</Text>
+        </Pressable>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={{ height: 120 }} />
+      </ScrollView>
+    </View>
   );
 }
 
-// ================================================================
-// Styles
-// ================================================================
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    gap: 12,
-  },
+  container: { flex: 1 },
+  content: { paddingVertical: 8 },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 40,
   },
-  emptyHeading: {
-    fontSize: 17,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: '#fff',
+    minHeight: 250,
+  },
+  illustration: {
+    width: 50,
+    height: 49,
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '500',
     textAlign: 'center',
-    marginTop: 8,
   },
-  emptySubtext: {
-    fontSize: 14,
+  emptySubtitle: {
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  createDayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FF1F8C',
+    marginTop: 5,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 8,
+    marginBottom: 10,
   },
-  createDayLabel: {
-    color: '#fff',
-    fontSize: 15,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+  dateStripContainer: {
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E0E0E0',
+    backgroundColor: '#fff',
   },
-  // Day section
-  daySection: {
-    borderRadius: 16,
+  dateStripContent: { paddingHorizontal: 16 },
+  dateColumn: {
+    alignItems: 'center',
+    width: DATE_COLUMN_WIDTH,
+  },
+  dayLetter: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.regular,
+    color: '#AEAEAE',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  dayLetterSelected: { color: '#FF1F8C' },
+  dateCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8F9FA',
     borderWidth: 1,
-    overflow: 'hidden',
+    borderColor: '#F0F5FA',
   },
+  dateCircleSelected: { backgroundColor: '#FF1F8C', borderColor: '#FF1F8C' },
+  dateNumber: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.regular,
+    color: '#ADB5BD',
+  },
+  dateNumberSelected: { color: '#fff' },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    gap: 8,
+    paddingVertical: 5,
   },
-  dayLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  dayNumberBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  dayNumberText: {
-    fontSize: 13,
-    fontFamily: 'BricolageGrotesque-Bold',
-  },
+  dayHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dayTitle: {
-    fontSize: 15,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+    fontSize: 14,
+    color: '#000',
   },
   titleInput: {
-    fontSize: 15,
-    fontFamily: 'BricolageGrotesque-SemiBold',
+    fontSize: 18,
+    fontFamily: AppFonts.bricolage.semiBold,
+    color: '#000',
     padding: 0,
-    margin: 0,
-    minWidth: 120,
   },
-  dayDate: {
-    fontSize: 12,
-    marginTop: 1,
+  ellipsisBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  dayRight: {
+  addItemPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  dayCost: {
-    fontSize: 12,
-    fontFamily: 'BricolageGrotesque-Medium',
-  },
-  itemCount: {
-    fontSize: 12,
-    fontFamily: 'BricolageGrotesque-Medium',
-  },
-  doneBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderColor: '#F0F0F0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 99,
+    marginTop: 12,
+    marginBottom: 16,
   },
-  itemsContainer: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+  addItemPillText: {
+    fontSize: 12,
+    fontFamily: AppFonts.inter.medium,
+    color: '#000',
   },
-  emptyDayText: {
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FF1F8C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF1F8C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  createDayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 99,
+    gap: 5,
+  },
+  createDayLabel: {
+    color: '#fff',
     fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: 12,
-    fontStyle: 'italic',
+    fontWeight: '600',
   },
-  addItemBtn: {
+  addDayPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderRadius: 10,
+    borderColor: '#E0E0E0',
+    borderRadius: 99,
     paddingVertical: 10,
-    marginTop: 4,
-  },
-  addItemLabel: {
-    fontSize: 13,
-    fontFamily: 'BricolageGrotesque-Medium',
-  },
-  // Add Day button
-  addDayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
+    width: 110,
+    alignSelf: 'flex-start',
+    marginTop: 20,
     borderStyle: 'dashed',
-    borderRadius: 16,
-    paddingVertical: 14,
-    marginTop: 4,
   },
-  addDayLabel: {
-    fontSize: 14,
-    fontFamily: 'BricolageGrotesque-Medium',
+  addDayPillText: {
+    fontSize: 13,
+    fontFamily: AppFonts.inter.medium,
+    color: '#AEAEAE',
   },
 });

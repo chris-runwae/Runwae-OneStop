@@ -1,0 +1,178 @@
+import { Text } from '@/components';
+import { AppFonts } from '@/constants';
+import { Image } from 'expo-image';
+import { MoreHorizontal, Plus } from 'lucide-react-native';
+import React, { useRef } from 'react';
+import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+
+interface IdeaCardProps {
+  imageUri: string;
+  categoryLabel: string;
+  title: string;
+  description: string;
+  onAdd?: () => void;
+  onViewDetails?: () => void;
+  onOptionsPress?: (position: { top: number; right?: number; left?: number }) => void;
+}
+
+export default function IdeaCard({
+  imageUri,
+  categoryLabel,
+  title,
+  description,
+  onAdd,
+  onViewDetails,
+  onOptionsPress,
+}: IdeaCardProps) {
+  const moreBtnRef = useRef<View>(null);
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
+          contentFit="cover"
+        />
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{categoryLabel}</Text>
+        </View>
+        {onOptionsPress && (
+          <TouchableOpacity
+            ref={moreBtnRef}
+            style={styles.moreButton}
+            hitSlop={10}
+            onPress={() => {
+              if (moreBtnRef.current) {
+                moreBtnRef.current.measure(
+                  (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                    const { width: screenWidth } = Dimensions.get('window');
+                    onOptionsPress({
+                      top: pageY + height, // Place right below the button
+                      right: screenWidth - pageX - width, // Align with the button's right edge
+                    });
+                  }
+                );
+              } else {
+                // Fallback
+                onOptionsPress({ top: 100, right: 24 });
+              }
+            }}>
+            <MoreHorizontal size={14} color="#fff" />
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.content}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.description} numberOfLines={4}>
+          {description}
+        </Text>
+        {onAdd && (
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
+              <Text style={styles.viewDetails}>View Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={onAdd}
+              activeOpacity={0.8}>
+              <Plus size={12} color="#fff" strokeWidth={3} />
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    width: '48.5%',
+    marginBottom: 24,
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 0.85,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 10,
+    backgroundColor: '#F3F4F6', // loading placeholder color
+  },
+  image: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: AppFonts.inter.semiBold,
+  },
+  moreButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    paddingHorizontal: 2,
+  },
+  title: {
+    fontSize: 14,
+    fontFamily: AppFonts.bricolage.semiBold,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: 11,
+    fontFamily: AppFonts.inter.regular,
+    color: '#6B7280',
+    lineHeight: 15,
+    marginBottom: 12,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  viewDetails: {
+    fontSize: 11,
+    fontFamily: AppFonts.inter.medium,
+    color: '#FF2E92',
+    textDecorationLine: 'underline',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF2E92',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 99,
+    gap: 4,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: AppFonts.inter.semiBold,
+  },
+});

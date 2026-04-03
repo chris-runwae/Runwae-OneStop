@@ -4,7 +4,7 @@ import React from 'react';
 export default function TripsLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
+      <Stack.Screen name="trip" />
       <Stack.Screen name="[tripId]/index" />
       <Stack.Screen
         name="[tripId]/add-poll"
@@ -20,6 +20,12 @@ export default function TripsLayout() {
           headerShown: false,
           presentation: 'formSheet',
           sheetAllowedDetents: [0.75, 1],
+        }}
+      />
+      <Stack.Screen
+        name="[tripId]/edit"
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen

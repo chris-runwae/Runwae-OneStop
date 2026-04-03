@@ -3,12 +3,17 @@ import { Text, TouchableOpacity, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 
 interface DetailNotFoundProps {
-  type: "itinerary" | "experience";
+  type: "itinerary" | "experience" | "destination";
 }
 
 const DetailNotFound = ({ type }: DetailNotFoundProps) => {
   const router = useRouter();
-  const label = type === "itinerary" ? "Itinerary" : "Experience";
+  const label =
+    type === "itinerary"
+      ? "Itinerary"
+      : type === "experience"
+      ? "Experience"
+      : "Destination";
 
   return (
     <View className="flex-1 bg-white dark:bg-dark items-center justify-center px-8">

@@ -90,3 +90,32 @@ export const uploadGroupCoverImage = async (
   }
 };
 
+export const uploadItineraryItemImage = async (
+  itemId: string,
+  imageUri: string
+) => {
+  try {
+    const fileExtension = imageUri.split('.').pop() || 'jpg';
+    const fileName = `itinerary-items/${itemId}/${Date.now()}.${fileExtension}`;
+    const file = new File(imageUri);
+    const bytes = await file.bytes();
+
+    const { error } = await supabase.storage
+      .from('groups')
+      .upload(fileName, bytes, {
+        contentType: `image/${fileExtension}`,
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage
+      .from('groups')
+      .getPublicUrl(fileName);
+
+    return `${urlData.publicUrl}?t=${Date.now()}`;
+  } catch (error) {
+    console.error('Error uploading itinerary item image:', error);
+    throw error;
+  }
+};

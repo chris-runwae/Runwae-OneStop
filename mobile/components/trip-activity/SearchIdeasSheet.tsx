@@ -253,10 +253,10 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
               transform: [{ translateY }],
             },
           ]}>
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: dark ? '#374151' : '#D1D5DB' }]} />
 
-          <View style={styles.searchContainer}>
-            <Search size={18} color="#AEAEAE" style={styles.searchIcon} />
+          <View style={[styles.searchContainer, { backgroundColor: dark ? '#1F1F1F' : '#ffffff', borderColor: dark ? '#374151' : '#EFEFEF' }]}>
+            <Search size={18} color={dark ? '#9CA3AF' : '#AEAEAE'} style={styles.searchIcon} />
             <TextInput
               ref={inputRef}
               value={localQuery}
@@ -265,14 +265,14 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
                 setQuery(txt); // Still power the hook behind the scenes
               }}
               placeholder="Search trips, hotels, experiences..."
-              placeholderTextColor="#AEAEAE"
+              placeholderTextColor={dark ? '#6B7280' : '#AEAEAE'}
               style={[styles.searchInput, { color: colors.textColors.default }]}
             />
             {loading ? (
               <SpinningLoader size={18} color="#FF1F8C" style={styles.loader} />
             ) : (
               <TouchableOpacity ref={filterBtnRef} onPress={handleFilterPress} hitSlop={10}>
-                <SlidersHorizontal size={18} color="#AEAEAE" />
+                <SlidersHorizontal size={18} color={dark ? '#9CA3AF' : '#AEAEAE'} />
               </TouchableOpacity>
             )}
           </View>
@@ -290,12 +290,12 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
                     onPress={() => setActiveCategory(cat.id)}
                     style={[
                       styles.categoryPill,
-                      isActive && styles.categoryPillActive,
+                      { backgroundColor: isActive ? '#FF2E92' : (dark ? '#1F1F1F' : '#fff'), borderColor: isActive ? '#FF2E92' : (dark ? '#374151' : '#EFEFEF') },
                     ]}>
                     <Text
                       style={[
                         styles.categoryPillText,
-                        isActive && styles.categoryPillTextActive,
+                        { color: isActive ? '#ffffff' : (dark ? '#ADB5BD' : '#6B7280') },
                       ]}>
                       {cat.label}
                     </Text>
@@ -315,8 +315,8 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={() => (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateTitle}>No ideas found</Text>
-                <Text style={styles.emptyStateSub}>
+                <Text style={[styles.emptyStateTitle, { color: colors.textColors.default }]}>No ideas found</Text>
+                <Text style={[styles.emptyStateSub, { color: colors.textColors.subtle }]}>
                   Try searching for something else or changing the category.
                 </Text>
               </View>
@@ -371,9 +371,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#EFEFEF',
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
@@ -400,13 +398,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 99,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#EFEFEF',
   },
   categoryPillActive: {
-    backgroundColor: '#FF2E92',
-    borderColor: '#FF2E92',
   },
   categoryPillText: {
     fontSize: 13,
@@ -430,13 +424,11 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 16,
     fontFamily: AppFonts.inter.semiBold,
-    color: '#111827',
     marginBottom: 8,
   },
   emptyStateSub: {
     fontSize: 14,
     fontFamily: AppFonts.inter.regular,
-    color: '#6B7280',
     textAlign: 'center',
   },
 });

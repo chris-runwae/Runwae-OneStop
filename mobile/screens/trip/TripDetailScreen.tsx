@@ -1,20 +1,13 @@
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
-import SkeletonBox from '@/components/ui/SkeletonBox';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, MapPin, Pencil, Trash2 } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, useColorScheme, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -22,6 +15,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { uploadGroupCoverImage } from '@/utils/supabase/storage';
+import TripDetailSkeleton from './components/TripDetailSkeleton';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
 
@@ -34,78 +28,6 @@ import {
   Text,
 } from '@/components';
 import { Colors, textStyles } from '@/constants';
-
-function TripDetailSkeleton({ insetTop }: { insetTop: number }) {
-  const HERO_HEIGHT_FIXED = 300;
-  return (
-    <View style={styles.container}>
-      <View style={{ height: HERO_HEIGHT_FIXED }}>
-        <SkeletonBox
-          width="100%"
-          height={HERO_HEIGHT_FIXED}
-          borderRadius={0}
-        />
-
-        <TouchableOpacity
-          style={[styles.backButton, { top: insetTop + 12 }]}
-          onPress={() => router.back()}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <ChevronLeft size={22} strokeWidth={2.5} color="#ffffff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.contentContainer, { paddingTop: 24 }]}>
-        {/* Title */}
-        <SkeletonBox width={220} height={28} borderRadius={6} />
-        
-        <Spacer size={16} vertical />
-        
-        {/* Destination & Date Pills */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <SkeletonBox width={120} height={24} borderRadius={20} />
-          <SkeletonBox width={140} height={24} borderRadius={20} />
-        </View>
-
-        <Spacer size={14} vertical />
-        
-        {/* Description Lines */}
-        <View style={{ gap: 6 }}>
-          <SkeletonBox width="95%" height={14} borderRadius={4} />
-          <SkeletonBox width="90%" height={14} borderRadius={4} />
-          <SkeletonBox width="60%" height={14} borderRadius={4} />
-        </View>
-
-        <Spacer size={14} vertical />
-        
-        {/* Solo Badge / Avatar Placeholder */}
-        <SkeletonBox width={80} height={24} borderRadius={20} />
-
-        <Spacer size={32} vertical />
-
-        {/* Tabs Bar */}
-        <View style={{ flexDirection: 'row', gap: 20 }}>
-          <SkeletonBox width={50} height={16} borderRadius={4} />
-          <SkeletonBox width={70} height={16} borderRadius={4} />
-          <SkeletonBox width={70} height={16} borderRadius={4} />
-          <SkeletonBox width={40} height={16} borderRadius={4} />
-        </View>
-
-        <Spacer size={24} vertical />
-
-        {/* Idea Cards Grid Placeholder */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <View key={i} style={{ width: '48%', gap: 8, marginBottom: 16 }}>
-              <SkeletonBox width="100%" height={160} borderRadius={10} />
-              <SkeletonBox width="80%" height={14} borderRadius={4} />
-              <SkeletonBox width="100%" height={10} borderRadius={4} />
-            </View>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
 
 export default function TripDetailScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -205,11 +127,11 @@ export default function TripDetailScreen() {
 
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
-      borderColor: '#E9ECEF',
+      borderColor: dark ? '#374151' : '#E9ECEF',
       maxWidth: 150,
     },
     infoText: {
-      color: '#A8A8A8',
+      color: dark ? '#ADB5BD' : '#A8A8A8',
     },
     emptyText: {
       color: colors.textColors.subtle,
@@ -314,7 +236,7 @@ export default function TripDetailScreen() {
                 startDate={activeTrip?.trip_details?.start_date ?? ''}
                 endDate={activeTrip?.trip_details?.end_date ?? ''}
                 emoji={true}
-                color={'#A8A8A8'}
+                color={dark ? '#ADB5BD' : '#A8A8A8'}
                 fontSize={12}
               />
             </View>
@@ -411,16 +333,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 140,
     backgroundColor: 'rgba(0,0,0,0.52)',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   editImageButton: {
     position: 'absolute',

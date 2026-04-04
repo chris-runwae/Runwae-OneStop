@@ -58,7 +58,7 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <AppSafeAreaView>
+    <AppSafeAreaView edges={['top']}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}

@@ -1,5 +1,6 @@
 import { Text } from '@/components';
-import { AppFonts } from '@/constants';
+import { AppFonts, Colors } from '@/constants';
+import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { MoreHorizontal, Plus } from 'lucide-react-native';
 import React, { useRef } from 'react';
@@ -24,11 +25,13 @@ export default function IdeaCard({
   onViewDetails,
   onOptionsPress,
 }: IdeaCardProps) {
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
   const moreBtnRef = useRef<View>(null);
 
   return (
     <View style={styles.card}>
-      <View style={styles.imageContainer}>
+      <View style={[styles.imageContainer, { backgroundColor: colors.backgroundColors.subtle }]}>
         <Image
           source={{ uri: imageUri }}
           style={styles.image}
@@ -63,19 +66,19 @@ export default function IdeaCard({
         )}
       </View>
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: colors.textColors.default }]} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.description} numberOfLines={4}>
+        <Text style={[styles.description, { color: colors.textColors.subtle }]} numberOfLines={4}>
           {description}
         </Text>
         {onAdd && (
           <View style={styles.footer}>
             <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
-              <Text style={styles.viewDetails}>View Details</Text>
+              <Text style={[styles.viewDetails, { color: colors.primaryColors.default }]}>View Details</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, { backgroundColor: colors.primaryColors.default }]}
               onPress={onAdd}
               activeOpacity={0.8}>
               <Plus size={12} color="#fff" strokeWidth={3} />
@@ -100,7 +103,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     overflow: 'hidden',
     marginBottom: 10,
-    backgroundColor: '#F3F4F6', // loading placeholder color
   },
   image: {
     flex: 1,
@@ -140,13 +142,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontFamily: AppFonts.bricolage.semiBold,
-    color: '#111827',
     marginBottom: 4,
   },
   description: {
     fontSize: 11,
     fontFamily: AppFonts.inter.regular,
-    color: '#6B7280',
     lineHeight: 15,
     marginBottom: 12,
   },
@@ -158,13 +158,11 @@ const styles = StyleSheet.create({
   viewDetails: {
     fontSize: 11,
     fontFamily: AppFonts.inter.medium,
-    color: '#FF2E92',
     textDecorationLine: 'underline',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF2E92',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 99,

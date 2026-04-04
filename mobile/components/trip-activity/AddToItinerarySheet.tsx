@@ -30,6 +30,7 @@ type Props = {
 
 const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
+  const dark = colorScheme === 'dark';
   const colors = Colors[colorScheme];
   const translateY = useRef(new Animated.Value(500)).current;
 
@@ -130,8 +131,8 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}>
             
-            <Text style={styles.sectionTitle}>Day</Text>
-            <View style={styles.cardGroup}>
+            <Text style={[styles.sectionTitle, { color: colors.textColors.default }]}>Day</Text>
+            <View style={[styles.cardGroup, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#F3F4F6' }]}>
               {days.map((day, index) => {
                 const isSelected = selectedDayId === day.id;
                 return (
@@ -140,10 +141,10 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
                     onPress={() => setSelectedDayId(day.id)}
                     style={[
                       styles.radioRow,
-                      index !== days.length - 1 && styles.borderBottom
+                      index !== days.length - 1 && [styles.borderBottom, { borderBottomColor: dark ? '#374151' : '#F3F4F6' }]
                     ]}>
-                    <Text style={styles.radioLabel}>Day {day.day_number}</Text>
-                    <View style={[styles.radioOutline, isSelected && styles.radioOutlineSelected]}>
+                    <Text style={[styles.radioLabel, { color: isSelected ? colors.textColors.default : (dark ? '#ADB5BD' : '#6B7280') }]}>Day {day.day_number}</Text>
+                    <View style={[styles.radioOutline, { borderColor: isSelected ? '#FF1F8C' : (dark ? '#4B5563' : '#E5E7EB') }]}>
                       {isSelected && <View style={styles.radioInner} />}
                     </View>
                   </Pressable>
@@ -151,16 +152,16 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
               })}
             </View>
 
-            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Time</Text>
-            <View style={styles.cardGroup}>
+            <Text style={[styles.sectionTitle, { marginTop: 24, color: colors.textColors.default }]}>Time</Text>
+            <View style={[styles.cardGroup, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#F3F4F6' }]}>
               <Pressable
                 onPress={() => {
                   setShowStartPicker(!showStartPicker);
                   setShowEndPicker(false);
                 }}
-                style={[styles.radioRow, styles.borderBottom]}>
-                <Text style={styles.radioLabel}>Start</Text>
-                <Text style={[styles.timeText, !startTimeValue && styles.timePlaceholder]}>
+                style={[styles.radioRow, [styles.borderBottom, { borderBottomColor: dark ? '#374151' : '#F3F4F6' }]]}>
+                <Text style={[styles.radioLabel, { color: dark ? '#ADB5BD' : '#6B7280' }]}>Start</Text>
+                <Text style={[styles.timeText, { color: dark ? '#E9ECEF' : '#374151' }, !startTimeValue && { color: dark ? '#6B7280' : '#9CA3AF' }]}>
                   {startTimeValue ? format(startTimeValue, 'hh:mm a') : '--:--'}
                 </Text>
               </Pressable>
@@ -171,8 +172,8 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
                   setShowStartPicker(false);
                 }}
                 style={styles.radioRow}>
-                <Text style={styles.radioLabel}>End</Text>
-                <Text style={[styles.timeText, !endTimeValue && styles.timePlaceholder]}>
+                <Text style={[styles.radioLabel, { color: dark ? '#ADB5BD' : '#6B7280' }]}>End</Text>
+                <Text style={[styles.timeText, { color: dark ? '#E9ECEF' : '#374151' }, !endTimeValue && { color: dark ? '#6B7280' : '#9CA3AF' }]}>
                   {endTimeValue ? format(endTimeValue, 'hh:mm a') : '--:--'}
                 </Text>
               </Pressable>
@@ -184,6 +185,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
                 mode="time"
                 is24Hour={false}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={dark ? 'dark' : 'light'}
                 onChange={(event, selectedDate) => {
                   setShowStartPicker(Platform.OS === 'ios');
                   if (selectedDate) setStartTimeValue(selectedDate);
@@ -197,6 +199,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
                 mode="time"
                 is24Hour={false}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={dark ? 'dark' : 'light'}
                 onChange={(event, selectedDate) => {
                   setShowEndPicker(Platform.OS === 'ios');
                   if (selectedDate) setEndTimeValue(selectedDate);
@@ -207,7 +210,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
             <View style={{ marginTop: 40 }} />
           </ScrollView>
 
-          <View style={styles.footerContainer}>
+          <View style={[styles.footerContainer, { backgroundColor: colors.backgroundColors.default }]}>
             <Pressable
               onPress={handleSubmit}
               disabled={saving || !selectedDayId}
@@ -277,14 +280,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: AppFonts.inter.medium,
-    color: '#111827',
     marginBottom: 8,
   },
   cardGroup: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   radioRow: {
@@ -296,19 +296,16 @@ const styles = StyleSheet.create({
   },
   borderBottom: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   radioLabel: {
     fontSize: 14,
     fontFamily: AppFonts.inter.medium,
-    color: '#6B7280',
   },
   radioOutline: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -324,16 +321,13 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     fontFamily: AppFonts.inter.medium,
-    color: '#374151',
   },
   timePlaceholder: {
-    color: '#9CA3AF',
   },
   footerContainer: {
     paddingHorizontal: 20,
     paddingBottom: 34,
     paddingTop: 16,
-    backgroundColor: '#fff',
   },
   submitBtn: {
     backgroundColor: '#FF1F8C',

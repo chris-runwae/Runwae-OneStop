@@ -136,7 +136,7 @@ export default function TripOverviewTab({ trip }: Props) {
             ]}>
             Start Planning Your Dream Trip
           </Text>
-          <Text style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+          <Text style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
             Looking for what to do? Add them to Ideas now.
           </Text>
 
@@ -178,14 +178,14 @@ export default function TripOverviewTab({ trip }: Props) {
             }
           }}
           style={styles.filterBtn}>
-          <Text style={styles.filterText}>{activeFilter === 'All' ? 'All' : (MOCK_CATEGORIES.find(c => c.id === activeFilter)?.label || 'All')}</Text>
-          <ChevronDown size={14} color="#6B7280" style={{ marginLeft: 4 }} />
+          <Text style={[styles.filterText, { color: colors.textColors.subtle }]}>{activeFilter === 'All' ? 'All' : (MOCK_CATEGORIES.find(c => c.id === activeFilter)?.label || 'All')}</Text>
+          <ChevronDown size={14} color={dark ? '#9CA3AF' : '#6B7280'} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSearchVisible(true)}
-          style={styles.addPillBtn}>
-          <Text style={styles.addPillText}>+ Add</Text>
+          style={[styles.addPillBtn, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#EFEFEF' }]}>
+          <Text style={[styles.addPillText, { color: colors.textColors.default }]}>+ Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -308,20 +308,16 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 12,
     fontFamily: AppFonts.inter.medium,
-    color: '#6B7280',
   },
   addPillBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 99,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
-    backgroundColor: '#fff',
   },
   addPillText: {
     fontSize: 12,
     fontFamily: AppFonts.inter.regular,
-    color: '#343A40',
   },
   ideaGridContent: {
     flexDirection: 'row',

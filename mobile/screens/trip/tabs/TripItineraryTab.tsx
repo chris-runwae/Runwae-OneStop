@@ -78,19 +78,32 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
     const isSelected = isSameDay(date, selectedDate);
     const dayLetter = format(date, 'EEEEE');
     const dayNum = format(date, 'd');
+    const { dark } = useTheme();
+    const colors = Colors[dark ? 'dark' : 'light'];
 
     return (
       <Pressable onPress={() => onSelectDate(date)} style={styles.dateColumn}>
         <Text
-          style={[styles.dayLetter, isSelected && styles.dayLetterSelected]}>
+          style={[
+            styles.dayLetter,
+            isSelected ? styles.dayLetterSelected : { color: dark ? '#9BA1A6' : '#AEAEAE' },
+          ]}>
           {dayLetter}
         </Text>
         <View
-          style={[styles.dateCircle, isSelected && styles.dateCircleSelected]}>
+          style={[
+            styles.dateCircle,
+            isSelected
+              ? styles.dateCircleSelected
+              : {
+                  backgroundColor: dark ? '#1F1F1F' : '#F8F9FA',
+                  borderColor: dark ? '#374151' : '#F0F5FA',
+                },
+          ]}>
           <Text
             style={[
               styles.dateNumber,
-              isSelected && styles.dateNumberSelected,
+              isSelected ? styles.dateNumberSelected : { color: dark ? '#ADB5BD' : '#ADB5BD' },
             ]}>
             {dayNum}
           </Text>
@@ -99,9 +112,18 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
     );
   };
 
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
+
   return (
     <View
-      style={styles.dateStripContainer}
+      style={[
+        styles.dateStripContainer,
+        {
+          backgroundColor: colors.backgroundColors.default,
+          borderBottomColor: dark ? '#374151' : '#E0E0E0',
+        },
+      ]}
       onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
       <FlatList
         ref={flatListRef}
@@ -197,6 +219,9 @@ function DaySection({
     },
   ];
 
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
+
   return (
     <View>
       <Pressable
@@ -204,9 +229,9 @@ function DaySection({
         onPress={() => setCollapsed((c) => !c)}>
         <View style={styles.dayHeaderLeft}>
           {collapsed ? (
-            <ChevronRight size={18} color="#000" />
+            <ChevronRight size={18} color={dark ? '#9BA1A6' : '#000'} />
           ) : (
-            <ChevronDown size={18} color="#000" />
+            <ChevronDown size={18} color={dark ? '#9BA1A6' : '#000'} />
           )}
           {titleEdit ? (
             <TextInput
@@ -214,11 +239,11 @@ function DaySection({
               onChangeText={setTitleVal}
               onBlur={handleTitleBlur}
               autoFocus
-              style={styles.titleInput}
+              style={[styles.titleInput, { color: colors.textColors.default }]}
               onSubmitEditing={handleTitleBlur}
             />
           ) : (
-            <Text style={styles.dayTitle}>
+            <Text style={[styles.dayTitle, { color: colors.textColors.default }]}>
               {day.title || `Day ${index + 1}`}
             </Text>
           )}
@@ -227,7 +252,7 @@ function DaySection({
           hitSlop={12}
           onPress={handleDayMenuPress}
           style={styles.ellipsisBtn}>
-          <Ellipsis size={18} strokeWidth={1.5} color="#AEAEAE" />
+          <Ellipsis size={18} strokeWidth={1.5} color={dark ? '#9BA1A6' : '#AEAEAE'} />
         </Pressable>
       </Pressable>
 
@@ -251,9 +276,9 @@ function DaySection({
 
           <Pressable
             onPress={() => setShowSheet(true)}
-            style={styles.addItemPill}>
-            <Plus size={16} color="#000" />
-            <Text style={styles.addItemPillText}>Add</Text>
+            style={[styles.addItemPill, { backgroundColor: dark ? '#1F1F1F' : '#FFFFFF', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
+            <Plus size={16} color={dark ? '#ADB5BD' : '#000'} />
+            <Text style={[styles.addItemPillText, { color: colors.textColors.default }]}>Add</Text>
           </Pressable>
         </View>
       )}
@@ -335,7 +360,7 @@ export default function TripItineraryTab() {
           style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
           No itinerary yet
         </RNText>
-        <RNText style={[styles.emptySubtitle, { color: '#ADB5BD' }]}>
+        <RNText style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
           Every adventure begins with an empty page. Start planning now.
         </RNText>
 
@@ -351,7 +376,7 @@ export default function TripItineraryTab() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
       <ScrollView
@@ -420,9 +445,9 @@ export default function TripItineraryTab() {
 
         <Pressable
           onPress={() => addDay({ title: `Day ${days.length + 1}` })}
-          style={styles.addDayPill}>
-          <Plus size={14} color="#AEAEAE" strokeWidth={2} />
-          <Text style={styles.addDayPillText}>Add Day</Text>
+          style={[styles.addDayPill, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#E0E0E0' }]}>
+          <Plus size={14} color={dark ? '#ADB5BD' : '#AEAEAE'} strokeWidth={2} />
+          <Text style={[styles.addDayPillText, { color: dark ? '#ADB5BD' : '#AEAEAE' }]}>Add Day</Text>
         </Pressable>
 
         <View style={{ height: 120 }} />
@@ -444,7 +469,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    backgroundColor: '#fff',
     minHeight: 250,
   },
   illustration: {
@@ -469,8 +493,6 @@ const styles = StyleSheet.create({
   dateStripContainer: {
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: '#fff',
   },
   dateStripContent: { paddingHorizontal: 16 },
   dateColumn: {
@@ -511,12 +533,10 @@ const styles = StyleSheet.create({
   dayHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dayTitle: {
     fontSize: 14,
-    color: '#000',
   },
   titleInput: {
     fontSize: 18,
     fontFamily: AppFonts.bricolage.semiBold,
-    color: '#000',
     padding: 0,
   },
   ellipsisBtn: {
@@ -530,9 +550,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F0F0F0',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 99,
@@ -542,7 +560,6 @@ const styles = StyleSheet.create({
   addItemPillText: {
     fontSize: 12,
     fontFamily: AppFonts.inter.medium,
-    color: '#000',
   },
   fab: {
     position: 'absolute',
@@ -578,9 +595,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
     borderRadius: 99,
     paddingVertical: 10,
     width: 110,
@@ -591,6 +606,5 @@ const styles = StyleSheet.create({
   addDayPillText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.medium,
-    color: '#AEAEAE',
   },
 });

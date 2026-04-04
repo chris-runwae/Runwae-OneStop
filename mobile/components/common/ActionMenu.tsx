@@ -1,4 +1,5 @@
-import { AppFonts } from '@/constants';
+import { AppFonts, Colors } from '@/constants';
+import { useTheme } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import React from 'react';
 import {
@@ -34,6 +35,8 @@ const ActionMenu = ({
   anchorPosition,
 }: ActionMenuProps) => {
   const insets = useSafeAreaInsets();
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -42,6 +45,10 @@ const ActionMenu = ({
           <View
             style={[
               styles.menuContainer,
+              {
+                backgroundColor: dark ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.5)',
+                borderColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.5)',
+              },
               anchorPosition
                 ? { 
                     top: anchorPosition.top, 
@@ -50,10 +57,12 @@ const ActionMenu = ({
                   }
                 : { top: insets.top + 100, right: 24 },
             ]}>
-            <BlurView intensity={30} tint="light" style={styles.blurContainer}>
+            <BlurView intensity={30} tint={dark ? 'dark' : 'light'} style={styles.blurContainer}>
               {options.map((option, index) => (
                 <View key={index}>
-                  {option.hasSeparator && <View style={styles.separator} />}
+                  {option.hasSeparator && (
+                    <View style={[styles.separator, { backgroundColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]} />
+                  )}
                   <TouchableOpacity
                     onPress={() => {
                       onClose();
@@ -63,6 +72,7 @@ const ActionMenu = ({
                     <Text
                       style={[
                         styles.optionText,
+                        { color: colors.textColors.default },
                         option.isDestructive && styles.destructiveText,
                         option.isBold && styles.boldText,
                       ]}>
@@ -90,9 +100,7 @@ const styles = StyleSheet.create({
     width: 170,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.5,
@@ -110,7 +118,6 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.regular,
-    color: '#000',
   },
   destructiveText: {
     color: '#FF2D1B',
@@ -121,7 +128,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.06)',
     marginHorizontal: 16,
     marginVertical: 4,
   },

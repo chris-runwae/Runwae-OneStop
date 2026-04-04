@@ -1,21 +1,17 @@
-import AddOnsForYou from "@/components/home/AddOnsForYou";
-import HomeHeader from "@/components/home/HomeHeader";
-import ItineraryForYou from "@/components/home/IteneryForYou";
-import UpcomingTrips from "@/components/home/UpcomingTrips";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import WelcomeModal from "@/components/WelcomeModal";
-import {
-  ADD_ONS_FOR_YOU,
-  DESTINATIONS_FOR_YOU,
-  ITINERARIES_FOR_YOU,
-  UPCOMING_TRIPS,
-} from "@/constants/home.constant";
-import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
-import { RefreshControl, ScrollView } from "react-native";
+import AddOnsForYou from '@/components/home/AddOnsForYou';
+import HomeTopSection from '@/components/home/HomeTopSection';
+import UpcomingEvents from '@/components/home/UpcomingEvents';
+import UpcomingTrips from '@/components/home/UpcomingTrips';
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import WelcomeModal from '@/components/WelcomeModal';
+import { ADD_ONS_FOR_YOU, UPCOMING_EVENTS } from '@/constants/home.constant';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView } from 'react-native';
 
-import DestinationsForYou from "@/components/home/DestinationsForYou";
+import { useTrips } from '@/context/TripsContext';
+import { TripWithEverything } from '@/hooks/useTripActions';
 
 export default function HomeScreen() {
   const {
@@ -28,6 +24,23 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { myTrips, joinedTrips } = useTrips();
+
+  function isActive(trip: TripWithEverything): boolean {
+    const endDate = trip.trip_details?.end_date;
+    if (!endDate) return true;
+    return new Date(endDate) >= new Date(new Date().toDateString());
+  }
+
+  const allTrips = useMemo(
+    () => [...myTrips, ...joinedTrips],
+    [myTrips, joinedTrips]
+  );
+
+  const upcomingTrips = useMemo(
+    () => allTrips.filter((t) => isActive(t as TripWithEverything)),
+    [allTrips]
+  );
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,9 +58,7 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <AppSafeAreaView edges={["top"]}>
-      <HomeHeader user={user} isLoading={authLoading} dark={dark} />
-
+    <AppSafeAreaView edges={['top']}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -55,14 +66,19 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={dark ? "#ffffff" : "#000000"}
+            tintColor={dark ? '#ffffff' : '#000000'}
           />
-        }
-      >
-        <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
-        <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
+        }>
+        <HomeTopSection user={user} dark={dark} />
+        <UpcomingTrips trips={upcomingTrips} loading={loading} />
+        <UpcomingEvents
+          data={UPCOMING_EVENTS}
+          title="Featured Events"
+          showSubtitle={false}
+          loading={loading}
+        />
         <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
-        <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
+        {/* <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} /> */}
       </ScrollView>
 
       <WelcomeModal

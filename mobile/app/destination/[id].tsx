@@ -12,7 +12,7 @@ import {
   FEATURED_ITINERARIES,
 } from "@/constants/home.constant";
 import { useDetailItem } from "@/hooks/use-detail-item";
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 
 import { FlatList, Image, Text, View } from "react-native";
 import Animated, {
@@ -21,10 +21,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Destination } from "@/types/content.types";
+
 const DestinationDetailScreen = () => {
-  const { id, item: destination } = useDetailItem("destination") as {
+  const { id, item: destination, loading } = useDetailItem("destination") as {
     id: string;
-    item: any;
+    item: Destination | null;
+    loading: boolean;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -35,15 +38,6 @@ const DestinationDetailScreen = () => {
     },
   });
 
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
   const featuredItineraries = useMemo(() => {
     return FEATURED_ITINERARIES.slice(0, 4);
   }, []);
@@ -53,8 +47,12 @@ const DestinationDetailScreen = () => {
   }, [id, DESTINATIONS_FOR_YOU]);
 
 
+  if (loading) {
+    return null;
+  }
+
   if (!destination) {
-    return <DetailNotFound type="itinerary" />;
+    return <DetailNotFound type="destination" />;
   }
 
   return (

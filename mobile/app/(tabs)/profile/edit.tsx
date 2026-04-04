@@ -100,7 +100,6 @@ const ProfileEditScreen = () => {
     try {
       let avatarUrl = user.avatar_url;
 
-      // If there's a new image selected, upload it first
       if (tempAvatar) {
         avatarUrl = await uploadProfileImage(user.id, tempAvatar);
       }

@@ -18,7 +18,7 @@ export const TripActions: React.FC<TripActionsProps> = ({
       <TouchableOpacity
         className="h-[50px] w-full items-center justify-center rounded-full bg-pink-600"
         onPress={onViewItinerary}>
-        <Text className={`${textStyles.medium_16} text-white`}>
+        <Text style={[textStyles.medium_16]} className="text-white">
           View Itinerary
         </Text>
       </TouchableOpacity>
@@ -31,9 +31,8 @@ export const TripActions: React.FC<TripActionsProps> = ({
         }`}
         onPress={onShareDetails}>
         <Text
-          className={`${textStyles.medium_16} ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-700'
-          }`}>
+          style={[textStyles.medium_16]}
+          className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
           Share Details
         </Text>
       </TouchableOpacity>

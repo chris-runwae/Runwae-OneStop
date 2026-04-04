@@ -1,5 +1,7 @@
-import React from "react";
-import { Image, Text, View } from "react-native";
+import { Colors, textStyles } from '@/constants';
+import React from 'react';
+import { Image, StyleSheet, useColorScheme, View } from 'react-native';
+import Text from '../ui/Text';
 
 interface EmptyTripsStateProps {
   title?: string;
@@ -7,27 +9,47 @@ interface EmptyTripsStateProps {
 }
 
 const EmptyTripsState = ({
-  title = "No Trips Booked Yet",
-  description = "Tap the + below to start planning your\nnext adventure!",
+  title = 'No Trips Booked Yet',
+  description = 'Tap the + below to start planning your\nnext adventure!',
 }: EmptyTripsStateProps) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+
   return (
-    <View className="flex-1 bg-gray-100 dark:bg-dark-seconndary/40 items-center justify-center">
+    <View style={[styles.container]}>
       <Image
-        source={require("@/assets/images/trip-empty-state-2.png")}
-        className="w-[80px] h-[80px] mb-6"
+        source={require('@/assets/images/trip-empty-state-2.png')}
+        style={styles.image}
         resizeMode="contain"
       />
-      <Text
-        className="text-xl font-bold dark:text-white text-center mb-2"
-        style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-      >
-        {title}
-      </Text>
-      <Text className="text-sm text-gray-400 dark:text-gray-500 text-center leading-5">
-        {description}
-      </Text>
+      <Text style={[styles.title]}>{title}</Text>
+      <Text style={[styles.description]}>{description}</Text>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  image: {
+    width: 50,
+    height: 50,
+    marginBottom: 24,
+  },
+  title: {
+    ...textStyles.textHeading20,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  description: {
+    ...textStyles.textBody14,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontSize: 12,
+  },
+});
 
 export default EmptyTripsState;

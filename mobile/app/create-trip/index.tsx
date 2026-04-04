@@ -17,6 +17,7 @@ import React, {
 } from "react";
 
 import TripCreatedModal from "@/components/trip-creation/TripCreatedModal";
+import ShareTripModal from "@/components/trip-creation/ShareTripModal";
 import { useAuth } from "@/context/AuthContext";
 import { createTrip } from "@/utils/supabase/trips.service";
 import {
@@ -48,6 +49,8 @@ const CreateTrip = () => {
   const [image, setImage] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [createdTrip, setCreatedTrip] = useState<any>(null);
 
   const { user } = useAuth();
 
@@ -236,6 +239,7 @@ const CreateTrip = () => {
       });
 
       if (result.success) {
+        setCreatedTrip(result.data);
         setShowSuccessModal(true);
       } else {
         Toast.show({
@@ -264,6 +268,30 @@ const CreateTrip = () => {
     if (currentStep === 2) return !title.trim();
     return false;
   }, [currentStep, destination, selectedDates, title]);
+
+  const shareLink = useMemo(() => {
+    if (!createdTrip) return "";
+    const slug = createdTrip.title.toLowerCase().replace(/ /g, "");
+    return `https://${slug}trip.runwae`;
+  }, [createdTrip]);
+
+  const formattedDates = useMemo(() => {
+    if (!createdTrip) return "";
+    const start = new Date(createdTrip.start_date);
+    const end = new Date(createdTrip.end_date);
+
+    const startMonth = start.toLocaleDateString("en-US", { month: "short" });
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const year = start.getFullYear();
+
+    if (startMonth === end.toLocaleDateString("en-US", { month: "short" })) {
+      return `${startMonth} ${startDay}-${endDay} ${year}`;
+    }
+    return `${startMonth} ${startDay} - ${end.toLocaleDateString("en-US", {
+      month: "short",
+    })} ${endDay} ${year}`;
+  }, [createdTrip]);
 
   return (
     <AppSafeAreaView edges={["top"]}>
@@ -333,12 +361,22 @@ const CreateTrip = () => {
           router.replace("/trips");
         }}
         onShare={() => {
-          Toast.show({
-            type: "info",
-            text1: "Share",
-            text2: "Sharing feature coming soon! 🚀",
-            position: "bottom",
-          });
+          setShowSuccessModal(false);
+          setShowShareModal(true);
+        }}
+      />
+
+      <ShareTripModal
+        isVisible={showShareModal}
+        onClose={() => {
+          setShowShareModal(false);
+          router.replace("/trips");
+        }}
+        tripData={{
+          title: createdTrip?.title || "",
+          destination: createdTrip?.destination || "",
+          dates: formattedDates,
+          shareLink: shareLink,
         }}
       />
     </AppSafeAreaView>

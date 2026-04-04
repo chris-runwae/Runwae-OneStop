@@ -18,10 +18,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Experience } from "@/types/content.types";
+
 const ExperienceDetailScreen = () => {
-  const { id, item: experience } = useDetailItem("experience") as {
+  const { id, item: experience, loading } = useDetailItem("experience") as {
     id: string;
-    item: any;
+    item: Experience | null;
+    loading: boolean;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -57,6 +60,10 @@ const ExperienceDetailScreen = () => {
     setPreviewIndex(index);
     setIsPreviewVisible(true);
   };
+
+  if (loading) {
+    return null; // Or a loading spinner if preferred, but usually returning null prevents the flash before mounting content.
+  }
 
   if (!experience) {
     return <DetailNotFound type="experience" />;

@@ -1,0 +1,40 @@
+{
+  "cli": {
+    "version": ">= 14.0.2",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
+      "cache": {
+        "disabled": true
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "chrisobocha@gmail.com",
+        "ascAppId": "6754623801",
+        "appleTeamId": "VSC85SPZ2A"
+      }
+    },
+    "preview": {
+      "ios": {
+        "appleId": "chrisobocha@gmail.com",
+        "ascAppId": "6754623801",
+        "appleTeamId": "VSC85SPZ2A"
+      }
+    }
+  }
+}

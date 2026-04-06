@@ -11,7 +11,7 @@ import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import { MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
-import { AppFonts, Colors } from '@/constants';
+import { AppFonts, COLORS, Colors } from '@/constants';
 import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 
 type TypeConfig = {
@@ -56,6 +56,7 @@ const ItineraryItemCard = ({
   canMoveDown,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
+  const dark = colorScheme === 'dark';
   const colors = Colors[colorScheme];
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
@@ -94,7 +95,8 @@ const ItineraryItemCard = ({
         style={[
           styles.card,
           {
-            borderColor: '#F0F0F0',
+            backgroundColor: colors.backgroundColors.default,
+            borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
           },
         ]}>
         {hasImage ? (
@@ -104,15 +106,15 @@ const ItineraryItemCard = ({
             contentFit="cover"
           />
         ) : (
-          <View style={styles.thumbnailPlaceholder}>
-            <ImageIcon size={20} color="#D0D0D0" />
+          <View style={[styles.thumbnailPlaceholder, { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5' }]}>
+            <ImageIcon size={20} color={dark ? '#4B5563' : '#D0D0D0'} />
           </View>
         )}
 
         <View style={styles.content}>
-          <View style={styles.typeBadge}>
+          <View style={[styles.typeBadge, { borderColor: dark ? '#374151' : '#E9ECEF' }]}>
             <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
-            <Text style={styles.typeBadgeLabel}>{config.label}</Text>
+            <Text style={[styles.typeBadgeLabel, { color: colors.textColors.default }]}>{config.label}</Text>
           </View>
 
           <Text
@@ -123,7 +125,7 @@ const ItineraryItemCard = ({
 
           {item.location ? (
             <Text
-              style={[styles.locationText, { color: '#AEAEAE' }]}
+              style={[styles.locationText, { color: colors.textColors.subtle }]}
               numberOfLines={1}>
               {item.location}
             </Text>
@@ -137,7 +139,7 @@ const ItineraryItemCard = ({
                 onPress={onMoveUp}
                 disabled={!canMoveUp}
                 style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
-                <ChevronUp size={20} color={canMoveUp ? '#000' : '#D0D0D0'} />
+                <ChevronUp size={20} color={canMoveUp ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')} />
               </Pressable>
               <Pressable
                 onPress={onMoveDown}
@@ -146,21 +148,21 @@ const ItineraryItemCard = ({
                 <ChevronDown
                   size={18}
                   strokeWidth={1.5}
-                  color={canMoveDown ? '#000' : '#D0D0D0'}
+                  color={canMoveDown ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')}
                 />
               </Pressable>
             </View>
           ) : (
             <Pressable hitSlop={12} onPress={handleOptionsPress}>
-              <Ellipsis size={18} strokeWidth={1.5} color="#AEAEAE" />
+              <Ellipsis size={18} strokeWidth={1.5} color={colors.textColors.subtle} />
             </Pressable>
           )}
         </View>
       </View>
 
-      <View style={styles.notesContainer}>
+      <View style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
         <Text
-          style={[styles.notesText, !item.notes && styles.notesPlaceholder]}>
+          style={[styles.notesText, { color: dark ? '#9BA1A6' : '#666' }, !item.notes && [styles.notesPlaceholder, { color: colors.textColors.subtle }]]}>
           {item.notes || 'Add notes, links, etc here.'}
         </Text>
       </View>
@@ -183,7 +185,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 5,
     gap: 12,
-    backgroundColor: '#FFFFFF',
     zIndex: 1,
   },
   thumbnail: {
@@ -196,7 +197,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -211,7 +211,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 4,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 99,
@@ -223,7 +222,6 @@ const styles = StyleSheet.create({
   typeBadgeLabel: {
     fontSize: 10,
     fontFamily: AppFonts.inter.medium,
-    color: '#00',
   },
   title: {
     fontSize: 14,
@@ -250,22 +248,18 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   notesContainer: {
-    backgroundColor: '#F9F9F9',
     marginTop: 5,
     paddingTop: 12,
     paddingHorizontal: 12,
     paddingBottom: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
   },
   notesText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.regular,
-    color: '#666',
     lineHeight: 16,
   },
   notesPlaceholder: {
-    color: '#BFBFBF',
   },
 });

@@ -2,7 +2,7 @@ import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Camera, MapPin, Calendar } from 'lucide-react-native';
+import { Calendar, Camera, MapPin } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,8 +13,6 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
-  TextStyle,
-  ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,9 +21,9 @@ import { Colors } from '@/constants/theme';
 import { useTrips } from '@/context/TripsContext';
 import { Ionicons } from '@expo/vector-icons';
 
-import EditTripField from '@/components/trips/edit/EditTripField';
-import DestinationModal from '@/components/trips/edit/DestinationModal';
 import DateModal from '@/components/trips/edit/DateModal';
+import DestinationModal from '@/components/trips/edit/DestinationModal';
+import EditTripField from '@/components/trips/edit/EditTripField';
 
 export default function EditTripScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -45,22 +43,39 @@ export default function EditTripScreen() {
 
   // Basic trip info state
   const isCorrectTrip = activeTrip?.id === tripId;
-  const [name, setName] = useState(isCorrectTrip ? (activeTrip?.name ?? '') : '');
-  const [description, setDescription] = useState(isCorrectTrip ? (activeTrip?.description ?? '') : '');
-  const [coverImage, setCoverImage] = useState<string | null>(isCorrectTrip ? (activeTrip?.cover_image_url ?? null) : null);
+  const [name, setName] = useState(
+    isCorrectTrip ? (activeTrip?.name ?? '') : ''
+  );
+  const [description, setDescription] = useState(
+    isCorrectTrip ? (activeTrip?.description ?? '') : ''
+  );
+  const [coverImage, setCoverImage] = useState<string | null>(
+    isCorrectTrip ? (activeTrip?.cover_image_url ?? null) : null
+  );
 
   // Destination state
-  const [destinationLabel, setDestinationLabel] = useState(isCorrectTrip ? (activeTrip?.destination_label ?? '') : '');
-  const [destinationPlaceId, setDestinationPlaceId] = useState(isCorrectTrip ? (activeTrip?.destination_place_id ?? '') : '');
-  const [destinationAddress, setDestinationAddress] = useState(isCorrectTrip ? (activeTrip?.destination_address ?? '') : '');
+  const [destinationLabel, setDestinationLabel] = useState(
+    isCorrectTrip ? (activeTrip?.destination_label ?? '') : ''
+  );
+  const [destinationPlaceId, setDestinationPlaceId] = useState(
+    isCorrectTrip ? (activeTrip?.destination_place_id ?? '') : ''
+  );
+  const [destinationAddress, setDestinationAddress] = useState(
+    isCorrectTrip ? (activeTrip?.destination_address ?? '') : ''
+  );
 
   // Date state
-  const [startDate, setStartDate] = useState(isCorrectTrip ? (activeTrip?.trip_details?.start_date ?? '') : '');
-  const [endDate, setEndDate] = useState(isCorrectTrip ? (activeTrip?.trip_details?.end_date ?? '') : '');
+  const [startDate, setStartDate] = useState(
+    isCorrectTrip ? (activeTrip?.trip_details?.start_date ?? '') : ''
+  );
+  const [endDate, setEndDate] = useState(
+    isCorrectTrip ? (activeTrip?.trip_details?.end_date ?? '') : ''
+  );
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);
-  const [isDestinationModalVisible, setIsDestinationModalVisible] = useState(false);
+  const [isDestinationModalVisible, setIsDestinationModalVisible] =
+    useState(false);
   const [isDateModalVisible, setIsDateModalVisible] = useState(false);
 
   // Initial load
@@ -87,7 +102,10 @@ export default function EditTripScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'We need access to your photos to change the cover image.');
+      Alert.alert(
+        'Permission needed',
+        'We need access to your photos to change the cover image.'
+      );
       return;
     }
 
@@ -135,34 +153,69 @@ export default function EditTripScreen() {
         router.back();
       }
     } catch (err: any) {
-      Alert.alert('Save Failed', err.message || 'An unexpected error occurred.');
+      Alert.alert(
+        'Save Failed',
+        err.message || 'An unexpected error occurred.'
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundColors.default }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.backgroundColors.default },
+      ]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Text style={[styles.headerButtonLabel, { color: dark ? '#fff' : '#000' }]}>Cancel</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerButton}>
+          <Text
+            style={[
+              styles.headerButtonLabel,
+              { color: dark ? '#fff' : '#000' },
+            ]}>
+            Cancel
+          </Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: dark ? '#fff' : '#000' }]}>Edit Trip</Text>
-        <TouchableOpacity onPress={handleSave} disabled={isSaving} style={styles.headerButton}>
+        <Text style={[styles.headerTitle, { color: dark ? '#fff' : '#000' }]}>
+          Edit Trip
+        </Text>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={isSaving}
+          style={styles.headerButton}>
           {isSaving ? (
             <ActivityIndicator size="small" color="#FF1F8C" />
           ) : (
-            <Text style={[styles.headerButtonLabel, { color: '#FF1F8C', fontWeight: 'bold' }]}>Save</Text>
+            <Text
+              style={[
+                styles.headerButtonLabel,
+                { color: '#FF1F8C', fontWeight: 'bold' },
+              ]}>
+              Save
+            </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         {/* Cover Image */}
-        <TouchableOpacity onPress={pickImage} activeOpacity={0.9} style={styles.imageContainer}>
+        <TouchableOpacity
+          onPress={pickImage}
+          activeOpacity={0.9}
+          style={styles.imageContainer}>
           <Image
-            source={coverImage ? { uri: coverImage } : require('@/assets/images/trip-empty-state.png')}
+            source={
+              coverImage
+                ? { uri: coverImage }
+                : require('@/assets/images/trip-empty-state.png')
+            }
             style={styles.coverImage}
             contentFit="cover"
           />
@@ -197,29 +250,65 @@ export default function EditTripScreen() {
             <TouchableOpacity
               style={styles.infoRow}
               onPress={() => setIsDestinationModalVisible(true)}>
-              <View style={[styles.infoIcon, { backgroundColor: dark ? '#131313' : '#f8f9fa' }]}>
+              <View
+                style={[
+                  styles.infoIcon,
+                  { backgroundColor: dark ? '#131313' : '#f8f9fa' },
+                ]}>
                 <MapPin size={18} color={dark ? '#fff' : '#6b7280'} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Destination</Text>
-                <Text style={[styles.infoValue, { color: dark ? '#fff' : '#111827' }]}>
+                <Text
+                  style={[
+                    styles.infoLabel,
+                    { color: dark ? '#9ca3af' : '#6b7280' },
+                  ]}>
+                  Destination
+                </Text>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    { color: dark ? '#fff' : '#111827' },
+                  ]}>
                   {destinationLabel || 'Select a destination'}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={dark ? '#4b5563' : '#9ca3af'} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={dark ? '#4b5563' : '#9ca3af'}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.infoRow, { borderBottomWidth: 0 }]}
               onPress={() => setIsDateModalVisible(true)}>
-              <View style={[styles.infoIcon, { backgroundColor: dark ? '#131313' : '#f8f9fa' }]}>
+              <View
+                style={[
+                  styles.infoIcon,
+                  { backgroundColor: dark ? '#131313' : '#f8f9fa' },
+                ]}>
                 <Calendar size={18} color={dark ? '#fff' : '#6b7280'} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: dark ? '#9ca3af' : '#6b7280' }]}>Dates</Text>
-                <DateRange startDate={startDate} endDate={endDate} fontSize={15} />
+                <Text
+                  style={[
+                    styles.infoLabel,
+                    { color: dark ? '#9ca3af' : '#6b7280' },
+                  ]}>
+                  Dates
+                </Text>
+                <DateRange
+                  startDate={startDate}
+                  endDate={endDate}
+                  fontSize={15}
+                />
               </View>
-              <Ionicons name="chevron-forward" size={18} color={dark ? '#4b5563' : '#9ca3af'} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={dark ? '#4b5563' : '#9ca3af'}
+              />
             </TouchableOpacity>
           </View>
         </View>

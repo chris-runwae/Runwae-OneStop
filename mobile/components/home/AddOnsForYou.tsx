@@ -48,7 +48,7 @@ const AddOnsForYou = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
-          marginTop: 16,
+          marginTop: 30,
           paddingHorizontal: 20,
         }}
         keyExtractor={(item, index) =>

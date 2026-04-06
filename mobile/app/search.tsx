@@ -1,11 +1,10 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import SkeletonBox from '@/components/ui/SkeletonBox';
-import Animated, { FadeIn, FadeOut, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getLinkPreview } from 'link-preview-js';
 import {
+  ArrowLeft,
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   Link as LinkIcon,
   MoveRight,
@@ -15,26 +14,36 @@ import {
 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Animated as RNAnimated,
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
-  Animated as RNAnimated,
-  Dimensions,
 } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInRight,
+  FadeOut,
+  FadeOutLeft,
+} from 'react-native-reanimated';
 
 import CategoryItem from '@/components/ui/CategoryItem';
+import { useTheme } from '@react-navigation/native';
 
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab: string }>();
   const inputRef = useRef<TextInput>(null);
 
-  const [activeTab, setActiveTab] = useState<string | null>(params.tab || 'flights');
+  const [activeTab, setActiveTab] = useState<string | null>(
+    params.tab || 'flights'
+  );
   const [flightType, setFlightType] = useState<'one-way' | 'round-trip'>(
     'one-way'
   );
@@ -228,243 +237,263 @@ export default function SearchScreen() {
     </Animated.View>
   );
 
+  const { dark } = useTheme();
+
   return (
     <AppSafeAreaView
       edges={['top']}
       className="dark:bg-dark-background flex-1 bg-[#F8F9FA]">
-      <Animated.View entering={FadeInRight.duration(300)} exiting={FadeOutLeft.duration(300)} className="flex-1">
+      <Animated.View
+        entering={FadeInRight.duration(300)}
+        exiting={FadeOutLeft.duration(300)}
+        className="flex-1">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1">
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}>
-          <Pressable
-            onPress={() => router.back()}
-            className="mb-8 h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white dark:border-gray-800 dark:bg-transparent"
-            style={shadowStyles}>
-            <ChevronLeft size={17} color="#000" />
-          </Pressable>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="flex h-[35px] w-[35px] items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+              <ArrowLeft
+                size={18}
+                strokeWidth={1.5}
+                color={dark ? '#ffffff' : '#000000'}
+              />
+            </TouchableOpacity>
 
-          {/* Categories */}
-          <View className="relative z-0 mb-6 border-b border-gray-200 dark:border-dark-seconndary/60">
-            <View className="flex-row justify-between px-2">
-              <CategoryItem
-                imageSrc={require('@/assets/images/plane.png')}
-                label="Flights"
-                isActive={activeTab === 'flights'}
-                onPress={() => setActiveTab('flights')}
-              />
-              <CategoryItem
-                imageSrc={require('@/assets/images/house.png')}
-                label="Stays"
-                isActive={activeTab === 'stays'}
-                onPress={() => setActiveTab('stays')}
-              />
-              <CategoryItem
-                imageSrc={require('@/assets/images/map.png')}
-                label="Experiences"
-                isActive={activeTab === 'experiences'}
-                onPress={() => setActiveTab('experiences')}
-              />
+            {/* Categories */}
+            <View className="relative z-0 mb-6 border-b border-gray-200 dark:border-dark-seconndary/60">
+              <View className="flex-row justify-between px-2">
+                <CategoryItem
+                  imageSrc={require('@/assets/images/plane.png')}
+                  label="Flights"
+                  isActive={activeTab === 'flights'}
+                  onPress={() => setActiveTab('flights')}
+                />
+                <CategoryItem
+                  imageSrc={require('@/assets/images/house.png')}
+                  label="Stays"
+                  isActive={activeTab === 'stays'}
+                  onPress={() => setActiveTab('stays')}
+                />
+                <CategoryItem
+                  imageSrc={require('@/assets/images/map.png')}
+                  label="Experiences"
+                  isActive={activeTab === 'experiences'}
+                  onPress={() => setActiveTab('experiences')}
+                />
+              </View>
+
+              {/* Sliding Indicator */}
+              {activeTab !== null && (
+                <RNAnimated.View
+                  style={{
+                    position: 'absolute',
+                    bottom: -1,
+                    left: 0,
+                    width: (containerWidth - 16) / 3,
+                    alignItems: 'center',
+                    transform: [{ translateX }],
+                  }}>
+                  <View className="h-[3px] w-[60%] rounded-t-[3px] bg-[#fd2879]" />
+                </RNAnimated.View>
+              )}
             </View>
 
-            {/* Sliding Indicator */}
-            {activeTab !== null && (
-              <RNAnimated.View
-                style={{
-                  position: 'absolute',
-                  bottom: -1,
-                  left: 0,
-                  width: (containerWidth - 16) / 3,
-                  alignItems: 'center',
-                  transform: [{ translateX }],
-                }}>
-                <View className="h-[3px] w-[60%] rounded-t-[3px] bg-[#fd2879]" />
-              </RNAnimated.View>
-            )}
-          </View>
-
-          {/* DEFAULT / NO TAB VIEW */}
-          {activeTab === null && (
-            <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)} className="z-50 px-1">
-              <View className="mb-4 mt-2 flex-row items-center">
-                <View className="flex-row items-center gap-x-1">
-                  <Sparkles
-                    size={13}
-                    fill="#fd2879"
-                    strokeWidth={1.5}
-                    stroke="#fd2879"
-                  />
-                  <Text className="text-sm font-bold tracking-wide text-[#fd2879]">
-                    NEW
+            {/* DEFAULT / NO TAB VIEW */}
+            {activeTab === null && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                className="z-50 px-1">
+                <View className="mb-4 mt-2 flex-row items-center">
+                  <View className="flex-row items-center gap-x-1">
+                    <Sparkles
+                      size={13}
+                      fill="#fd2879"
+                      strokeWidth={1.5}
+                      stroke="#fd2879"
+                    />
+                    <Text className="text-sm font-bold tracking-wide text-[#fd2879]">
+                      NEW
+                    </Text>
+                  </View>
+                  <View className="mx-3 h-4 w-[1px] bg-gray-300" />
+                  <Text className="text-sm font-medium text-gray-500">
+                    Paste a Link
+                  </Text>
+                  <MoveRight size={14} color="#9ca3af" className="mx-3" />
+                  <Text className="text-sm font-medium text-gray-500">
+                    Generate Itinerary
                   </Text>
                 </View>
-                <View className="mx-3 h-4 w-[1px] bg-gray-300" />
-                <Text className="text-sm font-medium text-gray-500">
-                  Paste a Link
-                </Text>
-                <MoveRight size={14} color="#9ca3af" className="mx-3" />
-                <Text className="text-sm font-medium text-gray-500">
-                  Generate Itinerary
-                </Text>
-              </View>
 
-              {renderSearchBar()}
-            </Animated.View>
-          )}
-
-          {/* FLIGHTS VIEW */}
-          {activeTab === 'flights' && (
-            <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)} className="relative z-50 px-2">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-lg font-semibold text-black dark:text-white">
-                  Where are you flying?
-                </Text>
-                <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-primary">
-                  <ChevronUp size={22} color="#fff" strokeWidth={2} />
-                </View>
-              </View>
-
-              <View className="mb-8 flex-row gap-x-3">
-                <Pressable
-                  className={`rounded-full px-5 py-2 ${flightType === 'one-way' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
-                  onPress={() => setFlightType('one-way')}>
-                  <Text
-                    className={`text-sm ${flightType === 'one-way' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-                    One-way
-                  </Text>
-                </Pressable>
-                <Pressable
-                  className={`rounded-full px-5 py-2 ${flightType === 'round-trip' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
-                  onPress={() => setFlightType('round-trip')}>
-                  <Text
-                    className={`text-sm ${flightType === 'round-trip' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-                    Round-trip
-                  </Text>
-                </Pressable>
-              </View>
-
-              <View className="z-50 mb-2">
-                <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                  From
-                </Text>
                 {renderSearchBar()}
-              </View>
+              </Animated.View>
+            )}
 
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-              <View className="-z-10 mb-2">
-                <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
-                  To
-                </Text>
-              </View>
-
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-              <View className="-z-10 flex-row items-center justify-between">
-                <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                  Passengers
-                </Text>
-                <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                  <ChevronDown size={18} color="#6b7280" />
+            {/* FLIGHTS VIEW */}
+            {activeTab === 'flights' && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                className="relative z-50 px-2">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-lg font-semibold text-black dark:text-white">
+                    Where are you flying?
+                  </Text>
+                  <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-primary">
+                    <ChevronUp size={22} color="#fff" strokeWidth={2} />
+                  </View>
                 </View>
-              </View>
-            </Animated.View>
-          )}
 
-          {/* STAYS VIEW */}
-          {activeTab === 'stays' && (
-            <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)} className="relative z-50 mt-2 px-2">
-              <View className="mb-8 flex-row items-center justify-between">
-                <Text className="text-lg font-semibold text-black dark:text-white">
-                  Where are you staying?
-                </Text>
-              </View>
+                <View className="mb-8 flex-row gap-x-3">
+                  <Pressable
+                    className={`rounded-full px-5 py-2 ${flightType === 'one-way' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
+                    onPress={() => setFlightType('one-way')}>
+                    <Text
+                      className={`text-sm ${flightType === 'one-way' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
+                      One-way
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    className={`rounded-full px-5 py-2 ${flightType === 'round-trip' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
+                    onPress={() => setFlightType('round-trip')}>
+                    <Text
+                      className={`text-sm ${flightType === 'round-trip' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
+                      Round-trip
+                    </Text>
+                  </Pressable>
+                </View>
 
-              <View className="z-50 mb-2">
-                <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                  Destination
-                </Text>
-                {renderSearchBar('Search city, hotel, or address')}
-              </View>
+                <View className="z-50 mb-2">
+                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
+                    From
+                  </Text>
+                  {renderSearchBar()}
+                </View>
 
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
 
-              <View className="-z-10 mb-8 flex-row items-center justify-between">
-                <View className="flex-1 border-r border-gray-200 dark:border-gray-800">
-                  <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
-                    Check-in
+                <View className="-z-10 mb-2">
+                  <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
+                    To
+                  </Text>
+                </View>
+
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+
+                <View className="-z-10 flex-row items-center justify-between">
+                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
+                    Passengers
+                  </Text>
+                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
+                    <ChevronDown size={18} color="#6b7280" />
+                  </View>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* STAYS VIEW */}
+            {activeTab === 'stays' && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                className="relative z-50 mt-2 px-2">
+                <View className="mb-8 flex-row items-center justify-between">
+                  <Text className="text-lg font-semibold text-black dark:text-white">
+                    Where are you staying?
+                  </Text>
+                </View>
+
+                <View className="z-50 mb-2">
+                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
+                    Destination
+                  </Text>
+                  {renderSearchBar('Search city, hotel, or address')}
+                </View>
+
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+
+                <View className="-z-10 mb-8 flex-row items-center justify-between">
+                  <View className="flex-1 border-r border-gray-200 dark:border-gray-800">
+                    <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
+                      Check-in
+                    </Text>
+                    <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
+                      Select date
+                    </Text>
+                  </View>
+                  <View className="flex-1 pl-4">
+                    <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
+                      Check-out
+                    </Text>
+                    <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
+                      Select date
+                    </Text>
+                  </View>
+                </View>
+
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+
+                <View className="-z-10 flex-row items-center justify-between">
+                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
+                    Guests & Rooms
+                  </Text>
+                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
+                    <ChevronDown size={18} color="#6b7280" />
+                  </View>
+                </View>
+              </Animated.View>
+            )}
+
+            {/* EXPERIENCES VIEW */}
+            {activeTab === 'experiences' && (
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                className="relative z-50 mt-2 px-2">
+                <View className="mb-8 flex-row items-center justify-between">
+                  <Text className="text-lg font-semibold text-black dark:text-white">
+                    What are you looking for?
+                  </Text>
+                </View>
+
+                <View className="z-50 mb-2">
+                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
+                    Location or Activity
+                  </Text>
+                  {renderSearchBar('Find activities, tours, or places')}
+                </View>
+
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+
+                <View className="-z-10 mb-2">
+                  <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
+                    Dates
                   </Text>
                   <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                    Select date
+                    Anytime
                   </Text>
                 </View>
-                <View className="flex-1 pl-4">
-                  <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
-                    Check-out
+
+                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
+
+                <View className="-z-10 flex-row items-center justify-between">
+                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
+                    Guests
                   </Text>
-                  <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                    Select date
-                  </Text>
+                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
+                    <ChevronDown size={18} color="#6b7280" />
+                  </View>
                 </View>
-              </View>
-
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-              <View className="-z-10 flex-row items-center justify-between">
-                <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                  Guests & Rooms
-                </Text>
-                <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                  <ChevronDown size={18} color="#6b7280" />
-                </View>
-              </View>
-            </Animated.View>
-          )}
-
-          {/* EXPERIENCES VIEW */}
-          {activeTab === 'experiences' && (
-            <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)} className="relative z-50 mt-2 px-2">
-              <View className="mb-8 flex-row items-center justify-between">
-                <Text className="text-lg font-semibold text-black dark:text-white">
-                  What are you looking for?
-                </Text>
-              </View>
-
-              <View className="z-50 mb-2">
-                <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                  Location or Activity
-                </Text>
-                {renderSearchBar('Find activities, tours, or places')}
-              </View>
-
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-              <View className="-z-10 mb-2">
-                <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
-                  Dates
-                </Text>
-                <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                  Anytime
-                </Text>
-              </View>
-
-              <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-              <View className="-z-10 flex-row items-center justify-between">
-                <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                  Guests
-                </Text>
-                <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                  <ChevronDown size={18} color="#6b7280" />
-                </View>
-              </View>
-            </Animated.View>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Animated.View>
-  </AppSafeAreaView>
+              </Animated.View>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </AppSafeAreaView>
   );
 }

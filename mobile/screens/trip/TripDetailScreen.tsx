@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 import TripDetailSkeleton from './components/TripDetailSkeleton';
+import HotelsSection from '@/components/trips/HotelsSection';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
 
@@ -283,6 +284,8 @@ export default function TripDetailScreen() {
           {activeTab === 'ideas' && (
             <View style={styles.tabContent}>
               <TripOverviewTab trip={activeTrip} />
+              <Spacer size={24} vertical />
+              <HotelsSection trip={activeTrip} />
               <Spacer size={14} vertical />
             </View>
           )}

@@ -108,7 +108,8 @@ function RouteGuard() {
     'destination',
     'create-trip',
     'events',
-    "search",
+    'search',
+    'hotel',
   ].includes(currentSegment as any);
 
   // Redirection Logic
@@ -140,6 +141,7 @@ function RouteGuard() {
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen name="hotel" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen

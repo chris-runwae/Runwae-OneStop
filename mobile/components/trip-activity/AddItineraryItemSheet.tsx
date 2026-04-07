@@ -13,8 +13,8 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   View,
-  useColorScheme,
 } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { Image } from 'expo-image';
@@ -123,8 +123,8 @@ type Props = {
 // ----------------------------------------------------------------
 
 const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
   const translateY = useRef(new Animated.Value(500)).current;
 
   const [type, setType] = useState<ItemType>('activity');
@@ -272,7 +272,7 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
             },
           ]}>
           {/* Drag handle */}
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: dark ? '#374151' : '#E0E0E0' }]} />
 
           {/* Header */}
           <View style={styles.header}>
@@ -283,8 +283,12 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
               ]}>
               Add to Itinerary
             </Text>
-            <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn}>
-              <X size={18} color={colors.textColors.subtle} />
+            <Pressable 
+              onPress={onClose} 
+              hitSlop={10} 
+              style={[styles.closeBtn, { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5' }]}
+            >
+              <X size={18} color={dark ? '#ADB5BD' : colors.textColors.subtle} />
             </Pressable>
           </View>
 
@@ -305,8 +309,8 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                       {
                         backgroundColor: isActive
                           ? opt.color + '15'
-                          : '#F7F7F7',
-                        borderColor: isActive ? opt.color + '40' : 'transparent',
+                          : (dark ? '#1F1F1F' : '#F7F7F7'),
+                        borderColor: isActive ? opt.color + '40' : (dark ? '#374151' : 'transparent'),
                       },
                     ]}>
                     <View
@@ -315,11 +319,11 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                         {
                           backgroundColor: isActive
                             ? opt.color + '20'
-                            : '#EFEFEF',
+                            : (dark ? '#131313' : '#EFEFEF'),
                         },
                       ]}>
                       {opt.icon(
-                        isActive ? opt.color : '#AEAEAE',
+                        isActive ? opt.color : (dark ? '#6B7280' : '#AEAEAE'),
                         18
                       )}
                     </View>
@@ -342,33 +346,34 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
 
             {/* ── Title ── */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>What's the plan?</Text>
-              <View
-                style={[
-                  styles.inputRow,
-                  {
-                    borderColor:
-                      error && !title.trim() ? '#FF4444' : '#F0F0F0',
-                  },
-                ]}>
+              <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>What's the plan?</Text>
                 <View
                   style={[
-                    styles.inputIcon,
-                    { backgroundColor: activeColor + '12' },
+                    styles.inputRow,
+                    {
+                      backgroundColor: dark ? '#131313' : '#FAFAFA',
+                      borderColor:
+                        error && !title.trim() ? '#FF4444' : (dark ? '#374151' : '#F0F0F0'),
+                    },
                   ]}>
-                  {activeOption.icon(activeColor, 16)}
-                </View>
-                <TextInput
-                  ref={titleInputRef}
-                  value={title}
-                  onChangeText={(t) => {
-                    setTitle(t);
-                    if (error) setError('');
-                  }}
-                  placeholder="What's the plan?"
-                  placeholderTextColor="#C5C5C5"
-                  style={styles.inputText}
-                />
+                  <View
+                    style={[
+                      styles.inputIcon,
+                      { backgroundColor: dark ? '#1F1F1F' : activeColor + '12' },
+                    ]}>
+                    {activeOption.icon(activeColor, 16)}
+                  </View>
+                  <TextInput
+                    ref={titleInputRef}
+                    value={title}
+                    onChangeText={(t) => {
+                      setTitle(t);
+                      if (error) setError('');
+                    }}
+                    placeholder="What's the plan?"
+                    placeholderTextColor={dark ? '#6B7280' : '#C5C5C5'}
+                    style={[styles.inputText, { color: dark ? '#fff' : '#1A1A1A' }]}
+                  />
               </View>
             </View>
 
@@ -377,21 +382,21 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
               <View style={styles.twoCol}>
                 {/* Start Time */}
                 <View style={styles.halfInput}>
-                  <Text style={styles.inputLabel}>Start Time</Text>
+                  <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>Start Time</Text>
                   <Pressable
                     onPress={() => {
                       setShowStartPicker(!showStartPicker);
                       setShowEndPicker(false);
                     }}
-                    style={styles.inputRow}>
+                    style={[styles.inputRow, { backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
                   <View
                     style={[
                       styles.inputIcon,
-                      { backgroundColor: '#F0F0F0' },
+                      { backgroundColor: dark ? '#1F1F1F' : '#F0F0F0' },
                     ]}>
-                    <Clock size={14} color="#AEAEAE" />
+                    <Clock size={14} color={dark ? '#6B7280' : '#AEAEAE'} />
                   </View>
-                  <Text style={styles.timeValueText}>
+                  <Text style={[styles.timeValueText, { color: dark ? '#fff' : '#1A1A1A' }]}>
                     {format(startTimeValue, 'hh:mm a')}
                   </Text>
                 </Pressable>
@@ -400,21 +405,21 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
  
                 {/* End Time */}
                 <View style={styles.halfInput}>
-                  <Text style={styles.inputLabel}>End Time</Text>
+                  <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>End Time</Text>
                   <Pressable
                     onPress={() => {
                       setShowEndPicker(!showEndPicker);
                       setShowStartPicker(false);
                     }}
-                    style={styles.inputRow}>
+                    style={[styles.inputRow, { backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
                     <View
                       style={[
                         styles.inputIcon,
-                        { backgroundColor: '#F0F0F0' },
+                        { backgroundColor: dark ? '#1F1F1F' : '#F0F0F0' },
                       ]}>
-                      <Clock size={14} color="#AEAEAE" />
+                      <Clock size={14} color={dark ? '#6B7280' : '#AEAEAE'} />
                     </View>
-                    <Text style={styles.timeValueText}>
+                    <Text style={[styles.timeValueText, { color: dark ? '#fff' : '#1A1A1A' }]}>
                       {format(endTimeValue, 'hh:mm a')}
                     </Text>
                   </Pressable>
@@ -429,6 +434,7 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                 mode="time"
                 is24Hour={false}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={dark ? 'dark' : 'light'}
                 onChange={(event, selectedDate) => {
                   setShowStartPicker(Platform.OS === 'ios');
                   if (selectedDate) setStartTimeValue(selectedDate);
@@ -442,6 +448,7 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                 mode="time"
                 is24Hour={false}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={dark ? 'dark' : 'light'}
                 onChange={(event, selectedDate) => {
                   setShowEndPicker(Platform.OS === 'ios');
                   if (selectedDate) setEndTimeValue(selectedDate);
@@ -451,51 +458,51 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
 
             {/* ── Location ── */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Location</Text>
-              <View style={styles.inputRow}>
+              <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>Location</Text>
+              <View style={[styles.inputRow, { backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
                 <View
                   style={[
                     styles.inputIcon,
-                    { backgroundColor: '#F0F0F0' },
+                    { backgroundColor: dark ? '#1F1F1F' : '#F0F0F0' },
                   ]}>
-                  <MapPin size={14} color="#AEAEAE" />
+                  <MapPin size={14} color={dark ? '#6B7280' : '#AEAEAE'} />
                 </View>
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
                   placeholder="Add location"
-                  placeholderTextColor="#C5C5C5"
-                  style={styles.inputText}
+                  placeholderTextColor={dark ? '#6B7280' : '#C5C5C5'}
+                  style={[styles.inputText, { color: dark ? '#fff' : '#1A1A1A' }]}
                 />
               </View>
             </View>
 
             {/* ── Cost + Currency ── */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Cost</Text>
+              <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>Cost</Text>
               <View style={styles.twoCol}>
-                <View style={[styles.inputRow, { flex: 1 }]}>
+                <View style={[styles.inputRow, { flex: 1, backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
                   <View
                     style={[
                       styles.inputIcon,
-                      { backgroundColor: '#F0F0F0' },
+                      { backgroundColor: dark ? '#1F1F1F' : '#F0F0F0' },
                     ]}>
-                    <DollarSign size={14} color="#AEAEAE" />
+                    <DollarSign size={14} color={dark ? '#6B7280' : '#AEAEAE'} />
                   </View>
                   <TextInput
                     value={cost}
                     onChangeText={setCost}
                     placeholder="Cost"
-                    placeholderTextColor="#C5C5C5"
+                    placeholderTextColor={dark ? '#6B7280' : '#C5C5C5'}
                     keyboardType="decimal-pad"
-                    style={styles.inputText}
+                    style={[styles.inputText, { color: dark ? '#fff' : '#1A1A1A' }]}
                   />
                 </View>
                 <View ref={currencyRef}>
                   <Pressable
                     onPress={handleCurrencyPick}
-                    style={[styles.currencyChip]}>
-                    <Text style={styles.currencyText}>{currency}</Text>
+                    style={[styles.currencyChip, { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
+                    <Text style={[styles.currencyText, { color: dark ? '#fff' : '#333' }]}>{currency}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -526,32 +533,32 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
               ) : (
                 <Pressable
                   onPress={handlePickImage}
-                  style={styles.imagePickerBtn}>
-                  <Camera size={18} color="#AEAEAE" />
-                  <Text style={styles.imagePickerText}>Add a photo</Text>
+                  style={[styles.imagePickerBtn, { backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
+                  <Camera size={18} color={dark ? '#6B7280' : '#AEAEAE'} />
+                  <Text style={[styles.imagePickerText, { color: dark ? '#6B7280' : '#AEAEAE' }]}>Add a photo</Text>
                 </Pressable>
               )}
             </View>
 
             {/* ── Notes ── */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Notes</Text>
-              <View style={[styles.inputRow, { alignItems: 'flex-start' }]}>
+              <Text style={[styles.inputLabel, { color: dark ? '#9CA3AF' : '#999' }]}>Notes</Text>
+              <View style={[styles.inputRow, { alignItems: 'flex-start', backgroundColor: dark ? '#131313' : '#FAFAFA', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
                 <View
                   style={[
                     styles.inputIcon,
-                    { backgroundColor: '#F0F0F0', marginTop: 2 },
+                    { backgroundColor: dark ? '#1F1F1F' : '#F0F0F0', marginTop: 2 },
                   ]}>
-                  <StickyNote size={14} color="#AEAEAE" />
+                  <StickyNote size={14} color={dark ? '#6B7280' : '#AEAEAE'} />
                 </View>
                 <TextInput
                   value={notes}
                   onChangeText={setNotes}
                   placeholder="Add notes..."
-                  placeholderTextColor="#C5C5C5"
+                  placeholderTextColor={dark ? '#6B7280' : '#C5C5C5'}
                   multiline
                   numberOfLines={3}
-                  style={[styles.inputText, styles.notesText]}
+                  style={[styles.inputText, styles.notesText, { color: dark ? '#fff' : '#1A1A1A' }]}
                 />
               </View>
             </View>

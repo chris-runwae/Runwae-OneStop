@@ -93,7 +93,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
 
       <Pressable
         className="mb-4 flex-row items-center gap-x-2 px-2"
-        onPress={() => router.push('/trips')}>
+        onPress={() => router.push('/search')}>
         <View className="flex-row items-center gap-x-1">
           <Sparkles size={12} fill="#ec4899" stroke="#ec4899" />
           <Text className="text-sm font-bold text-pink-500">NEW</Text>

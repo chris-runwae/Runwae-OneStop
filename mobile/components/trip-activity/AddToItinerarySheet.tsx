@@ -9,8 +9,8 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   View,
-  useColorScheme,
 } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { X } from 'lucide-react-native';
@@ -29,9 +29,8 @@ type Props = {
 };
 
 const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const dark = colorScheme === 'dark';
-  const colors = Colors[colorScheme];
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
   const translateY = useRef(new Animated.Value(500)).current;
 
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
@@ -115,7 +114,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
               transform: [{ translateY }],
             },
           ]}>
-          <View style={styles.handleBar} />
+          <View style={[styles.handleBar, { backgroundColor: dark ? '#374151' : '#D1D5DB' }]} />
 
           <View style={styles.header}>
             <View style={{ width: 32 }} />
@@ -143,7 +142,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
                       styles.radioRow,
                       index !== days.length - 1 && [styles.borderBottom, { borderBottomColor: dark ? '#374151' : '#F3F4F6' }]
                     ]}>
-                    <Text style={[styles.radioLabel, { color: isSelected ? colors.textColors.default : (dark ? '#ADB5BD' : '#6B7280') }]}>Day {day.day_number}</Text>
+                    <Text style={[styles.radioLabel, { color: isSelected ? (dark ? '#fff' : '#111827') : (dark ? '#ADB5BD' : '#6B7280') }]}>Day {day.day_number}</Text>
                     <View style={[styles.radioOutline, { borderColor: isSelected ? '#FF1F8C' : (dark ? '#4B5563' : '#E5E7EB') }]}>
                       {isSelected && <View style={styles.radioInner} />}
                     </View>

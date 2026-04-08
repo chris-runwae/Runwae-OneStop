@@ -1,7 +1,8 @@
 "use client";
 
 import { ROUTES } from "@/app/routes";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   BaggageClaimIcon,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
 interface NavItem {
@@ -46,6 +47,20 @@ interface SidebarProps {
 
 export default function Sidebar({ open = true, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { user, profile, signOut } = useAuth();
+  const router = useRouter();
+
+  const firstName = user?.user_metadata?.first_name ?? "";
+  const lastName = user?.user_metadata?.last_name ?? "";
+  const fullName = profile?.full_name ?? ([firstName, lastName].filter(Boolean).join(" ") || "Admin");
+  const email = user?.email ?? "";
+  const avatarUrl = profile?.avatar_url ?? null;
+  const initials = [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "A";
+
+  const handleLogout = () => {
+    signOut();
+    router.push(ROUTES.login);
+  };
 
   const handleNavClick = () => {
     onClose?.();
@@ -131,21 +146,23 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
           <div className="mt-auto mb-4 flex flex-col gap-3 rounded-xl border border-border bg-surface px-2 py-3 lg:mb-6">
             <div className="flex items-start gap-2">
               <Avatar>
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
                 <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                  JL
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <span className="block truncate font-display text-base font-bold leading-6 text-heading">
-                  James Lucy
+                  {fullName}
                 </span>
                 <span className="block truncate text-sm leading-5 text-muted-foreground">
-                  jameslucy@gmail.com
+                  {email}
                 </span>
               </div>
             </div>
             <button
               type="button"
+              onClick={handleLogout}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-error-light px-6 py-3.5 transition-colors hover:bg-error-light/80"
             >
               <LogOutIcon className="size-5 shrink-0 text-error" aria-hidden />

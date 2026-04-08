@@ -4,10 +4,36 @@ import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
-import { Lock, User } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 
 export default function Login() {
+  const { signIn } = useAuth();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
+  useAuthRedirect(ROUTES.host.overview);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const email = form.get("email") as string;
+    const password = form.get("password") as string;
+
+    setIsLoading(true);
+    const { error } = await signIn(email, password);
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error);
+    }
+  };
+
   return (
     <div className="mx-auto w-full text-muted-foreground">
       <h1 className="text-2xl tracking-tight text-foreground text-center font-bricolage font-medium">
@@ -31,11 +57,13 @@ export default function Login() {
         <div className="flex-1 border-t border-input" />
       </div>
 
-      <form className="space-y-4">
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <InputField
-          icon={<User className="size-4" />}
-          placeholder="Username"
-          name="username"
+          icon={<Mail className="size-4" />}
+          type="email"
+          placeholder="Email address"
+          name="email"
+          required
         />
 
         <InputField
@@ -43,14 +71,20 @@ export default function Login() {
           type="password"
           placeholder="Password"
           name="password"
+          required
         />
 
         <Link href={ROUTES.forgotPassword} className="text-sm text-primary">
           Forgot password?
         </Link>
 
-        <Button type="submit" size="full" className="mt-12 h-11">
-          Login
+        <Button
+          type="submit"
+          size="full"
+          className="mt-12 h-11"
+          disabled={isLoading}
+        >
+          {isLoading ? "Logging in..." : "Login"}
         </Button>
       </form>
 
@@ -67,4 +101,4 @@ export default function Login() {
   );
 }
 // LOGS
-// we don't use emails in the signup screen
+// username field is email address

@@ -1,6 +1,7 @@
 "use client";
 
 import { ROUTES } from "@/app/routes";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { ArrowLeft, Mail } from "lucide-react";
@@ -10,14 +11,23 @@ import { toast } from "sonner";
 
 export default function ForgotPassword() {
   const router = useRouter();
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const sendCode = () => {
+  const sendCode = async () => {
     if (!email) {
       toast.error("Please enter your email");
       return;
     }
-    console.log("Sending code");
+    setIsLoading(true);
+    const { error } = await resetPassword(email);
+    setIsLoading(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("Password reset email sent — check your inbox");
     router.push(ROUTES.confirmOtp);
   };
 
@@ -42,6 +52,7 @@ export default function ForgotPassword() {
           icon={<Mail className="size-4" />}
           placeholder="Email"
           name="email"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -51,13 +62,11 @@ export default function ForgotPassword() {
           size="full"
           className="mt-8 h-11"
           onClick={sendCode}
+          disabled={isLoading}
         >
-          Send Code
+          {isLoading ? "Sending…" : "Send Code"}
         </Button>
       </div>
     </div>
   );
 }
-
-// LOGS
-// we don't use emails in the signup screen

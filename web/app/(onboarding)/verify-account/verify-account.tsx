@@ -1,5 +1,7 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
@@ -9,18 +11,52 @@ import {
 import { COUNTDOWN_KEY, useCountdown } from "@/hooks/use-countdown";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 
 export default function VerifyAccount() {
-  const [countdownKey, setCountdownKey] = useState(0);
-  const [otp, setOtp] = useState("");
-  const timer = useCountdown(COUNTDOWN_KEY, countdownKey);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") ?? "";
+
+  const { verifyEmail, resendVerification } = useAuth();
+
+  useAuthRedirect(ROUTES.host.overview);
+
+  const [otp, setOtp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [countdownKey, setCountdownKey] = useState(0);
+  const timer = useCountdown(COUNTDOWN_KEY, countdownKey);
   const hasMoreTime = timer !== "0:00";
 
-  const handleResend = () => {
-    if (hasMoreTime) return;
+  const handleVerify = async () => {
+    if (otp.length < 6) {
+      toast.error("Please enter the full 6-digit code");
+      return;
+    }
+    setIsVerifying(true);
+    const { error } = await verifyEmail(email, otp);
+    setIsVerifying(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("Email verified!");
+  };
+
+  const handleResend = async () => {
+    if (hasMoreTime || isResending) return;
+    setIsResending(true);
+    const { error } = await resendVerification(email);
+    setIsResending(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("Verification code resent");
     setCountdownKey((k) => k + 1);
   };
 
@@ -38,7 +74,8 @@ export default function VerifyAccount() {
           Verify Account
         </h1>
         <p className="mt-1.5 text-sm text-center mb-20">
-          Enter verification code sent to your email
+          Enter verification code sent to{" "}
+          {email ? <strong>{email}</strong> : "your email"}
         </p>
 
         <InputOTP
@@ -60,20 +97,27 @@ export default function VerifyAccount() {
         </InputOTP>
 
         <p className="text-sm mt-5">
-          Didn’t get any code?
-          {hasMoreTime ? " Resend in " : ""}
-          <span className="text-primary font-medium">
-            {hasMoreTime ? timer : "Resend"}
-          </span>
+          Didn&apos;t get any code?{hasMoreTime ? " Resend in " : " "}
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={hasMoreTime || isResending}
+            className="text-primary font-medium disabled:opacity-50"
+          >
+            {isResending ? "Sending…" : hasMoreTime ? timer : "Resend"}
+          </button>
         </p>
 
-        <Button type="button" size="full" className="mt-11 h-11">
-          Verify
+        <Button
+          type="button"
+          size="full"
+          className="mt-11 h-11"
+          onClick={handleVerify}
+          disabled={isVerifying || otp.length < 6}
+        >
+          {isVerifying ? "Verifying…" : "Verify"}
         </Button>
       </div>
     </div>
   );
 }
-
-// LOGS
-// we don't use emails in the signup screen

@@ -1,20 +1,46 @@
 "use client";
 
 import { ROUTES } from "@/app/routes";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOutIcon, MenuIcon, SettingsIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  LogOutIcon,
+  MenuIcon,
+  SettingsIcon,
+} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Sidebar from "./_sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { user, profile, signOut, isSigningOut } = useAuth();
+  const router = useRouter();
+
+  const firstName = user?.user_metadata?.first_name ?? "";
+  const lastName = user?.user_metadata?.last_name ?? "";
+  const fullName =
+    profile?.full_name ??
+    ([firstName, lastName].filter(Boolean).join(" ") || "Admin");
+  const email = user?.email ?? "";
+  const avatarUrl = profile?.avatar_url ?? null;
+  const initials =
+    [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "A";
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push(ROUTES.login);
+  };
 
   return (
     <div className="flex h-screen font-sans">
@@ -32,9 +58,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
             <h1 className="min-w-0 truncate font-display text-lg font-bold text-black sm:text-xl">
-              Welcome Admin 👋
+              Welcome {firstName || "back"} 👋
             </h1>
-            <DropdownMenu>
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
@@ -42,25 +68,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   aria-label="Open account menu"
                 >
                   <Avatar className="size-8">
+                    {avatarUrl && (
+                      <AvatarImage src={avatarUrl} alt={fullName} />
+                    )}
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                      JL
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <span className="block truncate font-display text-sm font-semibold leading-5 text-heading">
-                      James Lucy
+                      {fullName}
                     </span>
                     <span className="block truncate text-xs leading-4 text-muted-foreground">
-                      jameslucy@gmail.com
+                      {email}
                     </span>
                   </div>
+                  {dropdownOpen ? (
+                    <ChevronUp
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                  ) : (
+                    <ChevronDown
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                  )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[200px]">
+              <DropdownMenuContent align="end" className="min-w-50 p-2">
                 <DropdownMenuItem asChild>
                   <Link
                     href={ROUTES.host.settings}
-                    className="flex cursor-pointer items-center gap-2"
+                    className="flex cursor-pointer items-center gap-2 px-3 py-2.5"
                   >
                     <SettingsIcon className="size-4" aria-hidden />
                     Settings
@@ -68,11 +108,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
-                  className="cursor-pointer"
-                  onSelect={() => {}}
+                  className="cursor-pointer mt-1 px-3 py-2.5"
+                  onSelect={handleLogout}
                 >
                   <LogOutIcon className="size-4" aria-hidden />
-                  Logout
+                  {isSigningOut ? "Logging out…" : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

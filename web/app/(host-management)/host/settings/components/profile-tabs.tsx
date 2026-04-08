@@ -1,7 +1,8 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { PhoneInput } from "@/components/shared/phone-input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,8 @@ import {
   Twitter,
   User,
 } from "lucide-react";
-import { type ComponentType, type SVGProps, useState } from "react";
+import { type ComponentType, type SVGProps, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export interface SocialMediaLink {
   id: string;
@@ -48,23 +50,69 @@ const getPlaceholderUrl = (platform: string) => {
   return `https://www.${platform}.com/username`;
 };
 
-const defaultLinks: SocialMediaLink[] = [
-  {
-    id: "1",
-    platform: "instagram",
-    url: "https://www.instagram.com/ellajames",
-  },
-  { id: "2", platform: "twitter", url: "https://www.x.com/ellajames" },
-  { id: "3", platform: "tiktok", url: "https://www.tiktok.com/@ellajames" },
-];
-
 const inputRowClass =
   "flex flex-col gap-5 sm:flex-row sm:gap-5 [&>*]:min-w-0 [&>*]:flex-1";
 
 export default function ProfileTab() {
-  const [socialLinks, setSocialLinks] =
-    useState<SocialMediaLink[]>(defaultLinks);
+  const { user, profile, updateProfile, uploadProfileImage, updateUserMeta } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [about, setAbout] = useState("");
+  const [organisation, setOrganisation] = useState("");
+  const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // Populate form from auth user metadata and profile
+  useEffect(() => {
+    if (user) {
+      const meta = user.user_metadata ?? {};
+      setFirstName(meta.first_name ?? "");
+      setLastName(meta.last_name ?? "");
+      setEmail(user.email ?? "");
+      setOrganisation(meta.organisation ?? "");
+      setPhone(meta.phone ?? "");
+    }
+    if (profile) {
+      setAvatarUrl(profile.avatar_url ?? null);
+    }
+  }, [user, profile]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    const { url, error } = await uploadProfileImage(file);
+    setIsUploadingAvatar(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setAvatarUrl(url);
+    toast.success("Profile photo updated");
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const fullName = [firstName, lastName].filter(Boolean).join(" ") || null;
+    const [profileResult, metaResult] = await Promise.all([
+      updateProfile({ full_name: fullName }),
+      updateUserMeta({ first_name: firstName, last_name: lastName, phone, organisation }),
+    ]);
+    setIsSaving(false);
+    const error = profileResult.error ?? metaResult.error;
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("Profile saved");
+  };
 
   const addSocialLink = () => {
     setSocialLinks((prev) => [
@@ -90,6 +138,9 @@ export default function ProfileTab() {
   const getPlatform = (value: string) =>
     platformOptions.find((p) => p.value === value) ?? platformOptions[0];
 
+  const initials =
+    [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "?";
+
   return (
     <div className="flex flex-col gap-11">
       {/* Personal Information */}
@@ -102,17 +153,27 @@ export default function ProfileTab() {
           {/* Avatar */}
           <div className="relative inline-block w-fit">
             <Avatar className="size-[100px]">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile photo" />}
               <AvatarFallback className="bg-muted text-2xl text-muted-foreground">
-                ?
+                {isUploadingAvatar ? "…" : initials}
               </AvatarFallback>
             </Avatar>
             <button
               type="button"
-              className="absolute bottom-0 right-0 flex size-7 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              className="absolute bottom-0 right-0 flex size-7 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               aria-label="Change profile photo"
             >
               <Camera className="size-4" aria-hidden />
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
 
           {/* Name row */}
@@ -121,11 +182,15 @@ export default function ProfileTab() {
               icon={<User className="size-5" aria-hidden />}
               placeholder="First Name"
               className="bg-surface"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
             />
             <InputField
               icon={<User className="size-5" aria-hidden />}
               placeholder="Last Name"
               className="bg-surface"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
             />
           </div>
 
@@ -136,9 +201,11 @@ export default function ProfileTab() {
               placeholder="Email Address"
               type="email"
               className="bg-surface"
+              value={email}
+              disabled
             />
             <div className="min-w-0 flex-1">
-              <PhoneInput />
+              <PhoneInput value={phone} onChange={setPhone} />
             </div>
           </div>
 
@@ -164,11 +231,15 @@ export default function ProfileTab() {
             icon={<Building2 className="size-5" aria-hidden />}
             placeholder="Organisation Name"
             className="bg-surface"
+            value={organisation}
+            onChange={(e) => setOrganisation(e.target.value)}
           />
           <InputField
             icon={<Globe className="size-5" aria-hidden />}
             placeholder="Website Link"
             className="bg-surface"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
           />
         </div>
       </section>
@@ -271,9 +342,11 @@ export default function ProfileTab() {
 
         <button
           type="button"
-          className="ml-auto rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="ml-auto rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         >
-          Save Changes
+          {isSaving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export const COUNTDOWN_KEY = 120;
+export const COUNTDOWN_KEY = 10;
 
 export const useCountdown = (
   initialSeconds = COUNTDOWN_KEY,

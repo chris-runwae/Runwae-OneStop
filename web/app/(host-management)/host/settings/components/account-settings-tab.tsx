@@ -1,21 +1,31 @@
 "use client";
 
+import { ROUTES } from "@/app/routes";
+import { useAuth } from "@/context/AuthContext";
 import { LogOutIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const settingsRow =
   "flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-5";
 
 export default function AccountSettingsTab() {
+  const router = useRouter();
+  const { user, signOut, isSigningOut } = useAuth();
+
+  const isEmailVerified = !!user?.email_confirmed_at;
+
   const handleChangePassword = () => {
-    // TODO: open change password flow
+    router.push(ROUTES.forgotPassword);
   };
 
-  const handleLogout = () => {
-    // TODO: sign out
+  const handleLogout = async () => {
+    await signOut();
+    router.push(ROUTES.login);
   };
 
   const handleDeleteAccount = () => {
-    // TODO: confirm and delete account
+    toast.error("Please contact support to delete your account");
   };
 
   return (
@@ -46,9 +56,15 @@ export default function AccountSettingsTab() {
             </p>
           </div>
           <div className="mt-2 shrink-0 sm:mt-0">
-            <span className="inline-flex items-center rounded-lg bg-success/15 px-3 py-2 text-sm font-semibold text-success">
-              Verified!
-            </span>
+            {isEmailVerified ? (
+              <span className="inline-flex items-center rounded-lg bg-success/15 px-3 py-2 text-sm font-semibold text-success">
+                Verified!
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-lg bg-warning/15 px-3 py-2 text-sm font-semibold text-warning">
+                Not Verified
+              </span>
+            )}
           </div>
         </div>
 
@@ -85,10 +101,11 @@ export default function AccountSettingsTab() {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={isSigningOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
             >
               <LogOutIcon className="size-4" aria-hidden />
-              Logout
+              {isSigningOut ? "Logging out…" : "Logout"}
             </button>
           </div>
         </div>

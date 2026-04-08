@@ -1,25 +1,24 @@
-import { ScreenContainer } from '@/components';
-import Accordion from '@/components/accordion';
-import React from 'react';
-import { Text, View } from 'react-native';
-import { helpCenterData } from '@/constants/help-center.contant';
+import Accordion from "@/components/accordion";
+import ScreenHeader from "@/components/ui/ScreenHeader";
+import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import { helpCenterData } from "@/constants/help-center.constant";
+import React from "react";
+import { View } from "react-native";
 
-const HelpCenter = () => {
+const HelpCeter = () => {
+
   return (
-    <ScreenContainer leftComponent={true} className="flex-1 px-[12px] py-[8px]">
-      <View className="flex-1 px-[12px] py-[8px]">
-        <View>
-          <Text className="text-sm text-[#ADB5BD]">
-            Find clarity for every step of your Runwae journey.
-          </Text>
+    <AppSafeAreaView>
+      <ScreenHeader
+        title="Help Center"
+        subtitle="Find clarity for every step of your Runwae journey."
+      />
 
-          <View className="mt-20">
-            <Accordion data={helpCenterData} />
-          </View>
-        </View>
+      <View className="mt-10 px-[20px]">
+        <Accordion data={helpCenterData} />
       </View>
-    </ScreenContainer>
+    </AppSafeAreaView>
   );
 };
 
-export default HelpCenter;
+export default HelpCeter;

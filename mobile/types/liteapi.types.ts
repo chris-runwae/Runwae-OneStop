@@ -25,7 +25,7 @@ export interface LiteAPIRate {
     taxesAndFees?: Array<{ included: boolean; amount?: number }>;
   };
   cancellationPolicies: {
-    refundableTag: 'RFN' | 'NRFN';
+    refundableTag: "RFN" | "NRFN";
     cancelPolicyInfos?: Array<{ cancelTime: string }>;
   };
 }
@@ -84,7 +84,7 @@ export interface LiteAPIPrebookResponse {
           taxesAndFees?: Array<{ included: boolean; amount?: number }>;
         };
         cancellationPolicies: {
-          refundableTag: 'RFN' | 'NRFN';
+          refundableTag: "RFN" | "NRFN";
           cancelPolicyInfos?: Array<{ cancelTime: string }>;
         };
       }>;
@@ -100,7 +100,7 @@ export interface LiteAPIBookRequest {
     email: string;
   };
   payment: {
-    method: 'TRANSACTION_ID';
+    method: "TRANSACTION_ID";
     transactionId: string;
   };
   guests: Array<{
@@ -125,7 +125,7 @@ export interface LiteAPIBookResponse {
     price: number;
     currency: string;
     cancellationPolicies: {
-      refundableTag: 'RFN' | 'NRFN';
+      refundableTag: "RFN" | "NRFN";
       cancelPolicyInfos?: Array<{ cancelTime: string }>;
     };
   };

@@ -1,9 +1,9 @@
-import React from 'react';
-import { Svg, Path } from 'react-native-svg';
+import React from "react";
+import { Path, Svg } from "react-native-svg";
 
 export function ProfileIcon({
   size = 24,
-  color = '#000',
+  color = "#000",
   strokeWidth = 1.5,
 }: {
   size?: number;

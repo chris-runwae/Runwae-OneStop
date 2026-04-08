@@ -1,24 +1,24 @@
-import { DateSelectionStep } from "@/components/trip-creation/steps/DateSelectionStep";
-import { DestinationStep } from "@/components/trip-creation/steps/DestinationStep";
-import { TripDetailsStep } from "@/components/trip-creation/steps/TripDetailsStep";
-import { useDateRange } from "@marceloterreiro/flash-calendar";
+import { DateSelectionStep } from '@/components/trip-creation/steps/DateSelectionStep';
+import { DestinationStep } from '@/components/trip-creation/steps/DestinationStep';
+import { TripDetailsStep } from '@/components/trip-creation/steps/TripDetailsStep';
+import { useDateRange } from '@marceloterreiro/flash-calendar';
 
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import ScreenHeader from "@/components/ui/ScreenHeader";
-import { useTheme } from "@react-navigation/native";
-import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import ScreenHeader from '@/components/ui/ScreenHeader';
+import { useTheme } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import React, {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-} from "react";
+} from 'react';
 
-import TripCreatedModal from "@/components/trip-creation/TripCreatedModal";
-import { useAuth } from "@/context/AuthContext";
-import { createTrip } from "@/utils/supabase/trips.service";
+import TripCreatedModal from '@/components/trip-creation/TripCreatedModal';
+import { useAuth } from '@/context/AuthContext';
+import { createTrip } from '@/utils/supabase/trips.service';
 import {
   ActivityIndicator,
   Dimensions,
@@ -29,22 +29,22 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { Toast } from "toastify-react-native";
+} from 'react-native';
+import { Toast } from 'toastify-react-native';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
-import { usePlaceSearch } from "@/components/trip-creation/hooks/usePlaceSearch";
-import { LiteAPIPlace } from "@/types/liteapi.types";
+import { usePlaceSearch } from '@/components/trip-creation/hooks/usePlaceSearch';
+import { LiteAPIPlace } from '@/types/liteapi.types';
 
 const CreateTrip = () => {
   const { dark } = useTheme();
   const flatListRef = useRef<FlatList>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const [destination, setDestination] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [destination, setDestination] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -62,7 +62,7 @@ const CreateTrip = () => {
     setSelectedDates(dateRange);
   }, [dateRange]);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -72,7 +72,7 @@ const CreateTrip = () => {
     setPlaces,
     setLoading,
     setErrorMessage,
-    setShowDropdown,
+    setShowDropdown
   );
 
   const scrollToStep = (index: number) => {
@@ -82,7 +82,7 @@ const CreateTrip = () => {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [2, 1],
       quality: 1,
@@ -102,16 +102,16 @@ const CreateTrip = () => {
   };
 
   const formatDate = (dateId?: string) => {
-    if (!dateId) return "";
+    if (!dateId) return '';
     const date = new Date(dateId);
-    return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
   };
 
   const calendarTheme = useMemo(
     () => ({
       itemDayContainer: {
         activeDayFiller: {
-          backgroundColor: "#FF2E92",
+          backgroundColor: '#FF2E92',
         },
       },
       itemDay: {
@@ -119,30 +119,30 @@ const CreateTrip = () => {
           container: isToday
             ? {
                 borderRadius: 20,
-                backgroundColor: "#FF2E92",
+                backgroundColor: '#FF2E92',
               }
             : {},
           content: isToday
             ? {
-                color: "#fff",
-                fontWeight: "bold",
+                color: '#fff',
+                fontWeight: 'bold',
               }
             : {
-                color: dark ? "#fff" : "#000",
+                color: dark ? '#fff' : '#000',
               },
         }),
         active: ({ isToday }: { isToday: boolean }) => ({
           container: {
-            backgroundColor: "#FF2E92",
+            backgroundColor: '#FF2E92',
           },
           content: {
-            color: "#fff",
-            fontWeight: isToday ? "bold" : "normal",
+            color: '#fff',
+            fontWeight: isToday ? 'bold' : 'normal',
           },
         }),
       },
     }),
-    [dark],
+    [dark]
   );
 
   const renderStep = useCallback(
@@ -209,16 +209,16 @@ const CreateTrip = () => {
       title,
       description,
       image,
-    ],
+    ]
   );
 
   const handleCreateTrip = async () => {
     if (!user?.id) {
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "You must be logged in to create a trip.",
-        position: "bottom",
+        type: 'error',
+        text1: 'Error',
+        text2: 'You must be logged in to create a trip.',
+        position: 'bottom',
       });
       return;
     }
@@ -229,8 +229,8 @@ const CreateTrip = () => {
         user_id: user.id,
         title: title.trim(),
         destination: destination.trim(),
-        start_date: selectedDates.startId || "",
-        end_date: selectedDates.endId || selectedDates.startId || "",
+        start_date: selectedDates.startId || '',
+        end_date: selectedDates.endId || selectedDates.startId || '',
         cover_img_url: image || undefined,
         description: description.trim(),
       });
@@ -239,19 +239,20 @@ const CreateTrip = () => {
         setShowSuccessModal(true);
       } else {
         Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: result.error || "Failed to create trip.",
-          position: "bottom",
+          type: 'error',
+          text1: 'Error',
+          text2: result.error || 'Failed to create trip.',
+          position: 'bottom',
         });
       }
     } catch (error: any) {
-      console.error("Error creating trip:", error);
+      console.error('Error creating trip:', error);
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: error.message || "An unexpected error occurred. Please try again.",
-        position: "bottom",
+        type: 'error',
+        text1: 'Error',
+        text2:
+          error.message || 'An unexpected error occurred. Please try again.',
+        position: 'bottom',
       });
     } finally {
       setIsCreating(false);
@@ -266,13 +267,12 @@ const CreateTrip = () => {
   }, [currentStep, destination, selectedDates, title]);
 
   return (
-    <AppSafeAreaView edges={["top"]}>
+    <AppSafeAreaView edges={['top']}>
       <ScreenHeader title="Create Trip" onBack={handleBack} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1">
         <FlatList
           ref={flatListRef}
           data={[0, 1, 2]}
@@ -298,8 +298,8 @@ const CreateTrip = () => {
           <TouchableOpacity
             activeOpacity={0.8}
             disabled={isButtonDisabled}
-            className={`bg-primary h-[45px] rounded-full justify-center items-center ${
-              isButtonDisabled ? "opacity-50" : ""
+            className={`h-[45px] items-center justify-center rounded-full bg-primary ${
+              isButtonDisabled ? 'opacity-50' : ''
             }`}
             onPress={() => {
               Keyboard.dismiss();
@@ -308,13 +308,12 @@ const CreateTrip = () => {
               } else {
                 handleCreateTrip();
               }
-            }}
-          >
+            }}>
             {isCreating ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-white text-base font-medium">
-                {currentStep === 2 ? "Create Trip 🥳" : "Next"}
+              <Text className="text-base font-medium text-white">
+                {currentStep === 2 ? 'Create Trip 🥳' : 'Next'}
               </Text>
             )}
           </TouchableOpacity>
@@ -326,18 +325,18 @@ const CreateTrip = () => {
         destination={destination}
         onClose={() => {
           setShowSuccessModal(false);
-          router.replace("/trips");
+          router.replace('/trips');
         }}
         onStartPlanning={() => {
           setShowSuccessModal(false);
-          router.replace("/trips");
+          router.replace('/trips');
         }}
         onShare={() => {
           Toast.show({
-            type: "info",
-            text1: "Share",
-            text2: "Sharing feature coming soon! 🚀",
-            position: "bottom",
+            type: 'info',
+            text1: 'Share',
+            text2: 'Sharing feature coming soon! 🚀',
+            position: 'bottom',
           });
         }}
       />
@@ -346,4 +345,3 @@ const CreateTrip = () => {
 };
 
 export default CreateTrip;
-

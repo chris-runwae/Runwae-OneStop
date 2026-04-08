@@ -106,7 +106,18 @@ const TYPE_OPTIONS: TypeOption[] = [
   },
 ];
 
-const CURRENCIES = ['GBP', 'USD', 'EUR', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
+const CURRENCY_MAP: Record<string, string> = {
+  GBP: '🇬🇧',
+  USD: '🇺🇸',
+  EUR: '🇪🇺',
+  JPY: '🇯🇵',
+  AUD: '🇦🇺',
+  CAD: '🇨🇦',
+  CHF: '🇨🇭',
+  SGD: '🇸🇬',
+};
+
+const CURRENCIES = Object.keys(CURRENCY_MAP);
 
 // ----------------------------------------------------------------
 // Props
@@ -211,8 +222,9 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
   };
  
   const currencyOptions: ActionOption[] = CURRENCIES.map((c) => ({
-    label: c,
+    label: `${CURRENCY_MAP[c]} ${c}`,
     onPress: () => setCurrency(c),
+    isSelected: c === currency,
   }));
 
   const handleSubmit = async () => {
@@ -502,7 +514,9 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
                   <Pressable
                     onPress={handleCurrencyPick}
                     style={[styles.currencyChip, { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
-                    <Text style={[styles.currencyText, { color: dark ? '#fff' : '#333' }]}>{currency}</Text>
+                    <Text style={[styles.currencyText, { color: dark ? '#fff' : '#333' }]}>
+                      {CURRENCY_MAP[currency]} {currency}
+                    </Text>
                   </Pressable>
                 </View>
               </View>

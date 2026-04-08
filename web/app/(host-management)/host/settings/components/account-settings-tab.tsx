@@ -11,7 +11,7 @@ const settingsRow =
 
 export default function AccountSettingsTab() {
   const router = useRouter();
-  const { user, signOut, isSigningOut } = useAuth();
+  const { user, signOut } = useAuth();
 
   const isEmailVerified = !!user?.email_confirmed_at;
 
@@ -19,8 +19,8 @@ export default function AccountSettingsTab() {
     router.push(ROUTES.forgotPassword);
   };
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    signOut();
     router.push(ROUTES.login);
   };
 
@@ -101,11 +101,10 @@ export default function AccountSettingsTab() {
             <button
               type="button"
               onClick={handleLogout}
-              disabled={isSigningOut}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-body transition-colors hover:bg-border-light focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <LogOutIcon className="size-4" aria-hidden />
-              {isSigningOut ? "Logging out…" : "Logout"}
+              Logout
             </button>
           </div>
         </div>

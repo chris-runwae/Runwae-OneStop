@@ -24,7 +24,7 @@ import Sidebar from "./_sidebar";
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { user, profile, signOut, isSigningOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const router = useRouter();
 
   const firstName = user?.user_metadata?.first_name ?? "";
@@ -37,8 +37,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const initials =
     [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "A";
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    signOut();
     router.push(ROUTES.login);
   };
 
@@ -112,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   onSelect={handleLogout}
                 >
                   <LogOutIcon className="size-4" aria-hidden />
-                  {isSigningOut ? "Logging out…" : "Logout"}
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

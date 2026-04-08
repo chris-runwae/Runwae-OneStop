@@ -1,6 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 /**
  * Redirects to `to` once the auth session is confirmed.
@@ -13,6 +14,7 @@ export function useAuthRedirect(to: string) {
 
   useEffect(() => {
     if (!isLoading && user) {
+      toast.success("Welcome back!");
       router.push(to);
     }
   }, [user, isLoading, router, to]);

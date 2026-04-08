@@ -29,7 +29,6 @@ interface AuthContextValue {
   profile: Profile | null;
   session: Session | null;
   isLoading: boolean;
-  isSigningOut: boolean;
   signUp: (
     data: SignUpData,
   ) => Promise<{ error: string | null; needsVerification: boolean }>;
@@ -77,7 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   useEffect(() => {
     const {
       data: { subscription },
@@ -244,7 +242,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         session,
         isLoading,
-        isSigningOut,
         signUp,
         signIn,
         signOut,

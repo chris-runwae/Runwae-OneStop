@@ -1,26 +1,23 @@
+import { EVENT_VISIBILITY } from "@/lib/enums";
+
 export const VISIBILITY_OPTIONS = [
-  { value: "public", label: "Public" },
-  { value: "private", label: "Private" },
-  { value: "draft", label: "Draft" },
+  { value: EVENT_VISIBILITY.PUBLIC, label: "Public" },
+  { value: EVENT_VISIBILITY.PRIVATE, label: "Private" },
 ] as const;
 
 export const EVENT_CATEGORIES = [
+  { value: "festival", label: "Festival" },
   { value: "conference", label: "Conference" },
-  { value: "workshop", label: "Workshop" },
-  { value: "meetup", label: "Meetup" },
+  { value: "concert", label: "Concert" },
+  { value: "retreat", label: "Retreat" },
+  { value: "sports", label: "Sports" },
+  { value: "cultural", label: "Cultural" },
   { value: "other", label: "Other" },
 ] as const;
 
 export const BOOKINGS_OPTIONS = [
   { value: "enable", label: "Enable bookings" },
   { value: "disable", label: "Disable bookings" },
-] as const;
-
-export const EVENT_THEMES = [
-  { id: "1", name: "Theme 1" },
-  { id: "2", name: "Theme 2" },
-  { id: "3", name: "Theme 3" },
-  { id: "4", name: "Theme 4" },
 ] as const;
 
 export const EVENT_LINK_BASE = "runwae.io/events";

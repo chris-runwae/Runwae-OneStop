@@ -22,7 +22,6 @@ interface FormSelectProps {
   placeholder: string;
   triggerClassName?: string;
   contentAlign?: "start" | "end";
-  minWidth?: string;
 }
 
 export function FormSelect({
@@ -32,7 +31,6 @@ export function FormSelect({
   placeholder,
   triggerClassName,
   contentAlign = "start",
-  minWidth = "min-w-[200px]",
 }: FormSelectProps) {
   const displayLabel =
     options.find((o) => o.value === value)?.label ?? placeholder;
@@ -42,7 +40,7 @@ export function FormSelect({
         <button
           type="button"
           className={cn(
-            "flex w-full items-center justify-between rounded-lg border border-border bg-surface px-3 py-3 text-left text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+            "flex h-11 w-full items-center justify-between rounded-lg border border-input bg-surface px-3 text-left text-sm text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50",
             value && "text-foreground",
             triggerClassName,
           )}
@@ -51,7 +49,10 @@ export function FormSelect({
           <ChevronDown className="size-4 shrink-0" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={contentAlign} className={minWidth}>
+      <DropdownMenuContent
+        align={contentAlign}
+        style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
+      >
         {options.map((opt) => (
           <DropdownMenuItem
             key={opt.value}

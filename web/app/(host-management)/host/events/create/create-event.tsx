@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { InputField } from "@/components/ui/input-field";
 import { cn } from "@/lib/utils";
 import { Formik } from "formik";
@@ -27,10 +26,11 @@ import {
   BOOKINGS_OPTIONS,
   EVENT_CATEGORIES,
   EVENT_LINK_BASE,
-  EVENT_THEMES,
   eventSlugFromName,
   VISIBILITY_OPTIONS,
 } from "./create-event.constants";
+import Image from "next/image";
+import { EVENT_VISIBILITY } from "@/lib/enums";
 
 export interface CreateEventFormValues {
   eventName: string;
@@ -41,8 +41,8 @@ export interface CreateEventFormValues {
   category: string;
   ticketLink: string;
   bookings: string;
-  visibility: string;
-  themeId: string;
+  visibility: EVENT_VISIBILITY;
+  bannerImage: File | null;
 }
 
 const initialValues: CreateEventFormValues = {
@@ -54,8 +54,8 @@ const initialValues: CreateEventFormValues = {
   category: "",
   ticketLink: "",
   bookings: "",
-  visibility: "public",
-  themeId: EVENT_THEMES[0].id,
+  visibility: EVENT_VISIBILITY.PUBLIC,
+  bannerImage: null,
 };
 
 function handleCreateEvent(values: CreateEventFormValues) {
@@ -106,7 +106,7 @@ export default function CreateEvent() {
                     />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[140px]">
+                <DropdownMenuContent align="end" className="min-w-35">
                   {VISIBILITY_OPTIONS.map((opt) => (
                     <DropdownMenuItem
                       key={opt.value}
@@ -131,33 +131,64 @@ export default function CreateEvent() {
             </div>
 
             {/* Banner + Form grid */}
-            <div className="grid gap-8 lg:grid-cols-[1fr_400px] xl:grid-cols-[1.2fr_420px]">
+            <div className="grid gap-8 lg:grid-cols-2">
               {/* Event Banner */}
-              <div className="relative flex min-h-[200px] items-center justify-center rounded-xl border border-border bg-muted/50 sm:min-h-[280px]">
-                <button
-                  type="button"
-                  className="flex size-14 items-center justify-center gap-1 rounded-full bg-primary text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
-                  aria-label="Upload event banner"
-                >
-                  <Camera className="size-6" aria-hidden />
-                  <Plus className="size-5" aria-hidden strokeWidth={2.5} />
-                </button>
+              {/* this is meant to upload an image */}
+              <div className="relative flex h-100 min-h-50 items-center justify-center rounded-xl border border-border bg-white sm:min-h-70 overflow-hidden">
+                {values.bannerImage && (
+                  <Image
+                    src={URL.createObjectURL(values.bannerImage)}
+                    alt="Event banner"
+                    fill
+                    className="object-cover"
+                  />
+                )}
+                <div className="absolute bottom-14 right-14">
+                  <label
+                    className="relative flex size-14 cursor-pointer items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
+                    aria-label="Upload event banner"
+                  >
+                    <span className="absolute">
+                      <Camera className="size-9" aria-hidden />
+                      <Plus
+                        className="size-4 absolute bottom-0 right-0 bg-white text-primary rounded-full"
+                        aria-hidden
+                        strokeWidth={2.5}
+                      />
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setFieldValue("bannerImage", file);
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
 
               {/* Form column */}
               <div className="flex flex-col gap-6">
-                <Input
+                <textarea
                   name="eventName"
                   placeholder="Event Name"
                   value={values.eventName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className="h-12 rounded-lg bg-surface text-lg font-medium placeholder:text-muted-foreground"
+                  rows={1}
+                  onInput={(e) => {
+                    const el = e.currentTarget;
+                    el.style.height = "auto";
+                    el.style.height = `${el.scrollHeight}px`;
+                  }}
+                  className="font-bricolage w-full resize-none overflow-hidden bg-transparent text-5xl font-bold leading-tight text-black placeholder:text-muted-foreground/40 outline-none border-none focus:ring-0"
                 />
 
                 {/* Event Details */}
                 <div className="flex flex-col gap-4">
-                  <h3 className="font-display text-base font-semibold text-black">
+                  <h3 className="font-display text-base font-medium text-black">
                     Event Details
                   </h3>
                   <div className="flex flex-col gap-4 sm:flex-row sm:gap-4">
@@ -204,7 +235,7 @@ export default function CreateEvent() {
 
                 {/* Event Category */}
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-display text-base font-semibold text-black">
+                  <h3 className="font-display text-base font-medium text-black">
                     Event Category
                   </h3>
                   <FormSelect
@@ -217,7 +248,7 @@ export default function CreateEvent() {
 
                 {/* Ticketing (optional) */}
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-display text-base font-semibold text-black">
+                  <h3 className="font-display text-base font-medium text-black">
                     Ticketing{" "}
                     <span className="font-normal text-muted-foreground">
                       (optional)
@@ -268,7 +299,7 @@ export default function CreateEvent() {
                 disabled={isSubmitting}
                 className={cn(
                   buttonVariants({ variant: "primary", size: "lg" }),
-                  "min-w-[180px]",
+                  "min-w-45",
                 )}
               >
                 Create Event

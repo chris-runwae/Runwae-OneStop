@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatDate } from "@/lib/date";
 
 type ViewMode = "column" | "grid";
 
@@ -148,24 +149,21 @@ export default function EventsPage() {
           <table className="w-full min-w-150">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Event Name
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Location
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Bookings
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-body">
-                  Earnings
-                </th>
+                {[
+                  "Event Name",
+                  "Date",
+                  "Location",
+                  "Status",
+                  "Bookings",
+                  "Earnings",
+                ].map((header) => (
+                  <th
+                    key={header}
+                    className="px-6 py-4 text-left text-sm font-medium text-body"
+                  >
+                    {header}
+                  </th>
+                ))}
                 <th className="px-6 py-4 text-right text-sm font-medium text-body">
                   Actions
                 </th>

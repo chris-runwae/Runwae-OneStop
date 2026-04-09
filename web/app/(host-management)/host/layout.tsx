@@ -18,14 +18,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./_sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isLoading } = useAuth();
   const router = useRouter();
+
+  // Single auth guard for all /host/* pages
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push(ROUTES.login);
+    }
+  }, [user, isLoading, router]);
 
   const firstName = user?.user_metadata?.first_name ?? "";
   const lastName = user?.user_metadata?.last_name ?? "";
@@ -58,7 +65,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
           <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
             <h1 className="min-w-0 truncate font-display text-lg font-bold text-black sm:text-xl">
-              Welcome {firstName || "back"} 👋
+              Welcome, {firstName || "back"} 👋
             </h1>
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>

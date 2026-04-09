@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog } from "@/components/ui/dialog";
+import { SimpleModal } from "@/components/ui/simple-modal";
 import type { EventModalType, EventModalsProps } from "./types";
 import { AddHostModal } from "./AddHostModal";
 import { AddSubEventModal } from "./AddSubEventModal";
@@ -51,14 +51,14 @@ export function EventModals(props: EventModalsProps) {
   const description = config.description;
 
   return (
-    <Dialog
+    <SimpleModal
       open
       onOpenChange={(v) => !v && onClose()}
       title={title}
       description={description}
     >
       <EventModalContent modal={modal} {...props} onClose={onClose} />
-    </Dialog>
+    </SimpleModal>
   );
 }
 
@@ -97,10 +97,7 @@ function EventModalContent({
       );
     case "add-sub-event":
       return (
-        <AddSubEventModal
-          onNext={p.onAddSubEventNext}
-          onClose={onClose}
-        />
+        <AddSubEventModal onNext={p.onAddSubEventNext} onClose={onClose} />
       );
     case "invite-1":
       return (

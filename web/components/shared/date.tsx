@@ -92,7 +92,8 @@ export const TimeSelector = <T extends FieldValues>({
             onClick={() => inputRef?.current?.showPicker()}
             className={cn(
               "h-11 w-full rounded-lg border border-input bg-surface pl-10 pr-3 text-sm text-body focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer",
-              disabled && "cursor-not-allowed opacity-0",
+              !field.value && "opacity-0",
+              disabled && "cursor-not-allowed",
             )}
           />
         </div>

@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/form";
 import { GoogleMapsInput } from "@/components/shared/google-maps-input";
 import { InputField } from "@/components/ui/input-field";
+import { useAuth } from "@/context/AuthContext";
+import { createEvent } from "@/lib/supabase/events";
+import { ROUTES } from "@/app/routes";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -31,12 +34,16 @@ import {
   Ticket,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { FormSelect } from "./create-event.components";
 import { EVENT_CATEGORIES, VISIBILITY_OPTIONS } from "./create-event.constants";
 import { EVENT_VISIBILITY } from "@/lib/enums";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { TimeSelector, DateSelector } from "@/components/shared/date";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -61,15 +68,11 @@ const createEventSchema = z.object({
 
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
 
-function handleCreateEvent(values: CreateEventFormValues) {
-  // TODO: wire to API
-  console.log("Create event", values);
-}
-
 export default function CreateEvent() {
+  const { user } = useAuth();
+  const router = useRouter();
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
-    mode: "onTouched",
     defaultValues: {
       eventName: "",
       startDate: "",
@@ -85,9 +88,15 @@ export default function CreateEvent() {
       visibility: EVENT_VISIBILITY.PUBLIC,
       bannerImage: null,
     },
+    mode: "onChange",
   });
+  // const queryClient = useQueryClient();
 
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [coords, setCoords] = useState<{
+    lat: number | null;
+    lng: number | null;
+  }>({ lat: null, lng: null });
   const startDateRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
@@ -99,25 +108,50 @@ export default function CreateEvent() {
     VISIBILITY_OPTIONS.find((o) => o.value === form.watch("visibility"))
       ?.label ?? "Public";
 
-  const dateInputClass = (hasError?: boolean) =>
-    cn(
-      "h-11 w-full rounded-lg border bg-surface pl-10 pr-3 text-sm text-body focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer",
-      hasError
-        ? "border-destructive focus:ring-destructive/50"
-        : "border-input",
-    );
+  const [isPending, setIsPending] = useState(false);
 
-  const timeInputClass = (hasValue: boolean, disabled?: boolean) =>
-    cn(
-      "h-11 w-full rounded-lg border border-input bg-surface pl-10 pr-3 text-sm text-body focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer",
-      !hasValue && "opacity-0",
-      disabled && "cursor-not-allowed",
-    );
+  const onSubmit = async (values: CreateEventFormValues) => {
+    if (!user) {
+      toast.error("You must be logged in to create an event.");
+      return;
+    }
+
+    console.log(values);
+
+    try {
+      setIsPending(true);
+      await createEvent({
+        user_id: user.id,
+        name: values.eventName,
+        start_date: values.startDate,
+        start_time: values.startTime,
+        end_date: values.endDate,
+        end_time: values.endTime,
+        location: values.location,
+        description: values.description,
+        category: values.category,
+        ticket_link: values.ticketLink ?? null,
+        bookings: values.bookings,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        image:
+          "https://gratisography.com/wp-content/uploads/2025/05/gratisography-moon-robot-800x525.jpg",
+        status: "PUBLISHED",
+      });
+      toast.success("Event created!");
+      router.push(ROUTES.host.earnings);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create event. Please try again.");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleCreateEvent)}
+        onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-8 p-6 sm:p-8 lg:p-10"
       >
         {/* Top bar */}
@@ -239,168 +273,35 @@ export default function CreateEvent() {
 
               {/* Start Date + Start Time */}
               <div className="flex gap-3">
-                <FormField
+                <DateSelector
                   control={form.control}
                   name="startDate"
-                  render={({ field, fieldState }) => (
-                    <FormItem className="min-w-0 flex-1">
-                      <label
-                        className="relative block cursor-pointer"
-                        onClick={() => startDateRef.current?.showPicker()}
-                      >
-                        <Calendar
-                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                          aria-hidden
-                        />
-                        <FormControl>
-                          <input
-                            type="date"
-                            {...field}
-                            ref={(el) => {
-                              field.ref(el);
-                              (
-                                startDateRef as React.MutableRefObject<HTMLInputElement | null>
-                              ).current = el;
-                            }}
-                            min={today}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              const endDate = form.getValues("endDate");
-                              if (endDate && e.target.value > endDate) {
-                                form.setValue("endDate", "");
-                              }
-                            }}
-                            className={dateInputClass(!!fieldState.error)}
-                          />
-                        </FormControl>
-                      </label>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  inputRef={startDateRef}
+                  min={today}
                 />
 
-                <FormField
+                <TimeSelector
                   control={form.control}
                   name="startTime"
-                  render={({ field }) => (
-                    <FormItem className="min-w-0 flex-1 gap-0">
-                      <div
-                        className={cn(
-                          "relative h-11 rounded-lg border border-input bg-surface",
-                          !startDate && "cursor-not-allowed opacity-50",
-                        )}
-                      >
-                        <Clock
-                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                          aria-hidden
-                        />
-                        {!field.value && (
-                          <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            00:00
-                          </span>
-                        )}
-                        <FormControl>
-                          <input
-                            type="time"
-                            {...field}
-                            ref={(el) => {
-                              field.ref(el);
-                              startTimeRef.current = el;
-                            }}
-                            disabled={!startDate}
-                            onClick={() => startTimeRef.current?.showPicker()}
-                            className={timeInputClass(
-                              !!field.value,
-                              !startDate,
-                            )}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  inputRef={startTimeRef}
+                  disabled={!form.watch("startDate")}
                 />
               </div>
 
               {/* End Date + End Time */}
               <div className="flex gap-3">
-                <FormField
+                <DateSelector
                   control={form.control}
                   name="endDate"
-                  render={({ field }) => (
-                    <FormItem className="min-w-0 flex-1">
-                      <label
-                        className="relative block cursor-pointer"
-                        onClick={() => endDateRef.current?.showPicker()}
-                      >
-                        <Calendar
-                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                          aria-hidden
-                        />
-                        <FormControl>
-                          <input
-                            type="date"
-                            {...field}
-                            ref={(el) => {
-                              field.ref(el);
-                              (
-                                endDateRef as React.MutableRefObject<HTMLInputElement | null>
-                              ).current = el;
-                            }}
-                            min={startDate || today}
-                            disabled={!startDate}
-                            className={cn(
-                              dateInputClass(),
-                              "disabled:cursor-not-allowed disabled:opacity-50",
-                            )}
-                          />
-                        </FormControl>
-                      </label>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  inputRef={endDateRef}
+                  min={form.watch("startDate") || today}
                 />
 
-                <FormField
+                <TimeSelector
                   control={form.control}
                   name="endTime"
-                  render={({ field }) => (
-                    <FormItem className="min-w-0 flex-1">
-                      <div
-                        className={cn(
-                          "relative h-11 rounded-lg border border-input bg-surface",
-                          !startDate && "cursor-not-allowed opacity-50",
-                        )}
-                      >
-                        <Clock
-                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                          aria-hidden
-                        />
-                        {!field.value && (
-                          <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                            00:00
-                          </span>
-                        )}
-                        <FormControl>
-                          <input
-                            type="time"
-                            {...field}
-                            ref={(el) => {
-                              field.ref(el);
-                              endTimeRef.current = el;
-                            }}
-                            disabled={!startDate}
-                            onClick={() => endTimeRef.current?.showPicker()}
-                            className={timeInputClass(
-                              !!field.value,
-                              !startDate,
-                            )}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  inputRef={endTimeRef}
+                  disabled={!form.watch("endDate")}
                 />
               </div>
 
@@ -413,10 +314,14 @@ export default function CreateEvent() {
                     <GoogleMapsInput
                       value={field.value}
                       placeholder="Event Location"
-                      onLocationChange={({ address }) =>
-                        field.onChange(address)
-                      }
-                      onClear={() => field.onChange("")}
+                      onLocationChange={({ address, lat, lng }) => {
+                        field.onChange(address);
+                        setCoords({ lat, lng });
+                      }}
+                      onClear={() => {
+                        field.onChange("");
+                        setCoords({ lat: null, lng: null });
+                      }}
                       onBlur={field.onBlur}
                     />
                     <FormMessage />
@@ -575,7 +480,7 @@ export default function CreateEvent() {
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={form.formState.isSubmitting}
+            // disabled={isPending}
             className={cn(
               buttonVariants({ variant: "primary", size: "lg" }),
               "min-w-45",

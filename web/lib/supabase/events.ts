@@ -1,119 +1,93 @@
 import { supabase } from "./client";
 
-export interface EventData {
-  user_id: string;
-  name: string;
-  start_date: string;
-  location?: string;
-  description?: string;
-  cover_image_url?: string;
-  category?: string;
-  ticket_link?: string;
-  event_link?: string;
-}
-
-export interface Event {
+export type Event = {
   id: string;
   name: string;
-  start_date: string;
+  start_date: string | null;
+  start_time: string | null;
+  end_date: string | null;
+  end_time: string | null;
   location: string | null;
-  cover_image_url: string | null;
+  image: string | null;
   status: string | null;
   description: string | null;
   category: string | null;
-}
+  slug: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  bookings: boolean | null;
+};
 
-export const getEvents = async (
-  userId: string,
-  filter?: string,
-): Promise<Event[]> => {
-  const now = new Date().toISOString();
+export type CreateEventData = {
+  user_id: string;
+  name: string;
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  location: string;
+  description: string;
+  category: string;
+  image: string | null;
+  ticket_link?: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  bookings: boolean;
+  status?: string;
+};
 
-  let query = supabase
+export const getEvents = async (userId: string): Promise<Event[]> => {
+  const { data, error } = await supabase
     .from("events")
     .select(
-      "id, name, start_date, location, cover_image_url, status, description, category",
+      "id, name, start_date, start_time, end_date, end_time, location, image, status, description, category, slug, latitude, longitude, bookings",
     )
     .eq("user_id", userId)
     .order("start_date", { ascending: true });
 
-  if (filter === "Published") query = query.eq("status", "published");
-  if (filter === "Upcoming") query = query.gt("start_date", now);
-
-  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data ?? [];
 };
 
-export const createEvent = async (event: EventData) => {
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .insert([
-        {
-          user_id: event.user_id,
-          name: event.name,
-          start_date: event.start_date,
-          location: event.location,
-          description: event.description || "",
-          cover_image_url: event.cover_image_url,
-          category: event.category,
-          ticket_link: event.ticket_link,
-          event_link: event.event_link,
-          status: "draft",
-        },
-      ])
-      .select()
-      .single();
+export const createEvent = async (event: CreateEventData): Promise<Event> => {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+  console.log("session:", session);
+  console.log("session error:", sessionError);
+  console.log("user id:", session?.user?.id);
+  console.log("event user_id being sent:", event.user_id);
 
-    if (error) {
-      console.error("Error creating event:", error);
-      return { success: false, error: error.message };
-    }
+  const { data, error } = await supabase
+    .from("events")
+    .insert({ ...event, status: event.status ?? "draft" })
+    .select()
+    .single();
 
-    return { success: true, data };
-  } catch (error) {
-    console.error("Unexpected error creating event:", error);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  console.log("data:", data);
+  console.log("error:", error);
+
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const updateEvent = async (
   id: string,
-  updates: Partial<EventData & { status: string }>,
-) => {
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
+  updates: Partial<CreateEventData>,
+): Promise<Event> => {
+  const { data, error } = await supabase
+    .from("events")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
 
-    if (error) {
-      console.error("Error updating event:", error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error("Unexpected error updating event:", error);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  if (error) throw new Error(error.message);
+  return data;
 };
 
-export const deleteEvent = async (id: string) => {
-  try {
-    const { error } = await supabase.from("events").delete().eq("id", id);
-
-    if (error) {
-      console.error("Error deleting event:", error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Unexpected error deleting event:", error);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+export const deleteEvent = async (id: string): Promise<void> => {
+  const { error } = await supabase.from("events").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 };

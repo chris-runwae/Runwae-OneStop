@@ -37,20 +37,25 @@ export default function EventsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("column");
   const [activeFilter, setActiveFilter] = useState<EventFilter>("All Events");
   const [search, setSearch] = useState("");
-  const {
-    data: events = [],
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: events = [], isLoading } = useQuery({
     queryKey: ["events", user?.id],
     queryFn: () => getEvents(user!.id),
     enabled: !!user,
   });
 
-  // search is still client-side since it's instant UX
-  const filteredEvents = search
-    ? events.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
-    : events;
+  console.log("user", user);
+
+  const now = new Date();
+  const filteredEvents = events
+    .filter((e) => {
+      if (activeFilter === "Published") return e.status === "published";
+      if (activeFilter === "Upcoming")
+        return e.start_date ? new Date(e.start_date) > now : false;
+      return true;
+    })
+    .filter((e) =>
+      search ? e.name.toLowerCase().includes(search.toLowerCase()) : true,
+    );
 
   return (
     <div className="flex flex-col gap-6 p-6 sm:p-8 lg:p-10">
@@ -171,7 +176,9 @@ export default function EventsPage() {
             </thead>
             <tbody>
               {filteredEvents.map((event) => {
-                const { date } = formatDate(event.start_date);
+                const { date } = event.start_date
+                  ? formatDate(event.start_date)
+                  : { date: "—" };
                 const status = event.status ?? "draft";
                 return (
                   <tr
@@ -223,9 +230,10 @@ export default function EventsPage() {
         <div className="flex gap-8">
           <div className="hidden w-22.5 shrink-0 flex-col pt-1 lg:flex">
             {filteredEvents.length > 0 &&
+              filteredEvents[0].start_date &&
               (() => {
                 const { monthLabel, dayNum, dayOfWeek } = formatDate(
-                  filteredEvents[0].start_date,
+                  filteredEvents[0].start_date!,
                 );
                 const suffix = ["1", "21", "31"].includes(dayNum)
                   ? "st"
@@ -245,7 +253,7 @@ export default function EventsPage() {
                       {dayNum}
                       {suffix}{" "}
                       {new Date(
-                        filteredEvents[0].start_date,
+                        filteredEvents[0].start_date!,
                       ).toLocaleDateString("en-US", { month: "long" })}
                     </span>
                     <span className="text-sm text-muted-foreground">
@@ -258,7 +266,9 @@ export default function EventsPage() {
 
           <div className="min-w-0 flex-1 space-y-6">
             {filteredEvents.map((event) => {
-              const { time } = formatDate(event.start_date);
+              const { time } = event.start_date
+                ? formatDate(event.start_date)
+                : { time: "—" };
               const status = event.status ?? "draft";
               return (
                 <div
@@ -344,10 +354,10 @@ export default function EventsPage() {
                       </button>
                     </div>
                   </div>
-                  {event.cover_image_url && (
+                  {event.image && (
                     <div className="relative h-48 w-full shrink-0 bg-muted sm:h-40 sm:w-48">
                       <Image
-                        src={event.cover_image_url}
+                        src={event.image}
                         alt={event.name}
                         fill
                         className="object-cover"

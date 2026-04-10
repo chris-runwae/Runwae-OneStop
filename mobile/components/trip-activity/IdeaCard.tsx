@@ -16,7 +16,7 @@ import {
 
 interface IdeaCardProps {
   imageUri: string;
-  item: SavedItineraryItem;
+  item?: SavedItineraryItem | null | undefined;
   categoryLabel: string;
   title: string;
   description: string;
@@ -44,12 +44,12 @@ export default function IdeaCard({
   const moreBtnRef = useRef<View>(null);
 
   const handleNavigateToDetails = () => {
-    if (item.type === 'hotel') {
+    if (item?.type === 'hotel') {
       router.push({
-        pathname: '/hotel/[hotelId]',
+        pathname: '/hotels/[hotelId]',
         params: {
           hotelId: item.external_id as string,
-          // hotelData: item.all_data,
+          hotelData: JSON.stringify(item.all_data),
         },
       } as any);
     }

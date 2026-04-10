@@ -72,14 +72,15 @@ function RouteGuard() {
   ]);
 
   const AUTHORIZED_ROOT_ROUTES = new Set([
-    "(tabs)",
-    "notifications",
-    "modal",
-    "itinerary",
-    "experience",
-    "create-trip",
-    "events",
-    "search",
+    '(tabs)',
+    'notifications',
+    'modal',
+    'itinerary',
+    'experience',
+    'create-trip',
+    'events',
+    'search',
+    'hotels',
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -110,6 +111,7 @@ function RouteGuard() {
     'events',
     'search',
     'hotel',
+    'hotels',
   ].includes(currentSegment as any);
 
   // Redirection Logic
@@ -142,6 +144,7 @@ function RouteGuard() {
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />
+      <Stack.Screen name="hotels" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen

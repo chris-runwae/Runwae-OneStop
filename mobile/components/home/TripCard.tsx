@@ -28,8 +28,6 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
 
-  console.log(trip);
-
   const [itemsCount, setItemsCount] = useState<number | null>(null);
 
   useEffect(() => {

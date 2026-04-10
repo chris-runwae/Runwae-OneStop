@@ -2,7 +2,7 @@ import { useTrips } from '@/context/TripsContext';
 import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
 import { Loader2, Search, SlidersHorizontal } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -23,13 +23,25 @@ import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import IdeaCard from './IdeaCard';
+import HotelsSection from '../trips/HotelsSection';
+import { TripWithEverything } from '@/hooks/useTripActions';
+import { ItemType } from '@/hooks/useItineraryActions';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
+  trip: TripWithEverything;
 }
 
-const SpinningLoader = ({ size, color, style }: { size: number; color: string; style?: any }) => {
+const SpinningLoader = ({
+  size,
+  color,
+  style,
+}: {
+  size: number;
+  color: string;
+  style?: any;
+}) => {
   const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -136,7 +148,7 @@ export const MOCK_IDEAS = [
   },
 ];
 
-export default function SearchIdeasSheet({ visible, onClose }: Props) {
+export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { addIdea } = useTrips();
@@ -149,10 +161,16 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
   const translateY = useRef(new Animated.Value(900)).current;
 
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-  const [filterAnchor, setFilterAnchor] = useState<{ top: number; left?: number; right?: number } | undefined>(undefined);
+  const [filterAnchor, setFilterAnchor] = useState<
+    { top: number; left?: number; right?: number } | undefined
+  >(undefined);
   const filterBtnRef = useRef<View>(null);
 
   const inputRef = useRef<TextInput>(null);
+
+  const ideaType = useMemo(() => {
+    return activeCategory === 'Stay' ? 'hotel' : 'activity';
+  }, [activeCategory]) as ItemType;
 
   useEffect(() => {
     if (visible) {
@@ -178,37 +196,61 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
 
   const filteredIdeas = React.useMemo(() => {
     let result = MOCK_IDEAS.filter((idea) => {
-      const matchesCategory = activeCategory === 'All' || idea.category === activeCategory;
-      const matchesQuery = !localQuery || 
-        idea.title.toLowerCase().includes(localQuery.toLowerCase()) || 
+      const matchesCategory =
+        activeCategory === 'All' || idea.category === activeCategory;
+      const matchesQuery =
+        !localQuery ||
+        idea.title.toLowerCase().includes(localQuery.toLowerCase()) ||
         idea.description.toLowerCase().includes(localQuery.toLowerCase()) ||
         idea.category.toLowerCase().includes(localQuery.toLowerCase());
       return matchesCategory && matchesQuery;
     });
 
     if (activeIdeaFilter === 'Must See') {
-      result = result.filter(i => (i as any).isMustSee);
+      result = result.filter((i) => (i as any).isMustSee);
     } else if (activeIdeaFilter === 'Hidden Gems') {
-      result = result.filter(i => (i as any).isHiddenGem);
+      result = result.filter((i) => (i as any).isHiddenGem);
     } else if (activeIdeaFilter === 'Free Activities') {
-      result = result.filter(i => (i as any).isFree);
+      result = result.filter((i) => (i as any).isFree);
     } else if (activeIdeaFilter === 'High Rating') {
-      result = [...result].sort((a, b) => (b as any).rating - (a as any).rating);
+      result = [...result].sort(
+        (a, b) => (b as any).rating - (a as any).rating
+      );
     } else if (activeIdeaFilter === 'Recently Added') {
-      result = [...result].sort((a, b) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime());
+      result = [...result].sort(
+        (a, b) =>
+          new Date((b as any).createdAt).getTime() -
+          new Date((a as any).createdAt).getTime()
+      );
     }
 
     return result;
   }, [activeCategory, localQuery, activeIdeaFilter]);
 
-  const handleSaveMockIdea = async (idea: (typeof MOCK_IDEAS)[0]) => {
-    await addIdea({
-      name: idea.title,
-      type: 'activity',
-      location: idea.category,
-      external_id: idea.id,
-      notes: idea.description,
-    });
+  const handleSaveIdea = async (idea: any) => {
+    let input;
+
+    if (ideaType === 'hotel') {
+      const roomTypes = idea.roomTypes.length;
+      input = {
+        name: idea.name,
+        type: ideaType,
+        location: 'Stay',
+        external_id: idea.hotelId,
+        notes: `${idea.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
+        all_data: idea,
+        cover_image: idea.thumbnail || null,
+      };
+    } else {
+      input = {
+        name: idea.title,
+        type: ideaType,
+        location: idea.category,
+        external_id: idea.id,
+        notes: idea.description,
+      };
+    }
+    await addIdea(input);
     onClose();
   };
 
@@ -224,11 +266,31 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
 
   const filterOptions: ActionOption[] = [
     { label: 'All Ideas', onPress: () => setActiveIdeaFilter(null) },
-    { label: 'Must See', onPress: () => setActiveIdeaFilter('Must See'), isBold: activeIdeaFilter === 'Must See' },
-    { label: 'Hidden Gems', onPress: () => setActiveIdeaFilter('Hidden Gems'), isBold: activeIdeaFilter === 'Hidden Gems' },
-    { label: 'Free Activities', onPress: () => setActiveIdeaFilter('Free Activities'), isBold: activeIdeaFilter === 'Free Activities' },
-    { label: 'High Rating', onPress: () => setActiveIdeaFilter('High Rating'), isBold: activeIdeaFilter === 'High Rating' },
-    { label: 'Recently Added', onPress: () => setActiveIdeaFilter('Recently Added'), isBold: activeIdeaFilter === 'Recently Added' },
+    {
+      label: 'Must See',
+      onPress: () => setActiveIdeaFilter('Must See'),
+      isBold: activeIdeaFilter === 'Must See',
+    },
+    {
+      label: 'Hidden Gems',
+      onPress: () => setActiveIdeaFilter('Hidden Gems'),
+      isBold: activeIdeaFilter === 'Hidden Gems',
+    },
+    {
+      label: 'Free Activities',
+      onPress: () => setActiveIdeaFilter('Free Activities'),
+      isBold: activeIdeaFilter === 'Free Activities',
+    },
+    {
+      label: 'High Rating',
+      onPress: () => setActiveIdeaFilter('High Rating'),
+      isBold: activeIdeaFilter === 'High Rating',
+    },
+    {
+      label: 'Recently Added',
+      onPress: () => setActiveIdeaFilter('Recently Added'),
+      isBold: activeIdeaFilter === 'Recently Added',
+    },
   ];
 
   return (
@@ -253,10 +315,26 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
               transform: [{ translateY }],
             },
           ]}>
-          <View style={[styles.handleBar, { backgroundColor: dark ? '#374151' : '#D1D5DB' }]} />
+          <View
+            style={[
+              styles.handleBar,
+              { backgroundColor: dark ? '#374151' : '#D1D5DB' },
+            ]}
+          />
 
-          <View style={[styles.searchContainer, { backgroundColor: dark ? '#1F1F1F' : '#ffffff', borderColor: dark ? '#374151' : '#EFEFEF' }]}>
-            <Search size={18} color={dark ? '#9CA3AF' : '#AEAEAE'} style={styles.searchIcon} />
+          <View
+            style={[
+              styles.searchContainer,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#ffffff',
+                borderColor: dark ? '#374151' : '#EFEFEF',
+              },
+            ]}>
+            <Search
+              size={18}
+              color={dark ? '#9CA3AF' : '#AEAEAE'}
+              style={styles.searchIcon}
+            />
             <TextInput
               ref={inputRef}
               value={localQuery}
@@ -271,8 +349,14 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
             {loading ? (
               <SpinningLoader size={18} color="#FF1F8C" style={styles.loader} />
             ) : (
-              <TouchableOpacity ref={filterBtnRef} onPress={handleFilterPress} hitSlop={10}>
-                <SlidersHorizontal size={18} color={dark ? '#9CA3AF' : '#AEAEAE'} />
+              <TouchableOpacity
+                ref={filterBtnRef}
+                onPress={handleFilterPress}
+                hitSlop={10}>
+                <SlidersHorizontal
+                  size={18}
+                  color={dark ? '#9CA3AF' : '#AEAEAE'}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -290,12 +374,29 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
                     onPress={() => setActiveCategory(cat.id)}
                     style={[
                       styles.categoryPill,
-                      { backgroundColor: isActive ? '#FF2E92' : (dark ? '#1F1F1F' : '#fff'), borderColor: isActive ? '#FF2E92' : (dark ? '#374151' : '#EFEFEF') },
+                      {
+                        backgroundColor: isActive
+                          ? '#FF2E92'
+                          : dark
+                            ? '#1F1F1F'
+                            : '#fff',
+                        borderColor: isActive
+                          ? '#FF2E92'
+                          : dark
+                            ? '#374151'
+                            : '#EFEFEF',
+                      },
                     ]}>
                     <Text
                       style={[
                         styles.categoryPillText,
-                        { color: isActive ? '#ffffff' : (dark ? '#ADB5BD' : '#6B7280') },
+                        {
+                          color: isActive
+                            ? '#ffffff'
+                            : dark
+                              ? '#ADB5BD'
+                              : '#6B7280',
+                        },
                       ]}>
                       {cat.label}
                     </Text>
@@ -305,32 +406,46 @@ export default function SearchIdeasSheet({ visible, onClose }: Props) {
             </ScrollView>
           </View>
 
-          <FlatList
-            data={filteredIdeas}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.ideaGridRow}
-            contentContainerStyle={styles.ideaGridContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={() => (
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyStateTitle, { color: colors.textColors.default }]}>No ideas found</Text>
-                <Text style={[styles.emptyStateSub, { color: colors.textColors.subtle }]}>
-                  Try searching for something else or changing the category.
-                </Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <IdeaCard
-                imageUri={item.imageUri}
-                categoryLabel={item.categoryLabel}
-                title={item.title}
-                description={item.description}
-                onAdd={() => handleSaveMockIdea(item)}
-              />
-            )}
-          />
+          {activeCategory === 'Stay' ? (
+            <HotelsSection trip={trip} onAdd={handleSaveIdea} />
+          ) : (
+            <FlatList
+              data={filteredIdeas}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.ideaGridRow}
+              contentContainerStyle={styles.ideaGridContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={() => (
+                <View style={styles.emptyState}>
+                  <Text
+                    style={[
+                      styles.emptyStateTitle,
+                      { color: colors.textColors.default },
+                    ]}>
+                    No ideas found
+                  </Text>
+                  <Text
+                    style={[
+                      styles.emptyStateSub,
+                      { color: colors.textColors.subtle },
+                    ]}>
+                    Try searching for something else or changing the category.
+                  </Text>
+                </View>
+              )}
+              renderItem={({ item }) => (
+                <IdeaCard
+                  imageUri={item.imageUri}
+                  categoryLabel={item.categoryLabel}
+                  title={item.title}
+                  description={item.description}
+                  onAdd={() => handleSaveIdea(item)}
+                />
+              )}
+            />
+          )}
 
           <ActionMenu
             visible={filterMenuVisible}
@@ -400,8 +515,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     borderWidth: 1,
   },
-  categoryPillActive: {
-  },
+  categoryPillActive: {},
   categoryPillText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.medium,

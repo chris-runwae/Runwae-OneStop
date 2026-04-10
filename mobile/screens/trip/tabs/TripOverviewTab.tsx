@@ -16,7 +16,10 @@ import { router } from 'expo-router';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
 import IdeaCard from '@/components/trip-activity/IdeaCard';
-import SearchIdeasSheet, { MOCK_CATEGORIES, MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
+import SearchIdeasSheet, {
+  MOCK_CATEGORIES,
+  MOCK_IDEAS,
+} from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
 import { SavedItineraryItem } from '@/hooks/useIdeaActions';
@@ -46,11 +49,15 @@ export default function TripOverviewTab({ trip }: Props) {
   const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
     null
   );
-  const [menuAnchor, setMenuAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
-  
+  const [menuAnchor, setMenuAnchor] = useState<
+    { top: number; right?: number; left?: number } | undefined
+  >(undefined);
+
   const [activeFilter, setActiveFilter] = useState('All');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-  const [filterAnchor, setFilterAnchor] = useState<{ top: number; right?: number; left?: number } | undefined>(undefined);
+  const [filterAnchor, setFilterAnchor] = useState<
+    { top: number; right?: number; left?: number } | undefined
+  >(undefined);
   const filterBtnRef = useRef<View>(null);
 
   const [showAddToItinerarySheet, setShowAddToItinerarySheet] = useState(false);
@@ -116,9 +123,10 @@ export default function TripOverviewTab({ trip }: Props) {
     },
   }));
 
-  const filteredIdeas = activeFilter === 'All' 
-    ? ideas 
-    : ideas.filter(idea => idea.location === activeFilter);
+  const filteredIdeas =
+    activeFilter === 'All'
+      ? ideas
+      : ideas.filter((idea) => idea.location === activeFilter);
 
   if (ideas.length === 0 && !ideasLoading) {
     return (
@@ -136,7 +144,8 @@ export default function TripOverviewTab({ trip }: Props) {
             ]}>
             Start Planning Your Dream Trip
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
+          <Text
+            style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
             Looking for what to do? Add them to Ideas now.
           </Text>
 
@@ -152,6 +161,7 @@ export default function TripOverviewTab({ trip }: Props) {
         <SearchIdeasSheet
           visible={searchVisible}
           onClose={() => setSearchVisible(false)}
+          trip={trip}
         />
       </View>
     );
@@ -160,12 +170,19 @@ export default function TripOverviewTab({ trip }: Props) {
   return (
     <View style={[styles.container]}>
       <View style={styles.listHeader}>
-        <TouchableOpacity 
+        <TouchableOpacity
           ref={filterBtnRef}
           onPress={() => {
             if (filterBtnRef.current) {
               filterBtnRef.current.measure(
-                (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                (
+                  x: number,
+                  y: number,
+                  width: number,
+                  height: number,
+                  pageX: number,
+                  pageY: number
+                ) => {
                   setFilterAnchor({
                     top: pageY + height + 8, // Place right below the button
                     left: pageX, // align perfectly with the left edge of the button
@@ -178,14 +195,33 @@ export default function TripOverviewTab({ trip }: Props) {
             }
           }}
           style={styles.filterBtn}>
-          <Text style={[styles.filterText, { color: colors.textColors.subtle }]}>{activeFilter === 'All' ? 'All' : (MOCK_CATEGORIES.find(c => c.id === activeFilter)?.label || 'All')}</Text>
-          <ChevronDown size={14} color={dark ? '#9CA3AF' : '#6B7280'} style={{ marginLeft: 4 }} />
+          <Text
+            style={[styles.filterText, { color: colors.textColors.subtle }]}>
+            {activeFilter === 'All'
+              ? 'All'
+              : MOCK_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
+                'All'}
+          </Text>
+          <ChevronDown
+            size={14}
+            color={dark ? '#9CA3AF' : '#6B7280'}
+            style={{ marginLeft: 4 }}
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setSearchVisible(true)}
-          style={[styles.addPillBtn, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#EFEFEF' }]}>
-          <Text style={[styles.addPillText, { color: colors.textColors.default }]}>+ Add</Text>
+          style={[
+            styles.addPillBtn,
+            {
+              backgroundColor: dark ? '#1F1F1F' : '#fff',
+              borderColor: dark ? '#374151' : '#EFEFEF',
+            },
+          ]}>
+          <Text
+            style={[styles.addPillText, { color: colors.textColors.default }]}>
+            + Add
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -194,14 +230,18 @@ export default function TripOverviewTab({ trip }: Props) {
           <IdeaCard
             key={item.id}
             imageUri={
-              item.image_url ||
+              item.cover_image ||
               MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
               'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
             }
             categoryLabel={getCategoryWithEmoji(item.location)}
             title={item.name}
             description={item.notes || ''}
-            onOptionsPress={(position: { top: number; right?: number; left?: number }) => {
+            onOptionsPress={(position: {
+              top: number;
+              right?: number;
+              left?: number;
+            }) => {
               setSelectedIdea(item);
               setMenuAnchor(position);
               setMenuVisible(true);
@@ -213,6 +253,7 @@ export default function TripOverviewTab({ trip }: Props) {
       <SearchIdeasSheet
         visible={searchVisible}
         onClose={() => setSearchVisible(false)}
+        trip={trip}
       />
 
       <AddToItinerarySheet
@@ -220,7 +261,11 @@ export default function TripOverviewTab({ trip }: Props) {
         onClose={() => setShowAddToItinerarySheet(false)}
         idea={selectedIdea}
         days={days}
-        onSubmit={async (dayId: string, startTime?: string | null, endTime?: string | null) => {
+        onSubmit={async (
+          dayId: string,
+          startTime?: string | null,
+          endTime?: string | null
+        ) => {
           if (!selectedIdea) return;
           await addItem(dayId, {
             title: selectedIdea.name,

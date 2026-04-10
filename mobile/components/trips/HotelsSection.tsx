@@ -17,6 +17,7 @@ import { LiteAPIHotelRateItem } from '@/types/liteapi.types';
 
 interface Props {
   trip: TripWithEverything;
+  onAdd: (idea: any) => void;
 }
 
 // Default check-in/out if trip has no dates: today + 1 / today + 2
@@ -30,7 +31,7 @@ function defaultDates() {
   return { checkin: fmt(checkin), checkout: fmt(checkout) };
 }
 
-export default function HotelsSection({ trip }: Props) {
+export default function HotelsSection({ trip, onAdd }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
@@ -135,7 +136,7 @@ export default function HotelsSection({ trip }: Props) {
   if (hotels.length === 0) return null;
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Text style={styles.sectionTitle}>{sectionTitle}</Text>
       <Spacer size={12} vertical />
       <FlashList
@@ -153,7 +154,7 @@ export default function HotelsSection({ trip }: Props) {
             imageUri={item.thumbnail}
             title={item.name}
             description={item.address}
-            onAdd={() => {}}
+            onAdd={() => onAdd(item)}
             onViewDetails={() => {}}
             onOptionsPress={() => {}}
             style={{
@@ -173,15 +174,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   hint: {
-    ...textStyles.regular_14,
+    ...textStyles.textBody12,
     fontSize: 13,
   },
   sectionTitle: {
-    ...textStyles.bold_20,
-    fontSize: 17,
+    ...textStyles.textHeading16,
   },
   cityLabel: {
-    ...textStyles.regular_14,
+    ...textStyles.textBody12,
     fontSize: 13,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -193,7 +193,6 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   horizontalCard: {
-    // width: 260,
     marginRight: 12,
   },
 });

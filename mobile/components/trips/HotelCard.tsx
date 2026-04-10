@@ -1,217 +1,248 @@
-import { ImageBackground } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { Star, Wifi, Utensils, Waves } from "lucide-react-native";
-import React from "react";
+import { Text } from '@/components';
+import { AppFonts, Colors } from '@/constants';
+import { useTheme } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import { MoreHorizontal, Plus } from 'lucide-react-native';
+import React, { useRef } from 'react';
 import {
-  Pressable,
+  Dimensions,
+  StyleProp,
   StyleSheet,
-  useColorScheme,
+  TouchableOpacity,
+  ViewStyle,
   View,
-} from "react-native";
+} from 'react-native';
 
-import { Spacer, Text } from "@/components";
-import { Colors, textStyles } from "@/constants";
-import type { HotelSummary } from "@/types/hotel.types";
+import type { LiteAPIHotelRateItem } from '@/types/liteapi.types';
+import { getCurrencySymbol } from '@/utils/currency';
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  wifi: <Wifi size={12} color="#fff" />,
-  breakfast: <Utensils size={12} color="#fff" />,
-  pool: <Waves size={12} color="#fff" />,
-};
-
-function amenityIcon(tag: string) {
-  const lower = tag.toLowerCase();
-  if (lower.includes("wifi") || lower.includes("internet"))
-    return AMENITY_ICONS.wifi;
-  if (lower.includes("breakfast") || lower.includes("restaurant"))
-    return AMENITY_ICONS.breakfast;
-  if (lower.includes("pool") || lower.includes("swim"))
-    return AMENITY_ICONS.pool;
-  return null;
-}
-
-interface Props {
-  hotel: HotelSummary;
-  tripId: string;
-  checkin: string;
-  checkout: string;
-  adults: number;
+interface HotelCardProps {
+  imageUri: string;
+  categoryLabel?: string;
+  title: string;
+  description: string;
+  onAdd?: () => void;
+  onViewDetails?: () => void;
+  onOptionsPress?: (position: {
+    top: number;
+    right?: number;
+    left?: number;
+  }) => void;
+  hotel: LiteAPIHotelRateItem;
+  checkin?: string;
+  checkout?: string;
+  adults?: number;
+  tripId?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function HotelCard({
+  imageUri,
+  categoryLabel = '🏨 Stay',
+  title,
+  description,
+  onAdd,
+  onViewDetails,
+  onOptionsPress,
   hotel,
-  tripId,
-  checkin,
-  checkout,
-  adults,
-}: Props) {
-  const colorScheme = useColorScheme() ?? "light";
-  const colors = Colors[colorScheme];
+  style,
+}: HotelCardProps) {
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
+  const moreBtnRef = useRef<View>(null);
 
-  const visibleAmenityIcons = (hotel.amenities ?? [])
-    .map(amenityIcon)
-    .filter(Boolean)
-    .slice(0, 3);
+  const getLowestSellingPrice = (
+    hotel: LiteAPIHotelRateItem
+  ): { amount: number; currency: string } => {
+    if (!hotel.roomTypes?.length) return { amount: 0, currency: 'USD' };
 
-  const handleBook = () => {
-    router.push({
-      pathname: "/hotel/[hotelId]",
-      params: { hotelId: hotel.hotelId, tripId, checkin, checkout, adults },
-    });
+    const cheapest = hotel.roomTypes.reduce(
+      (min, rt) => {
+        const amount = rt.suggestedSellingPrice?.amount ?? Infinity;
+        return amount < min.amount
+          ? { amount, currency: rt.suggestedSellingPrice?.currency ?? 'USD' }
+          : min;
+      },
+      { amount: Infinity, currency: 'USD' }
+    );
+
+    return cheapest.amount === Infinity
+      ? { amount: 0, currency: 'USD' }
+      : cheapest;
   };
 
-  return (
-    <Pressable style={styles.card} onPress={handleBook}>
-      <ImageBackground
-        source={{ uri: hotel.thumbnail || FALLBACK_IMAGE }}
-        style={styles.image}
-        contentFit="cover">
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.72)"]}
-          style={StyleSheet.absoluteFill}
-        />
+  const { amount, currency } = getLowestSellingPrice(hotel);
+  const symbol = getCurrencySymbol(currency);
 
-        {/* Amenity icons */}
-        {visibleAmenityIcons.length > 0 && (
-          <View style={styles.amenityRow}>
-            {visibleAmenityIcons.map((icon, i) => (
-              <View key={i} style={styles.amenityChip}>
-                {icon}
-              </View>
-            ))}
+  return (
+    <View style={[styles.card, style]}>
+      <View
+        style={[
+          styles.imageContainer,
+          { backgroundColor: colors.backgroundColors.subtle },
+        ]}>
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
+          contentFit="cover"
+        />
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{categoryLabel}</Text>
+        </View>
+        {onOptionsPress && (
+          <TouchableOpacity
+            ref={moreBtnRef}
+            style={styles.moreButton}
+            hitSlop={10}
+            onPress={() => {
+              if (moreBtnRef.current) {
+                moreBtnRef.current.measure(
+                  (
+                    x: number,
+                    y: number,
+                    width: number,
+                    height: number,
+                    pageX: number,
+                    pageY: number
+                  ) => {
+                    const { width: screenWidth } = Dimensions.get('window');
+                    onOptionsPress({
+                      top: pageY + height, // Place right below the button
+                      right: screenWidth - pageX - width, // Align with the button's right edge
+                    });
+                  }
+                );
+              } else {
+                // Fallback
+                onOptionsPress({ top: 100, right: 24 });
+              }
+            }}>
+            <MoreHorizontal size={14} color="#fff" />
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.content}>
+        <Text
+          style={[styles.title, { color: colors.textColors.default }]}
+          numberOfLines={1}>
+          {title}
+        </Text>
+        <Text
+          style={[styles.description, { color: colors.textColors.subtle }]}
+          numberOfLines={4}>
+          {description}
+        </Text>
+        {onAdd && (
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
+              <Text
+                style={[
+                  styles.viewDetails,
+                  { color: colors.primaryColors.default },
+                ]}>
+                From {symbol}
+                {amount.toFixed(0)}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                { backgroundColor: colors.primaryColors.default },
+              ]}
+              onPress={onAdd}
+              activeOpacity={0.8}>
+              <Plus size={12} color="#fff" strokeWidth={3} />
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
           </View>
         )}
-
-        {/* Rating badge */}
-        <View style={styles.ratingBadge}>
-          <Star size={10} color="#FFD700" fill="#FFD700" />
-          <Text style={styles.ratingText}>
-            {hotel.rating > 0 ? hotel.rating.toFixed(1) : "—"}
-          </Text>
-        </View>
-      </ImageBackground>
-
-      <View style={[styles.info, { backgroundColor: colors.backgroundColors.default }]}>
-        <Text style={styles.name} numberOfLines={1}>
-          {hotel.name}
-        </Text>
-        <Text style={[styles.address, { color: colors.textColors.subtle }]} numberOfLines={1}>
-          {hotel.address}
-        </Text>
-
-        <Spacer size={12} vertical />
-
-        <View style={styles.footer}>
-          <View>
-            <Text style={[styles.from, { color: colors.textColors.subtle }]}>
-              from
-            </Text>
-            <Text style={styles.price}>
-              {hotel.currency} {hotel.minRate > 0 ? hotel.minRate.toFixed(0) : "—"}
-              <Text style={[styles.perNight, { color: colors.textColors.subtle }]}>
-                {" "}
-                / night
-              </Text>
-            </Text>
-          </View>
-
-          <Pressable style={styles.bookButton} onPress={handleBook}>
-            <Text style={styles.bookButtonText}>Book</Text>
-          </Pressable>
-        </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    // width: '48.5%',
+    // marginBottom: 24,
+    flex: 1,
+    marginBottom: 24,
+    // marginHorizontal: 6, // gap between columns
+  },
+  imageContainer: {
+    width: '100%',
+    aspectRatio: 0.85,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
   image: {
-    height: 180,
-    justifyContent: "flex-end",
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
-  amenityRow: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    flexDirection: "row",
-    gap: 6,
-  },
-  amenityChip: {
-    backgroundColor: "rgba(0,0,0,0.45)",
-    borderRadius: 20,
-    padding: 5,
-  },
-  ratingBadge: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: 20,
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  ratingText: {
-    color: "#fff",
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontFamily: AppFonts.inter.semiBold,
+  },
+  moreButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    paddingHorizontal: 2,
+  },
+  title: {
+    fontSize: 14,
+    fontFamily: AppFonts.bricolage.semiBold,
+    marginBottom: 4,
+  },
+  description: {
     fontSize: 11,
-    fontWeight: "600",
-  },
-  info: {
-    padding: 12,
-  },
-  name: {
-    ...textStyles.bold_20,
-    fontSize: 15,
-  },
-  address: {
-    ...textStyles.regular_14,
-    fontSize: 12,
-    marginTop: 2,
+    fontFamily: AppFonts.inter.regular,
+    lineHeight: 15,
+    marginBottom: 12,
   },
   footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  from: {
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+  viewDetails: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.medium,
   },
-  price: {
-    ...textStyles.bold_20,
-    fontSize: 16,
-    color: "#FF1F8C",
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 99,
+    gap: 4,
   },
-  perNight: {
+  addButtonText: {
+    color: '#fff',
     fontSize: 12,
-    fontWeight: "400",
-  },
-  bookButton: {
-    backgroundColor: "#FF1F8C",
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 8,
-  },
-  bookButtonText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
+    fontFamily: AppFonts.inter.semiBold,
   },
 });

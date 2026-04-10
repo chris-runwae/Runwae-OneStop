@@ -11,9 +11,8 @@ import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import { useHotels } from '@/hooks/useHotels';
 import type { TripWithEverything } from '@/hooks/useTripActions';
-import type { HotelCitySection, HotelSummary } from '@/types/hotel.types';
+import type { HotelCitySection } from '@/types/hotel.types';
 import HotelCard from './HotelCard';
-import IdeaCard from '../trip-activity/IdeaCard';
 import { LiteAPIHotelRateItem } from '@/types/liteapi.types';
 
 interface Props {
@@ -52,15 +51,6 @@ export default function HotelsSection({ trip }: Props) {
     ? `Hotels in ${trip.destination_label}`
     : 'Hotels';
 
-  const getLowestSellingPrice = (hotel: LiteAPIHotelRateItem): number => {
-    if (!hotel.roomTypes?.length) return 0;
-    return Math.min(
-      ...hotel.roomTypes.map(
-        (rt) => rt.suggestedSellingPrice?.amount ?? Infinity
-      )
-    );
-  };
-
   if (loading) {
     return (
       <View style={styles.center}>
@@ -93,39 +83,48 @@ export default function HotelsSection({ trip }: Props) {
         <Text style={styles.sectionTitle}>{sectionTitle}</Text>
         <Spacer size={12} vertical />
 
-        {sections.map((section) => (
-          <View key={section.city} style={styles.citySection}>
-            <Text style={styles.cityLabel}>{section.city}</Text>
-            <Spacer size={10} vertical />
-            <FlashList
-              data={section.hotels}
-              keyExtractor={(h) => h.hotelId}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalList}
-              renderItem={({ item }) => (
-                <View style={styles.horizontalCard}>
-                  <HotelCard
-                    hotel={item}
-                    tripId={trip.id}
-                    checkin={checkin}
-                    checkout={checkout}
-                    adults={adults}
-                  />
-                  {/* <IdeaCard
-                    hotel={item}
-                    title={item.name}
-                    description={item.address}
-                    imageUri={item.thumbnail}
-                    categoryLabel={item.amenities.join(', ')}
-                    onAdd={() => {}}
-                  /> */}
-                </View>
-              )}
-            />
-            <Spacer size={16} vertical />
-          </View>
-        ))}
+        <FlashList
+          data={sections}
+          keyExtractor={(s: HotelCitySection) => s.city}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalList}
+          renderItem={({ item }: { item: HotelCitySection }) => (
+            <View key={item.city} style={styles.citySection}>
+              <Text style={styles.cityLabel}>{item.city}</Text>
+              <Spacer size={10} vertical />
+              <FlashList
+                data={item.hotels}
+                keyExtractor={(h) => h.hotelId}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalList}
+                renderItem={({ item, index }) => (
+                  <View style={styles.horizontalCard}>
+                    <HotelCard
+                      hotel={item as unknown as LiteAPIHotelRateItem}
+                      tripId={trip.id}
+                      checkin={checkin}
+                      checkout={checkout}
+                      adults={adults}
+                      imageUri={item.thumbnail}
+                      title={item.name}
+                      description={item.address}
+                      onAdd={() => {}}
+                      onViewDetails={() => {}}
+                      onOptionsPress={() => {}}
+                      style={{
+                        marginLeft: index % 2 !== 0 ? 6 : 0, // right column gets left margin
+                        marginRight: index % 2 === 0 ? 6 : 0, // left column gets right margin
+                      }}
+                    />
+                  </View>
+                )}
+              />
+              <Spacer size={16} vertical />
+            </View>
+          )}
+        />
       </View>
     );
   }
@@ -139,18 +138,31 @@ export default function HotelsSection({ trip }: Props) {
     <View>
       <Text style={styles.sectionTitle}>{sectionTitle}</Text>
       <Spacer size={12} vertical />
-      {hotels.map((hotel) => (
-        <IdeaCard
-          key={hotel.hotelId}
-          imageUri={hotel.thumbnail}
-          categoryLabel={'🏨 Stay'}
-          title={hotel.name}
-          description={hotel.address}
-          onAdd={() => {}}
-          onViewDetails={() => {}}
-          onOptionsPress={() => {}}
-        />
-      ))}
+      <FlashList
+        data={hotels}
+        keyExtractor={(h) => h.hotelId}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item, index }) => (
+          <HotelCard
+            hotel={item as unknown as LiteAPIHotelRateItem}
+            tripId={trip.id}
+            checkin={checkin}
+            checkout={checkout}
+            adults={adults}
+            imageUri={item.thumbnail}
+            title={item.name}
+            description={item.address}
+            onAdd={() => {}}
+            onViewDetails={() => {}}
+            onOptionsPress={() => {}}
+            style={{
+              marginLeft: index % 2 !== 0 ? 6 : 0, // right column gets left margin
+              marginRight: index % 2 === 0 ? 6 : 0, // left column gets right margin
+            }}
+          />
+        )}
+      />
     </View>
   );
 }
@@ -181,7 +193,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   horizontalCard: {
-    width: 260,
+    // width: 260,
     marginRight: 12,
   },
 });

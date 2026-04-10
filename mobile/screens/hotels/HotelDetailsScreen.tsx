@@ -122,6 +122,19 @@ export default function HotelDetailScreen() {
     fetchData();
   }, [fetchData]);
 
+  const parsedHotelData = (() => {
+    if (!hotelData) return null;
+    try {
+      const raw = String(hotelData);
+      if (raw === '[object Object]') return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  })();
+
+  console.log('Hotel Details: ', hotel);
+
   if (loading) {
     return (
       <View

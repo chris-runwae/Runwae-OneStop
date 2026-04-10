@@ -1,23 +1,37 @@
 import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
+import { SavedItineraryItem } from '@/hooks/useIdeaActions';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { MoreHorizontal, Plus } from 'lucide-react-native';
 import React, { useRef } from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface IdeaCardProps {
   imageUri: string;
+  item: SavedItineraryItem;
   categoryLabel: string;
   title: string;
   description: string;
   onAdd?: () => void;
   onViewDetails?: () => void;
-  onOptionsPress?: (position: { top: number; right?: number; left?: number }) => void;
+  onOptionsPress?: (position: {
+    top: number;
+    right?: number;
+    left?: number;
+  }) => void;
 }
 
 export default function IdeaCard({
   imageUri,
+  item,
   categoryLabel,
   title,
   description,
@@ -29,9 +43,25 @@ export default function IdeaCard({
   const colors = Colors[dark ? 'dark' : 'light'];
   const moreBtnRef = useRef<View>(null);
 
+  const handleNavigateToDetails = () => {
+    if (item.type === 'hotel') {
+      router.push({
+        pathname: '/hotel/[hotelId]',
+        params: {
+          hotelId: item.external_id as string,
+          // hotelData: item.all_data,
+        },
+      } as any);
+    }
+  };
+
   return (
-    <View style={styles.card}>
-      <View style={[styles.imageContainer, { backgroundColor: colors.backgroundColors.subtle }]}>
+    <Pressable style={styles.card} onPress={handleNavigateToDetails}>
+      <View
+        style={[
+          styles.imageContainer,
+          { backgroundColor: colors.backgroundColors.subtle },
+        ]}>
         <Image
           source={{ uri: imageUri }}
           style={styles.image}
@@ -48,7 +78,14 @@ export default function IdeaCard({
             onPress={() => {
               if (moreBtnRef.current) {
                 moreBtnRef.current.measure(
-                  (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+                  (
+                    x: number,
+                    y: number,
+                    width: number,
+                    height: number,
+                    pageX: number,
+                    pageY: number
+                  ) => {
                     const { width: screenWidth } = Dimensions.get('window');
                     onOptionsPress({
                       top: pageY + height, // Place right below the button
@@ -66,19 +103,32 @@ export default function IdeaCard({
         )}
       </View>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.textColors.default }]} numberOfLines={1}>
+        <Text
+          style={[styles.title, { color: colors.textColors.default }]}
+          numberOfLines={1}>
           {title}
         </Text>
-        <Text style={[styles.description, { color: colors.textColors.subtle }]} numberOfLines={4}>
+        <Text
+          style={[styles.description, { color: colors.textColors.subtle }]}
+          numberOfLines={4}>
           {description}
         </Text>
         {onAdd && (
           <View style={styles.footer}>
             <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
-              <Text style={[styles.viewDetails, { color: colors.primaryColors.default }]}>View Details</Text>
+              <Text
+                style={[
+                  styles.viewDetails,
+                  { color: colors.primaryColors.default },
+                ]}>
+                View Details
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primaryColors.default }]}
+              style={[
+                styles.addButton,
+                { backgroundColor: colors.primaryColors.default },
+              ]}
               onPress={onAdd}
               activeOpacity={0.8}>
               <Plus size={12} color="#fff" strokeWidth={3} />
@@ -87,7 +137,7 @@ export default function IdeaCard({
           </View>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 

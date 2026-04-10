@@ -229,6 +229,7 @@ export default function TripOverviewTab({ trip }: Props) {
         {filteredIdeas.map((item) => (
           <IdeaCard
             key={item.id}
+            item={item}
             imageUri={
               item.cover_image ||
               MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||

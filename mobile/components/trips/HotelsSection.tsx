@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   StyleSheet,
   useColorScheme,
   View,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
@@ -13,6 +13,8 @@ import { useHotels } from '@/hooks/useHotels';
 import type { TripWithEverything } from '@/hooks/useTripActions';
 import type { HotelCitySection, HotelSummary } from '@/types/hotel.types';
 import HotelCard from './HotelCard';
+import IdeaCard from '../trip-activity/IdeaCard';
+import { LiteAPIHotelRateItem } from '@/types/liteapi.types';
 
 interface Props {
   trip: TripWithEverything;
@@ -42,12 +44,22 @@ export default function HotelsSection({ trip }: Props) {
     trip.destination_label ?? null,
     checkin,
     checkout,
-    adults
+    adults,
+    trip.destination_place_id ?? null
   );
 
   const sectionTitle = trip.destination_label
     ? `Hotels in ${trip.destination_label}`
     : 'Hotels';
+
+  const getLowestSellingPrice = (hotel: LiteAPIHotelRateItem): number => {
+    if (!hotel.roomTypes?.length) return 0;
+    return Math.min(
+      ...hotel.roomTypes.map(
+        (rt) => rt.suggestedSellingPrice?.amount ?? Infinity
+      )
+    );
+  };
 
   if (loading) {
     return (
@@ -85,7 +97,7 @@ export default function HotelsSection({ trip }: Props) {
           <View key={section.city} style={styles.citySection}>
             <Text style={styles.cityLabel}>{section.city}</Text>
             <Spacer size={10} vertical />
-            <FlatList
+            <FlashList
               data={section.hotels}
               keyExtractor={(h) => h.hotelId}
               horizontal
@@ -100,6 +112,14 @@ export default function HotelsSection({ trip }: Props) {
                     checkout={checkout}
                     adults={adults}
                   />
+                  {/* <IdeaCard
+                    hotel={item}
+                    title={item.name}
+                    description={item.address}
+                    imageUri={item.thumbnail}
+                    categoryLabel={item.amenities.join(', ')}
+                    onAdd={() => {}}
+                  /> */}
                 </View>
               )}
             />
@@ -111,7 +131,8 @@ export default function HotelsSection({ trip }: Props) {
   }
 
   // Single destination — flat vertical list
-  const hotels = data as HotelSummary[];
+  const hotels = data as LiteAPIHotelRateItem[];
+
   if (hotels.length === 0) return null;
 
   return (
@@ -119,13 +140,15 @@ export default function HotelsSection({ trip }: Props) {
       <Text style={styles.sectionTitle}>{sectionTitle}</Text>
       <Spacer size={12} vertical />
       {hotels.map((hotel) => (
-        <HotelCard
+        <IdeaCard
           key={hotel.hotelId}
-          hotel={hotel}
-          tripId={trip.id}
-          checkin={checkin}
-          checkout={checkout}
-          adults={adults}
+          imageUri={hotel.thumbnail}
+          categoryLabel={'🏨 Stay'}
+          title={hotel.name}
+          description={hotel.address}
+          onAdd={() => {}}
+          onViewDetails={() => {}}
+          onOptionsPress={() => {}}
         />
       ))}
     </View>

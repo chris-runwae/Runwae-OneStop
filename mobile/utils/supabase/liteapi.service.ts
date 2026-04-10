@@ -10,6 +10,7 @@ import type {
   LiteAPIPrebookResponse,
   LiteAPIRatesResponse,
   LiteAPISearchRatesRequest,
+  LiteAPIHotelRateItem,
 } from '@/types/liteapi.types';
 import type { HotelSummary } from '@/types/hotel.types';
 import { supabase } from './client';
@@ -17,27 +18,6 @@ import { supabase } from './client';
 /**
  * Search for places (destinations) using LiteAPI
  */
-// export async function searchPlaces(
-//   textQuery: string
-// ): Promise<LiteAPIPlacesResponse> {
-//   const { data, error } = await supabase.functions.invoke('liteapi', {
-//     body: {
-//       method: 'GET',
-//       endpoint: 'places',
-//       body: { textQuery },
-//     },
-//   });
-
-//   if (error) {
-//     throw new Error(error.message || 'Failed to search places');
-//   }
-
-//   if ((data as LiteAPIError).error) {
-//     throw new Error((data as LiteAPIError).error.message);
-//   }
-
-//   return data as LiteAPIPlacesResponse;
-// }
 export async function searchPlaces(
   textQuery: string
 ): Promise<LiteAPIPlacesResponse> {
@@ -182,24 +162,28 @@ export async function bookHotel(
  * Step 2: searchRates with that placeId, returns HotelSummary[]
  */
 export async function searchHotelsByCity(
-  cityName: string,
+  cityName: string | null,
   checkin: string,
   checkout: string,
-  adults: number
+  adults: number,
+  destinationPlaceId: string | null
 ): Promise<HotelSummary[]> {
+  //Skip if placeId is provided
   // Resolve city to a LiteAPI placeId
-  const placesResponse = await searchPlaces(cityName);
+  const placesResponse = await searchPlaces(
+    cityName || destinationPlaceId || ''
+  );
   const place = placesResponse.data?.[0];
-  if (!place) return [];
+  if (!place || !destinationPlaceId) return [];
 
   const ratesResponse = await searchRates({
-    placeId: place.placeId,
+    placeId: place.placeId || destinationPlaceId,
     checkin,
     checkout,
     occupancies: [{ adults }],
     currency: 'USD',
     guestNationality: 'US',
-    maxRatesPerHotel: 1,
+    maxRatesPerHotel: 5,
     includeHotelData: true,
   });
 
@@ -225,6 +209,42 @@ export async function searchHotelsByCity(
       amenities: hotel.tags ?? [],
     };
   });
+}
+
+export async function searchHotelsByCityOrPlaceId(
+  cityName: string | null,
+  checkin: string,
+  checkout: string,
+  adults: number,
+  destinationPlaceId: string | null
+): Promise<LiteAPIHotelRateItem[]> {
+  //Skip if placeId is provided
+  // Resolve city to a LiteAPI placeId
+  const placesResponse = await searchPlaces(
+    cityName || destinationPlaceId || ''
+  );
+  const place = placesResponse.data?.[0];
+  if (!place || !destinationPlaceId) return [];
+
+  const ratesResponse = await searchRates({
+    placeId: place.placeId || destinationPlaceId,
+    checkin,
+    checkout,
+    occupancies: [{ adults }],
+    currency: 'USD',
+    guestNationality: 'US',
+    maxRatesPerHotel: 5,
+    includeHotelData: true,
+  });
+
+  const hotels = ratesResponse.hotels ?? [];
+  const hotelMetaMap = new Map(hotels.map((h) => [h.id, h]));
+  const hotelWithRates = ratesResponse.data.map((h) => ({
+    ...hotelMetaMap.get(h.hotelId),
+    ...h,
+  }));
+
+  return hotelWithRates as unknown as LiteAPIHotelRateItem[];
 }
 
 /**

@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { searchHotelsByCity } from '@/utils/supabase/liteapi.service';
-import type { HotelCitySection, HotelSummary } from '@/types/hotel.types';
+import {
+  searchHotelsByCity,
+  searchHotelsByCityOrPlaceId,
+} from '@/utils/supabase/liteapi.service';
+import type { HotelCitySection } from '@/types/hotel.types';
+import { LiteAPIHotelRateItem } from '@/types/liteapi.types';
 
 const POPULAR_CITIES = ['London', 'Paris', 'Dubai', 'New York'];
 
 interface UseHotelsResult {
-  data: HotelSummary[] | HotelCitySection[];
+  data: LiteAPIHotelRateItem[] | HotelCitySection[];
   citySections: boolean;
   loading: boolean;
   error: string | null;
@@ -17,9 +21,12 @@ export function useHotels(
   destination: string | null,
   checkin: string,
   checkout: string,
-  adults: number
+  adults: number,
+  destinationPlaceId: string | null
 ): UseHotelsResult {
-  const [data, setData] = useState<HotelSummary[] | HotelCitySection[]>([]);
+  const [data, setData] = useState<LiteAPIHotelRateItem[] | HotelCitySection[]>(
+    []
+  );
   const [citySections, setCitySections] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +37,14 @@ export function useHotels(
     setError(null);
 
     try {
-      if (destination) {
+      if (destination || destinationPlaceId) {
         // Single destination — flat list
-        const hotels = await searchHotelsByCity(
+        const hotels = await searchHotelsByCityOrPlaceId(
           destination,
           checkin,
           checkout,
-          adults
+          adults,
+          destinationPlaceId
         );
         setData(hotels);
         setCitySections(false);
@@ -44,13 +52,19 @@ export function useHotels(
         // No destination — fetch popular cities in parallel
         const results = await Promise.all(
           POPULAR_CITIES.map((city) =>
-            searchHotelsByCity(city, checkin, checkout, adults).then(
-              (hotels) => ({ city, hotels })
-            )
+            searchHotelsByCity(
+              city,
+              checkin,
+              checkout,
+              adults,
+              destinationPlaceId
+            ).then((hotels) => ({ city, hotels }))
           )
         );
         // Only include sections that returned at least one hotel
-        setData(results.filter((s) => s.hotels.length > 0));
+        setData(
+          results.filter((s) => s.hotels.length > 0) as HotelCitySection[]
+        );
         setCitySections(true);
       }
     } catch (err) {
@@ -58,7 +72,7 @@ export function useHotels(
     } finally {
       setLoading(false);
     }
-  }, [destination, checkin, checkout, adults]);
+  }, [destination, checkin, checkout, adults, destinationPlaceId]);
 
   useEffect(() => {
     fetchHotels();

@@ -25,7 +25,7 @@ export interface LiteAPIRate {
     taxesAndFees?: Array<{ included: boolean; amount?: number }>;
   };
   cancellationPolicies: {
-    refundableTag: "RFN" | "NRFN";
+    refundableTag: 'RFN' | 'NRFN';
     cancelPolicyInfos?: Array<{ cancelTime: string }>;
   };
 }
@@ -84,7 +84,7 @@ export interface LiteAPIPrebookResponse {
           taxesAndFees?: Array<{ included: boolean; amount?: number }>;
         };
         cancellationPolicies: {
-          refundableTag: "RFN" | "NRFN";
+          refundableTag: 'RFN' | 'NRFN';
           cancelPolicyInfos?: Array<{ cancelTime: string }>;
         };
       }>;
@@ -100,7 +100,7 @@ export interface LiteAPIBookRequest {
     email: string;
   };
   payment: {
-    method: "TRANSACTION_ID";
+    method: 'TRANSACTION_ID';
     transactionId: string;
   };
   guests: Array<{
@@ -125,7 +125,7 @@ export interface LiteAPIBookResponse {
     price: number;
     currency: string;
     cancellationPolicies: {
-      refundableTag: "RFN" | "NRFN";
+      refundableTag: 'RFN' | 'NRFN';
       cancelPolicyInfos?: Array<{ cancelTime: string }>;
     };
   };
@@ -184,4 +184,91 @@ export interface LiteAPIError {
     description: string;
     message: string;
   };
+}
+
+// Unified hotel+rates item (returned when includeHotelData: true)
+export interface LiteAPIHotelRateItem {
+  // Hotel metadata fields
+  id: string;
+  name: string;
+  main_photo: string;
+  thumbnail: string;
+  address: string;
+  rating: number;
+  tags?: string[];
+
+  // Rates fields
+  hotelId: string;
+  roomTypes: LiteAPIHotelRoomType[];
+  et: number;
+}
+
+export interface LiteAPIHotelRoomType {
+  roomTypeId: string;
+  offerId: string;
+  supplier: string;
+  supplierId: number;
+  rates: LiteAPIHotelRoomRate[];
+  offerRetailRate: LiteAPIPriceAmount;
+  suggestedSellingPrice: LiteAPIPriceAmount;
+  offerInitialPrice: LiteAPIPriceAmount;
+  priceType: string;
+  rateType: string;
+  paymentTypes: string[];
+}
+
+export interface LiteAPIHotelRoomRate {
+  rateId: string;
+  occupancyNumber: number;
+  name: string;
+  maxOccupancy: number;
+  adultCount: number;
+  childCount: number;
+  childrenAges: number[];
+  boardType: string;
+  boardName: string;
+  remarks: string;
+  priceType: string;
+  commission: LiteAPIPriceAmount[];
+  retailRate: LiteAPIHotelRetailRate;
+  cancellationPolicies: LiteAPIHotelCancellationPolicies;
+  paymentTypes: string[];
+  providerCommission: LiteAPIPriceAmount;
+  perks: string[];
+  promotions: null | unknown;
+  offerId?: string;
+}
+
+export interface LiteAPIHotelRetailRate {
+  total: LiteAPIPriceAmount[];
+  suggestedSellingPrice: LiteAPIPriceAmount[];
+  initialPrice: LiteAPIPriceAmount[];
+  taxesAndFees: LiteAPITaxFee[];
+}
+
+export interface LiteAPITaxFee {
+  included: boolean;
+  description: string;
+  amount: number;
+  currency: string;
+}
+
+export interface LiteAPIHotelCancellationPolicies {
+  cancelPolicyInfos: unknown[];
+  hotelRemarks: unknown[];
+  refundableTag: string;
+}
+
+export interface LiteAPIPriceAmount {
+  amount: number;
+  currency: string;
+  source?: string;
+}
+
+// Top-level rates response (unified, when includeHotelData: true)
+export interface LiteAPIHotelRatesResponse {
+  sandbox?: boolean;
+  hotels?: LiteAPIHotelRateItem[];
+  data: LiteAPIHotelRateItem[];
+  guestLevel?: number;
 }

@@ -1,4 +1,4 @@
-export const getCurrencySymbol = (currency: string): string => {
+export const getCurrencySymbol = (currency: string = 'USD'): string => {
   const symbols: Record<string, string> = {
     USD: '$',
     EUR: '€',

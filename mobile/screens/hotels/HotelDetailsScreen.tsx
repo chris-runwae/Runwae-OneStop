@@ -29,6 +29,7 @@ import { Colors, textStyles } from '@/constants';
 import type { HotelDetail, HotelRate } from '@/types/hotel.types';
 import type { LiteAPIHotelDetails } from '@/types/liteapi.types';
 import { getHotelDetails, searchRates } from '@/utils/supabase/liteapi.service';
+import { getCurrencySymbol } from '@/utils/currency';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -99,7 +100,7 @@ export default function HotelDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const [hotel, setHotel] = useState<HotelDetail | null>(null);
-  const [rates, setRates] = useState<HotelRate[]>([]);
+  // const [rates, setRates] = useState<HotelRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
@@ -133,7 +134,7 @@ export default function HotelDetailScreen() {
     }
   })();
 
-  console.log('Hotel Details: ', hotel);
+  // console.log('Hotel Details: ', hotel);
 
   if (loading) {
     return (
@@ -307,64 +308,77 @@ export default function HotelDetailScreen() {
           <Text style={styles.sectionLabel}>Available Rooms</Text>
           <Spacer size={12} vertical />
 
-          {/* {hotelData?.rooms.length === 0 ? (
+          {parsedHotelData?.roomTypes &&
+          parsedHotelData?.roomTypes.length === 0 ? (
             <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
               No rates available for the selected dates.
             </Text>
           ) : (
-            hotelData?.rooms.map((room, index) => (
-              <Pressable
-                key={`${index}-${room?.id ?? ''}`}
-                style={[
-                  styles.rateCard,
-                  {
-                    borderColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF',
-                  },
-                ]}
-                onPress={() => handleSelectRate(room)}>
-                <View style={styles.rateInfo}>
-                  <Text style={styles.roomName}>{room.roomName}</Text>
-                  <Text
+            parsedHotelData?.roomTypes &&
+            parsedHotelData?.roomTypes.map((roomType: any) => {
+              roomType?.rates.forEach((room: any) => {
+                return (
+                  <Pressable
+                    key={`${room?.rateId}`}
                     style={[
-                      styles.boardName,
-                      { color: colors.textColors.subtle },
-                    ]}>
-                    {room.boardName}
-                  </Text>
-                  <View style={styles.refundRow}>
-                    {room.refundable ? (
-                      <>
-                        <ShieldCheck size={12} color="#22C55E" />
-                        <Text style={styles.refundText}>Free cancellation</Text>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldOff size={12} color="#EF4444" />
-                        <Text style={[styles.refundText, { color: '#EF4444' }]}>
-                          Non-refundable
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.ratePriceCol}>
-                  <Text style={styles.ratePrice}>
-                    {rate.currency} {rate.price.toFixed(0)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.perNight,
-                      { color: colors.textColors.subtle },
-                    ]}>
-                    / night
-                  </Text>
-                  <View style={styles.selectBtn}>
-                    <Text style={styles.selectText}>Select</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))
-          )} */}
+                      styles.rateCard,
+                      {
+                        borderColor:
+                          colorScheme === 'dark' ? '#374151' : '#E9ECEF',
+                      },
+                    ]}
+                    onPress={() => {}}>
+                    <View style={styles.rateInfo}>
+                      <Text style={styles.roomName}>{room.name}</Text>
+                      <Text
+                        style={[
+                          styles.boardName,
+                          { color: colors.textColors.subtle },
+                        ]}>
+                        {room.boardName}
+                      </Text>
+                      <View style={styles.refundRow}>
+                        {room.cancellationPolicies?.refundableTag === 'RFN' ? (
+                          <>
+                            <ShieldCheck size={12} color="#22C55E" />
+                            <Text style={styles.refundText}>
+                              Free cancellation
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldOff size={12} color="#EF4444" />
+                            <Text
+                              style={[styles.refundText, { color: '#EF4444' }]}>
+                              Non-refundable
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.ratePriceCol}>
+                      <Text style={styles.ratePrice}>
+                        {getCurrencySymbol(
+                          room?.suggestedSellingPrice?.currency
+                        )}{' '}
+                        {room?.suggestedSellingPrice?.amount}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.perNight,
+                          { color: colors.textColors.subtle },
+                        ]}>
+                        / night
+                      </Text>
+                      <View style={styles.selectBtn}>
+                        <Text style={styles.selectText}>Select</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              });
+            })
+          )}
 
           <Spacer size={40} vertical />
         </View>

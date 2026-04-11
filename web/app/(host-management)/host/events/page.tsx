@@ -1,49 +1,148 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
-  Calendar,
-  ChevronDown,
-  DollarSign,
-  MapPin,
-  MoreVertical,
-  Search,
-  Users,
-} from "lucide-react";
-import { ROUTES, eventDetail } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
-import { getEvents } from "@/lib/supabase/events";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import { VIEW_MODES } from "@/lib/constants";
-import { useQuery } from "@tanstack/react-query";
+  eventDetail,
+  eventDuplicateHref,
+  eventEdit,
+  ROUTES,
+} from "@/app/routes";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  ChevronDown,
+  Copy,
+  DollarSign,
+  MapPin,
+  MoreVertical,
+  Pencil,
+  Search,
+  Settings2,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { deleteEvent, getEvents, type Event } from "@/lib/supabase/events";
 import { formatDate } from "@/lib/date";
+import { VIEW_MODES } from "@/lib/constants";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 type ViewMode = "column" | "grid";
 
 const EVENT_FILTERS = ["All Events", "Published", "Upcoming"] as const;
 type EventFilter = (typeof EVENT_FILTERS)[number];
 
+function EventActionsMenu({
+  event,
+  onDelete,
+}: {
+  event: Event;
+  onDelete: (event: Event) => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex size-9 items-center justify-center rounded-md p-0 text-muted-foreground hover:bg-muted hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Actions for ${event.name}`}
+        >
+          <MoreVertical className="size-4 shrink-0" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={4}
+        className="z-[200] min-w-48"
+      >
+        <DropdownMenuItem
+          className="cursor-pointer gap-2"
+          onSelect={() => router.push(eventDetail(event.id))}
+        >
+          <Settings2 className="size-4 shrink-0" aria-hidden />
+          Manage event
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer gap-2"
+          onSelect={() => router.push(eventEdit(event.id))}
+        >
+          <Pencil className="size-4 shrink-0" aria-hidden />
+          Update event
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer gap-2"
+          onSelect={() => router.push(eventDuplicateHref(event.id))}
+        >
+          <Copy className="size-4 shrink-0" aria-hidden />
+          Duplicate event
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          className="cursor-pointer gap-2"
+          onSelect={() => onDelete(event)}
+        >
+          <Trash2 className="size-4 shrink-0" aria-hidden />
+          Delete event
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function EventsPage() {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("column");
   const [activeFilter, setActiveFilter] = useState<EventFilter>("All Events");
   const [search, setSearch] = useState("");
-  const { data: events = [], isLoading } = useQuery({
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteEvent,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["events", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["event-detail"] });
+      await queryClient.invalidateQueries({ queryKey: ["event-row"] });
+      toast.success("Event deleted.");
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Could not delete event.");
+    },
+  });
+
+  const { data, isPending } = useQuery({
     queryKey: ["events", user?.id],
     queryFn: () => getEvents(user!.id),
     enabled: !!user,
   });
 
-  console.log("user", user);
+  if (!user) return null;
+
+  const events = data ?? [];
 
   const now = new Date();
   const filteredEvents = events
@@ -142,14 +241,14 @@ export default function EventsPage() {
       </div>
 
       {/* Loading */}
-      {isLoading && (
+      {isPending && (
         <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
           Loading events…
         </div>
       )}
 
       {/* Content */}
-      {!isLoading && viewMode === "column" && (
+      {!isPending && viewMode === "column" && (
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="w-full min-w-150">
             <thead>
@@ -210,13 +309,10 @@ export default function EventsPage() {
                       —
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-body focus:outline-none focus:ring-2 focus:ring-ring"
-                        aria-label="More options"
-                      >
-                        <MoreVertical className="size-4" aria-hidden />
-                      </button>
+                      <EventActionsMenu
+                        event={event}
+                        onDelete={setDeleteTarget}
+                      />
                     </td>
                   </tr>
                 );
@@ -226,7 +322,7 @@ export default function EventsPage() {
         </div>
       )}
 
-      {!isLoading && viewMode === "grid" && (
+      {!isPending && viewMode === "grid" && (
         <div className="flex gap-8">
           <div className="hidden w-22.5 shrink-0 flex-col pt-1 lg:flex">
             {filteredEvents.length > 0 &&
@@ -329,7 +425,7 @@ export default function EventsPage() {
                         —
                       </span>
                     </div>
-                    <div className="mt-auto flex flex-wrap gap-2">
+                    <div className="mt-auto flex flex-wrap items-center gap-2">
                       <Link
                         href={eventDetail(event.id)}
                         className={cn(
@@ -341,17 +437,10 @@ export default function EventsPage() {
                       >
                         Manage Event
                       </Link>
-                      <button
-                        type="button"
-                        className={cn(
-                          buttonVariants({
-                            variant: "outline",
-                            size: "default",
-                          }),
-                        )}
-                      >
-                        More
-                      </button>
+                      <EventActionsMenu
+                        event={event}
+                        onDelete={setDeleteTarget}
+                      />
                     </div>
                   </div>
                   {event.image && (
@@ -372,7 +461,7 @@ export default function EventsPage() {
         </div>
       )}
 
-      {!isLoading && filteredEvents.length === 0 && (
+      {!isPending && filteredEvents.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border bg-muted/20 py-16">
           <p className="text-muted-foreground">
             {search || activeFilter !== "All Events"
@@ -389,6 +478,48 @@ export default function EventsPage() {
           </Link>
         </div>
       )}
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Delete event</DialogTitle>
+            <DialogDescription>
+              This will permanently delete{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.name}
+              </span>
+              . This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+              )}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+                "border-destructive/50 text-destructive hover:bg-destructive/10",
+              )}
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -9,7 +9,10 @@ export default function NotFound() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-page p-6">
       <div className="flex flex-col items-center gap-4 text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-          <FileQuestionIcon className="size-8 text-muted-foreground" aria-hidden />
+          <FileQuestionIcon
+            className="size-8 text-muted-foreground"
+            aria-hidden
+          />
         </div>
         <div className="space-y-2">
           <h1 className="font-display text-2xl font-bold text-heading sm:text-3xl">
@@ -23,7 +26,7 @@ export default function NotFound() {
           href={ROUTES.host.overview}
           className={cn(
             buttonVariants({ variant: "primary", size: "lg" }),
-            "inline-flex items-center gap-2 no-underline"
+            "inline-flex items-center gap-2 no-underline",
           )}
         >
           <HomeIcon className="size-4" aria-hidden />

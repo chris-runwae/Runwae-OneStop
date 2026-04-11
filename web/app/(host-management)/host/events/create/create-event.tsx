@@ -1,6 +1,7 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
+import { eventDetail, ROUTES } from "@/app/routes";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +17,14 @@ import {
 } from "@/components/ui/form";
 import { GoogleMapsInput } from "@/components/shared/google-maps-input";
 import { InputField } from "@/components/ui/input-field";
+import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/context/AuthContext";
-import { createEvent } from "@/lib/supabase/events";
-import { ROUTES } from "@/app/routes";
+import { useDisclose } from "@/hooks/use-disclose";
+import {
+  createEvent,
+  getEventRowForOwner,
+  updateEvent,
+} from "@/lib/supabase/events";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -32,34 +38,50 @@ import {
   Ticket,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { FormSelect } from "./create-event.components";
 import { EVENT_CATEGORIES, VISIBILITY_OPTIONS } from "./create-event.constants";
-import { TimeSelector, DateSelector } from "@/components/shared/date";
-import { EventSuccessfulModal } from "@/components/modal/event-successful-modal";
 import {
   createEventDefaultValues,
   createEventSchema,
+  mapEventRowToFormValues,
 } from "./create-event-schema";
-import { useDisclose } from "@/hooks/use-disclose";
+import { TimeSelector, DateSelector } from "@/components/shared/date";
+import { EventSuccessfulModal } from "@/components/modal/event-successful-modal";
 
 const today = new Date().toISOString().split("T")[0];
 
+const DEFAULT_BANNER_URL =
+  "https://gratisography.com/wp-content/uploads/2025/05/gratisography-moon-robot-800x525.jpg";
+
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
 
-export default function CreateEvent() {
+type CreateEventProps = {
+  editEventId?: string;
+};
+
+export default function CreateEvent(props: CreateEventProps = {}) {
+  const { editEventId } = props;
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const duplicateId = searchParams.get("duplicate");
+  const loadId = editEventId ?? duplicateId ?? null;
+  const isEditMode = Boolean(editEventId);
+  const isDuplicateMode = Boolean(duplicateId) && !isEditMode;
+  const relaxDateMin = isEditMode || isDuplicateMode;
+
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
     defaultValues: createEventDefaultValues,
     mode: "onChange",
   });
-  const successModal = useDisclose(true);
+  const successModal = useDisclose();
 
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [coords, setCoords] = useState<{
@@ -71,25 +93,86 @@ export default function CreateEvent() {
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
-  const startDate = form.watch("startDate");
-
   const visibilityLabel =
     VISIBILITY_OPTIONS.find((o) => o.value === form.watch("visibility"))
       ?.label ?? "Public";
 
   const [isPending, setIsPending] = useState(false);
+  const [eventSlug, setEventSlug] = useState<string | null>(null);
+
+  const {
+    data: loadedEvent,
+    isPending: loadPending,
+    isSuccess: loadSuccess,
+  } = useQuery({
+    queryKey: ["event-row", loadId, user?.id],
+    queryFn: () => getEventRowForOwner(loadId!, user!.id),
+    enabled: Boolean(user && loadId),
+  });
+
+  useEffect(() => {
+    if (!loadId || !user || loadPending) return;
+    if (loadSuccess && loadedEvent === null) {
+      toast.error("Event not found.");
+      router.replace(ROUTES.host.events);
+    }
+  }, [loadId, user, loadPending, loadSuccess, loadedEvent, router]);
+
+  useEffect(() => {
+    if (!loadedEvent) return;
+    form.reset(
+      mapEventRowToFormValues(loadedEvent, { duplicate: isDuplicateMode }),
+    );
+    setCoords({
+      lat: loadedEvent.latitude,
+      lng: loadedEvent.longitude,
+    });
+    setBannerPreview(loadedEvent.image?.trim() || null);
+  }, [loadedEvent, isDuplicateMode, form]);
+
+  const visibilityLabelMemo =
+    VISIBILITY_OPTIONS.find((o) => o.value === form.watch("visibility"))
+      ?.label ?? "Public";
 
   const onSubmit = async (values: CreateEventFormValues) => {
     if (!user) {
-      toast.error("You must be logged in to create an event.");
+      toast.error("You must be logged in to continue.");
       return;
     }
 
-    console.log(values);
+    const imageUrl =
+      values.bannerImage != null
+        ? DEFAULT_BANNER_URL
+        : loadedEvent?.image?.trim() || DEFAULT_BANNER_URL;
 
     try {
       setIsPending(true);
-      await createEvent({
+
+      if (isEditMode && editEventId) {
+        await updateEvent(editEventId, {
+          name: values.eventName,
+          start_date: values.startDate,
+          start_time: values.startTime,
+          end_date: values.endDate,
+          end_time: values.endTime,
+          location: values.location,
+          description: values.description,
+          category: values.category,
+          ticket_link: values.ticketLink ?? null,
+          bookings: values.bookings,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          image: imageUrl,
+          ...(loadedEvent?.status != null && loadedEvent.status !== ""
+            ? { status: loadedEvent.status }
+            : {}),
+        });
+        toast.success("Event updated.");
+        router.push(eventDetail(editEventId));
+        return;
+      }
+
+      const event = await createEvent({
         user_id: user.id,
         name: values.eventName,
         start_date: values.startDate,
@@ -103,19 +186,50 @@ export default function CreateEvent() {
         bookings: values.bookings,
         latitude: coords.lat,
         longitude: coords.lng,
-        image:
-          "https://gratisography.com/wp-content/uploads/2025/05/gratisography-moon-robot-800x525.jpg",
-        status: "PUBLISHED",
+        image: imageUrl,
+        status: isDuplicateMode ? "draft" : "PUBLISHED",
       });
-      toast.success("Event created!");
-      router.push(ROUTES.host.earnings);
+
+      if (!event.slug) {
+        toast.error("Event saved but no slug was returned. Please try again.");
+        return;
+      }
+      setEventSlug(event.slug);
+      successModal.onOpen();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create event. Please try again.");
+      toast.error(
+        isEditMode
+          ? "Failed to update event. Please try again."
+          : "Failed to create event. Please try again.",
+      );
     } finally {
       setIsPending(false);
     }
   };
+
+  if (!user) return null;
+
+  if (loadId && loadPending) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center p-6">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
+  }
+
+  const startDateMin = relaxDateMin ? undefined : today;
+  const endDateMin = relaxDateMin
+    ? form.watch("startDate") || undefined
+    : form.watch("startDate") || today;
+
+  const pageTitle = isEditMode
+    ? "Edit Event"
+    : isDuplicateMode
+      ? "Duplicate Event"
+      : "Create Event";
+
+  const submitLabel = isEditMode ? "Save changes" : "Create Event";
 
   return (
     <div>
@@ -124,9 +238,8 @@ export default function CreateEvent() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-col gap-8 p-6 sm:p-8 lg:p-10"
         >
-          {/* Top bar */}
           <div className="flex justify-between items-center">
-            <p className="font-bricolage font-semibold">Create Event</p>
+            <p className="font-bricolage font-semibold">{pageTitle}</p>
             <div className="flex flex-wrap items-center justify-end gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -138,7 +251,7 @@ export default function CreateEvent() {
                       className="size-4 text-muted-foreground"
                       aria-hidden
                     />
-                    {visibilityLabel}
+                    {visibilityLabelMemo}
                     <ChevronDown
                       className="size-4 text-muted-foreground"
                       aria-hidden
@@ -170,9 +283,7 @@ export default function CreateEvent() {
             </div>
           </div>
 
-          {/* Banner + Form grid */}
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* Event Banner */}
             <div className="relative flex h-100 min-h-50 items-center justify-center overflow-hidden rounded-xl border border-border bg-white sm:min-h-70">
               {bannerPreview && (
                 <Image
@@ -180,6 +291,10 @@ export default function CreateEvent() {
                   alt="Event banner"
                   fill
                   className="object-cover"
+                  unoptimized={
+                    bannerPreview.startsWith("http://") ||
+                    bannerPreview.startsWith("https://")
+                  }
                 />
               )}
               <div className="absolute bottom-14 right-14">
@@ -215,9 +330,7 @@ export default function CreateEvent() {
               </div>
             </div>
 
-            {/* Form column */}
             <div className="flex flex-col gap-6">
-              {/* Event Name */}
               <FormField
                 control={form.control}
                 name="eventName"
@@ -241,19 +354,17 @@ export default function CreateEvent() {
                 )}
               />
 
-              {/* Event Details */}
               <div className="flex flex-col gap-4">
                 <h3 className="font-display text-base font-medium text-foreground">
                   Event Details
                 </h3>
 
-                {/* Start Date + Start Time */}
                 <div className="flex gap-3">
                   <DateSelector
                     control={form.control}
                     name="startDate"
                     inputRef={startDateRef}
-                    min={today}
+                    min={startDateMin}
                   />
 
                   <TimeSelector
@@ -264,13 +375,12 @@ export default function CreateEvent() {
                   />
                 </div>
 
-                {/* End Date + End Time */}
                 <div className="flex gap-3">
                   <DateSelector
                     control={form.control}
                     name="endDate"
                     inputRef={endDateRef}
-                    min={form.watch("startDate") || today}
+                    min={endDateMin}
                   />
 
                   <TimeSelector
@@ -281,7 +391,6 @@ export default function CreateEvent() {
                   />
                 </div>
 
-                {/* Location */}
                 <FormField
                   control={form.control}
                   name="location"
@@ -305,7 +414,6 @@ export default function CreateEvent() {
                   )}
                 />
 
-                {/* Description */}
                 <FormField
                   control={form.control}
                   name="description"
@@ -349,7 +457,6 @@ export default function CreateEvent() {
                 />
               </div>
 
-              {/* Event Category */}
               <FormField
                 control={form.control}
                 name="category"
@@ -371,7 +478,6 @@ export default function CreateEvent() {
                 )}
               />
 
-              {/* Ticketing (optional) */}
               <FormField
                 control={form.control}
                 name="ticketLink"
@@ -395,7 +501,6 @@ export default function CreateEvent() {
                 )}
               />
 
-              {/* Bookings */}
               <FormField
                 control={form.control}
                 name="bookings"
@@ -418,22 +523,23 @@ export default function CreateEvent() {
             </div>
           </div>
 
-          {/* Create Event Button */}
           <div className="flex justify-end">
-            <button
+            <Button
               type="submit"
-              // disabled={isPending}
               className={cn(
                 buttonVariants({ variant: "primary", size: "lg" }),
                 "min-w-45",
               )}
+              isLoading={isPending}
             >
-              Create Event
-            </button>
+              {submitLabel}
+            </Button>
           </div>
         </form>
       </Form>
-      <EventSuccessfulModal slug="runwae.io/sipnpaint" {...successModal} />
+      {!isEditMode && (
+        <EventSuccessfulModal slug={eventSlug ?? ""} {...successModal} />
+      )}
     </div>
   );
 }

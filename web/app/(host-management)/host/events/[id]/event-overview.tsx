@@ -2,7 +2,18 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import {
+  deleteEventHost,
+  getEventDetailForOwner,
+  insertEventHost,
+  insertEventSubEvent,
+  updateEventHost,
+} from "@/lib/supabase/events";
+import { useAuth } from "@/context/AuthContext";
+import { GoogleMapPreview } from "@/components/shared/google-map-preview";
+import { formatDate } from "@/lib/date";
 import {
   Calendar,
   Lock,
@@ -15,29 +26,12 @@ import {
 import { ROUTES, eventEdit } from "@/app/routes";
 import Image from "next/image";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useState } from "react";
+import { toast } from "sonner";
 import { type EventModalType, EventModals } from "./event-modals";
-
-// Mock data – replace with real data from API
-const mockEvent = {
-  id: "1",
-  name: "Afrobeat Fest",
-  imageUrl: "/logo-dark.png",
-  date: "Saturday, November 22, 2025",
-  timeRange: "12:00PM - November 23, 12:00AM",
-  location: "Landmark, Lagos Nigeria",
-  address: "Plot 2 4 3, water cooperation road...",
-  invitesAccepted: 20,
-  invitesSent: 300,
-  hosts: [
-    { name: "Emmanualla James", email: "jamesella@gmail.com", role: "CREATOR" },
-    { name: "John Donald", email: "johndonald@gmail.com", role: "MANAGER" },
-  ],
-  subEvents: [
-    { name: "Welcome Dinner", day: "DAY 1", date: "20-12-2025" },
-    { name: "Beach Day", day: "DAY 2", date: "20-12-2025" },
-  ],
-};
+import type { HostInfo } from "./event-modals/types";
 
 const tabs = [
   { id: "overview", label: "Overview" },
@@ -46,13 +40,66 @@ const tabs = [
   { id: "faqs", label: "FAQs" },
 ] as const;
 
-export default function EventOverview({ eventId }: { eventId: string }) {
-  const event = mockEvent;
+const PLACEHOLDER_IMAGE = "/logo-dark.png";
 
-  // Single source of truth: which modal is open (null = none)
+function formatEventDateLine(
+  date: string | null,
+  time: string | null,
+): string {
+  if (!date) return "—";
+  const t = (time?.trim() || "00:00").slice(0, 5);
+  try {
+    return format(new Date(`${date}T${t}`), "EEEE, MMMM d, yyyy");
+  } catch {
+    return date;
+  }
+}
+
+function formatEventTimeRange(
+  startDate: string | null,
+  startTime: string | null,
+  endDate: string | null,
+  endTime: string | null,
+): string {
+  if (!startDate) return "—";
+  const st = (startTime?.trim() || "00:00").slice(0, 5);
+  const ed = endDate || startDate;
+  const et = (endTime?.trim() || "23:59").slice(0, 5);
+  try {
+    const start = new Date(`${startDate}T${st}`);
+    const end = new Date(`${ed}T${et}`);
+    return `${format(start, "h:mm a")} – ${format(end, "h:mm a, MMM d, yyyy")}`;
+  } catch {
+    return "—";
+  }
+}
+
+function subEventDayLabel(
+  eventStartDate: string | null,
+  subStartsAt: string | null,
+): string | null {
+  if (!eventStartDate || !subStartsAt) return null;
+  try {
+    const start = new Date(eventStartDate);
+    const sub = new Date(subStartsAt);
+    start.setHours(0, 0, 0, 0);
+    sub.setHours(0, 0, 0, 0);
+    const diff = Math.round(
+      (sub.getTime() - start.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    if (diff < 0) return null;
+    return `DAY ${diff + 1}`;
+  } catch {
+    return null;
+  }
+}
+
+export default function EventOverview({ eventId }: { eventId: string }) {
+  const queryClient = useQueryClient();
+  const { user, profile, isLoading: authLoading } = useAuth();
+
   const [activeModal, setActiveModal] = useState<EventModalType>(null);
 
-  // Data for each modal (used when that modal is open)
   const [pendingHost, setPendingHost] = useState<{
     name: string;
     email: string;
@@ -60,10 +107,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
   const [configureShowOnPage, setConfigureShowOnPage] = useState(true);
   const [configureIsManager, setConfigureIsManager] = useState(true);
 
-  const [editingHost, setEditingHost] = useState<{
-    name: string;
-    email: string;
-  } | null>(null);
+  const [editingHost, setEditingHost] = useState<HostInfo | null>(null);
   const [updateShowOnPage, setUpdateShowOnPage] = useState(true);
   const [updateIsManager, setUpdateIsManager] = useState(true);
 
@@ -71,12 +115,25 @@ export default function EventOverview({ eventId }: { eventId: string }) {
   const [inviteMessage, setInviteMessage] = useState("");
   const inviteLink = "invitemeworoldofheroes/invite.com";
 
+  const {
+    data: detail,
+    isPending,
+    error,
+  } = useQuery({
+    queryKey: ["event-detail", eventId, user?.id],
+    queryFn: () => getEventDetailForOwner(eventId, user!.id),
+    enabled: !!user,
+  });
+
   const closeModal = () => setActiveModal(null);
 
-  // Add Host: open modal
+  const invalidateDetail = () =>
+    queryClient.invalidateQueries({
+      queryKey: ["event-detail", eventId, user?.id],
+    });
+
   const openAddHost = () => setActiveModal("add-host");
 
-  // Add Host Next → switch to Configure Host with pending host data
   const onAddHostNext = (name: string, email: string) => {
     setPendingHost({ name, email });
     setConfigureShowOnPage(true);
@@ -84,30 +141,94 @@ export default function EventOverview({ eventId }: { eventId: string }) {
     setActiveModal("configure-host");
   };
 
-  const onSendHostInvite = () => {
-    setPendingHost(null);
-    closeModal();
+  const onSendHostInvite = async () => {
+    if (!pendingHost) return;
+    try {
+      await insertEventHost({
+        event_id: eventId,
+        name: pendingHost.name,
+        email: pendingHost.email,
+        show_on_page: configureShowOnPage,
+        is_manager: configureIsManager,
+      });
+      await invalidateDetail();
+      setPendingHost(null);
+      closeModal();
+      toast.success("Host added.");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Could not add host. If this persists, apply the event_hosts migration in Supabase.",
+      );
+    }
   };
 
-  // Update Host: open with selected host, reset toggles to defaults
-  const openUpdateHost = (host: { name: string; email: string }) => {
+  const openUpdateHost = (host: HostInfo) => {
     setEditingHost(host);
-    setUpdateShowOnPage(true);
-    setUpdateIsManager(true);
+    const row = detail?.event_hosts.find((h) => h.id === host.id);
+    setUpdateShowOnPage(row?.show_on_page ?? true);
+    setUpdateIsManager(row?.is_manager ?? true);
     setActiveModal("update-host");
   };
 
-  const onUpdateHost = () => closeModal();
-  const onRemoveHost = () => {
-    setEditingHost(null);
-    closeModal();
+  const onUpdateHost = async () => {
+    if (!editingHost) return;
+    try {
+      await updateEventHost(editingHost.id, {
+        show_on_page: updateShowOnPage,
+        is_manager: updateIsManager,
+      });
+      await invalidateDetail();
+      setEditingHost(null);
+      closeModal();
+      toast.success("Host updated.");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error ? e.message : "Could not update host.",
+      );
+    }
   };
 
-  // Add Sub-Event
-  const openAddSubEvent = () => setActiveModal("add-sub-event");
-  const onAddSubEventNext = () => closeModal();
+  const onRemoveHost = async () => {
+    if (!editingHost) return;
+    try {
+      await deleteEventHost(editingHost.id);
+      await invalidateDetail();
+      setEditingHost(null);
+      toast.success("Host removed.");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error ? e.message : "Could not remove host.",
+      );
+    }
+  };
 
-  // Invite Guests
+  const openAddSubEvent = () => setActiveModal("add-sub-event");
+  const onAddSubEventNext = async (name: string, dateTime: string) => {
+    try {
+      const startsAt = new Date(dateTime).toISOString();
+      await insertEventSubEvent({
+        event_id: eventId,
+        name,
+        starts_at: startsAt,
+      });
+      await invalidateDetail();
+      toast.success("Sub-event added.");
+    } catch (e) {
+      console.error(e);
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Could not add sub-event. Apply the event_sub_events migration if needed.",
+      );
+      throw e;
+    }
+  };
+
   const openInviteGuests = () => {
     setInviteEmails([]);
     setInviteMessage("");
@@ -123,12 +244,59 @@ export default function EventOverview({ eventId }: { eventId: string }) {
   const onInviteBack = () => setActiveModal("invite-1");
   const onSendInvites = () => closeModal();
 
+  if (authLoading || !user) return null;
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center p-6">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !detail) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+        <p className="text-muted-foreground">
+          {error instanceof Error
+            ? error.message
+            : "We couldn’t load this event."}
+        </p>
+        <Link
+          href={ROUTES.host.events}
+          className={cn(buttonVariants({ variant: "primary", size: "default" }))}
+        >
+          Back to events
+        </Link>
+      </div>
+    );
+  }
+
+  const firstName = user.user_metadata?.first_name ?? "";
+  const lastName = user.user_metadata?.last_name ?? "";
+  const creatorName =
+    profile?.full_name?.trim() ||
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    "You";
+
+  const coHostRows = detail.event_hosts.map((h) => ({
+    key: h.id,
+    name: h.name,
+    email: h.email,
+    role: h.is_manager ? ("MANAGER" as const) : ("HOST" as const),
+    hostInfo: { id: h.id, name: h.name, email: h.email } satisfies HostInfo,
+  }));
+
+  const bannerSrc = detail.image?.trim() || PLACEHOLDER_IMAGE;
+  const locationPrimary = detail.location?.trim() || "—";
+  const descriptionSnippet =
+    detail.description?.trim().split("\n")[0]?.slice(0, 120) || "";
+
   return (
     <div className="flex flex-col gap-8 p-6 sm:p-8 lg:p-10">
-      {/* Event title + tabs */}
       <div className="flex flex-col gap-4">
         <h1 className="font-display text-2xl font-bold text-black sm:text-3xl">
-          {event.name}
+          {detail.name}
         </h1>
         <nav className="flex gap-6 border-b border-border">
           {tabs.map((tab) => (
@@ -139,7 +307,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
                 "relative pb-3 font-display text-sm font-medium transition-colors",
                 tab.id === "overview"
                   ? "text-black"
-                  : "text-muted-foreground hover:text-body"
+                  : "text-muted-foreground hover:text-body",
               )}
             >
               {tab.label}
@@ -151,15 +319,18 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </nav>
       </div>
 
-      {/* Event details card: image + date + location */}
       <div className="grid gap-4 lg:grid-cols-[1fr,minmax(280px,360px)]">
         <div className="relative aspect-16/10 overflow-hidden rounded-xl border border-border bg-muted/30 sm:aspect-2/1">
           <Image
-            src={event.imageUrl}
-            alt={event.name}
+            src={bannerSrc}
+            alt={detail.name}
             fill
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 60vw"
+            unoptimized={
+              bannerSrc.startsWith("http://") ||
+              bannerSrc.startsWith("https://")
+            }
           />
           <button
             type="button"
@@ -176,9 +347,16 @@ export default function EventOverview({ eventId }: { eventId: string }) {
                 <Calendar className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-body">{event.date}</p>
+                <p className="font-medium text-body">
+                  {formatEventDateLine(detail.start_date, detail.start_time)}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {event.timeRange}
+                  {formatEventTimeRange(
+                    detail.start_date,
+                    detail.start_time,
+                    detail.end_date,
+                    detail.end_time,
+                  )}
                 </p>
               </div>
             </div>
@@ -187,26 +365,32 @@ export default function EventOverview({ eventId }: { eventId: string }) {
                 <MapPin className="size-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-body">{event.location}</p>
-                <p className="text-sm text-muted-foreground">{event.address}</p>
-                <div className="mt-2 h-16 w-full overflow-hidden rounded-lg border border-border bg-muted/30">
-                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    Map preview
-                  </div>
-                </div>
+                <p className="font-medium text-body">{locationPrimary}</p>
+                {descriptionSnippet ? (
+                  <p className="text-sm text-muted-foreground">
+                    {descriptionSnippet}
+                    {detail.description && detail.description.length > 120
+                      ? "…"
+                      : ""}
+                  </p>
+                ) : null}
+                <GoogleMapPreview
+                  latitude={detail.latitude}
+                  longitude={detail.longitude}
+                  className="mt-2 border border-border"
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Share Event / Edit Event */}
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           className={cn(
             buttonVariants({ variant: "outline", size: "default" }),
-            "gap-2"
+            "gap-2",
           )}
         >
           Share Event
@@ -219,7 +403,6 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </Link>
       </div>
 
-      {/* Invites */}
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -236,7 +419,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             onClick={openInviteGuests}
             className={cn(
               buttonVariants({ variant: "outline", size: "default" }),
-              "mt-2 flex w-fit gap-2 sm:mt-0"
+              "mt-2 flex w-fit gap-2 sm:mt-0",
             )}
           >
             <UserPlus className="size-4" />
@@ -249,9 +432,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
               <Mail className="size-5 text-destructive" />
             </div>
             <div>
-              <p className="font-display text-2xl font-bold text-black">
-                {event.invitesAccepted}
-              </p>
+              <p className="font-display text-2xl font-bold text-black">0</p>
               <p className="text-sm text-muted-foreground">
                 Invites Accepted
               </p>
@@ -262,16 +443,13 @@ export default function EventOverview({ eventId }: { eventId: string }) {
               <Mail className="size-5 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-display text-2xl font-bold text-black">
-                {event.invitesSent}
-              </p>
+              <p className="font-display text-2xl font-bold text-black">0</p>
               <p className="text-sm text-muted-foreground">Invites Sent</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Hosts */}
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -287,59 +465,64 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             onClick={openAddHost}
             className={cn(
               buttonVariants({ variant: "outline", size: "default" }),
-              "mt-2 flex w-fit gap-2 sm:mt-0"
+              "mt-2 flex w-fit gap-2 sm:mt-0",
             )}
           >
             <UserPlus className="size-4" />
             Add Host
           </button>
         </div>
-        <div className="flex flex-col gap-2">
-          {event.hosts.map((host) => (
-            <div
-              key={host.email}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:px-5 sm:py-4"
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <Avatar className="size-10 shrink-0">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                    {host.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="font-medium text-body">{host.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {host.email}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-md px-2 py-0.5 text-xs font-medium",
-                    host.role === "CREATOR"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-                  )}
-                >
-                  {host.role}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => openUpdateHost({ name: host.name, email: host.email })}
-                className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-body"
-                aria-label="Edit host"
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-body">{creatorName}</span> ({user.email}) is the event creator.
+        </p>
+        {coHostRows.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {coHostRows.map((host) => (
+              <div
+                key={host.key}
+                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:px-5 sm:py-4"
               >
-                <Pencil className="size-4" />
-              </button>
-            </div>
-          ))}
-        </div>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar className="size-10 shrink-0">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                      {host.name
+                        .split(" ")
+                        .filter(Boolean)
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-medium text-body">{host.name}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {host.email}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-md px-2 py-0.5 text-xs font-medium",
+                      host.role === "MANAGER"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {host.role}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openUpdateHost(host.hostInfo)}
+                  className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-body"
+                  aria-label="Edit host"
+                >
+                  <Pencil className="size-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      {/* Sub Events */}
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -355,39 +538,52 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             onClick={openAddSubEvent}
             className={cn(
               buttonVariants({ variant: "outline", size: "default" }),
-              "mt-2 flex w-fit gap-2 sm:mt-0"
+              "mt-2 flex w-fit gap-2 sm:mt-0",
             )}
           >
             <UserPlus className="size-4" />
             Add Sub Event
           </button>
         </div>
-        <div className="flex flex-col gap-2">
-          {event.subEvents.map((sub) => (
-            <div
-              key={sub.name}
-              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:px-5 sm:py-4"
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <p className="font-medium text-body">{sub.name}</p>
-                <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  {sub.day}
-                </span>
-                <span className="text-sm text-muted-foreground">{sub.date}</span>
-              </div>
-              <button
-                type="button"
-                className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-body"
-                aria-label="Edit sub event"
-              >
-                <Pencil className="size-4" />
-              </button>
-            </div>
-          ))}
-        </div>
+        {detail.event_sub_events.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {detail.event_sub_events.map((sub) => {
+              const day = subEventDayLabel(detail.start_date, sub.starts_at);
+              const dateLabel = sub.starts_at
+                ? formatDate(sub.starts_at).date +
+                  " · " +
+                  formatDate(sub.starts_at).time
+                : "—";
+              return (
+                <div
+                  key={sub.id}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:px-5 sm:py-4"
+                >
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                    <p className="font-medium text-body">{sub.name}</p>
+                    {day ? (
+                      <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        {day}
+                      </span>
+                    ) : null}
+                    <span className="text-sm text-muted-foreground">
+                      {dateLabel}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-body"
+                    aria-label="Edit sub event"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
-      {/* Visibility & Discovery */}
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -402,7 +598,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             type="button"
             className={cn(
               buttonVariants({ variant: "outline", size: "default" }),
-              "mt-2 flex w-fit gap-2 sm:mt-0"
+              "mt-2 flex w-fit gap-2 sm:mt-0",
             )}
           >
             <Eye className="size-4" />
@@ -411,7 +607,6 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </div>
       </section>
 
-      {/* Single modals container: one dialog, content by activeModal */}
       <EventModals
         modal={activeModal}
         onClose={closeModal}

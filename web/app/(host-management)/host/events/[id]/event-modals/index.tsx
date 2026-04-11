@@ -57,7 +57,7 @@ export function EventModals(props: EventModalsProps) {
       title={title}
       description={description}
     >
-      <EventModalContent modal={modal} {...props} onClose={onClose} />
+      <EventModalContent {...props} onClose={onClose} />
     </SimpleModal>
   );
 }
@@ -89,8 +89,8 @@ function EventModalContent({
           isManager={p.updateIsManager}
           onIsManagerChange={p.setUpdateIsManager}
           onUpdate={p.onUpdateHost}
-          onRemove={() => {
-            p.onRemoveHost();
+          onRemove={async () => {
+            await p.onRemoveHost();
             onClose();
           }}
         />

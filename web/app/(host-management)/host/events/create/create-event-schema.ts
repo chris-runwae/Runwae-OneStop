@@ -1,4 +1,5 @@
 import { EVENT_VISIBILITY } from "@/lib/enums";
+import type { Event } from "@/lib/supabase/events";
 import z from "zod";
 
 export const createEventSchema = z.object({
@@ -35,3 +36,24 @@ export const createEventDefaultValues = {
   visibility: EVENT_VISIBILITY.PUBLIC,
   bannerImage: null,
 };
+
+export function mapEventRowToFormValues(
+  event: Event,
+  opts: { duplicate: boolean },
+): z.infer<typeof createEventSchema> {
+  return {
+    eventName: opts.duplicate ? `${event.name} (Copy)` : event.name,
+    startDate: event.start_date ?? "",
+    startTime: event.start_time ?? "",
+    endDate: event.end_date ?? "",
+    endTime: event.end_time ?? "",
+    location: event.location ?? "",
+    description: event.description ?? "",
+    category: event.category ?? "",
+    ticketLink: event.ticket_link ?? "",
+    eventSlug: "",
+    bookings: event.bookings ?? false,
+    visibility: EVENT_VISIBILITY.PUBLIC,
+    bannerImage: null,
+  };
+}

@@ -41,7 +41,7 @@ export default function Error({
             href={ROUTES.host.overview}
             className={cn(
               buttonVariants({ variant: "outline", size: "lg" }),
-              "inline-flex items-center gap-2 no-underline"
+              "inline-flex items-center gap-2 no-underline",
             )}
           >
             <HomeIcon className="size-4" aria-hidden />

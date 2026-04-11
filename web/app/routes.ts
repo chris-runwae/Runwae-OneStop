@@ -27,3 +27,8 @@ export function eventDetail(id: string) {
 export function eventEdit(id: string) {
   return `${ROUTES.host.events}/${id}/edit`;
 }
+
+/** Open create flow with an event prefilled as a duplicate */
+export function eventDuplicateHref(id: string) {
+  return `${ROUTES.host.eventsCreate}?duplicate=${encodeURIComponent(id)}`;
+}

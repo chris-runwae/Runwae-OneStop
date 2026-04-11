@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Spinner } from "@/components/ui/spinner";
 import Sidebar from "./_sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     signOut();
     router.push(ROUTES.login);
   };
+
+  if (isLoading || !user) {
+    return (
+      <div
+        className="flex h-screen items-center justify-center bg-page font-sans"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Spinner className="size-8 text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen font-sans">

@@ -5,19 +5,27 @@ import { ModalField } from "./ModalField";
 import { useState } from "react";
 
 interface AddSubEventModalProps {
-  onNext: (name: string, dateTime: string) => void;
+  onNext: (name: string, dateTime: string) => void | Promise<void>;
   onClose: () => void;
 }
 
 export function AddSubEventModal({ onNext, onClose }: AddSubEventModalProps) {
   const [name, setName] = useState("");
   const [dateTime, setDateTime] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = () => {
-    onNext(name, dateTime);
-    setName("");
-    setDateTime("");
-    onClose();
+  const handleSubmit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || !dateTime.trim()) return;
+    setBusy(true);
+    try {
+      await onNext(trimmed, dateTime.trim());
+      setName("");
+      setDateTime("");
+      onClose();
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -34,7 +42,12 @@ export function AddSubEventModal({ onNext, onClose }: AddSubEventModalProps) {
         value={dateTime}
         onChange={setDateTime}
       />
-      <Button variant="primary" className="mt-2 w-full" onClick={handleSubmit}>
+      <Button
+        variant="primary"
+        className="mt-2 w-full"
+        disabled={busy}
+        onClick={() => void handleSubmit()}
+      >
         Next
       </Button>
     </div>

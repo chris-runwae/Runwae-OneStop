@@ -1,25 +1,24 @@
 "use client";
 
+import { signIn } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { SubmitEvent, useState } from "react";
 import { toast } from "sonner";
-import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 
 export default function Login() {
-  const { signIn } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   useAuthRedirect(ROUTES.host.overview);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const email = form.get("email") as string;

@@ -1,17 +1,16 @@
 "use client";
 
+import { updatePassword } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function ResetPassword() {
   const router = useRouter();
-  const { updatePassword } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,12 +22,14 @@ export default function ResetPassword() {
     const params = new URLSearchParams(hash);
     const error = params.get("error");
     if (error) {
-      const description = params.get("error_description")?.replace(/\+/g, " ") ?? "This link is invalid or has expired.";
+      const description =
+        params.get("error_description")?.replace(/\+/g, " ") ??
+        "This link is invalid or has expired.";
       setLinkError(description);
     }
   }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!password || !confirmPassword) {
       toast.error("Please fill in both fields");

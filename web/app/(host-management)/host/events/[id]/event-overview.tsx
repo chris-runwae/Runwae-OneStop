@@ -1,9 +1,13 @@
 "use client";
 
+import { ROUTES, eventEdit } from "@/app/routes";
+import { GoogleMapPreview } from "@/components/shared/google-map-preview";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { getUserDisplayInfo } from "@/lib/auth";
+import { formatDate } from "@/lib/date";
 import {
   deleteEventHost,
   getEventDetailForOwner,
@@ -11,23 +15,20 @@ import {
   insertEventSubEvent,
   updateEventHost,
 } from "@/lib/supabase/events";
-import { useAuth } from "@/context/AuthContext";
-import { GoogleMapPreview } from "@/components/shared/google-map-preview";
-import { formatDate } from "@/lib/date";
+import { cn } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   Calendar,
+  Eye,
   Lock,
   Mail,
   MapPin,
   Pencil,
   UserPlus,
-  Eye,
 } from "lucide-react";
-import { ROUTES, eventEdit } from "@/app/routes";
 import Image from "next/image";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type EventModalType, EventModals } from "./event-modals";
@@ -42,10 +43,7 @@ const tabs = [
 
 const PLACEHOLDER_IMAGE = "/logo-dark.png";
 
-function formatEventDateLine(
-  date: string | null,
-  time: string | null,
-): string {
+function formatEventDateLine(date: string | null, time: string | null): string {
   if (!date) return "—";
   const t = (time?.trim() || "00:00").slice(0, 5);
   try {
@@ -96,7 +94,7 @@ function subEventDayLabel(
 
 export default function EventOverview({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   const [activeModal, setActiveModal] = useState<EventModalType>(null);
 
@@ -186,9 +184,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
       toast.success("Host updated.");
     } catch (e) {
       console.error(e);
-      toast.error(
-        e instanceof Error ? e.message : "Could not update host.",
-      );
+      toast.error(e instanceof Error ? e.message : "Could not update host.");
     }
   };
 
@@ -201,9 +197,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
       toast.success("Host removed.");
     } catch (e) {
       console.error(e);
-      toast.error(
-        e instanceof Error ? e.message : "Could not remove host.",
-      );
+      toast.error(e instanceof Error ? e.message : "Could not remove host.");
     }
   };
 
@@ -264,7 +258,9 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </p>
         <Link
           href={ROUTES.host.events}
-          className={cn(buttonVariants({ variant: "primary", size: "default" }))}
+          className={cn(
+            buttonVariants({ variant: "primary", size: "default" }),
+          )}
         >
           Back to events
         </Link>
@@ -272,12 +268,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
     );
   }
 
-  const firstName = user.user_metadata?.first_name ?? "";
-  const lastName = user.user_metadata?.last_name ?? "";
-  const creatorName =
-    profile?.full_name?.trim() ||
-    [firstName, lastName].filter(Boolean).join(" ") ||
-    "You";
+  const { fullName: creatorName } = getUserDisplayInfo(user);
 
   const coHostRows = detail.event_hosts.map((h) => ({
     key: h.id,
@@ -397,7 +388,9 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </button>
         <Link
           href={eventEdit(eventId)}
-          className={cn(buttonVariants({ variant: "primary", size: "default" }))}
+          className={cn(
+            buttonVariants({ variant: "primary", size: "default" }),
+          )}
         >
           Edit Event
         </Link>
@@ -433,9 +426,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             </div>
             <div>
               <p className="font-display text-2xl font-bold text-black">0</p>
-              <p className="text-sm text-muted-foreground">
-                Invites Accepted
-              </p>
+              <p className="text-sm text-muted-foreground">Invites Accepted</p>
             </div>
           </div>
           <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
@@ -453,9 +444,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold text-black">
-              Hosts
-            </h2>
+            <h2 className="font-display text-lg font-bold text-black">Hosts</h2>
             <p className="text-sm text-muted-foreground">
               Manage who has access to your event controls.
             </p>
@@ -473,7 +462,8 @@ export default function EventOverview({ eventId }: { eventId: string }) {
           </button>
         </div>
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-body">{creatorName}</span> ({user.email}) is the event creator.
+          <span className="font-medium text-body">{creatorName}</span> (
+          {user.email}) is the event creator.
         </p>
         {coHostRows.length > 0 ? (
           <div className="flex flex-col gap-2">

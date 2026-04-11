@@ -48,7 +48,7 @@ export const updateUserMeta = async (
   return { error: null };
 };
 
-const signUp = async ({
+export const signUp = async ({
   email,
   password,
   firstName,
@@ -74,4 +74,17 @@ const signUp = async ({
   const needsVerification =
     data.user?.identities?.length === 0 ? false : !data.session;
   return { error: null, needsVerification };
+};
+
+export const signIn = async (
+  email: string,
+  password: string,
+): Promise<{ error: string | null }> => {
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) return { error: error.message };
+  return { error: null };
 };

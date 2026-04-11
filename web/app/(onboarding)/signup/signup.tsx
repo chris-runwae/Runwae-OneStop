@@ -1,24 +1,23 @@
 "use client";
 
+import { resendVerification, signIn, signUp } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { PhoneInput } from "@/components/shared/phone-input";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
-import { useAuth } from "@/context/AuthContext";
 import { Building2, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { SubmitEvent, useState } from "react";
 import { toast } from "sonner";
 
 export default function SignUp() {
-  const { signUp, signIn, resendVerification } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [phone, setPhone] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
 
@@ -52,7 +51,10 @@ export default function SignUp() {
     setIsLoading(false);
 
     if (error) {
-      if (error.includes("already registered") || error.includes("already exists")) {
+      if (
+        error.includes("already registered") ||
+        error.includes("already exists")
+      ) {
         // Try signing them in to determine their verification state
         const { error: signInError } = await signIn(email, password);
 
@@ -62,10 +64,17 @@ export default function SignUp() {
           return;
         }
 
-        if (signInError.toLowerCase().includes("not confirmed") || signInError.toLowerCase().includes("email not confirmed")) {
-          toast.warning("Account exists but isn't verified. Sending a new code…");
+        if (
+          signInError.toLowerCase().includes("not confirmed") ||
+          signInError.toLowerCase().includes("email not confirmed")
+        ) {
+          toast.warning(
+            "Account exists but isn't verified. Sending a new code…",
+          );
           await resendVerification(email);
-          router.push(`${ROUTES.verifyAccount}?email=${encodeURIComponent(email)}`);
+          router.push(
+            `${ROUTES.verifyAccount}?email=${encodeURIComponent(email)}`,
+          );
           return;
         }
 

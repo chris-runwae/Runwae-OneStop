@@ -1,17 +1,19 @@
 "use client";
 
-import type { ApexOptions } from "apexcharts";
-import dynamic from "next/dynamic";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ApexOptions } from "apexcharts";
 import { ChevronDownIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import { EventMetrics } from "../overview/components/event-metrics";
 
-const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+const ReactApexChart = dynamic(() => import("react-apexcharts"), {
+  ssr: false,
+});
 
 const kpiCards = [
   {
@@ -103,7 +105,7 @@ const topItinerariesChartOptions: ApexOptions = {
   },
   dataLabels: {
     enabled: true,
-    formatter: (_, opts) => `${opts.w.config.series[opts.seriesIndex]}%`,
+    formatter: (val: number) => `${val}%`,
   },
   legend: { show: false },
   tooltip: { theme: "light" },
@@ -111,14 +113,14 @@ const topItinerariesChartOptions: ApexOptions = {
 
 // Simple world map marker positions (approx lat/lng as % of container)
 const mapMarkers = [
-  { x: 22, y: 38 },   // North America
-  { x: 28, y: 52 },   // Europe
-  { x: 52, y: 42 },   // Asia
-  { x: 48, y: 62 },   // Russia
-  { x: 52, y: 28 },   // Middle East
-  { x: 50, y: 52 },   // Africa
-  { x: 32, y: 72 },   // South America
-  { x: 78, y: 68 },   // Australia
+  { x: 22, y: 38 }, // North America
+  { x: 28, y: 52 }, // Europe
+  { x: 52, y: 42 }, // Asia
+  { x: 48, y: 62 }, // Russia
+  { x: 52, y: 28 }, // Middle East
+  { x: 50, y: 52 }, // Africa
+  { x: 32, y: 72 }, // South America
+  { x: 78, y: 68 }, // Australia
 ];
 
 const eventOptions = [
@@ -137,7 +139,8 @@ export default function AttendeeInsights() {
             Attendee Insights
           </h1>
           <p className="mt-1 text-sm font-medium tracking-tight text-muted-foreground">
-            Understand where your attendees are coming from and how they plan their Trips.
+            Understand where your attendees are coming from and how they plan
+            their Trips.
           </p>
         </div>
         <DropdownMenu>
@@ -186,7 +189,11 @@ export default function AttendeeInsights() {
             aria-hidden
           >
             {/* Simplified continent shapes - grey fill */}
-            <path fill="currentColor" className="text-border" d="M120 180h80v120h-80z M220 140h100v160h-100z M340 160h80v140h-80z M500 120h120v180h-120z M640 140h100v160h-100z M760 160h80v140h-80z M120 320h90v100h-90z M230 300h110v120h-110z M360 320h100v100h-100z M480 310h140v110h-140z M640 320h100v100h-100z M760 320h80v100h-80z" />
+            <path
+              fill="currentColor"
+              className="text-border"
+              d="M120 180h80v120h-80z M220 140h100v160h-100z M340 160h80v140h-80z M500 120h120v180h-120z M640 140h100v160h-100z M760 160h80v140h-80z M120 320h90v100h-90z M230 300h110v120h-110z M360 320h100v100h-100z M480 310h140v110h-140z M640 320h100v100h-100z M760 320h80v100h-80z"
+            />
           </svg>
           <svg
             viewBox="0 0 1000 500"
@@ -223,7 +230,9 @@ export default function AttendeeInsights() {
               type="bar"
               height={260}
               options={topCountriesChartOptions}
-              series={[{ name: "Attendees", data: topCountries.map((c) => c.value) }]}
+              series={[
+                { name: "Attendees", data: topCountries.map((c) => c.value) },
+              ]}
             />
           </div>
         </div>

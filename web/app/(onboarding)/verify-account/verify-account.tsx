@@ -1,27 +1,25 @@
 "use client";
 
+import { resendVerification, verifyEmail } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 import { COUNTDOWN_KEY, useCountdown } from "@/hooks/use-countdown";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuthRedirect } from "@/hooks/use-auth-redirect";
 
 export default function VerifyAccount() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
-
-  const { verifyEmail, resendVerification } = useAuth();
 
   useAuthRedirect(ROUTES.host.overview);
 

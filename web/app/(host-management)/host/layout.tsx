@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/context/AuthContext";
+import { getUserDisplayInfo } from "@/lib/auth";
 import {
   ChevronDown,
   ChevronUp,
@@ -25,7 +26,7 @@ import Sidebar from "./_sidebar";
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, signOut, isLoading } = useAuth();
   const router = useRouter();
 
   console.log(user, isLoading);
@@ -37,15 +38,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
 
-  const firstName = user?.user_metadata?.first_name ?? "";
-  const lastName = user?.user_metadata?.last_name ?? "";
-  const fullName =
-    profile?.full_name ??
-    ([firstName, lastName].filter(Boolean).join(" ") || "Admin");
-  const email = user?.email ?? "";
-  const avatarUrl = profile?.avatar_url ?? null;
-  const initials =
-    [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "A";
+  const { fullName, initials, avatarUrl, email, firstName } =
+    getUserDisplayInfo(user);
 
   const handleLogout = () => {
     signOut();

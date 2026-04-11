@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { updateUserMeta } from "@/api/onboarding";
 import { PhoneInput } from "@/components/shared/phone-input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { InputField } from "@/components/ui/input-field";
+import { useAuth } from "@/context/AuthContext";
 import {
   Building2,
   Camera,
@@ -24,7 +25,13 @@ import {
   Twitter,
   User,
 } from "lucide-react";
-import { type ComponentType, type SVGProps, useEffect, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type SVGProps,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 export interface SocialMediaLink {
@@ -54,7 +61,7 @@ const inputRowClass =
   "flex flex-col gap-5 sm:flex-row sm:gap-5 [&>*]:min-w-0 [&>*]:flex-1";
 
 export default function ProfileTab() {
-  const { user, profile, updateProfile, uploadProfileImage, updateUserMeta } = useAuth();
+  const { user, uploadProfileImage } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [firstName, setFirstName] = useState("");
@@ -79,10 +86,10 @@ export default function ProfileTab() {
       setOrganisation(meta.organisation ?? "");
       setPhone(meta.phone ?? "");
     }
-    if (profile) {
-      setAvatarUrl(profile.avatar_url ?? null);
+    if (user) {
+      setAvatarUrl(user.user_metadata?.avatar_url ?? null);
     }
-  }, [user, profile]);
+  }, [user]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,13 +107,13 @@ export default function ProfileTab() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const fullName = [firstName, lastName].filter(Boolean).join(" ") || null;
-    const [profileResult, metaResult] = await Promise.all([
-      updateProfile({ full_name: fullName }),
-      updateUserMeta({ first_name: firstName, last_name: lastName, phone, organisation }),
-    ]);
+    const { error } = await updateUserMeta({
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      organisation,
+    });
     setIsSaving(false);
-    const error = profileResult.error ?? metaResult.error;
     if (error) {
       toast.error(error);
       return;

@@ -1,7 +1,7 @@
 "use client";
 
+import { resetPassword } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/ui/input-field";
 import { ArrowLeft, Mail } from "lucide-react";
@@ -11,7 +11,6 @@ import { toast } from "sonner";
 
 export default function ForgotPassword() {
   const router = useRouter();
-  const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 

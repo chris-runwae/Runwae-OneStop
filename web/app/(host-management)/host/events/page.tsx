@@ -22,7 +22,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { VIEW_MODES } from "@/lib/constants";
+import { formatDate } from "@/lib/date";
+import { deleteEvent, getEvents, type Event } from "@/lib/supabase/events";
 import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
   ChevronDown,
@@ -36,15 +41,10 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { deleteEvent, getEvents, type Event } from "@/lib/supabase/events";
-import { formatDate } from "@/lib/date";
-import { VIEW_MODES } from "@/lib/constants";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 type ViewMode = "column" | "grid";
@@ -72,11 +72,7 @@ function EventActionsMenu({
           <MoreVertical className="size-4 shrink-0" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        sideOffset={4}
-        className="z-[200] min-w-48"
-      >
+      <DropdownMenuContent align="end" sideOffset={4} className="min-w-48">
         <DropdownMenuItem
           className="cursor-pointer gap-2"
           onSelect={() => router.push(eventDetail(event.id))}

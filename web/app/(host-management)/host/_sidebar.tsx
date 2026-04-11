@@ -1,8 +1,9 @@
 "use client";
 
 import { ROUTES } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/context/AuthContext";
+import { getUserDisplayInfo } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import {
   BaggageClaimIcon,
@@ -47,15 +48,10 @@ interface SidebarProps {
 
 export default function Sidebar({ open = true, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
-  const firstName = user?.user_metadata?.first_name ?? "";
-  const lastName = user?.user_metadata?.last_name ?? "";
-  const fullName = profile?.full_name ?? ([firstName, lastName].filter(Boolean).join(" ") || "Admin");
-  const email = user?.email ?? "";
-  const avatarUrl = profile?.avatar_url ?? null;
-  const initials = [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "A";
+  const { fullName, initials, avatarUrl, email } = getUserDisplayInfo(user);
 
   const handleLogout = () => {
     signOut();

@@ -4,7 +4,6 @@ import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
-import { ADD_ONS_FOR_YOU, UPCOMING_EVENTS } from '@/constants/home.constant';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -12,6 +11,9 @@ import { RefreshControl, ScrollView } from 'react-native';
 
 import { useTrips } from '@/context/TripsContext';
 import { TripWithEverything } from '@/hooks/useTripActions';
+import { Event, Experience } from '@/types/content.types';
+import { getFeaturedEvents } from '@/utils/supabase/events.service';
+import { getFeaturedExperiences } from '@/utils/supabase/experiences.service';
 
 export default function HomeScreen() {
   const {
@@ -25,6 +27,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const { myTrips, joinedTrips } = useTrips();
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>([]);
 
   function isActive(trip: TripWithEverything): boolean {
     const endDate = trip.trip_details?.end_date;
@@ -43,15 +47,27 @@ export default function HomeScreen() {
   );
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [eventsData, experiencesData] = await Promise.all([
+          getFeaturedEvents(),
+          getFeaturedExperiences(),
+        ]);
+        setFeaturedEvents(eventsData);
+        setFeaturedExperiences(experiencesData);
+      } catch (err) {
+        console.error('HomeScreen: Error fetching featured data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Simulate a network request
     setTimeout(() => {
       setRefreshing(false);
     }, 1500);
@@ -72,13 +88,12 @@ export default function HomeScreen() {
         <HomeTopSection user={user} dark={dark} />
         <UpcomingTrips trips={upcomingTrips} loading={loading} />
         <UpcomingEvents
-          data={UPCOMING_EVENTS}
+          data={featuredEvents}
           title="Featured Events"
           showSubtitle={false}
           loading={loading}
         />
-        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
-        {/* <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} /> */}
+        <AddOnsForYou data={featuredExperiences} loading={loading} />
       </ScrollView>
 
       <WelcomeModal

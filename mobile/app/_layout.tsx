@@ -26,7 +26,8 @@ import ToastManager from 'toastify-react-native';
 import SplashScreen from '@/components/ui/splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorScheme } from 'nativewind';
+import { getThemePreference } from '@/utils/storage';
 import '../global.css';
 
 function RouteGuard() {
@@ -150,7 +151,17 @@ function RouteGuard() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  useEffect(() => {
+    async function loadTheme() {
+      const storedTheme = await getThemePreference();
+      if (storedTheme) {
+        setColorScheme(storedTheme);
+      }
+    }
+    loadTheme();
+  }, [setColorScheme]);
   const [fontsLoaded] = useFonts({
     'BricolageGrotesque-Regular': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Regular.ttf'),
     'BricolageGrotesque-Medium': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Medium.ttf'),

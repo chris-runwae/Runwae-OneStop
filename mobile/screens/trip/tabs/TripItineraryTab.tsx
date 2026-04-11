@@ -74,12 +74,13 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
     return () => clearTimeout(timer);
   }, [containerWidth, todayIndex]);
 
+  const { dark } = useTheme();
+  const colors = Colors[dark ? 'dark' : 'light'];
+
   const renderItem = ({ item: date }: { item: Date }) => {
     const isSelected = isSameDay(date, selectedDate);
     const dayLetter = format(date, 'EEEEE');
     const dayNum = format(date, 'd');
-    const { dark } = useTheme();
-    const colors = Colors[dark ? 'dark' : 'light'];
 
     return (
       <Pressable onPress={() => onSelectDate(date)} style={styles.dateColumn}>
@@ -111,9 +112,6 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
       </Pressable>
     );
   };
-
-  const { dark } = useTheme();
-  const colors = Colors[dark ? 'dark' : 'light'];
 
   return (
     <View

@@ -1,4 +1,4 @@
-import { Event } from '@/constants/home.constant';
+import { Event } from '@/types/content.types';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
@@ -11,7 +11,7 @@ interface EventCardProps {
 }
 
 const getCategoryEmoji = (category: string) => {
-  const cat = category.toLowerCase();
+  const cat = category?.toLowerCase() ?? '';
   if (cat.includes('food') || cat.includes('culinary')) return '🍽️';
   if (cat.includes('music') || cat.includes('culture') || cat.includes('fest'))
     return '🎶';
@@ -42,8 +42,7 @@ const EventCard = ({
 
   const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';
   const emoji = getCategoryEmoji(event.category);
-
-  const formattedDate = event.date.split(' 20')[0].split('-')[0].trim();
+  const title = event.title || 'Untitled Event';
 
   return (
     <Pressable
@@ -92,24 +91,24 @@ const EventCard = ({
         )}
       </View>
 
-      <View className={`mb-1 mt-2 flex-row items-center`}>
+      <View className={`mb-1 mt-2 flex-row items-center gap-x-1`}>
         <Text
-          className={`flex-1 text-[14px] font-bold leading-tight text-black dark:text-white`}
+          className={`flex-1 text-[14px] font-bold text-black dark:text-white`}
           style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
-          numberOfLines={1}>
-          {event.title}
+          numberOfLines={2}>
+          {title}
         </Text>
         {inlineEmoji && <Text className="text-[14px]">{emoji}</Text>}
       </View>
 
       <View className="flex-row items-center">
         <Text className="border-r border-gray-300 pr-1.5 text-xs text-gray-500 dark:border-gray-600 dark:text-gray-400">
-          {formattedDate}
+          {event.date}
         </Text>
         <Text
           className="flex-1 pl-1.5 text-xs text-gray-500 dark:text-gray-400"
           numberOfLines={1}>
-          {event.location.split(',')[0]}
+          {event.location?.split(',')[0]}
         </Text>
       </View>
     </Pressable>

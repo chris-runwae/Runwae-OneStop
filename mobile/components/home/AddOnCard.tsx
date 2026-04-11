@@ -1,11 +1,11 @@
-import { AddOn } from '@/constants/home.constant';
+import { Experience } from '@/types/content.types';
 import { useRouter } from 'expo-router';
 import { Users } from 'lucide-react-native';
 import React from 'react';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
 
 interface AddOnCardProps {
-  item: AddOn;
+  item: Experience;
   index?: number;
   fullWidth?: boolean;
 }
@@ -41,7 +41,7 @@ const AddOnCard = ({ item, index = 0, fullWidth = false }: AddOnCardProps) => {
         </View>
 
         <View
-          className={`absolute h-[72px] w-[72px] overflow-hidden rounded-[10px] border-[3px] border-white bg-gray-200 ${
+          className={`absolute h-[72px] w-[72px] overflow-hidden rounded-[10px] border-[3px] border-white dark:border-dark-bg bg-gray-200 dark:bg-dark-seconndary ${
             isEven
               ? 'bottom-[-16px] left-[16px]'
               : 'left-[20px] top-[-16px] -rotate-12 transform'

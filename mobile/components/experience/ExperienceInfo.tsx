@@ -13,7 +13,16 @@ const ExperienceInfo = ({
   price,
   description,
   category,
-}: ExperienceInfoProps) => {
+  location,
+  durationMinutes,
+  cost,
+  currency,
+}: ExperienceInfoProps & {
+  location?: string;
+  durationMinutes?: number;
+  cost?: number;
+  currency?: string;
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -26,8 +35,25 @@ const ExperienceInfo = ({
       </Text>
 
       <View className="flex-row items-baseline gap-x-1 mb-4">
-        <Text className="font-bold dark:text-white">${price}</Text>
+        <Text className="font-bold dark:text-white">${cost || price} {currency || ""}</Text>
         <Text className="text-gray-400 text-sm">starting price/person</Text>
+      </View>
+
+      <View className="flex-row items-center gap-x-2 mb-4">
+        {location && (
+          <View className="bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30">
+            <Text className="text-blue-600 dark:text-blue-400 text-xs font-semibold">
+              📍 {location}
+            </Text>
+          </View>
+        )}
+        {durationMinutes && (
+          <View className="bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/30">
+            <Text className="text-orange-600 dark:text-orange-400 text-xs font-semibold">
+              ⏱️ {durationMinutes} mins
+            </Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row mb-6">

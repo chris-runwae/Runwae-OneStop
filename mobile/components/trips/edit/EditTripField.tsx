@@ -1,7 +1,14 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet, useColorScheme, Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@react-navigation/native';
+import React from 'react';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
+} from 'react-native';
 
 interface EditTripFieldProps {
   label: string;

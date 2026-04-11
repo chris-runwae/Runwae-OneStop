@@ -14,7 +14,8 @@ import {
 import { AppFonts, COLORS } from '@/constants/theme';
 import { fetchItineraryItemsCount } from '@/hooks/useItineraryActions';
 import { TripWithEverything } from '@/hooks/useTripActions';
-import { calculateDuration, getDaysUntil, formatDaysToGo } from '@/utils/date';
+import { formatDaysToGo, getDaysUntil } from '@/utils/date';
+import { useTheme } from '@react-navigation/native';
 import AvatarGroup from './AvatarGroup';
 
 interface TripCardProps {
@@ -52,17 +53,20 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
     initials: m.profiles?.full_name?.charAt(0) || '?',
   }));
   const extraCount = Math.max(0, (trip.group_members?.length || 0) - 3);
+  const DARK_SEC = '#212529';
+
+  const { dark } = useTheme();
 
   return (
     <Pressable
       onPress={() => {
         router.push(`/(tabs)/(trips)/${trip.id}`);
       }}
+      className="bg-white dark:bg-dark-seconndary/50"
       style={[
         styles.card,
         {
           width: fullWidth ? '100%' : 340,
-          backgroundColor: isDark ? COLORS.black.dark880 : COLORS.white.default,
         },
         Platform.OS === 'ios' ? styles.shadowIos : styles.shadowAndroid,
       ]}>

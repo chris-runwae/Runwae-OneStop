@@ -69,6 +69,9 @@ const ItineraryDetail = () => {
           activitiesCount={itinerary.activities}
           duration={itinerary.duration}
           description={itinerary.description || ""}
+          durationMinutes={itinerary.durationMinutes}
+          cost={itinerary.cost}
+          currency={itinerary.currency}
         />
 
         <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />

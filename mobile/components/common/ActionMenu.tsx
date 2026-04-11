@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import React from 'react';
 import {
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check } from 'lucide-react-native';
 
 export interface ActionOption {
   label: string;
@@ -18,6 +20,7 @@ export interface ActionOption {
   isDestructive?: boolean;
   isBold?: boolean;
   hasSeparator?: boolean;
+  isSelected?: boolean;
 }
 
 interface ActionMenuProps {
@@ -46,8 +49,8 @@ const ActionMenu = ({
             style={[
               styles.menuContainer,
               {
-                backgroundColor: dark ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.5)',
-                borderColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.5)',
+                backgroundColor: dark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.85)',
+                borderColor: dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.7)',
               },
               anchorPosition
                 ? { 
@@ -57,30 +60,39 @@ const ActionMenu = ({
                   }
                 : { top: insets.top + 100, right: 24 },
             ]}>
-            <BlurView intensity={30} tint={dark ? 'dark' : 'light'} style={styles.blurContainer}>
-              {options.map((option, index) => (
-                <View key={index}>
-                  {option.hasSeparator && (
-                    <View style={[styles.separator, { backgroundColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]} />
-                  )}
-                  <TouchableOpacity
-                    onPress={() => {
-                      onClose();
-                      option.onPress();
-                    }}
-                    style={styles.option}>
-                    <Text
-                      style={[
-                        styles.optionText,
-                        { color: colors.textColors.default },
-                        option.isDestructive && styles.destructiveText,
-                        option.isBold && styles.boldText,
-                      ]}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+            <BlurView intensity={90} tint={dark ? 'dark' : 'light'} style={styles.blurContainer}>
+              <ScrollView 
+                style={{ maxHeight: 240 }} 
+                showsVerticalScrollIndicator={false}
+                bounces={options.length > 5}
+              >
+                {options.map((option, index) => (
+                  <View key={index}>
+                    {option.hasSeparator && (
+                      <View style={[styles.separator, { backgroundColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]} />
+                    )}
+                    <TouchableOpacity
+                      onPress={() => {
+                        onClose();
+                        option.onPress();
+                      }}
+                      style={[styles.option, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          { color: colors.textColors.default },
+                          option.isDestructive && styles.destructiveText,
+                          option.isBold && styles.boldText,
+                        ]}>
+                        {option.label}
+                      </Text>
+                      {option.isSelected && (
+                        <Check size={16} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
             </BlurView>
           </View>
         </View>

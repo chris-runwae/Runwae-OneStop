@@ -1,6 +1,6 @@
 import { AddOnCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
-import { AddOn } from '@/constants/home.constant';
+import { Experience } from '@/types/content.types';
 import { useRouter } from 'expo-router';
 import React from 'react';
 
@@ -8,7 +8,7 @@ import { FlatList, Text, View } from 'react-native';
 import AddOnCard from './AddOnCard';
 
 interface AddOnsForYouProps {
-  data: AddOn[];
+  data: Experience[];
   title?: string;
   subtitle?: string;
   loading?: boolean;
@@ -23,7 +23,7 @@ const AddOnsForYou = ({
   showSubtitle = true,
   showBorder = true,
 }: AddOnsForYouProps) => {
-  const displayData = loading ? Array(5).fill({}) : data;
+  const displayData = loading ? (Array(5).fill({}) as Experience[]) : data;
   const router = useRouter();
   const isNavigating = React.useRef(false);
 
@@ -48,7 +48,7 @@ const AddOnsForYou = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
-          marginTop: 16,
+          marginTop: 30,
           paddingHorizontal: 20,
         }}
         keyExtractor={(item, index) =>

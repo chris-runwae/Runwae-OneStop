@@ -7,13 +7,19 @@ import { useEffect, useState } from "react";
 type DetailType = "itinerary" | "experience" | "destination";
 
 export function useDetailItem(type: DetailType) {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string }>();
+  // Handle case where id might be an array or undefined
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      console.warn(`useDetailItem: No ID found for type ${type}`);
+      return;
+    }
 
     let cancelled = false;
     setLoading(true);
@@ -21,16 +27,24 @@ export function useDetailItem(type: DetailType) {
 
     const fetch = async () => {
       try {
+        console.log(`useDetailItem: Fetching ${type} with ID: ${id}`);
         let result: any = null;
         if (type === "itinerary") {
-          result = await getItineraryTemplateById(id as string);
+          result = await getItineraryTemplateById(id);
         } else if (type === "experience") {
-          result = await getExperienceById(id as string);
+          result = await getExperienceById(id);
         } else {
-          result = await getDestinationById(id as string);
+          result = await getDestinationById(id);
         }
-        if (!cancelled) setItem(result);
+
+        if (!cancelled) {
+          if (!result) {
+            console.log(`useDetailItem: No ${type} found for ID: ${id}`);
+          }
+          setItem(result);
+        }
       } catch (e: any) {
+        console.error(`useDetailItem: Error fetching ${type} (${id}):`, e);
         if (!cancelled) setError(e.message ?? "Failed to load");
       } finally {
         if (!cancelled) setLoading(false);

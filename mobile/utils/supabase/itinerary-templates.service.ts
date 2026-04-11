@@ -18,6 +18,13 @@ function mapRow(row: any): ItineraryTemplate {
     featured: row.featured ?? false,
     included: Array.isArray(row.included) ? row.included : [],
     dailyItinerary: Array.isArray(row.daily_itinerary) ? row.daily_itinerary : [],
+    locationLat: row.location_lat ?? row.locationlat,
+    locationLng: row.location_lng ?? row.locationlng,
+    durationMinutes: row.duration_minutes ?? row.durationminutes,
+    cost: row.cost ? Number(row.cost) : undefined,
+    currency: row.currency ?? "",
+    bookingReference: row.booking_reference ?? row.bookingreference,
+    cols: row.cols,
   };
 }
 

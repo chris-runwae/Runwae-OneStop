@@ -1,11 +1,11 @@
-import { AddOn } from '@/constants/home.constant';
+import { Experience } from '@/types/content.types';
 import { useRouter } from 'expo-router';
 import { Users } from 'lucide-react-native';
 import React from 'react';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
 
 interface AddOnCardProps {
-  item: AddOn;
+  item: Experience;
   index?: number;
   fullWidth?: boolean;
 }

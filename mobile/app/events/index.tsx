@@ -3,65 +3,85 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { EventCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { Event, UPCOMING_EVENTS } from "@/constants/home.constant";
-import React, { useMemo, useState } from "react";
+import { Event } from "@/types/content.types";
+import { getEvents, searchEvents } from "@/utils/supabase/events.service";
+import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
 const EmptyState = () => (
-  <View className="flex-1 items-center justify-center w-full bg-gray-200 dark:bg-dark-seconndary/50">
+  <View className="flex-1 items-center justify-center w-full bg-transparent px-10">
     <Image
       source={require("@/assets/images/search-empty-icon.png")}
-      className="w-[80px] h-[80px] mb-8"
+      className="w-[120px] h-[120px] mb-6 opacity-60"
       resizeMode="contain"
     />
     <Text
-      className="font-semibold text-lg dark:text-white text-center leading-tight mb-2"
+      className="font-bold text-xl dark:text-white text-center leading-tight mb-2"
       style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
     >
       No events found
     </Text>
-    <Text className="text-sm text-gray-400 text-center leading-relaxed">
-      Want to try adjusting your words or use a {"\n"}different keyword.
+    <Text className="text-sm text-gray-500 dark:text-gray-400 text-center leading-relaxed">
+      Try adjusting your search terms or use a different keyword to find what you're looking for.
     </Text>
   </View>
 );
 
 const EventsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
+  const fetchEvents = useCallback(async (query: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = query.trim() 
+        ? await searchEvents(query) 
+        : await getEvents();
+      setEvents(data);
+    } catch (err) {
+      console.error("EventsScreen: Error fetching events:", err);
+      setError(err instanceof Error ? err : new Error("Failed to fetch events"));
+    } finally {
       setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    }
   }, []);
 
-  const filteredEvents = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return UPCOMING_EVENTS.filter(
-      (item) =>
-        item.title.toLowerCase().includes(query) ||
-        item.location.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query),
-    );
-  }, [searchQuery]);
+  useEffect(() => {
+    // Initial fetch
+    fetchEvents("");
+  }, [fetchEvents]);
 
-  const displayData = loading ? Array(6).fill({}) : filteredEvents;
+  useEffect(() => {
+    if (!searchQuery) {
+      fetchEvents("");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      fetchEvents(searchQuery);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchEvents]);
+
+  const displayData = loading && events.length === 0 ? Array(6).fill({}) : events;
 
   return (
     <AppSafeAreaView edges={["top"]}>
       <ScreenHeader hasBorder={false} title="Upcoming Events" />
       <View className="mt-5 px-[20px] pb-5 border-b-2 border-b-gray-200 dark:border-b-dark-seconndary">
         <SearchInput
-          placeholder='Try searching "Coachella"'
+          placeholder='Try searching "Safari" or "Tanzania"'
           showFilter={false}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
-      {!loading && filteredEvents.length === 0 ? (
+      {!loading && events.length === 0 ? (
         <EmptyState />
       ) : (
         <FlatList
@@ -76,10 +96,10 @@ const EventsScreen = () => {
             paddingTop: 10,
           }}
           keyExtractor={(item, index) =>
-            loading ? `skeleton-${index}` : (item as Event).id
+            loading && events.length === 0 ? `skeleton-${index}` : (item as Event).id
           }
           renderItem={({ item, index }) =>
-            loading ? (
+            loading && events.length === 0 ? (
               <View className="flex-1" style={{ maxWidth: '48%' }}>
                 <EventCardSkeleton index={index} fullWidth />
               </View>
@@ -102,3 +122,4 @@ const EventsScreen = () => {
 };
 
 export default EventsScreen;
+

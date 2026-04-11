@@ -7,13 +7,17 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
 import MainTabHeader from '@/components/ui/MainTabHeader';
 import SearchInput from '@/components/ui/SearchInput';
+import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
 import {
-  DESTINATION_HIGHLIGHTS,
-  EXPERIENCE_HIGHLIGHTS,
-  EXPLORE_CATEGORIES,
-  FEATURED_ITINERARIES,
-  UPCOMING_EVENTS,
-} from '@/constants/home.constant';
+  Destination,
+  Event,
+  Experience,
+  ItineraryTemplate,
+} from '@/types/content.types';
+import { getDestinations } from '@/utils/supabase/destinations.service';
+import { getEvents } from '@/utils/supabase/events.service';
+import { getExperiences } from '@/utils/supabase/experiences.service';
+import { getItineraryTemplates } from '@/utils/supabase/itinerary-templates.service';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -23,13 +27,35 @@ const ExploreScreen = () => {
   const [selectedTopCategory, setSelectedTopCategory] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('$50 - $200');
   const [searchQuery, setSearchQuery] = useState('');
+  const [itineraries, setItineraries] = useState<ItineraryTemplate[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [itineraryData, eventData, experienceData, destinationData] =
+          await Promise.all([
+            getItineraryTemplates(),
+            getEvents(),
+            getExperiences(),
+            getDestinations(),
+          ]);
+        setItineraries(itineraryData);
+        setEvents(eventData);
+        setExperiences(experienceData);
+        setDestinations(destinationData);
+      } catch (err) {
+        console.error('ExploreScreen: Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleApplyFilters = () => {
@@ -52,22 +78,22 @@ const ExploreScreen = () => {
   const filteredItineraries = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
-    return FEATURED_ITINERARIES.filter(
+    return itineraries.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
         matchesSubCategory(item.category, selectedSubCategory)
     );
-  }, [searchQuery, selectedSubCategory, selectedTopCategory]);
+  }, [searchQuery, selectedSubCategory, selectedTopCategory, itineraries]);
 
   const filteredEvents = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
       return [];
-    return UPCOMING_EVENTS.filter(
+    return events.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
         matchesSubCategory(item.category, selectedSubCategory)
     );
-  }, [searchQuery, selectedSubCategory, selectedTopCategory]);
+  }, [searchQuery, selectedSubCategory, selectedTopCategory, events]);
 
   const filteredExperiences = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
@@ -82,22 +108,28 @@ const ExploreScreen = () => {
 
     const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
 
-    return EXPERIENCE_HIGHLIGHTS.filter(
+    return experiences.filter(
       (item) =>
         matchesSearch(item.title, searchQuery) &&
         matchesSubCategory(item.category, selectedSubCategory) &&
         item.price >= minPrice &&
         item.price <= maxPrice
     );
-  }, [searchQuery, selectedSubCategory, selectedTopCategory, selectedPrice]);
+  }, [
+    searchQuery,
+    selectedSubCategory,
+    selectedTopCategory,
+    selectedPrice,
+    experiences,
+  ]);
 
   const filteredDestinations = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
-    return DESTINATION_HIGHLIGHTS.filter((item) =>
+    return destinations.filter((item) =>
       matchesSearch(item.title + item.location, searchQuery)
     );
-  }, [searchQuery, selectedTopCategory]);
+  }, [searchQuery, selectedTopCategory, destinations]);
 
   return (
     <AppSafeAreaView edges={['top']}>

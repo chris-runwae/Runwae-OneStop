@@ -21,10 +21,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Experience } from "@/types/content.types";
 
 const ExperienceDetailScreen = () => {
-  const { id, item: experience, loading } = useDetailItem("experience") as {
+  const {
+    id,
+    item: experience,
+    loading,
+    error,
+  } = useDetailItem("experience") as {
     id: string;
     item: Experience | null;
     loading: boolean;
+    error: string | null;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -63,6 +69,12 @@ const ExperienceDetailScreen = () => {
 
   if (loading) {
     return null; // Or a loading spinner if preferred, but usually returning null prevents the flash before mounting content.
+  }
+
+  if (error) {
+    return (
+      <DetailNotFound type="experience" />
+    );
   }
 
   if (!experience) {
@@ -109,6 +121,10 @@ const ExperienceDetailScreen = () => {
           price={experience.price}
           description={experience.description}
           category={experience.category}
+          location={experience.location}
+          durationMinutes={experience.durationMinutes}
+          cost={experience.cost}
+          currency={experience.currency}
         />
         <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
 

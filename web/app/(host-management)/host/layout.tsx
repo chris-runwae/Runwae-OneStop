@@ -1,7 +1,6 @@
 "use client";
 
 import { ROUTES } from "@/app/routes";
-import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -9,6 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuth } from "@/context/AuthContext";
 import {
   ChevronDown,
   ChevronUp,
@@ -19,7 +20,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Spinner } from "@/components/ui/spinner";
 import Sidebar from "./_sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -27,6 +27,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, profile, signOut, isLoading } = useAuth();
   const router = useRouter();
+
+  console.log(user, isLoading);
 
   // Single auth guard for all /host/* pages
   useEffect(() => {

@@ -1,31 +1,23 @@
 import type { ViatorProduct } from '@/types/viator.types';
-import { setViatorProductsCache } from '@/utils/viator/viatorProductCache';
+import {
+  getViatorSearchSnapshot,
+  isViatorSearchFresh,
+  loadViatorProductsCached,
+  type ViatorSearchFilters,
+  VIATOR_DEFAULT_STALE_MS,
+} from '@/utils/viator/viatorSearchSingleton';
 import { useCallback, useEffect, useState } from 'react';
-const BASE_URL = 'https://api.sandbox.viator.com/partner';
 
-interface SearchFilters {
-  destination?: string;
-  tags?: number[];
-  flags?: string[];
-  lowestPrice?: number;
-  highestPrice?: number;
-  startDate?: string;
-  endDate?: string;
-  includeAutomaticTranslations?: boolean;
-  confirmationType?: string;
-  durationInMinutes?: { from: number; to: number };
-  rating?: { from: number; to: number };
-  currency?: string;
-}
+const BASE_URL = 'https://api.sandbox.viator.com/partner';
 
 interface ViatorSearchParams {
   text?: string;
-  filters?: SearchFilters;
+  filters?: ViatorSearchFilters;
 }
 
+/** Legacy helper (proxy) — not cached; prefer `loadViatorProductsCached` / `useViator`. */
 export async function searchViator({ text, filters }: ViatorSearchParams) {
-  // Default filtering values
-  const defaultFilters: SearchFilters = {
+  const defaultFilters: ViatorSearchFilters = {
     destination: '732',
     tags: [21972],
     flags: ['LIKELY_TO_SELL_OUT', 'FREE_CANCELLATION'],
@@ -43,7 +35,7 @@ export async function searchViator({ text, filters }: ViatorSearchParams) {
     endpoint: 'products/search',
     method: 'POST',
     body: {
-      filtering: { ...defaultFilters, ...filters }, // allow overrides
+      filtering: { ...defaultFilters, ...filters },
     },
   };
 
@@ -53,8 +45,6 @@ export async function searchViator({ text, filters }: ViatorSearchParams) {
     body: JSON.stringify(body),
   });
 
-  console.log('Viator response:', await res?.json());
-
   if (!res.ok) {
     throw new Error(`Viator API error: ${res.status}`);
   }
@@ -62,87 +52,80 @@ export async function searchViator({ text, filters }: ViatorSearchParams) {
   return res.json();
 }
 
-export function useViator() {
-  const [products, setProducts] = useState<ViatorProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+type UseViatorOptions = {
+  /** Max age of cached results before a background refetch (default 15 min). */
+  staleMs?: number;
+};
+
+export function useViator(options?: UseViatorOptions) {
+  const staleMs = options?.staleMs ?? VIATOR_DEFAULT_STALE_MS;
+
+  const [products, setProducts] = useState<ViatorProduct[]>(() => [
+    ...getViatorSearchSnapshot().products,
+  ]);
+  const [loading, setLoading] = useState(
+    () => getViatorSearchSnapshot().products.length === 0
+  );
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = useCallback(async (filters?: SearchFilters) => {
-    setLoading(true);
-    setError(null);
-
-    const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split('T')[0];
-
-    const defaultFilters: SearchFilters = {
-      destination: '732',
-      tags: [21972],
-      flags: ['LIKELY_TO_SELL_OUT', 'FREE_CANCELLATION'],
-      lowestPrice: 5,
-      highestPrice: 500,
-      startDate: startDate,
-      endDate: endDate,
-      includeAutomaticTranslations: true,
-      confirmationType: 'INSTANT',
-      durationInMinutes: { from: 20, to: 360 },
-      rating: { from: 3, to: 5 },
-    };
-
-    const body = {
-      endpoint: 'products/search',
-      method: 'POST',
-      body: {
-        filtering: { ...defaultFilters, ...filters }, // allow overrides
-        sorting: {
-          sort: 'TRAVELER_RATING',
-          order: 'DESCENDING',
-        },
-        currency: 'USD',
-      },
-    };
-
-    try {
-      console.log('1. Starting fetch...');
-
-      const response = await fetch(
-        `https://api.sandbox.viator.com/partner/products/search`,
-        {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json;version=2.0',
-            'Content-Type': 'application/json;version=2.0',
-            'exp-api-key': 'c6eb1e0b-45be-40d3-a855-513d36bd361e',
-            'Accept-Language': 'en-US',
-          },
-          body: JSON.stringify(body?.body),
-        }
-      );
-
-      const text = await response.text(); // read as text first
-
-      const data = JSON.parse(text);
-      const raw: ViatorProduct[] = Array.isArray(data)
-        ? data
-        : (data?.products?.results ??
-            data?.products ??
-            data?.data ??
-            []);
-
-      setProducts(raw);
-      setViatorProductsCache(raw);
-    } catch (err) {
-      console.log('CAUGHT ERROR:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchProducts = useCallback(
+    async (filters?: ViatorSearchFilters, opts?: { force?: boolean }) => {
+      setError(null);
+      setLoading(true);
+      try {
+        const raw = await loadViatorProductsCached(filters, {
+          force: opts?.force ?? false,
+          staleMs,
+        });
+        setProducts(raw);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Something went wrong');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [staleMs]
+  );
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    let cancelled = false;
+    setError(null);
+
+    if (
+      getViatorSearchSnapshot().products.length > 0 &&
+      isViatorSearchFresh(staleMs)
+    ) {
+      setProducts([...getViatorSearchSnapshot().products]);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoading(true);
+    loadViatorProductsCached(undefined, { staleMs })
+      .then((raw) => {
+        if (!cancelled) {
+          setProducts(raw);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : 'Something went wrong'
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [staleMs]);
 
   return { products, loading, error, refetch: fetchProducts };
 }

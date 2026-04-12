@@ -1,3 +1,3 @@
-import HotelDetailsScreen from '@/screens/hotels/HotelDetailsScreen';
+import { HotelDetailsScreen } from '@/screens/hotels';
 
 export default HotelDetailsScreen;

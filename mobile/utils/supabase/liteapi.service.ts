@@ -285,7 +285,7 @@ export async function getHotelRatesByHotelIds(
   checkin: string,
   checkout: string,
   adults: number
-): Promise<any> {
+): Promise<LiteAPIHotelRatesResponse> {
   try {
     const requestBody = {
       hotelIds,
@@ -320,7 +320,7 @@ export async function getHotelRatesByHotelIds(
       throw new Error((data as LiteAPIError).error.message);
     }
 
-    return data as LiteAPIRatesResponse;
+    return data as LiteAPIHotelRatesResponse;
   } catch (error) {
     console.log('error: ', error);
     throw new Error(

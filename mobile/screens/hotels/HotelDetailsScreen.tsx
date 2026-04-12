@@ -1,16 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  ArrowLeft,
-  MapPin,
-  ShieldCheck,
-  ShieldOff,
-  Star,
-  Utensils,
-  Waves,
-  Wifi,
-} from 'lucide-react-native';
+import { ArrowLeft, MapPin, Star, Utensils, Waves, Wifi } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,12 +26,16 @@ import {
   getHotelDetails,
   getHotelRatesByHotelIds,
 } from '@/utils/supabase/liteapi.service';
-import { getCurrencySymbol } from '@/utils/currency';
 import EventLocationSection from '@/components/event/detail/EventLocationSection';
 import { Divider } from '@/components/event/detail/EventDetailPrimitives';
+import RoomRateCard from '@/components/hotels/RoomRateCard';
 import { useDirections } from '@/hooks/useDirections';
 import FullScreenMapModal from '@/components/event/FullScreenMapModal';
 import { useTrips } from '@/context/TripsContext';
+import {
+  ratePriceParts,
+  roomGalleryForMappedRoom,
+} from '@/utils/hotelRates';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -88,49 +83,29 @@ function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
   };
 }
 
-function ratePriceParts(
-  room: any
-): { amount: number; currency: string } | null {
-  const direct = room?.suggestedSellingPrice;
-  if (direct && typeof direct.amount === 'number') {
-    return { amount: direct.amount, currency: direct.currency ?? 'USD' };
-  }
-  const fromRetail = room?.retailRate?.suggestedSellingPrice?.[0];
-  if (fromRetail && typeof fromRetail.amount === 'number') {
-    return {
-      amount: fromRetail.amount,
-      currency: fromRetail.currency ?? 'USD',
-    };
-  }
-  const fromTotal = room?.retailRate?.total?.[0];
-  if (fromTotal && typeof fromTotal.amount === 'number') {
-    return { amount: fromTotal.amount, currency: fromTotal.currency ?? 'USD' };
-  }
-  return null;
-}
-
 export default function HotelDetailScreen() {
   const {
     hotelId,
-    // tripId,
+    tripId: tripIdParam,
     checkin,
     checkout,
     adults: adultsStr,
     hotelData,
   } = useLocalSearchParams<{
     hotelId: string;
-    tripId: string;
+    tripId?: string;
     checkin?: string;
     checkout?: string;
     adults?: string;
     hotelData?: any;
   }>();
 
+  const { activeTrip } = useTrips();
   const adults = parseInt(adultsStr ?? '1', 10);
+  const tripId = tripIdParam ?? activeTrip?.id ?? '';
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
-  const { activeTrip } = useTrips();
 
   const { openDirections } = useDirections();
   const [showFullMap, setShowFullMap] = useState(false);
@@ -366,7 +341,12 @@ export default function HotelDetailScreen() {
           <Spacer size={12} vertical />
 
           {(() => {
-            const roomTypes = parsedHotelData?.roomTypes ?? [];
+            const fromApi = rates?.data?.find((d) => d.hotelId === hotelId)
+              ?.roomTypes;
+            const roomTypes =
+              fromApi && fromApi.length > 0
+                ? fromApi
+                : (parsedHotelData?.roomTypes ?? []);
             if (roomTypes.length === 0) {
               return (
                 <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
@@ -374,66 +354,44 @@ export default function HotelDetailScreen() {
                 </Text>
               );
             }
+            const checkinStr =
+              checkin ?? activeTrip?.trip_details?.start_date ?? '';
+            const checkoutStr =
+              checkout ?? activeTrip?.trip_details?.end_date ?? '';
             const rows = roomTypes.flatMap((roomType: any, rtIdx: number) =>
-              (roomType?.rates ?? []).map((room: any, rIdx: number) => {
+              (roomType?.rates ?? []).map((room: any) => {
                 const price = ratePriceParts(room);
+                const gallery = roomGalleryForMappedRoom(
+                  hotel,
+                  room.mappedRoomId
+                );
                 return (
-                  <Pressable
-                    key={`${roomType?.roomTypeId ?? 'rt'}-${room?.rateId ?? rIdx}-${rtIdx}`}
-                    style={[
-                      styles.rateCard,
-                      {
-                        borderColor:
-                          colorScheme === 'dark' ? '#374151' : '#E9ECEF',
-                      },
-                    ]}
-                    onPress={() => {}}>
-                    <View style={styles.rateInfo}>
-                      <Text style={styles.roomName}>{room.name}</Text>
-                      <Text
-                        style={[
-                          styles.boardName,
-                          { color: colors.textColors.subtle },
-                        ]}>
-                        {room.boardName}
-                      </Text>
-                      <View style={styles.refundRow}>
-                        {room.cancellationPolicies?.refundableTag === 'RFN' ? (
-                          <>
-                            <ShieldCheck size={12} color="#22C55E" />
-                            <Text style={styles.refundText}>
-                              Free cancellation
-                            </Text>
-                          </>
-                        ) : (
-                          <>
-                            <ShieldOff size={12} color="#EF4444" />
-                            <Text
-                              style={[styles.refundText, { color: '#EF4444' }]}>
-                              Non-refundable
-                            </Text>
-                          </>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.ratePriceCol}>
-                      <Text style={styles.ratePrice}>
-                        {price
-                          ? `${getCurrencySymbol(price.currency)} ${price.amount}`
-                          : '—'}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.perNight,
-                          { color: colors.textColors.subtle },
-                        ]}>
-                        / night
-                      </Text>
-                      <View style={styles.selectBtn}>
-                        <Text style={styles.selectText}>Select</Text>
-                      </View>
-                    </View>
-                  </Pressable>
+                  <RoomRateCard
+                    key={`${roomType?.roomTypeId ?? 'rt'}-${room?.rateId ?? rtIdx}`}
+                    galleryUrls={gallery}
+                    roomName={room.name}
+                    boardName={room.boardName}
+                    price={price}
+                    refundableTag={room.cancellationPolicies?.refundableTag}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/hotels/[hotelId]/room-detail' as const,
+                        params: {
+                          hotelId,
+                          rateId: room.rateId,
+                          checkin: checkinStr,
+                          checkout: checkoutStr,
+                          adults: String(adults),
+                          tripId,
+                          hotelJson: JSON.stringify(hotel),
+                          roomBundleJson: JSON.stringify({
+                            roomType,
+                            rate: room,
+                          }),
+                        },
+                      } as any)
+                    }
+                  />
                 );
               })
             );
@@ -562,40 +520,4 @@ const styles = StyleSheet.create({
   },
   amenityText: { fontSize: 12, color: '#FF1F8C' },
   description: { ...textStyles.regular_14, lineHeight: 22 },
-
-  // Rate cards
-  rateCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-  },
-  rateInfo: { flex: 1, gap: 4 },
-  roomName: { ...textStyles.textHeading16, fontSize: 14 },
-  boardName: { ...textStyles.textBody14, fontSize: 12 },
-  refundRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  refundText: { ...textStyles.textBody12, fontSize: 11, color: '#22C55E' },
-  ratePriceCol: { alignItems: 'flex-end', gap: 2 },
-  ratePrice: { ...textStyles.textHeading20, fontSize: 16, color: '#FF1F8C' },
-  perNight: { ...textStyles.textBody12, fontSize: 11 },
-  selectBtn: {
-    backgroundColor: '#FF1F8C',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    marginTop: 6,
-  },
-  selectText: {
-    ...textStyles.textBody12,
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
 });

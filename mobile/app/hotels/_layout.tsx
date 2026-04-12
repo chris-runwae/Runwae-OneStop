@@ -5,6 +5,7 @@ export default function HotelLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="[hotelId]/index" />
+      <Stack.Screen name="[hotelId]/room-detail" />
       {/* <Stack.Screen name="book" />
       <Stack.Screen name="payment" />
       <Stack.Screen name="confirmation" /> */}

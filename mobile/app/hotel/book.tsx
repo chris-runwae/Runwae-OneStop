@@ -34,6 +34,7 @@ export default function BookingScreen() {
     checkout,
     adults: adultsStr,
     tripId,
+    rateId,
   } = useLocalSearchParams<{
     hotelId: string;
     hotelName: string;
@@ -47,6 +48,8 @@ export default function BookingScreen() {
     checkout: string;
     adults: string;
     tripId: string;
+    /** Carried from room selection for reconciliation with the vendor rate. */
+    rateId?: string;
   }>();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -141,6 +144,28 @@ export default function BookingScreen() {
           <Text style={[styles.roomLabel, { color: colors.textColors.subtle }]}>
             {roomName} · {boardName}
           </Text>
+          {rateId ? (
+            <>
+              <Spacer size={8} vertical />
+              <Text
+                selectable
+                style={{ fontSize: 10, color: colors.textColors.subtle }}
+                numberOfLines={4}>
+                Rate ID: {rateId}
+              </Text>
+            </>
+          ) : null}
+          {offerId ? (
+            <>
+              <Spacer size={6} vertical />
+              <Text
+                selectable
+                style={{ fontSize: 10, color: colors.textColors.subtle }}
+                numberOfLines={4}>
+                Offer ID: {offerId}
+              </Text>
+            </>
+          ) : null}
 
           <Spacer size={20} vertical />
 

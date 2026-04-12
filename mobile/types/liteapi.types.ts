@@ -219,6 +219,8 @@ export interface LiteAPIHotelRoomType {
 
 export interface LiteAPIHotelRoomRate {
   rateId: string;
+  /** When present, aligns with `HotelDetail.rooms[].id` for gallery mapping. */
+  mappedRoomId?: number;
   occupancyNumber: number;
   name: string;
   maxOccupancy: number;

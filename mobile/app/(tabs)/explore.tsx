@@ -19,7 +19,17 @@ import { getEvents } from '@/utils/supabase/events.service';
 import { getExperiences } from '@/utils/supabase/experiences.service';
 import { getItineraryTemplates } from '@/utils/supabase/itinerary-templates.service';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
+
+import { useViator } from '@/hooks/useViator';
+import { Colors } from '@/constants/theme';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -32,6 +42,20 @@ const ExploreScreen = () => {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
+  const { refetch, products, loading: viatorLoading } = useViator();
+
+  // React.useEffect(() => {
+  //   refetch();
+  // }, [refetch]);
+
+  // Separate effect to log when products actually updates
+  React.useEffect(() => {
+    console.log('Viator products:', products);
+  }, [products]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -130,6 +154,15 @@ const ExploreScreen = () => {
       matchesSearch(item.title + item.location, searchQuery)
     );
   }, [searchQuery, selectedTopCategory, destinations]);
+
+  if (viatorLoading) {
+    return (
+      <AppSafeAreaView edges={['top']}>
+        <MainTabHeader title="Explore" />
+        <ActivityIndicator size="large" color={colors.primaryColors.default} />
+      </AppSafeAreaView>
+    );
+  }
 
   return (
     <AppSafeAreaView edges={['top']}>

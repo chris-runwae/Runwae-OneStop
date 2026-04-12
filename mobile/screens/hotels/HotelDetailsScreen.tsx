@@ -26,9 +26,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
-import type { HotelDetail, HotelRate } from '@/types/hotel.types';
+import type { HotelDetail } from '@/types/hotel.types';
 import type { LiteAPIHotelDetails } from '@/types/liteapi.types';
-import { getHotelDetails, searchRates } from '@/utils/supabase/liteapi.service';
+import { getHotelDetails } from '@/utils/supabase/liteapi.service';
 import { getCurrencySymbol } from '@/utils/currency';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -77,12 +77,33 @@ function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
   };
 }
 
+function ratePriceParts(
+  room: any
+): { amount: number; currency: string } | null {
+  const direct = room?.suggestedSellingPrice;
+  if (direct && typeof direct.amount === 'number') {
+    return { amount: direct.amount, currency: direct.currency ?? 'USD' };
+  }
+  const fromRetail = room?.retailRate?.suggestedSellingPrice?.[0];
+  if (fromRetail && typeof fromRetail.amount === 'number') {
+    return {
+      amount: fromRetail.amount,
+      currency: fromRetail.currency ?? 'USD',
+    };
+  }
+  const fromTotal = room?.retailRate?.total?.[0];
+  if (fromTotal && typeof fromTotal.amount === 'number') {
+    return { amount: fromTotal.amount, currency: fromTotal.currency ?? 'USD' };
+  }
+  return null;
+}
+
 export default function HotelDetailScreen() {
   const {
     hotelId,
-    tripId,
-    checkin = '',
-    checkout = '',
+    // tripId,
+    // checkin = '',
+    // checkout = '',
     adults: adultsStr,
     hotelData,
   } = useLocalSearchParams<{
@@ -169,6 +190,11 @@ export default function HotelDetailScreen() {
     ?.map(amenityLabel)
     ?.filter(Boolean)
     ?.slice(0, 6) as { label: string; icon: React.ReactNode }[];
+
+  // console.log(
+  //   'hotel: ',
+  //   parsedHotelData && parsedHotelData?.roomTypes.length === 0
+  // );
 
   // const handleSelectRate = (rate: HotelRate) => {
   //   router.push({
@@ -308,18 +334,21 @@ export default function HotelDetailScreen() {
           <Text style={styles.sectionLabel}>Available Rooms</Text>
           <Spacer size={12} vertical />
 
-          {parsedHotelData?.roomTypes &&
-          parsedHotelData?.roomTypes.length === 0 ? (
-            <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
-              No rates available for the selected dates.
-            </Text>
-          ) : (
-            parsedHotelData?.roomTypes &&
-            parsedHotelData?.roomTypes.map((roomType: any) => {
-              roomType?.rates.forEach((room: any) => {
+          {(() => {
+            const roomTypes = parsedHotelData?.roomTypes ?? [];
+            if (roomTypes.length === 0) {
+              return (
+                <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
+                  No rates available for the selected dates.
+                </Text>
+              );
+            }
+            const rows = roomTypes.flatMap((roomType: any, rtIdx: number) =>
+              (roomType?.rates ?? []).map((room: any, rIdx: number) => {
+                const price = ratePriceParts(room);
                 return (
                   <Pressable
-                    key={`${room?.rateId}`}
+                    key={`${roomType?.roomTypeId ?? 'rt'}-${room?.rateId ?? rIdx}-${rtIdx}`}
                     style={[
                       styles.rateCard,
                       {
@@ -358,10 +387,9 @@ export default function HotelDetailScreen() {
                     </View>
                     <View style={styles.ratePriceCol}>
                       <Text style={styles.ratePrice}>
-                        {getCurrencySymbol(
-                          room?.suggestedSellingPrice?.currency
-                        )}{' '}
-                        {room?.suggestedSellingPrice?.amount}
+                        {price
+                          ? `${getCurrencySymbol(price.currency)} ${price.amount}`
+                          : '—'}
                       </Text>
                       <Text
                         style={[
@@ -376,11 +404,19 @@ export default function HotelDetailScreen() {
                     </View>
                   </Pressable>
                 );
-              });
-            })
-          )}
+              })
+            );
+            if (rows.length === 0) {
+              return (
+                <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
+                  No rates available for the selected dates.
+                </Text>
+              );
+            }
+            return rows;
+          })()}
 
-          <Spacer size={40} vertical />
+          <Spacer size={140} vertical />
         </View>
       </ScrollView>
     </View>
@@ -437,7 +473,11 @@ const styles = StyleSheet.create({
   },
 
   // Content
-  content: { paddingHorizontal: 16, paddingTop: 20 },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    flex: 1,
+  },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   headerLeft: { flex: 1 },
   hotelName: {
@@ -490,6 +530,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
+    // height: 120,
+    // backgroundColor: 'red',
+    // width: '100%',
   },
   rateInfo: { flex: 1, gap: 4 },
   roomName: { ...textStyles.bold_20, fontSize: 14 },

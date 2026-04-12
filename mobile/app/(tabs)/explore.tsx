@@ -199,7 +199,7 @@ const ExploreScreen = () => {
           filteredDestinations.length === 0 && (
             <View className="items-center justify-center px-5 py-10">
               <Text className="text-center text-lg font-medium text-gray-400">
-                No results found for "{searchQuery}"
+                No results found for &quot;{searchQuery}&quot;
               </Text>
               <TouchableOpacity
                 onPress={() => {

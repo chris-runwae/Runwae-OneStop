@@ -36,6 +36,10 @@ interface ItineraryHeaderProps {
   showMoreOptions?: boolean;
   onMorePress?: () => void;
   hideFavorite?: boolean;
+  /** When set, heart tap runs this instead of toggling local favorite state. */
+  onFavoritePress?: () => void;
+  /** Heart fill when `onFavoritePress` is used (parent-controlled). */
+  favoriteFilled?: boolean;
   dropdownOptions?: DropdownOption[];
 }
 
@@ -48,6 +52,8 @@ const ItineraryHeader = ({
   showMoreOptions,
   onMorePress,
   hideFavorite,
+  onFavoritePress,
+  favoriteFilled,
   dropdownOptions,
 }: ItineraryHeaderProps) => {
   const router = useRouter();
@@ -146,13 +152,27 @@ const ItineraryHeader = ({
             <>
               {!hideFavorite && (
                 <TouchableOpacity
-                  onPress={() => setIsFavorite(!isFavorite)}
+                  onPress={() =>
+                    onFavoritePress
+                      ? onFavoritePress()
+                      : setIsFavorite(!isFavorite)
+                  }
                   className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
                   <Heart
                     size={17}
                     strokeWidth={1.5}
-                    color={isFavorite ? '#FF2E92' : dark ? '#fff' : '#000'}
-                    fill={isFavorite ? '#FF2E92' : 'transparent'}
+                    color={
+                      (onFavoritePress ? favoriteFilled : isFavorite)
+                        ? '#FF2E92'
+                        : dark
+                          ? '#fff'
+                          : '#000'
+                    }
+                    fill={
+                      (onFavoritePress ? favoriteFilled : isFavorite)
+                        ? '#FF2E92'
+                        : 'transparent'
+                    }
                   />
                 </TouchableOpacity>
               )}

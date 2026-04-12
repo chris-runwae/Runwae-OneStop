@@ -1,6 +1,8 @@
 import DestinationInfo from '@/components/destination/DestinationInfo';
 import RecommendationsSection from '@/components/destination/RecommendationsSection';
 import DetailNotFound from '@/components/experience/DetailNotFound';
+import AddToTripContent from '@/components/home/AddToTripContent';
+import CustomModal from '@/components/ui/CustomModal';
 import AddOnsForYou from '@/components/home/AddOnsForYou';
 import DestinationCard from '@/components/home/DestinationCard';
 import ItineraryForYou from '@/components/home/IteneryForYou';
@@ -10,8 +12,10 @@ import {
   EXPERIENCE_HIGHLIGHTS,
   FEATURED_ITINERARIES,
 } from '@/constants/home.constant';
-import React, { useMemo } from 'react';
-import { Image, Text, View } from 'react-native';
+import { useTrips } from '@/context/TripsContext';
+import { savedItemFromDestination } from '@/utils/savedIdeaInputs';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -26,6 +30,9 @@ const DestinationDetailScreen = () => {
 
   const { destination, loading } = useDestinationById(id ?? null);
   const { destinations } = useDestinations();
+  const { addIdeaToTrip } = useTrips();
+  const [addToTripOpen, setAddToTripOpen] = useState(false);
+  const [ideaSaved, setIdeaSaved] = useState(false);
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -54,12 +61,28 @@ const DestinationDetailScreen = () => {
     return <DetailNotFound type="destination" />;
   }
 
+  const handleAddToTripDone = async (tripId: string) => {
+    try {
+      await addIdeaToTrip(tripId, savedItemFromDestination(destination));
+      setAddToTripOpen(false);
+      setIdeaSaved(true);
+      Alert.alert('Saved', 'Added to your trip Ideas.');
+    } catch (e) {
+      Alert.alert(
+        'Could not save',
+        e instanceof Error ? e.message : 'Please try again.'
+      );
+    }
+  };
+
   return (
     <View className="flex-1">
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={destination?.image ?? ''}
         title={destination.title}
+        onFavoritePress={() => setAddToTripOpen(true)}
+        favoriteFilled={ideaSaved}
       />
 
       <Animated.ScrollView
@@ -134,6 +157,20 @@ const DestinationDetailScreen = () => {
           />
         </View>
       </Animated.ScrollView>
+
+      <CustomModal
+        isVisible={addToTripOpen}
+        onClose={() => setAddToTripOpen(false)}
+        title="Add to Trip"
+        centeredTitle
+        showCloseButton={false}
+        showIndicator
+      >
+        <AddToTripContent
+          onCancel={() => setAddToTripOpen(false)}
+          onDone={handleAddToTripDone}
+        />
+      </CustomModal>
     </View>
   );
 };

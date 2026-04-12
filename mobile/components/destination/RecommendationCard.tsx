@@ -1,10 +1,12 @@
 import AddToTripContent from "@/components/home/AddToTripContent";
 import CustomModal from "@/components/ui/CustomModal";
+import { useTrips } from "@/context/TripsContext";
 import { AddOn } from "@/constants/home.constant";
+import { savedItemFromAddOn } from "@/utils/savedIdeaInputs";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import React from "react";
-import { Image, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Pressable, Text, TouchableOpacity, View } from "react-native";
 
 interface RecommendationCardProps {
   item: AddOn;
@@ -12,6 +14,7 @@ interface RecommendationCardProps {
 
 const RecommendationCard = ({ item }: RecommendationCardProps) => {
   const router = useRouter();
+  const { addIdeaToTrip } = useTrips();
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const isNavigating = React.useRef(false);
 
@@ -28,9 +31,17 @@ const RecommendationCard = ({ item }: RecommendationCardProps) => {
     setIsModalVisible(true);
   };
 
-  const handleModalDone = (tripId: string) => {
-    console.log(`Adding ${item.title} to trip ${tripId}`);
-    setIsModalVisible(false);
+  const handleModalDone = async (tripId: string) => {
+    try {
+      await addIdeaToTrip(tripId, savedItemFromAddOn(item));
+      setIsModalVisible(false);
+      Alert.alert("Saved", "Added to your trip Ideas.");
+    } catch (e) {
+      Alert.alert(
+        "Could not save",
+        e instanceof Error ? e.message : "Please try again."
+      );
+    }
   };
 
   const getCategoryEmoji = (category: string) => {

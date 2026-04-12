@@ -131,6 +131,11 @@ export interface TripsContextType {
   // Ideas actions
   loadIdeas: (groupId: string) => Promise<void>;
   addIdea: (input: CreateSavedItemInput) => Promise<void>;
+  /** Saves an idea to a specific trip (e.g. picker from detail screens). */
+  addIdeaToTrip: (
+    tripId: string,
+    input: CreateSavedItemInput
+  ) => Promise<void>;
   removeIdea: (ideaId: string) => Promise<void>;
 }
 
@@ -422,6 +427,17 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [user?.id, activeTrip]
+  );
+
+  const addIdeaToTrip = useCallback(
+    async (tripId: string, input: CreateSavedItemInput) => {
+      if (!user?.id) return;
+      const newItem = await createSavedItem(tripId, user.id, input);
+      if (activeTrip?.id === tripId) {
+        setIdeas((prev) => [newItem, ...prev]);
+      }
+    },
+    [user?.id, activeTrip?.id]
   );
  
   const removeIdea = useCallback(async (ideaId: string) => {
@@ -772,6 +788,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         ideasLoading,
         loadIdeas,
         addIdea,
+        addIdeaToTrip,
         removeIdea,
       }}>
       {children}

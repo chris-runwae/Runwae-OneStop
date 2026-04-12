@@ -1,3 +1,5 @@
+import AddToTripContent from '@/components/home/AddToTripContent';
+import CustomModal from '@/components/ui/CustomModal';
 import EventDetailSkeleton from '@/components/event/EventDetailSkeleton';
 import FullScreenMapModal from '@/components/event/FullScreenMapModal';
 import EventGallery from '@/components/event/detail/EventGallery';
@@ -15,12 +17,14 @@ import {
 import DetailNotFound from '@/components/experience/DetailNotFound';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
+import { useTrips } from '@/context/TripsContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
+import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -39,14 +43,32 @@ const EventDetailScreen = () => {
   });
 
   const [showFullMap, setShowFullMap] = useState(false);
+  const [addToTripOpen, setAddToTripOpen] = useState(false);
+  const [ideaSaved, setIdeaSaved] = useState(false);
   const { event, relatedEvents, otherEvents, loading, error } = useEvent(id);
   const { openDirections } = useDirections();
+  const { addIdeaToTrip } = useTrips();
 
   if (loading) return <EventDetailSkeleton />;
   if (error || !event) return <DetailNotFound type="experience" />;
 
   const handleGetDirections = () =>
     openDirections({ title: event.title, location: event.location });
+
+  const handleAddToTripDone = async (tripId: string) => {
+    try {
+      await addIdeaToTrip(tripId, savedItemFromEvent(event));
+      setAddToTripOpen(false);
+      setIdeaSaved(true);
+      Alert.alert('Saved', 'Added to your trip Ideas.');
+    } catch (e) {
+      Alert.alert(
+        'Could not save',
+        e instanceof Error ? e.message : 'Please try again.'
+      );
+      console.error('Error adding event to trip:', e);
+    }
+  };
 
   const spotsLeft =
     event.maxParticipants != null && event.currentParticipants != null
@@ -55,10 +77,7 @@ const EventDetailScreen = () => {
 
   const fillPct =
     event.maxParticipants && event.currentParticipants
-      ? Math.min(
-          (event.currentParticipants / event.maxParticipants) * 100,
-          100
-        )
+      ? Math.min((event.currentParticipants / event.maxParticipants) * 100, 100)
       : null;
 
   const galleries = event.imageUrls?.length
@@ -78,6 +97,8 @@ const EventDetailScreen = () => {
         scrollY={scrollY}
         imageUri={event.image}
         title={event.title}
+        onFavoritePress={() => setAddToTripOpen(true)}
+        favoriteFilled={ideaSaved}
       />
 
       <Animated.ScrollView
@@ -241,6 +262,19 @@ const EventDetailScreen = () => {
         latitude={event.latitude}
         longitude={event.longitude}
       />
+
+      <CustomModal
+        isVisible={addToTripOpen}
+        onClose={() => setAddToTripOpen(false)}
+        title="Add to Trip"
+        centeredTitle
+        showCloseButton={false}
+        showIndicator>
+        <AddToTripContent
+          onCancel={() => setAddToTripOpen(false)}
+          onDone={handleAddToTripDone}
+        />
+      </CustomModal>
     </View>
   );
 };

@@ -1,97 +1,79 @@
-import EventInfo from "@/components/event/EventInfo";
-import DetailNotFound from "@/components/experience/DetailNotFound";
-import UpcomingEvents from "@/components/home/UpcomingEvents";
-import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
-import { Event, UPCOMING_EVENTS } from "@/constants/home.constant";
-import { useTheme } from "@react-navigation/native";
-import { AppleMaps, GoogleMaps } from "expo-maps";
-import { useLocalSearchParams } from "expo-router";
-import { MapPin, Navigation, X } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import EventDetailSkeleton from '@/components/event/EventDetailSkeleton';
+import FullScreenMapModal from '@/components/event/FullScreenMapModal';
+import EventGallery from '@/components/event/detail/EventGallery';
+import EventHero from '@/components/event/detail/EventHero';
+import EventItinerary from '@/components/event/detail/EventItinerary';
+import EventLocationSection from '@/components/event/detail/EventLocationSection';
+import EventParticipantsBar from '@/components/event/detail/EventParticipantsBar';
+import EventPricingBar from '@/components/event/detail/EventPricingBar';
+import EventQuickStats from '@/components/event/detail/EventQuickStats';
 import {
-  Image,
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+  BulletRow,
+  Divider,
+  SectionTitle,
+} from '@/components/event/detail/EventDetailPrimitives';
+import DetailNotFound from '@/components/experience/DetailNotFound';
+import UpcomingEvents from '@/components/home/UpcomingEvents';
+import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
+import { useDirections } from '@/hooks/useDirections';
+import { useEvent } from '@/hooks/useEvent';
+import { useLocalSearchParams } from 'expo-router';
+import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const MapComponent = (props: any) => {
-  if (Platform.OS === "ios") {
-    return <AppleMaps.View {...props} />;
-  }
-  return <GoogleMaps.View {...props} />;
-};
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const EventDetailScreen = () => {
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
-  const scrollY = useSharedValue(0);
-  const [showFullMap, setShowFullMap] = useState(false);
 
+  const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
+    onScroll: (e) => {
+      scrollY.value = e.contentOffset.y;
     },
   });
 
-  const event = useMemo(() => {
-    return UPCOMING_EVENTS.find((e) => e.id === id) as Event | undefined;
-  }, [id]);
+  const [showFullMap, setShowFullMap] = useState(false);
+  const { event, relatedEvents, otherEvents, loading, error } = useEvent(id);
+  const { openDirections } = useDirections();
 
-  const relatedEvents = useMemo(() => {
-    if (!event) return [];
-    return UPCOMING_EVENTS.filter(
-      (e) => e.id !== id && e.category === event.category,
-    );
-  }, [id, event]);
+  if (loading) return <EventDetailSkeleton />;
+  if (error || !event) return <DetailNotFound type="experience" />;
 
-  const otherEvents = useMemo(() => {
-    if (!event) return [];
-    return UPCOMING_EVENTS.filter(
-      (e) => e.id !== id && e.category !== event.category,
-    ).slice(0, 6);
-  }, [id, event]);
+  const handleGetDirections = () =>
+    openDirections({ title: event.title, location: event.location });
 
-  const handleGetDirections = () => {
-    if (!event) return;
-    const { latitude, longitude, title } = event;
-    const label = encodeURIComponent(title);
-    const url = Platform.select({
-      ios: `maps://0,0?q=${label}@${latitude},${longitude}`,
-      android: `geo:0,0?q=${latitude},${longitude}(${label})`,
-      default: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
-    });
+  const spotsLeft =
+    event.maxParticipants != null && event.currentParticipants != null
+      ? event.maxParticipants - event.currentParticipants
+      : null;
 
-    if (url) {
-      Linking.canOpenURL(url).then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          // Fallback to browser
-          const browserUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-          Linking.openURL(browserUrl);
-        }
-      });
-    }
-  };
+  const fillPct =
+    event.maxParticipants && event.currentParticipants
+      ? Math.min(
+          (event.currentParticipants / event.maxParticipants) * 100,
+          100
+        )
+      : null;
 
-  if (!event) {
-    return <DetailNotFound type="experience" />;
-  }
+  const galleries = event.imageUrls?.length
+    ? event.imageUrls
+    : event.image
+      ? [event.image]
+      : [];
 
-  const { dark } = useTheme();
+  const formattedPrice =
+    event.price != null
+      ? `${event.currency ?? 'USD'} ${event.price.toLocaleString()}`
+      : null;
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-white dark:bg-black">
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={event.image}
@@ -99,196 +81,166 @@ const EventDetailScreen = () => {
       />
 
       <Animated.ScrollView
-        className="flex-1"
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
-      >
-        {/* Hero Image */}
-        <Image
-          source={{ uri: event.image }}
-          className="w-full h-[300px]"
-          resizeMode="cover"
+        contentContainerStyle={{
+          paddingBottom: (formattedPrice ? 100 : 40) + insets.bottom,
+        }}>
+        <EventHero
+          imageUri={event.image}
+          status={event.status}
+          difficultyLevel={event.difficultyLevel}
+          isFeatured={event.isFeatured}
         />
 
-        {/* Event Info */}
-        <EventInfo
+        <EventQuickStats
           title={event.title}
           location={event.location}
           date={event.date}
           time={event.time}
-          category={event.category}
+          maxParticipants={event.maxParticipants}
+          currentParticipants={event.currentParticipants}
         />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
+        {fillPct != null && (
+          <EventParticipantsBar
+            fillPct={fillPct}
+            spotsLeft={spotsLeft}
+            currentParticipants={event.currentParticipants}
+          />
+        )}
 
-        {/* About Section */}
-        <View className="px-5 py-6">
-          <Text
-            className="text-lg font-bold dark:text-white mb-3"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
-            About this event
-          </Text>
-          <Text
-            className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
-            style={{ fontFamily: "Inter" }}
-          >
-            Join us for {event.title} in {event.location}. This{" "}
-            {event.category.toLowerCase()} event takes place on {event.date}{" "}
-            starting at {event.time}. Don't miss out on this incredible
-            experience — gather your friends, plan your trip, and get ready for
-            an unforgettable time.
-          </Text>
-        </View>
+        <Divider />
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
-
-        <View className="px-5 py-6">
-          <Text
-            className="text-lg font-bold dark:text-white mb-4"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-          >
-            Location
-          </Text>
-          <Pressable
-            onPress={() => setShowFullMap(true)}
-            className="bg-gray-100 dark:bg-dark-seconndary rounded-xl overflow-hidden border border-gray-200 dark:border-white/10"
-          >
-            <View pointerEvents="none">
-              <MapComponent
-                style={{ width: "100%", height: 180 }}
-                cameraPosition={{
-                  coordinates: {
-                    latitude: event.latitude,
-                    longitude: event.longitude,
-                  },
-                  zoom: 12,
-                }}
-                markers={[
-                  {
-                    coordinates: {
-                      latitude: event.latitude,
-                      longitude: event.longitude,
-                    },
-                    title: event.title,
-                  },
-                ]}
-              />
+        {!!event.description && (
+          <>
+            <View className="px-5 py-6">
+              <SectionTitle title="About this event" />
+              <Text
+                className="text-sm leading-[22px] text-gray-600 dark:text-gray-300"
+                style={{ fontFamily: 'Inter' }}>
+                {event.description}
+              </Text>
             </View>
-            <View className="px-4 py-3 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-x-2 flex-1">
-                <MapPin size={15} color="#9ca3af" />
-                <Text
-                  className="text-sm text-gray-600 dark:text-gray-300 flex-1"
-                  numberOfLines={1}
-                >
-                  {event.location}
-                </Text>
+            <Divider />
+          </>
+        )}
+
+        {galleries.length > 1 && (
+          <>
+            <EventGallery images={galleries} />
+            <Divider />
+          </>
+        )}
+
+        {event.highlights && event.highlights.length > 0 && (
+          <>
+            <View className="px-5 py-6">
+              <SectionTitle title="Highlights" />
+              {event.highlights.map((item, i) => (
+                <BulletRow
+                  key={i}
+                  text={item}
+                  icon={<Star size={14} color="#FF2E92" fill="#FF2E92" />}
+                />
+              ))}
+            </View>
+            <Divider />
+          </>
+        )}
+
+        {event.whatsIncluded && event.whatsIncluded.length > 0 && (
+          <>
+            <View className="px-5 py-6">
+              <SectionTitle title="What's Included" />
+              <View className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-white/5 dark:bg-white/5">
+                {event.whatsIncluded.map((item, i) => (
+                  <BulletRow
+                    key={i}
+                    text={item}
+                    icon={<CheckCircle2 size={14} color="#16a34a" />}
+                  />
+                ))}
               </View>
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleGetDirections();
-                }}
-                className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center gap-x-1"
-              >
-                <Text className="text-xs font-semibold text-primary">
-                  Directions
-                </Text>
-              </TouchableOpacity>
             </View>
-          </Pressable>
-        </View>
+            <Divider />
+          </>
+        )}
 
-        <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
+        {event.requirements && event.requirements.length > 0 && (
+          <>
+            <View className="px-5 py-6">
+              <SectionTitle title="Requirements" />
+              <View className="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
+                {event.requirements.map((item, i) => (
+                  <BulletRow
+                    key={i}
+                    text={item}
+                    icon={<AlertCircle size={14} color="#d97706" />}
+                  />
+                ))}
+              </View>
+            </View>
+            <Divider />
+          </>
+        )}
 
-        {/* Related Events */}
+        {event.itinerary && event.itinerary.length > 0 && (
+          <>
+            <EventItinerary steps={event.itinerary} />
+            <Divider />
+          </>
+        )}
+
+        <EventLocationSection
+          location={event.location}
+          title={event.title}
+          latitude={event.latitude}
+          longitude={event.longitude}
+          onOpenMap={() => setShowFullMap(true)}
+          onDirections={handleGetDirections}
+        />
+
         {relatedEvents.length > 0 && (
           <>
+            <Divider />
             <UpcomingEvents
               data={relatedEvents}
               title={`More ${event.category.charAt(0) + event.category.slice(1).toLowerCase()} Events`}
               subtitle="Similar events you might enjoy"
             />
-            <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
           </>
         )}
 
-        {/* Other Events */}
         {otherEvents.length > 0 && (
-          <UpcomingEvents
-            data={otherEvents}
-            title="Other Events"
-            subtitle="Explore different types of events"
-          />
+          <>
+            <Divider />
+            <UpcomingEvents
+              data={otherEvents}
+              title="Other Events"
+              subtitle="Explore different types of events"
+            />
+          </>
         )}
       </Animated.ScrollView>
 
-      <Modal
+      {formattedPrice && (
+        <EventPricingBar
+          formattedPrice={formattedPrice}
+          isSoldOut={spotsLeft != null && spotsLeft <= 0}
+        />
+      )}
+
+      <FullScreenMapModal
         visible={showFullMap}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setShowFullMap(false)}
-      >
-        <View className="flex-1 bg-white dark:bg-black">
-          <MapComponent
-            style={{ flex: 1 }}
-            cameraPosition={{
-              coordinates: {
-                latitude: event.latitude,
-                longitude: event.longitude,
-              },
-              zoom: 15,
-            }}
-            markers={[
-              {
-                coordinates: {
-                  latitude: event.latitude,
-                  longitude: event.longitude,
-                },
-                title: event.title,
-                snippet: event.location,
-              },
-            ]}
-          />
-
-          <View
-            style={{ paddingTop: insets.top || 20 }}
-            className="absolute top-0 left-0 right-0 px-5 flex-row items-center justify-between"
-          >
-            <TouchableOpacity
-              onPress={() => setShowFullMap(false)}
-              className="w-10 h-10 bg-white/90 dark:bg-black/80 rounded-full items-center justify-center shadow-sm"
-            >
-              <X size={20} color={dark ? "#FFFFFF" : "#000000"} />
-            </TouchableOpacity>
-          </View>
-
-          <View className="absolute bottom-6 left-5 right-5 bg-white dark:bg-dark-seconndary rounded-[30px] p-5 shadow-xl border border-gray-100 dark:border-white/10 flex-row items-center justify-between">
-            <View>
-              <Text className="text-xl font-bold dark:text-white mb-1">
-                {event.title}
-              </Text>
-              <View className="flex-row items-center gap-x-2">
-                <MapPin size={13} color="#9ca3af" />
-                <Text className="text-gray-500 text-sm dark:text-gray-400 flex-1">
-                  {event.location}
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleGetDirections}
-              className="bg-primary px-4 py-4 rounded-full flex-row items-center gap-x-2"
-            >
-              <Navigation size={16} color="#fff" />
-              <Text className="text-white font-bold">Directions</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowFullMap(false)}
+        onDirections={handleGetDirections}
+        location={event.location}
+        title={event.title}
+        latitude={event.latitude}
+        longitude={event.longitude}
+      />
     </View>
   );
 };

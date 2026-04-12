@@ -59,9 +59,24 @@ export interface Experience {
   whatToKnow: ExperienceKnow[];
   itinerary: ExperienceItineraryStep[];
   reviews: Review[];
+  location?: string;
+  locationLat?: number;
+  locationLng?: number;
+  durationMinutes?: number;
+  cost?: number;
+  currency?: string;
+  bookingReference?: string;
+  cols?: any;
 }
 
 // ─── Event ──────────────────────────────────────────────────────────────────
+
+export interface EventItineraryStep {
+  day?: number;
+  time?: string;
+  title: string;
+  description?: string;
+}
 
 export interface Event {
   id: string;
@@ -73,6 +88,22 @@ export interface Event {
   image: string;
   latitude: number;
   longitude: number;
+  description?: string;
+  // Rich detail fields
+  price?: number;
+  currency?: string;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  imageUrls?: string[];
+  highlights?: string[];
+  whatsIncluded?: string[];
+  requirements?: string[];
+  difficultyLevel?: string;
+  itinerary?: EventItineraryStep[];
+  status?: string;
+  isFeatured?: boolean;
+  featuredOrder?: number;
+  publishedAt?: string;
 }
 
 // ─── Itinerary Template (home-screen suggested packages) ────────────────────
@@ -107,4 +138,11 @@ export interface ItineraryTemplate {
   featured?: boolean;
   included: ItineraryTemplateIncluded[];
   dailyItinerary: ItineraryTemplateDay[];
+  locationLat?: number;
+  locationLng?: number;
+  durationMinutes?: number;
+  cost?: number;
+  currency?: string;
+  bookingReference?: string;
+  cols?: any;
 }

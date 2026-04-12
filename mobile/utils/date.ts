@@ -13,7 +13,7 @@ export const formatDateRange = (start: string, end: string) => {
   if (!endDate) return startStr;
 
   if (startDate.getMonth() === endDate.getMonth()) {
-    return `${startStr}-${endDate.getDate()} ${endDate.getFullYear()}`;
+    return `${startStr} - ${endDate.getDate()}`;
   }
 
   const endStr = endDate.toLocaleDateString('en-US', {

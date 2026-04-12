@@ -20,6 +20,14 @@ function mapRow(row: any, reviews: Review[] = []): Experience {
     whatToKnow: Array.isArray(row.what_to_know) ? row.what_to_know : [],
     itinerary: Array.isArray(row.itinerary) ? row.itinerary : [],
     reviews,
+    location: row.location ?? "",
+    locationLat: row.location_lat ?? row.locationlat,
+    locationLng: row.location_lng ?? row.locationlng,
+    durationMinutes: row.duration_minutes ?? row.durationminutes,
+    cost: row.cost ? Number(row.cost) : undefined,
+    currency: row.currency ?? "",
+    bookingReference: row.booking_reference ?? row.bookingreference,
+    cols: row.cols,
   };
 }
 
@@ -70,6 +78,7 @@ export const getExperienceById = async (id: string): Promise<Experience | null> 
 
   if (expResult.error) {
     if (expResult.error.code === "PGRST116") return null; // not found
+    console.error("getExperienceById: Supabase error:", expResult.error);
     throw new Error(expResult.error.message);
   }
 

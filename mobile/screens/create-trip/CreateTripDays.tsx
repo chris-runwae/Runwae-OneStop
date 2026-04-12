@@ -1,15 +1,11 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import { toDateId } from '@marceloterreiro/flash-calendar';
 import { useTheme } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { CalendarContainer } from '@/components/trip-creation/calendar';
 import CreateStepHeader from './CreateStepHeader';
 
 // ================================================================
@@ -38,8 +37,109 @@ export default function CreateTripDays() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
-  // iOS: temp date while the modal is open, committed on Done
-  const [pendingDate, setPendingDate] = useState<Date>(new Date());
+  const [pendingDates, setPendingDates] = useState<{
+    startId?: string;
+    endId?: string;
+  }>({});
+
+  const calendarActiveDateRanges = useMemo(() => {
+    if (!pendingDates.startId) return [];
+    return [
+      {
+        startId: pendingDates.startId,
+        endId: pendingDates.endId || pendingDates.startId,
+      },
+    ];
+  }, [pendingDates.startId, pendingDates.endId]);
+
+  const handleDayPress = (dateId: string) => {
+    if (activePicker === 'start') {
+      setPendingDates((prev) => {
+        const next = { ...prev, startId: dateId };
+        if (prev.endId && dateId > prev.endId) {
+          next.endId = undefined;
+        }
+        return next;
+      });
+    } else {
+      if (pendingDates.startId && dateId < pendingDates.startId) {
+        setPendingDates({ startId: dateId, endId: undefined });
+      } else {
+        setPendingDates((prev) => ({ ...prev, endId: dateId }));
+      }
+    }
+  };
+
+  const calendarTheme = useMemo(
+    () => ({
+      itemDay: {
+        idle: ({
+          isToday,
+          isWeekend,
+        }: {
+          isToday: boolean;
+          isWeekend: boolean;
+        }) => ({
+          container: isToday
+            ? {
+                borderRadius: 20,
+                backgroundColor: '#FF2E92',
+              }
+            : {},
+          content: isToday
+            ? {
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: 12,
+              }
+            : {
+                color: dark ? '#fff' : '#111827',
+                fontSize: 12,
+              },
+        }),
+        active: ({ isStart, isEnd }: { isStart: boolean; isEnd: boolean }) => ({
+          container: {
+            backgroundColor:
+              isStart || isEnd ? '#FF2E92' : 'rgba(255, 46, 146, 0.15)',
+            borderRadius: isStart && isEnd ? 20 : 0,
+            ...(isStart && !isEnd
+              ? {
+                  borderTopLeftRadius: 20,
+                  borderBottomLeftRadius: 20,
+                }
+              : {}),
+            ...(isEnd && !isStart
+              ? {
+                  borderTopRightRadius: 20,
+                  borderBottomRightRadius: 20,
+                }
+              : {}),
+            // Eliminate tiny sub-pixel gaps in the grid
+            marginHorizontal: -0.5,
+          },
+          content: {
+            color: isStart || isEnd ? '#fff' : '#FF2E92',
+            fontSize: 12,
+            fontWeight: isStart || isEnd ? 'bold' : 'normal',
+          },
+        }),
+      },
+      itemDayContainer: {
+        activeDayFiller: {
+          backgroundColor: 'rgba(255, 46, 146, 0.15)',
+          height: 40,
+        },
+      },
+      itemWeekName: {
+        content: {
+          color: dark ? '#6b7280' : '#9ca3af',
+          fontSize: 11,
+          fontWeight: '500',
+        },
+      },
+    }),
+    [dark]
+  );
 
   // ----------------------------------------------------------------
   // Derived values
@@ -56,37 +156,30 @@ export default function CreateTripDays() {
   // ----------------------------------------------------------------
 
   const openPicker = (which: 'start' | 'end') => {
-    const initial =
-      which === 'start'
-        ? (startDate ?? new Date())
-        : (endDate ?? startDate ?? new Date());
-    setPendingDate(initial);
+    // Sync pending dates with current committed dates
+    setPendingDates({
+      startId: startDate ? toDateId(startDate) : undefined,
+      endId: endDate ? toDateId(endDate) : undefined,
+    });
     setActivePicker(which);
   };
 
   const commitDate = () => {
-    if (activePicker === 'start') {
-      setStartDate(pendingDate);
-      if (endDate && pendingDate > endDate) setEndDate(null);
-    } else if (activePicker === 'end') {
-      setEndDate(pendingDate);
+    // Save dates from pending state
+    if (pendingDates.startId) {
+      setStartDate(new Date(pendingDates.startId));
     }
+    if (pendingDates.endId) {
+      setEndDate(new Date(pendingDates.endId));
+    } else {
+      setEndDate(null);
+    }
+
+    // Explicitly close the picker state
     setActivePicker(null);
   };
 
   const dismissPicker = () => setActivePicker(null);
-
-  // Android fires onChange once on confirm / dismiss — handle inline
-  const onAndroidChange = (_: DateTimePickerEvent, date?: Date) => {
-    setActivePicker(null);
-    if (!date) return;
-    if (activePicker === 'start') {
-      setStartDate(date);
-      if (endDate && date > endDate) setEndDate(null);
-    } else if (activePicker === 'end') {
-      setEndDate(date);
-    }
-  };
 
   // ----------------------------------------------------------------
   // Navigation
@@ -117,9 +210,6 @@ export default function CreateTripDays() {
       year: 'numeric',
     });
 
-  const minDate =
-    activePicker === 'end' ? (startDate ?? new Date()) : new Date();
-
   return (
     <AppSafeAreaView>
       <ScrollView
@@ -145,7 +235,7 @@ export default function CreateTripDays() {
               {
                 backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
                 borderColor: startDate
-                  ? '#FF1F8C'
+                  ? '#FF2E92'
                   : dark
                     ? '#2c2c2e'
                     : '#e5e7eb',
@@ -155,7 +245,7 @@ export default function CreateTripDays() {
             <Calendar
               size={18}
               strokeWidth={1.5}
-              color={startDate ? '#FF1F8C' : dark ? '#6b7280' : '#9ca3af'}
+              color={startDate ? '#FF2E92' : dark ? '#6b7280' : '#9ca3af'}
             />
             <View style={styles.dateCardText}>
               <Text
@@ -189,14 +279,14 @@ export default function CreateTripDays() {
               styles.dateCard,
               {
                 backgroundColor: dark ? '#1c1c1e' : '#f9fafb',
-                borderColor: endDate ? '#FF1F8C' : dark ? '#2c2c2e' : '#e5e7eb',
+                borderColor: endDate ? '#FF2E92' : dark ? '#2c2c2e' : '#e5e7eb',
               },
             ]}
             onPress={() => openPicker('end')}>
             <Calendar
               size={18}
               strokeWidth={1.5}
-              color={endDate ? '#FF1F8C' : dark ? '#6b7280' : '#9ca3af'}
+              color={endDate ? '#FF2E92' : dark ? '#6b7280' : '#9ca3af'}
             />
             <View style={styles.dateCardText}>
               <Text
@@ -235,14 +325,20 @@ export default function CreateTripDays() {
         )}
       </ScrollView>
 
-      {/* iOS modal date picker */}
-      {Platform.OS === 'ios' && (
-        <Modal
-          visible={activePicker !== null}
-          transparent
-          animationType="slide"
-          onRequestClose={dismissPicker}>
-          <Pressable style={styles.modalBackdrop} onPress={dismissPicker} />
+      {/* Custom calendar modal */}
+      <Modal
+        visible={activePicker !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={dismissPicker}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Pressable
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'rgba(0,0,0,0.5)' },
+            ]}
+            onPress={dismissPicker}
+          />
           <View
             style={[
               styles.modalSheet,
@@ -256,7 +352,8 @@ export default function CreateTripDays() {
               ]}>
               <TouchableOpacity
                 onPress={dismissPicker}
-                style={styles.sheetAction}>
+                style={styles.sheetAction}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
                 <Text
                   style={[
                     styles.sheetActionText,
@@ -268,45 +365,36 @@ export default function CreateTripDays() {
               <Text
                 style={[
                   styles.sheetTitle,
-                  { color: dark ? '#ffffff' : '#111827' },
+                  { color: dark ? '#ffffff' : '#111827', fontSize: 15 },
                 ]}>
-                {activePicker === 'start' ? 'Start date' : 'End date'}
+                {activePicker === 'start'
+                  ? 'Select Start Date'
+                  : 'Select End Date'}
               </Text>
-              <TouchableOpacity onPress={commitDate} style={styles.sheetAction}>
+              <TouchableOpacity
+                onPress={commitDate}
+                style={[styles.sheetAction, { zIndex: 9999 }]}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
                 <Text
                   style={[
                     styles.sheetActionText,
-                    { color: '#FF1F8C', fontWeight: '600' },
+                    { color: '#FF2E92', fontWeight: '600' },
                   ]}>
                   Done
                 </Text>
               </TouchableOpacity>
             </View>
-            <DateTimePicker
-              value={pendingDate}
-              mode="date"
-              display="inline"
-              minimumDate={minDate}
-              onChange={(_, date) => {
-                if (date) setPendingDate(date);
-              }}
-              themeVariant={dark ? 'dark' : 'light'}
-              style={styles.iosPicker}
-            />
+            <View style={{ padding: 10 }}>
+              <CalendarContainer
+                theme={calendarTheme}
+                backgroundColor={dark ? '#1c1c1e' : '#ffffff'}
+                calendarActiveDateRanges={calendarActiveDateRanges}
+                onCalendarDayPress={handleDayPress}
+              />
+            </View>
           </View>
-        </Modal>
-      )}
-
-      {/* Android native dialog */}
-      {Platform.OS === 'android' && activePicker !== null && (
-        <DateTimePicker
-          value={pendingDate}
-          mode="date"
-          display="default"
-          minimumDate={minDate}
-          onChange={onAndroidChange}
-        />
-      )}
+        </View>
+      </Modal>
 
       {/* Footer */}
       <View
@@ -389,11 +477,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 31, 140, 0.1)',
+    backgroundColor: 'rgba(255, 46, 146, 0.1)',
     marginBottom: 8,
   },
   durationText: {
-    color: '#FF1F8C',
+    color: '#FF2E92',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -422,8 +510,9 @@ const styles = StyleSheet.create({
   },
   sheetAction: {
     minWidth: 60,
+    height: 44,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 2,
   },
   sheetActionText: {
     fontSize: 16,
@@ -451,7 +540,7 @@ const styles = StyleSheet.create({
   nextButton: {
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#FF1F8C',
+    backgroundColor: '#FF2E92',
     alignItems: 'center',
     justifyContent: 'center',
   },

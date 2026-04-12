@@ -44,7 +44,7 @@ export default function CreateStepHeader({
           />
           <Circle
             cx={SIZE / 2} cy={SIZE / 2} r={RADIUS}
-            stroke="#FF1F8C"
+            stroke="#FF2E92"
             strokeWidth={STROKE_WIDTH}
             fill="none"
             strokeDasharray={CIRCUMFERENCE}
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems:    'baseline',
   },
   progressCurrent: {
-    color:      '#FF1F8C',
+    color:      '#FF2E92',
     fontSize:   13,
     fontWeight: '600',
   },

@@ -27,6 +27,9 @@ interface IdeaCardProps {
     right?: number;
     left?: number;
   }) => void;
+  checkin?: string | null;
+  checkout?: string | null;
+  adults?: number | null;
 }
 
 export default function IdeaCard({
@@ -38,6 +41,9 @@ export default function IdeaCard({
   onAdd,
   onViewDetails,
   onOptionsPress,
+  checkin,
+  checkout,
+  adults,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
@@ -50,6 +56,9 @@ export default function IdeaCard({
         params: {
           hotelId: item.external_id as string,
           hotelData: JSON.stringify(item.all_data),
+          checkin,
+          checkout,
+          adults,
         },
       } as any);
     }

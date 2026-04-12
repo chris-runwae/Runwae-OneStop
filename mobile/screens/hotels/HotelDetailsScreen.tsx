@@ -27,9 +27,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import type { HotelDetail } from '@/types/hotel.types';
-import type { LiteAPIHotelDetails } from '@/types/liteapi.types';
-import { getHotelDetails } from '@/utils/supabase/liteapi.service';
+import type {
+  LiteAPIHotelDetails,
+  LiteAPIHotelRatesResponse,
+} from '@/types/liteapi.types';
+import {
+  getHotelDetails,
+  getHotelRatesByHotelIds,
+} from '@/utils/supabase/liteapi.service';
 import { getCurrencySymbol } from '@/utils/currency';
+import EventLocationSection from '@/components/event/detail/EventLocationSection';
+import { Divider } from '@/components/event/detail/EventDetailPrimitives';
+import { useDirections } from '@/hooks/useDirections';
+import FullScreenMapModal from '@/components/event/FullScreenMapModal';
+import { useTrips } from '@/context/TripsContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -102,8 +113,8 @@ export default function HotelDetailScreen() {
   const {
     hotelId,
     // tripId,
-    // checkin = '',
-    // checkout = '',
+    checkin,
+    checkout,
     adults: adultsStr,
     hotelData,
   } = useLocalSearchParams<{
@@ -119,9 +130,12 @@ export default function HotelDetailScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const { activeTrip } = useTrips();
 
+  const { openDirections } = useDirections();
+  const [showFullMap, setShowFullMap] = useState(false);
   const [hotel, setHotel] = useState<HotelDetail | null>(null);
-  // const [rates, setRates] = useState<HotelRate[]>([]);
+  const [rates, setRates] = useState<LiteAPIHotelRatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
@@ -131,14 +145,21 @@ export default function HotelDetailScreen() {
     setError(null);
     try {
       const detailsRes = await getHotelDetails(hotelId);
-      getHotelDetails(hotelId);
+      const ratesRes = await getHotelRatesByHotelIds(
+        [hotelId],
+        checkin ?? activeTrip?.trip_details?.start_date ?? '',
+        checkout ?? activeTrip?.trip_details?.end_date ?? '',
+        adults
+      );
+
+      setRates(ratesRes);
       setHotel(mapDetails(detailsRes.data));
     } catch (err) {
       setError((err as Error).message || 'Failed to load hotel details');
     } finally {
       setLoading(false);
     }
-  }, [hotelId]);
+  }, [hotelId, checkin, checkout, adults, activeTrip]);
 
   useEffect(() => {
     fetchData();
@@ -154,8 +175,6 @@ export default function HotelDetailScreen() {
       return null;
     }
   })();
-
-  // console.log('Hotel Details: ', hotel);
 
   if (loading) {
     return (
@@ -191,11 +210,8 @@ export default function HotelDetailScreen() {
     ?.filter(Boolean)
     ?.slice(0, 6) as { label: string; icon: React.ReactNode }[];
 
-  // console.log(
-  //   'hotel: ',
-  //   parsedHotelData && parsedHotelData?.roomTypes.length === 0
-  // );
-
+  const handleGetDirections = () =>
+    openDirections({ title: hotel.name, location: hotel.address });
   // const handleSelectRate = (rate: HotelRate) => {
   //   router.push({
   //     pathname: '/hotel/book',
@@ -216,6 +232,8 @@ export default function HotelDetailScreen() {
   //   });
   // };
 
+  // console.log('hotel: ', JSON.stringify(hotel, null, 2));
+  // console.log('parsedHotelData: ', JSON.stringify(parsedHotelData, null, 2));
   return (
     <View
       style={[
@@ -330,6 +348,19 @@ export default function HotelDetailScreen() {
             </>
           ) : null}
 
+          {/* <Spacer size={16} vertical /> */}
+          <Divider />
+          <EventLocationSection
+            location={hotel.address}
+            title={hotel.name}
+            latitude={hotel.coordinates.latitude}
+            longitude={hotel.coordinates.longitude}
+            onOpenMap={() => setShowFullMap(true)}
+            onDirections={handleGetDirections}
+          />
+          <Divider />
+          <Spacer size={16} vertical />
+
           {/* Rates */}
           <Text style={styles.sectionLabel}>Available Rooms</Text>
           <Spacer size={12} vertical />
@@ -419,6 +450,16 @@ export default function HotelDetailScreen() {
           <Spacer size={140} vertical />
         </View>
       </ScrollView>
+
+      <FullScreenMapModal
+        visible={showFullMap}
+        onClose={() => setShowFullMap(false)}
+        onDirections={handleGetDirections}
+        location={hotel.address}
+        title={hotel.name}
+        latitude={hotel.coordinates.latitude}
+        longitude={hotel.coordinates.longitude}
+      />
     </View>
   );
 }
@@ -491,7 +532,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  address: { ...textStyles.regular_14, fontSize: 12, flex: 1 },
+  address: { ...textStyles.textBody14, fontSize: 12, flex: 1 },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -504,7 +545,7 @@ const styles = StyleSheet.create({
   },
   ratingText: { fontWeight: '700', fontSize: 13, color: '#FF1F8C' },
   sectionLabel: {
-    ...textStyles.bold_20,
+    ...textStyles.textHeading16,
     fontSize: 15,
   },
   amenityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -530,23 +571,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
-    // height: 120,
-    // backgroundColor: 'red',
-    // width: '100%',
   },
   rateInfo: { flex: 1, gap: 4 },
-  roomName: { ...textStyles.bold_20, fontSize: 14 },
-  boardName: { ...textStyles.regular_14, fontSize: 12 },
+  roomName: { ...textStyles.textHeading16, fontSize: 14 },
+  boardName: { ...textStyles.textBody14, fontSize: 12 },
   refundRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 4,
   },
-  refundText: { fontSize: 11, color: '#22C55E' },
+  refundText: { ...textStyles.textBody12, fontSize: 11, color: '#22C55E' },
   ratePriceCol: { alignItems: 'flex-end', gap: 2 },
-  ratePrice: { ...textStyles.bold_20, fontSize: 16, color: '#FF1F8C' },
-  perNight: { fontSize: 11 },
+  ratePrice: { ...textStyles.textHeading20, fontSize: 16, color: '#FF1F8C' },
+  perNight: { ...textStyles.textBody12, fontSize: 11 },
   selectBtn: {
     backgroundColor: '#FF1F8C',
     paddingHorizontal: 14,
@@ -554,5 +592,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 6,
   },
-  selectText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  selectText: {
+    ...textStyles.textBody12,
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

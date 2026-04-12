@@ -247,6 +247,9 @@ export default function TripOverviewTab({ trip }: Props) {
               setMenuAnchor(position);
               setMenuVisible(true);
             }}
+            checkin={trip.trip_details?.start_date}
+            checkout={trip.trip_details?.end_date}
+            adults={trip.group_members?.length ?? 1}
           />
         ))}
       </View>

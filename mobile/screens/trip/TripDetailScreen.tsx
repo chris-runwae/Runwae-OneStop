@@ -285,8 +285,8 @@ export default function TripDetailScreen() {
             <View style={styles.tabContent}>
               <TripOverviewTab trip={activeTrip} />
               <Spacer size={24} vertical />
-              <HotelsSection trip={activeTrip} />
-              <Spacer size={14} vertical />
+              {/* <HotelsSection trip={activeTrip} onAdd={() => {}} />
+              <Spacer size={14} vertical /> */}
             </View>
           )}
           {activeTab === 'itinerary' && <TripItineraryTab />}

@@ -11,6 +11,7 @@ import type {
   LiteAPIRatesResponse,
   LiteAPISearchRatesRequest,
   LiteAPIHotelRateItem,
+  LiteAPIHotelRatesResponse,
 } from '@/types/liteapi.types';
 import type { HotelSummary } from '@/types/hotel.types';
 import { supabase } from './client';
@@ -54,6 +55,7 @@ export async function searchPlaces(
 export async function searchRates(
   request: LiteAPISearchRatesRequest
 ): Promise<LiteAPIRatesResponse> {
+  const requestBody = { ...request, roomMapping: true };
   try {
     const options = {
       method: 'POST',
@@ -62,7 +64,7 @@ export async function searchRates(
         'content-type': 'application/json',
         'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify(requestBody),
     };
 
     const response = await fetch(
@@ -274,6 +276,55 @@ export async function getHotelDetails(
     console.log('error: ', error);
     throw new Error(
       (error as LiteAPIError).error.message || 'Failed to get hotel details'
+    );
+  }
+}
+
+export async function getHotelRatesByHotelIds(
+  hotelIds: string[],
+  checkin: string,
+  checkout: string,
+  adults: number
+): Promise<any> {
+  try {
+    const requestBody = {
+      hotelIds,
+      checkin,
+      checkout,
+      occupancies: [{ adults }],
+      currency: 'USD',
+      guestNationality: 'US',
+      maxRatesPerHotel: 5,
+      includeHotelData: true,
+      roomMapping: true,
+    };
+
+    const options = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
+      },
+      body: JSON.stringify(requestBody),
+    };
+
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_LITE_API_URL}/hotels/rates`,
+      options
+    );
+
+    const data = await response.json();
+    if ((data as LiteAPIError).error) {
+      console.log('error getting rates: ', data);
+      throw new Error((data as LiteAPIError).error.message);
+    }
+
+    return data as LiteAPIRatesResponse;
+  } catch (error) {
+    console.log('error: ', error);
+    throw new Error(
+      (error as LiteAPIError).error.message || 'Failed to search rates'
     );
   }
 }

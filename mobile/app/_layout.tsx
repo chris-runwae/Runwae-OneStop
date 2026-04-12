@@ -77,6 +77,7 @@ function RouteGuard() {
     'modal',
     'itinerary',
     'experience',
+    'viator',
     'create-trip',
     'events',
     'search',
@@ -106,6 +107,7 @@ function RouteGuard() {
     'modal',
     'itinerary',
     'experience',
+    'viator',
     'destination',
     'create-trip',
     'events',
@@ -140,6 +142,7 @@ function RouteGuard() {
       <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="viator" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />

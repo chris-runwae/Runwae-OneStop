@@ -1,4 +1,5 @@
-// hooks/useDestinations.ts
+import type { ViatorProduct } from '@/types/viator.types';
+import { setViatorProductsCache } from '@/utils/viator/viatorProductCache';
 import { useCallback, useEffect, useState } from 'react';
 const BASE_URL = 'https://api.sandbox.viator.com/partner';
 
@@ -62,7 +63,7 @@ export async function searchViator({ text, filters }: ViatorSearchParams) {
 }
 
 export function useViator() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ViatorProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,18 +120,18 @@ export function useViator() {
         }
       );
 
-      console.log('2. Response status:', response.status);
-      console.log('3. Response ok:', response.ok);
-
       const text = await response.text(); // read as text first
-      console.log('4. Raw text:', text);
 
       const data = JSON.parse(text);
-      console.log('5. Parsed data keys:', Object.keys(data));
+      const raw: ViatorProduct[] = Array.isArray(data)
+        ? data
+        : (data?.products?.results ??
+            data?.products ??
+            data?.data ??
+            []);
 
-      setProducts(
-        data?.products?.results ?? data?.products ?? data?.data ?? []
-      );
+      setProducts(raw);
+      setViatorProductsCache(raw);
     } catch (err) {
       console.log('CAUGHT ERROR:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');

@@ -3,6 +3,7 @@ import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
 import ItineraryForYou from '@/components/home/IteneryForYou';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
+import ViatorProductsForYou from '@/components/viator/ViatorProductsForYou';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
 import MainTabHeader from '@/components/ui/MainTabHeader';
@@ -14,22 +15,15 @@ import {
   Experience,
   ItineraryTemplate,
 } from '@/types/content.types';
+import type { ViatorProduct } from '@/types/viator.types';
 import { getDestinations } from '@/utils/supabase/destinations.service';
 import { getEvents } from '@/utils/supabase/events.service';
 import { getExperiences } from '@/utils/supabase/experiences.service';
 import { getItineraryTemplates } from '@/utils/supabase/itinerary-templates.service';
 import React, { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { useViator } from '@/hooks/useViator';
-import { Colors } from '@/constants/theme';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -43,19 +37,7 @@ const ExploreScreen = () => {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
-
-  const { refetch, products, loading: viatorLoading } = useViator();
-
-  // React.useEffect(() => {
-  //   refetch();
-  // }, [refetch]);
-
-  // Separate effect to log when products actually updates
-  React.useEffect(() => {
-    console.log('Viator products:', products);
-  }, [products]);
+  const { products: viatorProducts, loading: viatorLoading } = useViator();
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -119,16 +101,15 @@ const ExploreScreen = () => {
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, events]);
 
+  const getPriceBounds = (range: string) => {
+    if (range === '$500+') return [500, Infinity] as const;
+    const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
+    return [numbers[0], numbers[1] ?? Infinity] as const;
+  };
+
   const filteredExperiences = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
       return [];
-
-    // Parse price range from string e.g., "$50 - $200"
-    const getPriceBounds = (range: string) => {
-      if (range === '$500+') return [500, Infinity];
-      const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
-      return [numbers[0], numbers[1] || Infinity];
-    };
 
     const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
 
@@ -147,6 +128,30 @@ const ExploreScreen = () => {
     experiences,
   ]);
 
+  /** Viator tours: same top-level and price/search filters as in-app experiences; sub-categories are not mapped to Viator tags yet. */
+  const filteredViatorProducts = useMemo(() => {
+    if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
+      return [];
+
+    const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
+    const list = viatorProducts as ViatorProduct[];
+
+    return list.filter((p) => {
+      const text = `${p.title} ${p.description ?? ''}`;
+      const price = p.pricing?.summary?.fromPrice ?? 0;
+      return (
+        matchesSearch(text, searchQuery) &&
+        price >= minPrice &&
+        price <= maxPrice
+      );
+    });
+  }, [
+    searchQuery,
+    selectedTopCategory,
+    selectedPrice,
+    viatorProducts,
+  ]);
+
   const filteredDestinations = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
@@ -154,15 +159,6 @@ const ExploreScreen = () => {
       matchesSearch(item.title + item.location, searchQuery)
     );
   }, [searchQuery, selectedTopCategory, destinations]);
-
-  if (viatorLoading) {
-    return (
-      <AppSafeAreaView edges={['top']}>
-        <MainTabHeader title="Explore" />
-        <ActivityIndicator size="large" color={colors.primaryColors.default} />
-      </AppSafeAreaView>
-    );
-  }
 
   return (
     <AppSafeAreaView edges={['top']}>
@@ -217,6 +213,15 @@ const ExploreScreen = () => {
           />
         )}
 
+        {(viatorLoading || filteredViatorProducts.length > 0) && (
+          <ViatorProductsForYou
+            data={filteredViatorProducts}
+            title="Tours & activities"
+            subtitle="Powered by Viator"
+            loading={viatorLoading}
+          />
+        )}
+
         {filteredDestinations.length > 0 && (
           <DestinationsForYou
             data={filteredDestinations}
@@ -229,6 +234,8 @@ const ExploreScreen = () => {
         {filteredItineraries.length === 0 &&
           filteredEvents.length === 0 &&
           filteredExperiences.length === 0 &&
+          !viatorLoading &&
+          filteredViatorProducts.length === 0 &&
           filteredDestinations.length === 0 && (
             <View className="items-center justify-center px-5 py-10">
               <Text className="text-center text-lg font-medium text-gray-400">

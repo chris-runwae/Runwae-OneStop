@@ -3,7 +3,7 @@ import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 interface DetailNotFoundProps {
-  type: 'itinerary' | 'experience' | 'destination';
+  type: 'itinerary' | 'experience' | 'destination' | 'viator';
 }
 
 const DetailNotFound = ({ type }: DetailNotFoundProps) => {
@@ -13,7 +13,9 @@ const DetailNotFound = ({ type }: DetailNotFoundProps) => {
       ? 'Itinerary'
       : type === 'experience'
         ? 'Experience'
-        : 'Destination';
+        : type === 'viator'
+          ? 'Tour'
+          : 'Destination';
 
   return (
     <View className="flex-1 items-center justify-center bg-white px-8 dark:bg-black">
@@ -28,8 +30,9 @@ const DetailNotFound = ({ type }: DetailNotFoundProps) => {
         {label} not found
       </Text>
       <Text className="mb-10 text-center text-base leading-6 text-gray-500 dark:text-gray-400">
-        We couldn't find the {type} you're looking for. It might have been
-        removed or the link is incorrect.
+        We couldn&apos;t find the {type === 'viator' ? 'tour' : type}{' '}
+        you&apos;re looking for. It might have been removed or the link is
+        incorrect.
       </Text>
       <TouchableOpacity
         onPress={() => router.replace('/explore')}

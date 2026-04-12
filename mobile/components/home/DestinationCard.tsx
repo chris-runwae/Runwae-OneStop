@@ -14,7 +14,7 @@ interface DestinationCardProps {
   item: Destination;
   fullWidth?: boolean;
   width?: number;
-  imageHieght?: number;
+  imageHeight?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -22,7 +22,7 @@ const DestinationCard = ({
   item,
   fullWidth = false,
   width = 240,
-  imageHieght = 200,
+  imageHeight = 200,
   style,
 }: DestinationCardProps) => {
   const router = useRouter();
@@ -40,7 +40,6 @@ const DestinationCard = ({
   return (
     <Pressable
       onPress={handlePress}
-      // className={fullWidth ? '' : 'mr-3'}
       style={[style, { width: fullWidth ? '100%' : width }]}>
       <Image
         source={{
@@ -48,7 +47,8 @@ const DestinationCard = ({
             item?.image ??
             'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
         }}
-        className={`w-full h-[${imageHieght}px] rounded-t-[16px]`}
+        className="w-full rounded-t-[16px]"
+        style={{ height: imageHeight }}
         resizeMode="cover"
       />
       <View className="mt-3">

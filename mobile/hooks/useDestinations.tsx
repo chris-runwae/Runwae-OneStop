@@ -79,3 +79,53 @@ export function useDestinations(
 
   return { destinations, loading, error, refetch: fetchDestinations };
 }
+
+type UseDestinationByIdReturn = {
+  destination: Destination | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+};
+
+export function useDestinationById(
+  id: string | null
+): UseDestinationByIdReturn {
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDestination = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('destinations')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (supabaseError) throw supabaseError;
+
+      setDestination(data);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
+      setDestination(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchDestination();
+  }, [fetchDestination]);
+
+  return { destination, loading, error, refetch: fetchDestination };
+}

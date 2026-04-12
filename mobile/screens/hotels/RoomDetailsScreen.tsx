@@ -3,9 +3,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
-  BedDouble,
   Calendar,
-  CreditCard,
+  Home,
+  Maximize2,
   ShieldCheck,
   ShieldOff,
   Users,
@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
-import type { HotelDetail } from '@/types/hotel.types';
+import type { HotelDetail, HotelRoomDetail } from '@/types/hotel.types';
 import type {
   LiteAPIHotelRoomRate,
   LiteAPIHotelRoomType,
@@ -34,11 +34,34 @@ import { ratePriceParts, roomGalleryForMappedRoom } from '@/utils/hotelRates';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+function pluralAdults(n: number) {
+  return n === 1 ? '1 adult' : `${n} adults`;
+}
+
+function pluralGuests(n: number) {
+  return n === 1 ? '1 guest' : `${n} guests`;
+}
+
+function pluralChildren(n: number) {
+  return n === 1 ? '1 child' : `${n} children`;
+}
+
+function formatRoomSize(size: number | string | undefined): string | null {
+  if (size == null || size === '') return null;
+  if (typeof size === 'number') return `${size} m²`;
+  const s = String(size);
+  return /\d/.test(s) && !/m²|sq|ft/i.test(s) ? `${s} m²` : s;
+}
+
 function parseRoomRouteParams(
   hotelJson: unknown,
   roomBundleJson: unknown,
   rateIdStr: string | undefined
-): { hotel: HotelDetail; roomType: LiteAPIHotelRoomType; rate: LiteAPIHotelRoomRate } | null {
+): {
+  hotel: HotelDetail;
+  roomType: LiteAPIHotelRoomType;
+  rate: LiteAPIHotelRoomRate;
+} | null {
   try {
     if (hotelJson == null || roomBundleJson == null) return null;
     const hotel = JSON.parse(String(hotelJson)) as HotelDetail;
@@ -70,9 +93,7 @@ export default function RoomDetailsScreen() {
     checkout?: string;
     adults?: string;
     tripId?: string;
-    /** Serialized `HotelDetail` from HotelDetailsScreen */
     hotelJson?: string;
-    /** Serialized `{ roomType, rate }` for this row */
     roomBundleJson?: string;
   }>();
 
@@ -86,6 +107,13 @@ export default function RoomDetailsScreen() {
     () => parseRoomRouteParams(hotelJson, roomBundleJson, rateId),
     [hotelJson, roomBundleJson, rateId]
   );
+
+  const roomMeta = useMemo((): HotelRoomDetail | null => {
+    if (!bundle?.rate.mappedRoomId) return null;
+    return (
+      bundle.hotel.rooms?.find((r) => r.id === bundle.rate.mappedRoomId) ?? null
+    );
+  }, [bundle]);
 
   const galleryUrls = useMemo(() => {
     if (!bundle) return [];
@@ -104,6 +132,7 @@ export default function RoomDetailsScreen() {
     });
   };
 
+  /** Booking still uses full `roomType` + `rate` from the bundle (params). */
   const handleBook = () => {
     if (!bundle || !price) return;
     const { hotel, roomType, rate } = bundle;
@@ -145,9 +174,15 @@ export default function RoomDetailsScreen() {
     );
   }
 
-  const { hotel, roomType, rate } = bundle;
-  const taxes = rate.retailRate?.taxesAndFees ?? [];
+  const { hotel, rate } = bundle;
   const refundable = rate.cancellationPolicies?.refundableTag === 'RFN';
+
+  const maxOcc = roomMeta?.maxOccupancy ?? rate.maxOccupancy;
+  const maxAdultsRoom = roomMeta?.maxAdults;
+  const maxChildrenRoom = roomMeta?.maxChildren;
+  const roomDescription = roomMeta?.description?.trim() ?? '';
+  const roomSizeLabel = formatRoomSize(roomMeta?.roomSquareSize);
+  const roomAmenities = roomMeta?.amenities?.filter(Boolean) ?? [];
 
   return (
     <View
@@ -224,35 +259,48 @@ export default function RoomDetailsScreen() {
           <Text style={[styles.hotelName, { color: colors.textColors.subtle }]}>
             {hotel.name}
           </Text>
-          <Text style={[styles.roomTitle, { color: colors.textColors.default }]}>
+          <Text
+            style={[styles.roomTitle, { color: colors.textColors.default }]}
+            maxFontSizeMultiplier={1.35}>
             {rate.name}
           </Text>
-          <Text style={[styles.boardLine, { color: colors.textColors.subtle }]}>
-            {rate.boardName} · {roomType.rateType ?? 'Standard'} rate
-          </Text>
-
-          <Spacer size={16} vertical />
-
-          <View style={styles.priceRow}>
-            <Text style={styles.priceMain}>
-              {price
-                ? `${getCurrencySymbol(price.currency)} ${price.amount.toFixed(0)}`
-                : '—'}
-            </Text>
-            <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
-              / night (suggested)
-            </Text>
-          </View>
-
-          {roomType.suggestedSellingPrice &&
-          typeof roomType.suggestedSellingPrice.amount === 'number' ? (
-            <Text style={{ color: colors.textColors.subtle, fontSize: 12 }}>
-              Room type from {getCurrencySymbol(roomType.suggestedSellingPrice.currency)}{' '}
-              {roomType.suggestedSellingPrice.amount.toFixed(0)}
+          {roomMeta?.roomName && roomMeta.roomName !== rate.name ? (
+            <Text
+              style={[
+                styles.roomSubtitle,
+                { color: colors.textColors.subtle },
+              ]}>
+              {roomMeta.roomName}
             </Text>
           ) : null}
+          <Text
+            style={[styles.boardLine, { color: colors.textColors.subtle }]}
+            maxFontSizeMultiplier={1.35}>
+            {rate.boardName}
+          </Text>
 
-          <Spacer size={20} vertical />
+          <Spacer size={14} vertical />
+
+          <View style={styles.priceBlock}>
+            <View style={styles.priceRowWrap}>
+              <Text
+                style={[styles.priceMain, { color: '#FF1F8C' }]}
+                maxFontSizeMultiplier={1.25}>
+                {price
+                  ? `${getCurrencySymbol(price.currency)} ${price.amount.toFixed(0)}`
+                  : '—'}
+              </Text>
+              <Text
+                style={[
+                  styles.priceSuffix,
+                  { color: colors.textColors.subtle },
+                ]}>
+                / night
+              </Text>
+            </View>
+          </View>
+
+          <Spacer size={22} vertical />
 
           <View
             style={[
@@ -263,7 +311,7 @@ export default function RoomDetailsScreen() {
             ]}>
             <View style={styles.infoRow}>
               <Calendar size={18} color="#FF1F8C" />
-              <View>
+              <View style={styles.infoTextCol}>
                 <Text style={styles.infoLabel}>Stay</Text>
                 <Text style={styles.infoValue}>
                   {fmt(checkin)} → {fmt(checkout)}
@@ -273,32 +321,152 @@ export default function RoomDetailsScreen() {
             <View style={styles.divider} />
             <View style={styles.infoRow}>
               <Users size={18} color="#FF1F8C" />
-              <View>
-                <Text style={styles.infoLabel}>Guests</Text>
-                <Text style={styles.infoValue}>
-                  {adults} adult{adults === 1 ? '' : 's'} · up to{' '}
-                  {rate.maxOccupancy} guests
-                </Text>
-              </View>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <BedDouble size={18} color="#FF1F8C" />
-              <View>
-                <Text style={styles.infoLabel}>Occupancy</Text>
-                <Text style={styles.infoValue}>
-                  {rate.adultCount} adults
-                  {rate.childCount > 0
-                    ? `, ${rate.childCount} children`
-                    : ''}
-                </Text>
+              <View style={styles.infoTextCol}>
+                <Text style={styles.infoLabel}>Your booking</Text>
+                <Text style={styles.infoValue}>{pluralAdults(adults)}</Text>
               </View>
             </View>
           </View>
 
-          <Spacer size={20} vertical />
+          <Spacer size={24} vertical />
 
-          <Text style={styles.sectionLabel}>Cancellation</Text>
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            About this room
+          </Text>
+          <Spacer size={8} vertical />
+          <Text style={[styles.bodyText, { color: colors.textColors.subtle }]}>
+            {roomDescription
+              ? roomDescription
+              : 'No room description is available for this hotel yet.'}
+          </Text>
+
+          <Spacer size={24} vertical />
+
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            Room size
+          </Text>
+          <Spacer size={8} vertical />
+          <View style={styles.inlineRow}>
+            <Maximize2 size={18} color="#FF1F8C" />
+            <Text
+              style={[styles.bodyText, { color: colors.textColors.default }]}>
+              {roomSizeLabel ?? 'Size not listed'}
+            </Text>
+          </View>
+
+          <Spacer size={24} vertical />
+
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            Capacity
+          </Text>
+          <Spacer size={10} vertical />
+          <View
+            style={[
+              styles.capacityCard,
+              {
+                borderColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF',
+              },
+            ]}>
+            {maxOcc != null && maxOcc > 0 ? (
+              <View style={styles.capacityRow}>
+                <Users size={16} color="#FF1F8C" />
+                <Text
+                  style={[
+                    styles.bodyText,
+                    { color: colors.textColors.default },
+                  ]}>
+                  Up to {pluralGuests(maxOcc)}
+                </Text>
+              </View>
+            ) : null}
+            {maxAdultsRoom != null ? (
+              <View style={styles.capacityRow}>
+                <Text
+                  style={[
+                    styles.capacityBullet,
+                    { color: colors.textColors.subtle },
+                  ]}>
+                  •
+                </Text>
+                <Text
+                  style={[
+                    styles.bodyText,
+                    { color: colors.textColors.default },
+                  ]}>
+                  Up to {pluralAdults(maxAdultsRoom)} (room limit)
+                </Text>
+              </View>
+            ) : null}
+            {maxChildrenRoom != null ? (
+              <View style={styles.capacityRow}>
+                <Text
+                  style={[
+                    styles.capacityBullet,
+                    { color: colors.textColors.subtle },
+                  ]}>
+                  •
+                </Text>
+                <Text
+                  style={[
+                    styles.bodyText,
+                    { color: colors.textColors.default },
+                  ]}>
+                  Up to {pluralChildren(maxChildrenRoom)} (room limit)
+                </Text>
+              </View>
+            ) : null}
+            {(maxOcc == null || maxOcc <= 0) &&
+            maxAdultsRoom == null &&
+            maxChildrenRoom == null ? (
+              <Text
+                style={[styles.bodyText, { color: colors.textColors.subtle }]}>
+                Capacity details for this room are not listed by the hotel.
+              </Text>
+            ) : null}
+          </View>
+
+          <Spacer size={24} vertical />
+
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            Room amenities
+          </Text>
+          <Spacer size={10} vertical />
+          {roomAmenities.length > 0 ? (
+            <View style={styles.amenityWrap}>
+              {roomAmenities.map((a, i) => (
+                <View
+                  key={`${i}-${a}`}
+                  style={[
+                    styles.amenityChip,
+                    {
+                      borderColor:
+                        colorScheme === 'dark' ? '#374151' : '#E9ECEF',
+                      backgroundColor:
+                        colorScheme === 'dark' ? '#1F2937' : '#FF1F8C08',
+                    },
+                  ]}>
+                  <Home size={12} color="#FF1F8C" />
+                  <Text style={styles.amenityText}>{a}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text
+              style={[styles.bodyText, { color: colors.textColors.subtle }]}>
+              No room amenities list is available for this hotel.
+            </Text>
+          )}
+
+          <Spacer size={24} vertical />
+
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            Cancellation
+          </Text>
           <Spacer size={8} vertical />
           <View style={styles.inlineRow}>
             {refundable ? (
@@ -311,68 +479,15 @@ export default function RoomDetailsScreen() {
                 color: refundable ? '#22C55E' : '#EF4444',
                 fontSize: 14,
                 flex: 1,
+                lineHeight: 20,
               }}>
               {refundable
-                ? 'Free cancellation (see policy for deadlines).'
-                : 'Non-refundable for this rate.'}
+                ? 'Free cancellation may apply (see policy at checkout).'
+                : 'This rate is non-refundable.'}
             </Text>
           </View>
 
-          {taxes.length > 0 ? (
-            <>
-              <Spacer size={20} vertical />
-              <Text style={styles.sectionLabel}>Taxes & fees</Text>
-              <Spacer size={8} vertical />
-              {taxes.map((t, i) => (
-                <View key={i} style={styles.taxRow}>
-                  <Text style={{ color: colors.textColors.subtle, flex: 1 }}>
-                    {t.description}
-                    {t.included ? ' (included)' : ''}
-                  </Text>
-                  <Text style={{ color: colors.textColors.default }}>
-                    {getCurrencySymbol(t.currency)} {t.amount.toFixed(2)}
-                  </Text>
-                </View>
-              ))}
-            </>
-          ) : null}
-
-          {rate.commission?.length ? (
-            <>
-              <Spacer size={16} vertical />
-              <Text style={styles.sectionLabel}>Commission</Text>
-              <Spacer size={6} vertical />
-              <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
-                {getCurrencySymbol(rate.commission[0].currency)}{' '}
-                {rate.commission[0].amount.toFixed(2)}
-              </Text>
-            </>
-          ) : null}
-
-          {rate.paymentTypes?.length ? (
-            <>
-              <Spacer size={20} vertical />
-              <Text style={styles.sectionLabel}>Payment</Text>
-              <Spacer size={8} vertical />
-              <View style={styles.inlineRow}>
-                <CreditCard size={16} color={colors.textColors.subtle} />
-                <Text style={{ color: colors.textColors.subtle, flex: 1 }}>
-                  {rate.paymentTypes.join(' · ')}
-                </Text>
-              </View>
-            </>
-          ) : null}
-
-          <Spacer size={16} vertical />
-          <View style={styles.idsBox}>
-            <Text style={styles.idsLabel}>Booking reference ids</Text>
-            <Text selectable style={styles.idsMono}>
-              rateId: {rate.rateId}
-            </Text>
-            <Text selectable style={styles.idsMono}>
-              offerId: {roomType.offerId}
-            </Text>
-          </View>
+          <Spacer size={32} vertical />
         </View>
       </ScrollView>
 
@@ -437,16 +552,34 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dot: { height: 6, borderRadius: 3 },
-  content: { paddingHorizontal: 16, paddingTop: 20 },
+  content: { paddingHorizontal: 16, paddingTop: 20, width: '100%' },
   hotelName: { ...textStyles.textBody14, fontSize: 13 },
-  roomTitle: { ...textStyles.textHeading16, fontSize: 22, marginTop: 4 },
-  boardLine: { fontSize: 14, marginTop: 4 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  priceMain: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FF1F8C',
+  roomTitle: {
+    ...textStyles.textHeading16,
+    fontSize: 18,
+    lineHeight: 24,
+    marginTop: 4,
+    width: '100%',
+    flexShrink: 1,
   },
+  roomSubtitle: { ...textStyles.textBody14, marginTop: 4 },
+  boardLine: { ...textStyles.textBody14, marginTop: 6, width: '100%' },
+  priceBlock: { width: '100%', maxWidth: '100%' },
+  priceRowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    rowGap: 4,
+    columnGap: 8,
+    width: '100%',
+  },
+  priceMain: {
+    ...textStyles.textHeading20,
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
+  priceSuffix: { ...textStyles.textBody12, fontSize: 11 },
+  bodyText: { ...textStyles.textBody14, fontSize: 13 },
   sectionLabel: { ...textStyles.textHeading16, fontSize: 15 },
   infoCard: {
     borderWidth: 1,
@@ -455,37 +588,53 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  infoTextCol: { flex: 1, minWidth: 0 },
   infoLabel: {
     ...textStyles.textBody12,
     color: '#9CA3AF',
     fontSize: 11,
     textTransform: 'uppercase',
   },
-  infoValue: { ...textStyles.textBody14, fontSize: 15, marginTop: 2 },
+  infoValue: {
+    ...textStyles.textBody14,
+    fontSize: 15,
+    marginTop: 2,
+    flexShrink: 1,
+  },
   divider: {
     height: 1,
     backgroundColor: '#E9ECEF33',
     marginVertical: 12,
   },
   inlineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  taxRow: {
+  capacityCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  capacityRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  capacityBullet: { width: 12, ...textStyles.textBody14, fontSize: 13 },
+  amenityWrap: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  idsBox: {
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: '#00000008',
+  amenityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    maxWidth: '100%',
   },
-  idsLabel: {
-    ...textStyles.textBody12,
-    fontSize: 11,
-    marginBottom: 6,
-    color: '#6B7280',
+  amenityText: {
+    ...textStyles.textBody14,
+    color: '#FF1F8C',
+    flexShrink: 1,
   },
-  idsMono: { fontSize: 10, color: '#6B7280' },
   cta: {
     position: 'absolute',
     left: 0,
@@ -501,5 +650,5 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
   },
-  bookBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  bookBtnText: { ...textStyles.textBody14, color: '#fff' },
 });

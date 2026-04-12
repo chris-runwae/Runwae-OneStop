@@ -1,5 +1,19 @@
 // Hotel booking feature types
 
+/** Room catalog entry from hotel details (LiteAPI); optional fields depend on provider. */
+export interface HotelRoomDetail {
+  id: number;
+  roomName: string;
+  photos: Array<{ url: string }>;
+  description?: string;
+  maxAdults?: number;
+  maxChildren?: number;
+  maxOccupancy?: number;
+  /** Square metres or provider-specific label, e.g. `"32 m²"` */
+  roomSquareSize?: number | string;
+  amenities?: string[];
+}
+
 export interface HotelSummary {
   hotelId: string;
   name: string;
@@ -21,11 +35,7 @@ export interface HotelDetail extends HotelSummary {
   };
   city: string;
   country: string;
-  rooms: Array<{
-    id: number;
-    roomName: string;
-    photos: Array<{ url: string }>;
-  }>;
+  rooms: HotelRoomDetail[];
   policies?: Array<{ name: string; description: string }>;
   sentimentPros?: string[];
   sentimentCons?: string[];

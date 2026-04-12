@@ -152,6 +152,12 @@ export interface LiteAPIHotelDetails {
     id: number;
     roomName: string;
     photos: Array<{ url: string }>;
+    description?: string;
+    maxAdults?: number;
+    maxChildren?: number;
+    maxOccupancy?: number;
+    roomSquareSize?: number | string;
+    amenities?: string[];
   }>;
   policies?: Array<{ name: string; description: string }>;
   sentiment_analysis?: {

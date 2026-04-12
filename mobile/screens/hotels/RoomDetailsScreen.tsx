@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
+  BedDouble,
   Calendar,
   Home,
   Maximize2,
@@ -108,11 +109,35 @@ export default function RoomDetailsScreen() {
     [hotelJson, roomBundleJson, rateId]
   );
 
+  /** Match catalog room: id from rate, else same room name, else single room. */
   const roomMeta = useMemo((): HotelRoomDetail | null => {
-    if (!bundle?.rate.mappedRoomId) return null;
-    return (
-      bundle.hotel.rooms?.find((r) => r.id === bundle.rate.mappedRoomId) ?? null
-    );
+    if (!bundle) return null;
+    const { hotel, rate } = bundle;
+    const rooms = hotel.rooms ?? [];
+    if (rooms.length === 0) return null;
+
+    if (rate.mappedRoomId != null) {
+      const byId = rooms.find((r) => r.id === rate.mappedRoomId);
+      if (byId) return byId;
+    }
+
+    const rateName = rate.name?.trim().toLowerCase();
+    if (rateName) {
+      const byName = rooms.find(
+        (r) => r.roomName?.trim().toLowerCase() === rateName
+      );
+      if (byName) return byName;
+      const partial = rooms.find(
+        (r) =>
+          r.roomName &&
+          (rateName.includes(r.roomName.trim().toLowerCase()) ||
+            r.roomName.trim().toLowerCase().includes(rateName))
+      );
+      if (partial) return partial;
+    }
+
+    if (rooms.length === 1) return rooms[0];
+    return null;
   }, [bundle]);
 
   const galleryUrls = useMemo(() => {
@@ -183,6 +208,7 @@ export default function RoomDetailsScreen() {
   const roomDescription = roomMeta?.description?.trim() ?? '';
   const roomSizeLabel = formatRoomSize(roomMeta?.roomSquareSize);
   const roomAmenities = roomMeta?.amenities?.filter(Boolean) ?? [];
+  const bedTypes = roomMeta?.bedTypes?.filter(Boolean) ?? [];
 
   return (
     <View
@@ -432,6 +458,41 @@ export default function RoomDetailsScreen() {
 
           <Text
             style={[styles.sectionLabel, { color: colors.textColors.default }]}>
+            Bed types
+          </Text>
+          <Spacer size={10} vertical />
+          {bedTypes.length > 0 ? (
+            <View style={styles.amenityWrap}>
+              {bedTypes.map((b, i) => (
+                <View
+                  key={`bed-${i}-${b}`}
+                  style={[
+                    styles.amenityChip,
+                    {
+                      borderColor:
+                        colorScheme === 'dark' ? '#374151' : '#E9ECEF',
+                      backgroundColor:
+                        colorScheme === 'dark' ? '#1F2937' : '#FF1F8C08',
+                    },
+                  ]}>
+                  <BedDouble size={12} color="#FF1F8C" />
+                  <Text style={styles.amenityText}>{b}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text
+              style={[styles.bodyText, { color: colors.textColors.subtle }]}>
+              {roomMeta
+                ? 'No bed type is listed for this room.'
+                : 'Link this rate to a hotel room to see bed types.'}
+            </Text>
+          )}
+
+          <Spacer size={24} vertical />
+
+          <Text
+            style={[styles.sectionLabel, { color: colors.textColors.default }]}>
             Room amenities
           </Text>
           <Spacer size={10} vertical />
@@ -457,7 +518,9 @@ export default function RoomDetailsScreen() {
           ) : (
             <Text
               style={[styles.bodyText, { color: colors.textColors.subtle }]}>
-              No room amenities list is available for this hotel.
+              {roomMeta
+                ? 'No amenities list is available for this room.'
+                : 'Link this rate to a hotel room to see amenities.'}
             </Text>
           )}
 

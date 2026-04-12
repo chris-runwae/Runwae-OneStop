@@ -158,6 +158,7 @@ export interface LiteAPIHotelDetails {
     maxOccupancy?: number;
     roomSquareSize?: number | string;
     amenities?: string[];
+    bedTypes?: string[];
   }>;
   policies?: Array<{ name: string; description: string }>;
   sentiment_analysis?: {

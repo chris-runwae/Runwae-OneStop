@@ -12,6 +12,8 @@ export interface HotelRoomDetail {
   /** Square metres or provider-specific label, e.g. `"32 m²"` */
   roomSquareSize?: number | string;
   amenities?: string[];
+  /** e.g. King, Twin — normalized from API `bedTypes` / `bed_types` / etc. */
+  bedTypes?: string[];
 }
 
 export interface HotelSummary {

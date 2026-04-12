@@ -32,6 +32,7 @@ import RoomRateCard from '@/components/hotels/RoomRateCard';
 import { useDirections } from '@/hooks/useDirections';
 import FullScreenMapModal from '@/components/event/FullScreenMapModal';
 import { useTrips } from '@/context/TripsContext';
+import { normalizeHotelRooms } from '@/utils/hotelRoom';
 import {
   ratePriceParts,
   roomGalleryForMappedRoom,
@@ -76,7 +77,7 @@ function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
       latitude: raw.location?.latitude ?? 0,
       longitude: raw.location?.longitude ?? 0,
     },
-    rooms: raw.rooms ?? [],
+    rooms: normalizeHotelRooms(raw.rooms as unknown[]),
     policies: raw.policies,
     sentimentPros: raw.sentiment_analysis?.pros,
     sentimentCons: raw.sentiment_analysis?.cons,

@@ -29,6 +29,7 @@ import { Colors, textStyles } from '@/constants';
 import type { HotelDetail, HotelRate } from '@/types/hotel.types';
 import type { LiteAPIHotelDetails } from '@/types/liteapi.types';
 import { getHotelDetails, searchRates } from '@/utils/supabase/liteapi.service';
+import { normalizeHotelRooms } from '@/utils/hotelRoom';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -69,7 +70,7 @@ function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
       latitude: raw.location?.latitude ?? 0,
       longitude: raw.location?.longitude ?? 0,
     },
-    rooms: raw.rooms ?? [],
+    rooms: normalizeHotelRooms(raw.rooms as unknown[]),
     policies: raw.policies,
     sentimentPros: raw.sentiment_analysis?.pros,
     sentimentCons: raw.sentiment_analysis?.cons,

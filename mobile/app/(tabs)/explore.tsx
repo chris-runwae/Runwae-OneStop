@@ -7,6 +7,7 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
 import MainTabHeader from '@/components/ui/MainTabHeader';
 import SearchInput from '@/components/ui/SearchInput';
+import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
 import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
 import {
   Destination,
@@ -144,77 +145,85 @@ const ExploreScreen = () => {
             onFilterPress={() => setIsFilterModalVisible(true)}
           />
         </View>
-        <ExploreCategories
-          categories={EXPLORE_CATEGORIES}
-          selectedCategory={selectedSubCategory}
-          onCategoryPress={(cat) => setSelectedSubCategory(cat)}
-          showClear={
-            searchQuery !== '' ||
-            selectedSubCategory !== 'All' ||
-            selectedTopCategory !== 'All' ||
-            selectedPrice !== '$50 - $200'
-          }
-          onClear={() => {
-            setSearchQuery('');
-            setSelectedSubCategory('All');
-            setSelectedTopCategory('All');
-            setSelectedPrice('$50 - $200');
-          }}
-        />
 
-        {filteredItineraries.length > 0 && (
-          <ItineraryForYou
-            data={filteredItineraries}
-            title="Featured Trip Itineraries"
-            subtitle="Recommended by Runwae"
-            loading={loading}
-          />
+        {loading ? (
+          <ExploreSkeleton />
+        ) : (
+          <>
+            <ExploreCategories
+              categories={EXPLORE_CATEGORIES}
+              selectedCategory={selectedSubCategory}
+              onCategoryPress={(cat) => setSelectedSubCategory(cat)}
+              showClear={
+                searchQuery !== '' ||
+                selectedSubCategory !== 'All' ||
+                selectedTopCategory !== 'All' ||
+                selectedPrice !== '$50 - $200'
+              }
+              onClear={() => {
+                setSearchQuery('');
+                setSelectedSubCategory('All');
+                setSelectedTopCategory('All');
+                setSelectedPrice('$50 - $200');
+              }}
+            />
+
+            {filteredItineraries.length > 0 && (
+              <ItineraryForYou
+                data={filteredItineraries}
+                title="Featured Trip Itineraries"
+                subtitle="Recommended by Runwae"
+                loading={loading}
+              />
+            )}
+
+            {filteredEvents.length > 0 && (
+              <UpcomingEvents data={filteredEvents} loading={loading} />
+            )}
+
+            {filteredExperiences.length > 0 && (
+              <AddOnsForYou
+                data={filteredExperiences}
+                title="Experience Highlights"
+                subtitle="Top picks for you"
+                loading={loading}
+              />
+            )}
+
+            {filteredDestinations.length > 0 && (
+              <DestinationsForYou
+                data={filteredDestinations}
+                title="Popular Destinations"
+                subtitle="Places that everyone else is crazy about"
+                loading={loading}
+              />
+            )}
+
+            {filteredItineraries.length === 0 &&
+              filteredEvents.length === 0 &&
+              filteredExperiences.length === 0 &&
+              filteredDestinations.length === 0 && (
+                <View className="items-center justify-center px-5 py-10">
+                  <Text className="text-center text-lg font-medium text-gray-400">
+                    No results found for "{searchQuery}"
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery('');
+                      setSelectedSubCategory('All');
+                      setSelectedTopCategory('All');
+                    }}
+                    className="mt-4">
+                    <Text className="font-semibold text-primary">
+                      Clear all filters
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+          </>
         )}
-
-        {filteredEvents.length > 0 && (
-          <UpcomingEvents data={filteredEvents} loading={loading} />
-        )}
-
-        {filteredExperiences.length > 0 && (
-          <AddOnsForYou
-            data={filteredExperiences}
-            title="Experience Highlights"
-            subtitle="Top picks for you"
-            loading={loading}
-          />
-        )}
-
-        {filteredDestinations.length > 0 && (
-          <DestinationsForYou
-            data={filteredDestinations}
-            title="Popular Destinations"
-            subtitle="Places that everyone else is crazy about"
-            loading={loading}
-          />
-        )}
-
-        {filteredItineraries.length === 0 &&
-          filteredEvents.length === 0 &&
-          filteredExperiences.length === 0 &&
-          filteredDestinations.length === 0 && (
-            <View className="items-center justify-center px-5 py-10">
-              <Text className="text-center text-lg font-medium text-gray-400">
-                No results found for "{searchQuery}"
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setSelectedSubCategory('All');
-                  setSelectedTopCategory('All');
-                }}
-                className="mt-4">
-                <Text className="font-semibold text-primary">
-                  Clear all filters
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
       </ScrollView>
+
 
       <CustomModal
         isVisible={isFilterModalVisible}

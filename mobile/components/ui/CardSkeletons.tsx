@@ -178,3 +178,34 @@ export const EventCardSkeleton = ({
     </View>
   );
 };
+
+export const SectionHeaderSkeleton = ({
+  showSubtitle = true,
+}: {
+  showSubtitle?: boolean;
+}) => (
+  <View className="flex-row items-center justify-between px-[20px]">
+    <View className="flex-1">
+      <SkeletonBox width={150} height={20} borderRadius={4} />
+      {showSubtitle && (
+        <View className="mt-2">
+          <SkeletonBox width={200} height={14} borderRadius={4} />
+        </View>
+      )}
+    </View>
+    <SkeletonBox width={32} height={32} borderRadius={16} />
+  </View>
+);
+
+export const ExploreCategoriesSkeleton = () => (
+  <View className="mb-2 mt-4">
+    <View className="flex-row items-center px-[20px]">
+      {[1, 2, 3, 4, 5].map((_, i) => (
+        <View key={i} className="mr-3">
+          <SkeletonBox width={80} height={36} borderRadius={18} />
+        </View>
+      ))}
+    </View>
+  </View>
+);
+

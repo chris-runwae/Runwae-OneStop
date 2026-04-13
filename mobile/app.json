@@ -2,7 +2,7 @@
   "expo": {
     "name": "Runwae",
     "slug": "runwae-rn",
-    "version": "1.0.0",
+    "version": "0.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "runwae",
@@ -11,10 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.runwae.app",
-      "buildNumber": "1",
-      "associatedDomains": [
-        "applinks:app.runwae.io"
-      ],
+      "associatedDomains": ["applinks:app.runwae.io"],
       "runtimeVersion": {
         "policy": "appVersion"
       }
@@ -29,7 +26,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "io.runwae.app",
-      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -56,10 +52,7 @@
               "pathPrefix": "/invite"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
       "permissions": [

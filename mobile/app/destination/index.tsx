@@ -3,14 +3,11 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { DestinationCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import {
-  DESTINATION_HIGHLIGHTS,
-  DESTINATIONS_FOR_YOU,
-} from "@/constants/home.constant";
+import { getDestinations } from "@/utils/supabase/destinations.service";
+import { Destination } from "@/types/content.types";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
-const ALL_DESTINATIONS = [...DESTINATIONS_FOR_YOU, ...DESTINATION_HIGHLIGHTS];
 
 const EmptyState = () => (
   <View className="flex-1 items-center justify-center w-full bg-gray-200 dark:bg-dark-seconndary/50">
@@ -34,24 +31,34 @@ const EmptyState = () => (
 const DestinationsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await getDestinations();
+        setDestinations(data);
+      } catch (err) {
+        console.error("DestinationsScreen: Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredDestinations = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return ALL_DESTINATIONS.filter(
+    return destinations.filter(
       (item) =>
         item.title.toLowerCase().includes(query) ||
         item.location.toLowerCase().includes(query),
     );
-  }, [searchQuery]);
+  }, [searchQuery, destinations]);
 
-  const displayData = loading ? Array(6).fill({}) : filteredDestinations;
+  const displayData = (loading ? Array(6).fill({}) : filteredDestinations) as Destination[];
 
   return (
     <AppSafeAreaView edges={["top"]}>

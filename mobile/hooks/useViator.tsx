@@ -19,7 +19,7 @@ interface ViatorSearchParams {
 export async function searchViator({ text, filters }: ViatorSearchParams) {
   const defaultFilters: ViatorSearchFilters = {
     destination: '732',
-    tags: [21972],
+    tags: [21913, 21725, 22046],
     flags: ['LIKELY_TO_SELL_OUT', 'FREE_CANCELLATION'],
     lowestPrice: 5,
     highestPrice: 500,
@@ -111,9 +111,7 @@ export function useViator(options?: UseViatorOptions) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : 'Something went wrong'
-          );
+          setError(err instanceof Error ? err.message : 'Something went wrong');
         }
       })
       .finally(() => {

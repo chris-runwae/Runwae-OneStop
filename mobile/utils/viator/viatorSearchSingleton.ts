@@ -38,9 +38,7 @@ export function getViatorSearchSnapshot(): {
 export function isViatorSearchFresh(
   staleMs: number = VIATOR_DEFAULT_STALE_MS
 ): boolean {
-  return (
-    cachedProducts.length > 0 && Date.now() - cachedAtMs < staleMs
-  );
+  return cachedProducts.length > 0 && Date.now() - cachedAtMs < staleMs;
 }
 
 /**
@@ -57,7 +55,7 @@ export async function executeViatorProductSearch(
 
   const defaultFilters: ViatorSearchFilters = {
     destination: '732',
-    tags: [21972],
+    tags: [21913, 21725, 22046],
     flags: ['LIKELY_TO_SELL_OUT', 'FREE_CANCELLATION'],
     lowestPrice: 5,
     highestPrice: 500,
@@ -124,10 +122,7 @@ export function loadViatorProductsCached(
     });
   }
 
-  if (
-    cachedProducts.length > 0 &&
-    Date.now() - cachedAtMs < staleMs
-  ) {
+  if (cachedProducts.length > 0 && Date.now() - cachedAtMs < staleMs) {
     return Promise.resolve(cachedProducts);
   }
 

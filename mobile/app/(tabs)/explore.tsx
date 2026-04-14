@@ -16,14 +16,10 @@ import {
   ItineraryTemplate,
 } from '@/types/content.types';
 import type { ViatorProduct } from '@/types/viator.types';
-import { getDestinations } from '@/utils/supabase/destinations.service';
-import { getEvents } from '@/utils/supabase/events.service';
-import { getExperiences } from '@/utils/supabase/experiences.service';
-import { getItineraryTemplates } from '@/utils/supabase/itinerary-templates.service';
-import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-
+import { useExploreData } from '@/hooks/useExploreData';
 import { useViator } from '@/hooks/useViator';
+import React, { useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -31,38 +27,9 @@ const ExploreScreen = () => {
   const [selectedTopCategory, setSelectedTopCategory] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('$50 - $200');
   const [searchQuery, setSearchQuery] = useState('');
-  const [itineraries, setItineraries] = useState<ItineraryTemplate[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const { data, loading, refreshing, refresh } = useExploreData();
+  const { itineraries, events, experiences, destinations } = data;
   const { products: viatorProducts, loading: viatorLoading } = useViator();
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [itineraryData, eventData, experienceData, destinationData] =
-          await Promise.all([
-            getItineraryTemplates(),
-            getEvents(),
-            getExperiences(),
-            getDestinations(),
-          ]);
-        setItineraries(itineraryData);
-        setEvents(eventData);
-        setExperiences(experienceData);
-        setDestinations(destinationData);
-      } catch (err) {
-        console.error('ExploreScreen: Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const handleApplyFilters = () => {
     console.log('Applying filters:', { selectedTopCategory, selectedPrice });
@@ -164,7 +131,11 @@ const ExploreScreen = () => {
     <AppSafeAreaView edges={['top']}>
       <MainTabHeader title="Explore" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+        }>
         <View className="mt-4 px-[20px]">
           <SearchInput
             placeholder="Search trips, hotels, experiences..."
@@ -191,7 +162,7 @@ const ExploreScreen = () => {
           }}
         />
 
-        {filteredItineraries.length > 0 && (
+        {(loading || filteredItineraries.length > 0) && (
           <ItineraryForYou
             data={filteredItineraries}
             title="Featured Trip Itineraries"
@@ -200,11 +171,11 @@ const ExploreScreen = () => {
           />
         )}
 
-        {filteredEvents.length > 0 && (
+        {(loading || filteredEvents.length > 0) && (
           <UpcomingEvents data={filteredEvents} loading={loading} />
         )}
 
-        {filteredExperiences.length > 0 && (
+        {(loading || filteredExperiences.length > 0) && (
           <AddOnsForYou
             data={filteredExperiences}
             title="Experience Highlights"
@@ -222,7 +193,7 @@ const ExploreScreen = () => {
           />
         )}
 
-        {filteredDestinations.length > 0 && (
+        {(loading || filteredDestinations.length > 0) && (
           <DestinationsForYou
             data={filteredDestinations}
             title="Popular Destinations"

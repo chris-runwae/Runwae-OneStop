@@ -46,7 +46,7 @@ export function usePlacesAutocomplete(): UsePlacesAutocompleteResult {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const apiKey = process.env.EXPO_PUBLIC_LITE_API_KEY ?? '';
+    const apiKey = process.env.EXPO_PUBLIC_LITE_API_KEY ?? process.env.LITE_API_KEY ?? '';
     const baseUrl = process.env.EXPO_PUBLIC_LITE_API_URL ?? 'https://api.liteapi.travel/v3.0';
     const url = `${baseUrl}/data/places?textQuery=${encodeURIComponent(debouncedQuery)}&type=locality`;
 

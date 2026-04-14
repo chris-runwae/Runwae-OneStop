@@ -22,9 +22,15 @@ type PostItemProps = {
   post: Post;
   groupId: string;
   onDeletePost: (postId: string) => Promise<void>;
+  isMember: boolean;
 };
 
-const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
+const PostItem = ({
+  post,
+  groupId,
+  onDeletePost,
+  isMember,
+}: PostItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { user } = useAuth();
@@ -47,6 +53,7 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
   };
 
   const handleEllipsisPress = () => {
+    if (!isMember) return;
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -108,7 +115,7 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
           </View>
         </View>
 
-        {isCreator && (
+        {isMember && isCreator && (
           <Pressable
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

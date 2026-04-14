@@ -27,6 +27,7 @@ import { TripWithEverything } from '@/hooks/useTripActions';
 
 interface Props {
   trip: TripWithEverything;
+  isMember?: boolean;
 }
 
 const getCategoryWithEmoji = (category: string | null) => {
@@ -40,7 +41,7 @@ const getCategoryWithEmoji = (category: string | null) => {
   return `💡 ${category}`;
 };
 
-export default function TripOverviewTab({ trip }: Props) {
+export default function TripOverviewTab({ trip, isMember = false }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
@@ -98,20 +99,24 @@ export default function TripOverviewTab({ trip }: Props) {
         }
       },
     },
-    {
-      label: 'Add to Itinerary',
-      onPress: () => {
-        if (selectedIdea) handleAddToItinerary(selectedIdea);
-      },
-    },
-    {
-      label: 'Remove',
-      isDestructive: true,
-      hasSeparator: true,
-      onPress: () => {
-        if (selectedIdea) handleDeleteIdea(selectedIdea.id);
-      },
-    },
+    ...(isMember
+      ? [
+          {
+            label: 'Add to Itinerary',
+            onPress: () => {
+              if (selectedIdea) handleAddToItinerary(selectedIdea);
+            },
+          },
+          {
+            label: 'Remove',
+            isDestructive: true,
+            hasSeparator: true,
+            onPress: () => {
+              if (selectedIdea) handleDeleteIdea(selectedIdea.id);
+            },
+          },
+        ]
+      : []),
   ];
 
   const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
@@ -149,13 +154,15 @@ export default function TripOverviewTab({ trip }: Props) {
             Looking for what to do? Add them to Ideas now.
           </Text>
 
-          <TouchableOpacity
-            style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
-            activeOpacity={0.8}
-            onPress={() => setSearchVisible(true)}>
-            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
-            <Text style={styles.searchButtonText}>Start Searching</Text>
-          </TouchableOpacity>
+          {isMember && (
+            <TouchableOpacity
+              style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
+              activeOpacity={0.8}
+              onPress={() => setSearchVisible(true)}>
+              <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+              <Text style={styles.searchButtonText}>Start Searching</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <SearchIdeasSheet
@@ -209,20 +216,22 @@ export default function TripOverviewTab({ trip }: Props) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setSearchVisible(true)}
-          style={[
-            styles.addPillBtn,
-            {
-              backgroundColor: dark ? '#1F1F1F' : '#fff',
-              borderColor: dark ? '#374151' : '#EFEFEF',
-            },
-          ]}>
-          <Text
-            style={[styles.addPillText, { color: colors.textColors.default }]}>
-            + Add
-          </Text>
-        </TouchableOpacity>
+        {isMember && (
+          <TouchableOpacity
+            onPress={() => setSearchVisible(true)}
+            style={[
+              styles.addPillBtn,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#fff',
+                borderColor: dark ? '#374151' : '#EFEFEF',
+              },
+            ]}>
+            <Text
+              style={[styles.addPillText, { color: colors.textColors.default }]}>
+              + Add
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.ideaGridContent}>
@@ -238,18 +247,23 @@ export default function TripOverviewTab({ trip }: Props) {
             categoryLabel={getCategoryWithEmoji(item.location)}
             title={item.name}
             description={item.notes || ''}
-            onOptionsPress={(position: {
-              top: number;
-              right?: number;
-              left?: number;
-            }) => {
-              setSelectedIdea(item);
-              setMenuAnchor(position);
-              setMenuVisible(true);
-            }}
+            onOptionsPress={
+              isMember
+                ? (position: {
+                    top: number;
+                    right?: number;
+                    left?: number;
+                  }) => {
+                    setSelectedIdea(item);
+                    setMenuAnchor(position);
+                    setMenuVisible(true);
+                  }
+                : undefined
+            }
             checkin={trip.trip_details?.start_date}
             checkout={trip.trip_details?.end_date}
             adults={trip.group_members?.length ?? 1}
+            isMember={isMember}
           />
         ))}
       </View>

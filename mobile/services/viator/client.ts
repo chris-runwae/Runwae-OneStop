@@ -43,7 +43,7 @@ export async function searchViator({ text, filters }: ViatorSearchParams) {
     },
   };
 
-  const res = await fetch(`https://${BASE_URL}/viator`, {
+  const res = await fetch(`${BASE_URL}/viator`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json;version=2.0' },
     body: JSON.stringify(body),

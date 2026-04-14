@@ -3,6 +3,7 @@ import EmptyTripsState from '@/components/trips/EmptyTripsState';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import NotificationBell from '@/components/ui/NotificationBell';
+import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
@@ -141,6 +142,8 @@ export default function TripsIndexScreen() {
     refreshMyTrips,
     refreshJoinedTrips,
   } = useTrips();
+  const { user } = useAuth();
+  const userId = user?.id;
   const { dark } = useTheme();
   const [activeSegment, setActiveSegment] = useState<Segment>('active');
   const [activeRoleFilter, setActiveRoleFilter] = useState('all');
@@ -148,10 +151,26 @@ export default function TripsIndexScreen() {
 
   const myTripIds = useMemo(() => new Set(myTrips.map((t) => t.id)), [myTrips]);
 
-  const allTrips = useMemo(
-    () => [...myTrips, ...joinedTrips],
-    [myTrips, joinedTrips]
-  );
+  const allTrips = useMemo(() => {
+    const combined = [...myTrips, ...joinedTrips];
+    if (!userId) return combined;
+
+    return combined.sort((a, b) => {
+      const getInteractionDate = (trip: TripWithEverything) => {
+        if (trip.created_by === userId) {
+          return new Date(trip.created_at).getTime();
+        }
+        const membership = trip.group_members?.find(
+          (m) => m.user_id === userId
+        );
+        return membership
+          ? new Date(membership.joined_at).getTime()
+          : new Date(trip.created_at).getTime();
+      };
+
+      return getInteractionDate(b) - getInteractionDate(a);
+    });
+  }, [myTrips, joinedTrips, userId]);
 
   const segmentedTrips = useMemo(() => {
     switch (activeSegment) {

@@ -41,6 +41,7 @@ type PollItemProps = {
     userId: string
   ) => Promise<void>;
   onDeletePoll: (pollId: string) => Promise<void>;
+  isMember: boolean;
 };
 
 const PollItem = ({
@@ -50,6 +51,7 @@ const PollItem = ({
   onRemoveVote,
   onSwapVote,
   onDeletePoll,
+  isMember,
 }: PollItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -83,6 +85,7 @@ const PollItem = ({
   };
 
   const handleEllipsisPress = () => {
+    if (!isMember) return;
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -151,7 +154,7 @@ const PollItem = ({
           </View>
         </View>
 
-        {isCreator && (
+        {isMember && isCreator && (
           <Pressable
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -191,9 +194,10 @@ const PollItem = ({
           )}
           pollType={poll.type as 'single_choice' | 'multiple_choice'}
           selectedOptionId={currentVoteOptionId}
-          onVote={(id) => onCastVote(poll.id, id, userId)}
-          onUnvote={(id) => onRemoveVote(poll.id, id, userId)}
+          onVote={(id) => isMember && onCastVote(poll.id, id, userId)}
+          onUnvote={(id) => isMember && onRemoveVote(poll.id, id, userId)}
           onSwapVote={(id) =>
+            isMember &&
             onSwapVote(poll.id, currentVoteOptionId ?? '', id, userId)
           }
         />

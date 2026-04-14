@@ -46,9 +46,14 @@ const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
 interface ActivityTabProps {
   tripId: string;
   trip?: TripWithEverything;
+  isMember: boolean;
 }
 
-export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
+export default function ActivityTab({
+  tripId,
+  trip,
+  isMember,
+}: ActivityTabProps) {
   const [activeSection, setActiveSection] = useState<ActivitySection>('polls');
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -90,11 +95,11 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
   const renderContent = () => {
     switch (activeSection) {
       case 'polls':
-        return <PollsContainer groupId={tripId} />;
+        return <PollsContainer groupId={tripId} isMember={isMember} />;
       case 'expenses':
-        return <ExpensesContainer groupId={tripId} />;
+        return <ExpensesContainer groupId={tripId} isMember={isMember} />;
       case 'posts':
-        return <PostsContainer groupId={tripId} />;
+        return <PostsContainer groupId={tripId} isMember={isMember} />;
       case 'members':
         return <Text>Members</Text>; // <AnnouncementsList tripId={tripId} userId={userId} isAdmin={isAdmin} />;
       default:

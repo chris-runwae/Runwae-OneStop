@@ -1,23 +1,29 @@
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  useColorScheme,
-} from 'react-native';
-import React, { useCallback, useEffect } from 'react';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { FileText, Plus } from 'lucide-react-native';
+import React, { useCallback, useEffect } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, FileText } from 'lucide-react-native';
 
+import Text from '@/components/ui/Text';
+import Spacer from '@/components/utils/Spacer';
+import { Colors, textStyles } from '@/constants';
 import usePostActions from '@/hooks/usePostActions';
 import PostItem from './PostItem';
-import Spacer from '@/components/utils/Spacer';
-import Text from '@/components/ui/Text';
-import { textStyles, Colors } from '@/constants';
 
-export default function PostsContainer({ groupId }: { groupId: string }) {
+export default function PostsContainer({
+  groupId,
+  isMember,
+}: {
+  groupId: string;
+  isMember: boolean;
+}) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { posts, fetchPosts, deletePost } = usePostActions();
@@ -44,14 +50,18 @@ export default function PostsContainer({ groupId }: { groupId: string }) {
       <>
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>{postCountText}</Text>
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => router.push(`/(tabs)/(trips)/${groupId}/add-post`)}>
-            <Plus size={16} color={colors.primaryColors.default} />
-            <Text style={{ color: colors.primaryColors.default }}>
-              Add post
-            </Text>
-          </Pressable>
+          {isMember && (
+            <Pressable
+              style={styles.headerButton}
+              onPress={() =>
+                router.push(`/(tabs)/(trips)/${groupId}/add-post`)
+              }>
+              <Plus size={16} color={colors.primaryColors.default} />
+              <Text style={{ color: colors.primaryColors.default }}>
+                Add post
+              </Text>
+            </Pressable>
+          )}
         </View>
         <Spacer size={16} vertical />
       </>
@@ -80,6 +90,7 @@ export default function PostsContainer({ groupId }: { groupId: string }) {
             key={item.id}
             groupId={groupId}
             onDeletePost={deletePost}
+            isMember={isMember}
           />
         )}
         keyExtractor={(item) => item.id}

@@ -28,9 +28,8 @@ const UserAvatar = ({ size = 40, imageUrl, name }: UserAvatarProps) => {
       backgroundColor: colors.borderColors.subtle,
     },
     image: {
-      // width: size,
-      // aspectRatio: 1,
-      // borderRadius: 99,
+      width: '100%',
+      height: '100%',
     },
     textStyle: {
       ...textStyles.textHeading16,

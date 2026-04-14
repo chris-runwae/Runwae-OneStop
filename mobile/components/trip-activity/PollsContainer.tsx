@@ -1,23 +1,29 @@
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  useColorScheme,
-  Pressable,
-} from 'react-native';
-import React, { useCallback, useEffect } from 'react';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Vote } from 'lucide-react-native';
+import React, { useCallback, useEffect } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import usePollActions from '@/hooks/usePollActions';
 import PollItem from '@/components/trip-activity/PollItem';
-import Spacer from '@/components/utils/Spacer';
 import Text from '@/components/ui/Text';
-import { textStyles, Colors } from '@/constants';
+import Spacer from '@/components/utils/Spacer';
+import { Colors, textStyles } from '@/constants';
+import usePollActions from '@/hooks/usePollActions';
 
-export default function PollsContainer({ groupId }: { groupId: string }) {
+export default function PollsContainer({
+  groupId,
+  isMember,
+}: {
+  groupId: string;
+  isMember: boolean;
+}) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const { polls, fetchPolls, castVote, removeVote, swapVote, deletePoll } =
@@ -56,16 +62,18 @@ export default function PollsContainer({ groupId }: { groupId: string }) {
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>{pollCountText}</Text>
 
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => {
-              router.push(`/(tabs)/(trips)/${groupId}/add-poll`);
-            }}>
-            <Plus size={16} color={colors.primaryColors.default} />
-            <Text style={{ color: colors.primaryColors.default }}>
-              Add poll
-            </Text>
-          </Pressable>
+          {isMember && (
+            <Pressable
+              style={styles.headerButton}
+              onPress={() => {
+                router.push(`/(tabs)/(trips)/${groupId}/add-poll`);
+              }}>
+              <Plus size={16} color={colors.primaryColors.default} />
+              <Text style={{ color: colors.primaryColors.default }}>
+                Add poll
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* <View style={dynamicStyles.headerDivider} /> */}
@@ -101,6 +109,7 @@ export default function PollsContainer({ groupId }: { groupId: string }) {
             onRemoveVote={removeVote}
             onSwapVote={swapVote}
             onDeletePoll={deletePoll}
+            isMember={isMember}
           />
         )}
         keyExtractor={(item) => item.id}

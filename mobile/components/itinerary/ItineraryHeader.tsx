@@ -32,6 +32,7 @@ interface ItineraryHeaderProps {
   imageUri: string;
   title: string;
   isOwner?: boolean;
+  isMember?: boolean;
   onEdit?: () => void;
   showMoreOptions?: boolean;
   onMorePress?: () => void;
@@ -48,6 +49,7 @@ const ItineraryHeader = ({
   imageUri,
   title,
   isOwner,
+  isMember,
   onEdit,
   showMoreOptions,
   onMorePress,
@@ -179,7 +181,7 @@ const ItineraryHeader = ({
             </>
           )}
 
-          {dropdownOptions && (
+          {(isMember || isOwner) && dropdownOptions && (
             <TouchableOpacity
               onPress={() => setIsMenuOpen(true)}
               className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
@@ -193,7 +195,7 @@ const ItineraryHeader = ({
         </View>
       </View>
 
-      {dropdownOptions && (
+      {(isMember || isOwner) && dropdownOptions && (
         <ActionMenu
           visible={isMenuOpen}
           onClose={() => setIsMenuOpen(false)}

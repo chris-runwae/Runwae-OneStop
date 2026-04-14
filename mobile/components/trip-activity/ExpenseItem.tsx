@@ -1,3 +1,17 @@
+import { format, formatDistanceToNow } from 'date-fns';
+import { router } from 'expo-router';
+import {
+  BedDouble,
+  Check,
+  CheckCheck,
+  MoreVertical,
+  Plane,
+  Tag,
+  Utensils,
+  Wine,
+  Zap,
+} from 'lucide-react-native';
+import React from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -6,30 +20,14 @@ import {
   Pressable,
   View,
   useColorScheme,
-  useRef,
-  useEffect,
 } from 'react-native';
-import React from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
-import {
-  MoreVertical,
-  Plane,
-  Utensils,
-  Wine,
-  BedDouble,
-  Zap,
-  Tag,
-  Check,
-  CheckCheck,
-} from 'lucide-react-native';
-import { router } from 'expo-router';
 
 import ProfileAvatar from '@/components/ui/ProfileAvatar';
-import Spacer from '@/components/utils/Spacer';
 import Text from '@/components/ui/Text';
+import Spacer from '@/components/utils/Spacer';
 import { Colors, textStyles } from '@/constants';
-import { Expense, ExpenseParticipant } from '@/hooks/useExpenseActions';
 import { useAuth } from '@/hooks/useAuth';
+import { Expense, ExpenseParticipant } from '@/hooks/useExpenseActions';
 
 type ExpenseItemProps = {
   expense: Expense;
@@ -37,6 +35,7 @@ type ExpenseItemProps = {
   onDeleteExpense: (expenseId: string) => Promise<void>;
   onMarkPaid: (participantId: string) => Promise<void>;
   onConfirmPayment: (participantId: string) => Promise<void>;
+  isMember: boolean;
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -138,9 +137,9 @@ function ParticipantRow({
   participant: ExpenseParticipant;
   isCurrentUser: boolean;
   isOwner: boolean;
-  currency: string;
   onMarkPaid: () => void;
   onConfirmPayment: () => void;
+  isMember: boolean;
 }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -148,6 +147,7 @@ function ParticipantRow({
   const avatarUrl = participant.profiles?.avatar_url ?? '';
 
   const renderAction = () => {
+    if (!isMember) return null;
     if (participant.is_settled) {
       return <CheckCheck size={18} color="#22c55e" />;
     }
@@ -227,6 +227,7 @@ const ExpenseItem = ({
   onDeleteExpense,
   onMarkPaid,
   onConfirmPayment,
+  isMember,
 }: ExpenseItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -243,18 +244,14 @@ const ExpenseItem = ({
   const totalParticipants = expense.expense_participants.length;
 
   const handleDelete = () => {
-    Alert.alert(
-      'Delete expense',
-      'Are you sure? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => onDeleteExpense(expense.id),
-        },
-      ]
-    );
+    Alert.alert('Delete expense', 'Are you sure? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => onDeleteExpense(expense.id),
+      },
+    ]);
   };
 
   const handleEdit = () => {
@@ -264,6 +261,7 @@ const ExpenseItem = ({
   };
 
   const handleEllipsisPress = () => {
+    if (!isMember) return;
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -346,12 +344,15 @@ const ExpenseItem = ({
             {formatCurrency(expense.amount, expense.currency)}
           </Text>
           <Text
-            style={{ ...textStyles.textBody12, color: colors.textColors.subtle }}>
+            style={{
+              ...textStyles.textBody12,
+              color: colors.textColors.subtle,
+            }}>
             {formattedDate}
           </Text>
         </View>
 
-        {isCreator && (
+        {isMember && isCreator && (
           <Pressable
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -401,6 +402,7 @@ const ExpenseItem = ({
               currency={expense.currency}
               onMarkPaid={() => onMarkPaid(participant.id)}
               onConfirmPayment={() => onConfirmPayment(participant.id)}
+              isMember={isMember}
             />
           ))}
         </>

@@ -41,6 +41,7 @@ type Props = {
   onMoveToNextDay?: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  isMember?: boolean;
 };
 
 const ItineraryItemCard = ({
@@ -54,6 +55,7 @@ const ItineraryItemCard = ({
   onMoveToNextDay,
   canMoveUp,
   canMoveDown,
+  isMember = true,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';
@@ -69,7 +71,7 @@ const ItineraryItemCard = ({
   const hasImage = !!displayImageUrl;
 
   const handleOptionsPress = (event: any) => {
-    if (!isCreator) return;
+    if (!isCreator || !isMember) return;
     const { pageY } = event.nativeEvent;
     setMenuAnchor({ top: pageY + 10, right: 24 });
     setMenuVisible(true);
@@ -133,30 +135,58 @@ const ItineraryItemCard = ({
         </View>
 
         <View style={styles.right}>
-          {isReordering ? (
-            <View style={styles.reorderButtons}>
-              <Pressable
-                onPress={onMoveUp}
-                disabled={!canMoveUp}
-                style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
-                <ChevronUp size={20} color={canMoveUp ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')} />
-              </Pressable>
-              <Pressable
-                onPress={onMoveDown}
-                disabled={!canMoveDown}
-                style={[styles.arrowBtn, !canMoveDown && styles.arrowDisabled]}>
-                <ChevronDown
+          {isMember ? (
+            isReordering ? (
+              <View style={styles.reorderButtons}>
+                <Pressable
+                  onPress={onMoveUp}
+                  disabled={!canMoveUp}
+                  style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
+                  <ChevronUp
+                    size={20}
+                    color={
+                      canMoveUp
+                        ? dark
+                          ? '#ADB5BD'
+                          : '#000'
+                        : dark
+                          ? '#4B5563'
+                          : '#D0D0D0'
+                    }
+                  />
+                </Pressable>
+                <Pressable
+                  onPress={onMoveDown}
+                  disabled={!canMoveDown}
+                  style={[
+                    styles.arrowBtn,
+                    !canMoveDown && styles.arrowDisabled,
+                  ]}>
+                  <ChevronDown
+                    size={18}
+                    strokeWidth={1.5}
+                    color={
+                      canMoveDown
+                        ? dark
+                          ? '#ADB5BD'
+                          : '#000'
+                        : dark
+                          ? '#4B5563'
+                          : '#D0D0D0'
+                    }
+                  />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable hitSlop={12} onPress={handleOptionsPress}>
+                <Ellipsis
                   size={18}
                   strokeWidth={1.5}
-                  color={canMoveDown ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')}
+                  color={colors.textColors.subtle}
                 />
               </Pressable>
-            </View>
-          ) : (
-            <Pressable hitSlop={12} onPress={handleOptionsPress}>
-              <Ellipsis size={18} strokeWidth={1.5} color={colors.textColors.subtle} />
-            </Pressable>
-          )}
+            )
+          ) : null}
         </View>
       </View>
 

@@ -2,6 +2,7 @@ import AddOnsForYou from '@/components/home/AddOnsForYou';
 import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
 import ItineraryForYou from '@/components/home/IteneryForYou';
+import PublicTripsSection from '@/components/home/PublicTripsSection';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import ViatorProductsForYou from '@/components/viator/ViatorProductsForYou';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
@@ -9,6 +10,7 @@ import CustomModal from '@/components/ui/CustomModal';
 import MainTabHeader from '@/components/ui/MainTabHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
+import { useAuth } from '@/context/AuthContext';
 import {
   Destination,
   Event,
@@ -17,8 +19,9 @@ import {
 } from '@/types/content.types';
 import type { ViatorProduct } from '@/types/viator.types';
 import { useExploreData } from '@/hooks/useExploreData';
+import { fetchPublicTrips, TripWithEverything } from '@/hooks/useTripActions';
 import { useViator } from '@/hooks/useViator';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const ExploreScreen = () => {
@@ -30,6 +33,27 @@ const ExploreScreen = () => {
   const { data, loading, refreshing, refresh } = useExploreData();
   const { itineraries, events, experiences, destinations } = data;
   const { products: viatorProducts, loading: viatorLoading } = useViator();
+  const { user } = useAuth();
+
+  // Public trips from other users
+  const [publicTrips, setPublicTrips] = useState<TripWithEverything[]>([]);
+  const [publicTripsLoading, setPublicTripsLoading] = useState(true);
+
+  const loadPublicTrips = useCallback(async () => {
+    if (!user?.id) return;
+    setPublicTripsLoading(true);
+    const { data: trips } = await fetchPublicTrips(user.id);
+    setPublicTrips(trips ?? []);
+    setPublicTripsLoading(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadPublicTrips();
+  }, [loadPublicTrips]);
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refresh(), loadPublicTrips()]);
+  }, [refresh, loadPublicTrips]);
 
   const handleApplyFilters = () => {
     console.log('Applying filters:', { selectedTopCategory, selectedPrice });
@@ -134,7 +158,7 @@ const ExploreScreen = () => {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }>
         <View className="mt-4 px-[20px]">
           <SearchInput
@@ -168,6 +192,13 @@ const ExploreScreen = () => {
             title="Featured Trip Itineraries"
             subtitle="Recommended by Runwae"
             loading={loading}
+          />
+        )}
+
+        {(publicTripsLoading || publicTrips.length > 0) && (
+          <PublicTripsSection
+            data={publicTrips}
+            loading={publicTripsLoading}
           />
         )}
 

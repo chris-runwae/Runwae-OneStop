@@ -157,6 +157,7 @@ type DaySectionProps = {
   onDeleteDay: (day: ItineraryDayWithItems) => void;
   onClearDay: (dayId: string) => void;
   isFirstDay: boolean;
+  isMember: boolean;
 };
 
 function DaySection({
@@ -175,6 +176,7 @@ function DaySection({
   onDeleteDay,
   onClearDay,
   isFirstDay,
+  isMember,
 }: DaySectionProps) {
   const [collapsed, setCollapsed] = useState(!isFirstDay);
   const [titleEdit, setTitleEdit] = useState(false);
@@ -231,7 +233,7 @@ function DaySection({
           ) : (
             <ChevronDown size={18} color={dark ? '#9BA1A6' : '#000'} />
           )}
-          {titleEdit ? (
+          {isMember && titleEdit ? (
             <TextInput
               value={titleVal}
               onChangeText={setTitleVal}
@@ -246,12 +248,18 @@ function DaySection({
             </Text>
           )}
         </View>
-        <Pressable
-          hitSlop={12}
-          onPress={handleDayMenuPress}
-          style={styles.ellipsisBtn}>
-          <Ellipsis size={18} strokeWidth={1.5} color={dark ? '#9BA1A6' : '#AEAEAE'} />
-        </Pressable>
+        {isMember && (
+          <Pressable
+            hitSlop={12}
+            onPress={handleDayMenuPress}
+            style={styles.ellipsisBtn}>
+            <Ellipsis
+              size={18}
+              strokeWidth={1.5}
+              color={dark ? '#9BA1A6' : '#AEAEAE'}
+            />
+          </Pressable>
+        )}
       </Pressable>
 
       {!collapsed && (
@@ -269,15 +277,30 @@ function DaySection({
               onMoveToNextDay={() => onMoveItemToNextDay?.(item.id)}
               canMoveUp={i > 0}
               canMoveDown={i < day.itinerary_items.length - 1}
+              isMember={isMember}
             />
           ))}
 
-          <Pressable
-            onPress={() => setShowSheet(true)}
-            style={[styles.addItemPill, { backgroundColor: dark ? '#1F1F1F' : '#FFFFFF', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
-            <Plus size={16} color={dark ? '#ADB5BD' : '#000'} />
-            <Text style={[styles.addItemPillText, { color: colors.textColors.default }]}>Add</Text>
-          </Pressable>
+          {isMember && (
+            <Pressable
+              onPress={() => setShowSheet(true)}
+              style={[
+                styles.addItemPill,
+                {
+                  backgroundColor: dark ? '#1F1F1F' : '#FFFFFF',
+                  borderColor: dark ? '#374151' : '#F0F0F0',
+                },
+              ]}>
+              <Plus size={16} color={dark ? '#ADB5BD' : '#000'} />
+              <Text
+                style={[
+                  styles.addItemPillText,
+                  { color: colors.textColors.default },
+                ]}>
+                Add
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -297,7 +320,11 @@ function DaySection({
   );
 }
 
-export default function TripItineraryTab() {
+export default function TripItineraryTab({
+  isMember = false,
+}: {
+  isMember?: boolean;
+}) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { user } = useAuth();
@@ -362,13 +389,15 @@ export default function TripItineraryTab() {
           Every adventure begins with an empty page. Start planning now.
         </RNText>
 
-        <TouchableOpacity
-          onPress={() => addDay({})}
-          style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
-          activeOpacity={0.8}>
-          <Plus size={14} color="#ffffff" strokeWidth={2.5} />
-          <RNText style={styles.createDayLabel}>Create Day 1</RNText>
-        </TouchableOpacity>
+        {isMember && (
+          <TouchableOpacity
+            onPress={() => addDay({})}
+            style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
+            activeOpacity={0.8}>
+            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+            <RNText style={styles.createDayLabel}>Create Day 1</RNText>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -438,15 +467,34 @@ export default function TripItineraryTab() {
               day.itinerary_items.forEach((it) => removeItem(it.id));
             }}
             isFirstDay={index === 0}
+            isMember={isMember}
           />
         ))}
 
-        <Pressable
-          onPress={() => addDay({ title: `Day ${days.length + 1}` })}
-          style={[styles.addDayPill, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#E0E0E0' }]}>
-          <Plus size={14} color={dark ? '#ADB5BD' : '#AEAEAE'} strokeWidth={2} />
-          <Text style={[styles.addDayPillText, { color: dark ? '#ADB5BD' : '#AEAEAE' }]}>Add Day</Text>
-        </Pressable>
+        {isMember && (
+          <Pressable
+            onPress={() => addDay({ title: `Day ${days.length + 1}` })}
+            style={[
+              styles.addDayPill,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#fff',
+                borderColor: dark ? '#374151' : '#E0E0E0',
+              },
+            ]}>
+            <Plus
+              size={14}
+              color={dark ? '#ADB5BD' : '#AEAEAE'}
+              strokeWidth={2}
+            />
+            <Text
+              style={[
+                styles.addDayPillText,
+                { color: dark ? '#ADB5BD' : '#AEAEAE' },
+              ]}>
+              Add Day
+            </Text>
+          </Pressable>
+        )}
 
         <View style={{ height: 120 }} />
       </ScrollView>

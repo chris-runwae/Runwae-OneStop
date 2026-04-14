@@ -139,7 +139,7 @@ function RouteGuard() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip/index" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
       <Stack.Screen name="viator" options={{ headerShown: false }} />
@@ -148,8 +148,7 @@ function RouteGuard() {
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />
       <Stack.Screen name="hotels" options={{ headerShown: false }} />
-      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
+
       <Stack.Screen
         name="modal"
         options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}

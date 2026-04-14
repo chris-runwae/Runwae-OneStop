@@ -30,6 +30,7 @@ interface IdeaCardProps {
   checkin?: string | null;
   checkout?: string | null;
   adults?: number | null;
+  isMember?: boolean;
 }
 
 export default function IdeaCard({
@@ -44,6 +45,7 @@ export default function IdeaCard({
   checkin,
   checkout,
   adults,
+  isMember = true,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
@@ -79,7 +81,7 @@ export default function IdeaCard({
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{categoryLabel}</Text>
         </View>
-        {onOptionsPress && (
+        {isMember && onOptionsPress && (
           <TouchableOpacity
             ref={moreBtnRef}
             style={styles.moreButton}
@@ -122,7 +124,7 @@ export default function IdeaCard({
           numberOfLines={4}>
           {description}
         </Text>
-        {onAdd && (
+        {isMember && onAdd && (
           <View style={styles.footer}>
             <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
               <Text

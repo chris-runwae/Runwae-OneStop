@@ -10,52 +10,50 @@ import {
 
 import { useAuth } from '@/context/AuthContext';
 import {
+  createSavedItem,
+  CreateSavedItemInput,
+  deleteSavedItem,
+  fetchSavedItems,
+  SavedItineraryItem,
+} from '@/hooks/useIdeaActions';
+import {
+  createDay as createDayAction,
+  createItem as createItemAction,
+  CreateItineraryItemInput,
+  deleteDay as deleteDayAction,
+  deleteItem as deleteItemAction,
+  fetchDaysWithItems,
+  fetchOrCreateItinerary,
+  Itinerary,
+  ItineraryDay,
+  ItineraryDayWithItems,
+  moveItemToDay as moveItemToDayAction,
+  reorderDays as reorderDaysAction,
+  reorderItems as reorderItemsAction,
+  updateDay as updateDayAction,
+  updateItem as updateItemAction,
+  UpdateItineraryItemInput,
+} from '@/hooks/useItineraryActions';
+import {
   addMember,
   createTrip as createTripAction,
+  CreateTripInput,
   deleteTrip as deleteTripAction,
   fetchJoinedTrips,
   fetchMyTrips,
   fetchTripById,
-  GroupMember,
   GroupMemberRole,
   leaveTrip as leaveTripAction,
   removeMember as removeMemberAction,
-  TripWithDetails,
   TripWithEverything,
+  updateDestination as updateDestinationAction,
+  UpdateDestinationInput,
   updateMemberRole as updateMemberRoleAction,
   updateTrip as updateTripAction,
   updateTripDetails as updateTripDetailsAction,
-  updateDestination as updateDestinationAction,
-  CreateTripInput,
-  UpdateTripInput,
   UpdateTripDetailsInput,
-  UpdateDestinationInput,
+  UpdateTripInput,
 } from '@/hooks/useTripActions';
-import {
-  fetchOrCreateItinerary,
-  fetchDaysWithItems,
-  createDay as createDayAction,
-  updateDay as updateDayAction,
-  deleteDay as deleteDayAction,
-  createItem as createItemAction,
-  updateItem as updateItemAction,
-  deleteItem as deleteItemAction,
-  reorderItems as reorderItemsAction,
-  reorderDays as reorderDaysAction,
-  moveItemToDay as moveItemToDayAction,
-  Itinerary,
-  ItineraryDay,
-  ItineraryDayWithItems,
-  CreateItineraryItemInput,
-  UpdateItineraryItemInput,
-} from '@/hooks/useItineraryActions';
-import {
-  fetchSavedItems,
-  createSavedItem,
-  deleteSavedItem,
-  SavedItineraryItem,
-  CreateSavedItemInput,
-} from '@/hooks/useIdeaActions';
 
 // ================================================================
 // Context shape
@@ -111,6 +109,7 @@ export interface TripsContextType {
     groupId: string,
     userId: string
   ) => Promise<{ error: string | null }>;
+  joinTrip: (groupId: string) => Promise<{ error: string | null }>;
 
   // Itinerary actions
   loadItinerary: (groupId: string) => Promise<void>;
@@ -126,16 +125,17 @@ export interface TripsContextType {
   removeItem: (itemId: string) => Promise<void>;
   reorderItemsCtx: (dayId: string, orderedIds: string[]) => Promise<void>;
   reorderDaysCtx: (orderedIds: string[]) => Promise<void>;
-  moveItemToDayCtx: (itemId: string, fromDayId: string, toDayId: string) => Promise<void>;
- 
+  moveItemToDayCtx: (
+    itemId: string,
+    fromDayId: string,
+    toDayId: string
+  ) => Promise<void>;
+
   // Ideas actions
   loadIdeas: (groupId: string) => Promise<void>;
   addIdea: (input: CreateSavedItemInput) => Promise<void>;
   /** Saves an idea to a specific trip (e.g. picker from detail screens). */
-  addIdeaToTrip: (
-    tripId: string,
-    input: CreateSavedItemInput
-  ) => Promise<void>;
+  addIdeaToTrip: (tripId: string, input: CreateSavedItemInput) => Promise<void>;
   removeIdea: (ideaId: string) => Promise<void>;
 }
 
@@ -219,14 +219,22 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   // ----------------------------------------------------------------
 
   const loadItinerary = useCallback(
-    async (groupId: string) => {
+    async (groupId: string, allowCreate: boolean = true) => {
       if (!user?.id) return;
       setItineraryLoading(true);
       try {
-        const itin = await fetchOrCreateItinerary(groupId, user.id);
+        const itin = await fetchOrCreateItinerary(
+          groupId,
+          user.id,
+          allowCreate
+        );
         setItinerary(itin);
-        const daysWithItems = await fetchDaysWithItems(itin.id);
-        setDays(daysWithItems);
+        if (itin) {
+          const daysWithItems = await fetchDaysWithItems(itin.id);
+          setDays(daysWithItems);
+        } else {
+          setDays([]);
+        }
       } catch (err) {
         console.error('Failed to load itinerary:', err);
       } finally {
@@ -370,26 +378,33 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     async (itemId: string, fromDayId: string, toDayId: string) => {
       const prevDays = days;
       setDays((prev) => {
-        const item = prev.flatMap((d) => d.itinerary_items).find((it) => it.id === itemId);
+        const item = prev
+          .flatMap((d) => d.itinerary_items)
+          .find((it) => it.id === itemId);
         if (!item) return prev;
-        
+
         return prev.map((d) => {
           if (d.id === fromDayId) {
             return {
               ...d,
-              itinerary_items: d.itinerary_items.filter((it) => it.id !== itemId),
+              itinerary_items: d.itinerary_items.filter(
+                (it) => it.id !== itemId
+              ),
             };
           }
           if (d.id === toDayId) {
             return {
               ...d,
-              itinerary_items: [...d.itinerary_items, { ...item, day_id: toDayId }],
+              itinerary_items: [
+                ...d.itinerary_items,
+                { ...item, day_id: toDayId },
+              ],
             };
           }
           return d;
         });
       });
- 
+
       try {
         await moveItemToDayAction(itemId, toDayId);
       } catch (err) {
@@ -399,11 +414,11 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     },
     [days]
   );
- 
+
   // ----------------------------------------------------------------
   // Ideas / saved items helpers
   // ----------------------------------------------------------------
- 
+
   const loadIdeas = useCallback(async (groupId: string) => {
     setIdeasLoading(true);
     try {
@@ -415,7 +430,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       setIdeasLoading(false);
     }
   }, []);
- 
+
   const addIdea = useCallback(
     async (input: CreateSavedItemInput) => {
       if (!user?.id || !activeTrip) return;
@@ -439,7 +454,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     },
     [user?.id, activeTrip?.id]
   );
- 
+
   const removeIdea = useCallback(async (ideaId: string) => {
     setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
     try {
@@ -448,7 +463,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       console.error('Failed to remove idea:', err);
     }
   }, []);
- 
+
   // ----------------------------------------------------------------
   // Active trip
   // ----------------------------------------------------------------
@@ -462,14 +477,21 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         setError(err);
       } else {
         setActiveTrip(data);
-        // Load itinerary and ideas alongside the trip data.
-        await Promise.all([loadItinerary(id), loadIdeas(id)]);
+
+        const isMember = data?.group_members?.some(
+          (m) => m.user_id === user?.id
+        );
+        const isPublic = data?.trip_details?.visibility === 'public';
+
+        if (isMember || isPublic) {
+          await Promise.all([loadItinerary(id, isMember), loadIdeas(id)]);
+        }
       }
       setIsLoading(false);
     },
     [loadItinerary, loadIdeas]
   );
- 
+
   const clearActiveTrip = useCallback(() => {
     setActiveTrip(null);
     setItinerary(null);
@@ -746,6 +768,26 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     [activeTrip]
   );
 
+  const joinTrip = useCallback(
+    async (groupId: string): Promise<{ error: string | null }> => {
+      if (!user?.id) return { error: 'Not authenticated' };
+
+      const { data: member, error: err } = await addMember(groupId, user.id);
+      if (err || !member) return { error: err ?? 'Failed to join trip' };
+
+      // Refresh active trip to get updated members list
+      if (activeTrip?.id === groupId) {
+        await loadTrip(groupId);
+      }
+
+      // Also refresh joined trips list
+      await refreshJoinedTrips();
+
+      return { error: null };
+    },
+    [user?.id, activeTrip, loadTrip, refreshJoinedTrips]
+  );
+
   // ----------------------------------------------------------------
   // Context value
   // ----------------------------------------------------------------
@@ -790,6 +832,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         addIdea,
         addIdeaToTrip,
         removeIdea,
+        joinTrip,
       }}>
       {children}
     </TripsContext.Provider>

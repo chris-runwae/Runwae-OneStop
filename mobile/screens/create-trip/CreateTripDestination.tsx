@@ -17,23 +17,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Toast } from 'toastify-react-native';
 import CreateStepHeader from './CreateStepHeader';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ================================================================
 // Suggested destinations shown when input is empty
 // ================================================================
 
 const SUGGESTED_DESTINATIONS = [
-  "Paris",
-  "Tokyo",
-  "New York",
-  "Barcelona",
-  "Dubai",
-  "London",
-  "Bali",
-  "Lisbon",
+  'Paris',
+  'Tokyo',
+  'New York',
+  'Barcelona',
+  'Dubai',
+  'London',
+  'Bali',
+  'Lisbon',
 ];
 
 // ================================================================
@@ -51,10 +51,10 @@ export default function CreateTripDestination() {
     if (!error) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     Toast.show({
-      type: "error",
-      text1: "📍 Lost in translation",
+      type: 'error',
+      text1: '📍 Lost in translation',
       text2: "Couldn't find that place — check your connection and try again.",
-      position: "bottom",
+      position: 'bottom',
       visibilityTime: 4000,
       autoHide: true,
     });
@@ -62,7 +62,7 @@ export default function CreateTripDestination() {
 
   const handleSelect = (place: LiteAPIPlace) => {
     setSelectedPlace(place);
-    setQuery("");
+    setQuery('');
     clearResults();
   };
 
@@ -78,7 +78,7 @@ export default function CreateTripDestination() {
   const handleNext = () => {
     if (!selectedPlace) return;
     router.push({
-      pathname: "/create-trip/days" as any,
+      pathname: '/create-trip/days' as any,
       params: {
         destination_label: `${selectedPlace.displayName}, ${selectedPlace.formattedAddress}`,
         destination_place_id: selectedPlace.placeId,
@@ -89,6 +89,12 @@ export default function CreateTripDestination() {
 
   const showResults = results.length > 0 && !selectedPlace;
   const showSuggested = !query && !selectedPlace;
+  const showNoResults =
+    !loading &&
+    query.length > 1 &&
+    results.length === 0 &&
+    !selectedPlace &&
+    !error;
 
   return (
     <AppSafeAreaView>
@@ -99,7 +105,7 @@ export default function CreateTripDestination() {
         showsVerticalScrollIndicator={false}>
         <CreateStepHeader currentStep={1} totalSteps={3} />
 
-        <Text style={[styles.title, { color: dark ? "#ffffff" : "#111827" }]}>
+        <Text style={[styles.title, { color: dark ? '#ffffff' : '#111827' }]}>
           Where are you headed?
         </Text>
         <Text
@@ -122,14 +128,15 @@ export default function CreateTripDestination() {
             color={dark ? '#6b7280' : '#9ca3af'}
           />
           <TextInput
-            style={[styles.input, { color: dark ? "#ffffff" : "#111827" }]}
+            style={[styles.input, { color: dark ? '#ffffff' : '#111827' }]}
             placeholder="Search destinations…"
-            placeholderTextColor={dark ? "#4b5563" : "#9ca3af"}
+            placeholderTextColor={dark ? '#4b5563' : '#9ca3af'}
             value={query}
             onChangeText={handleInputChange}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
+            onSubmitEditing={() => {}}
           />
           {(query.length > 0 || selectedPlace) && (
             <TouchableOpacity
@@ -223,6 +230,30 @@ export default function CreateTripDestination() {
           </View>
         )}
 
+        {showNoResults && (
+          <View style={styles.noResults}>
+            <Search
+              size={40}
+              color={dark ? '#374151' : '#e5e7eb'}
+              strokeWidth={1}
+            />
+            <Text
+              style={[
+                styles.noResultsText,
+                { color: dark ? '#ffffff' : '#111827' },
+              ]}>
+              We couldn't find matches for "{query}"
+            </Text>
+            <Text
+              style={[
+                styles.noResultsSub,
+                { color: dark ? '#9ca3af' : '#6b7280' },
+              ]}>
+              Check the spelling or try a different city
+            </Text>
+          </View>
+        )}
+
         {/* Suggested destinations */}
         {showSuggested && (
           <View style={styles.suggestedSection}>
@@ -297,7 +328,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontFamily: "BricolageGrotesque-Bold",
+    fontFamily: 'BricolageGrotesque-Bold',
     marginBottom: 6,
   },
   subtitle: {
@@ -308,8 +339,8 @@ const styles = StyleSheet.create({
 
   // Input
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
@@ -325,19 +356,19 @@ const styles = StyleSheet.create({
 
   // Pill
   pill: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
     marginBottom: 16,
-    maxWidth: "100%",
+    maxWidth: '100%',
   },
   pillText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
     flexShrink: 1,
   },
   pillClose: {
@@ -348,12 +379,12 @@ const styles = StyleSheet.create({
   resultsList: {
     borderRadius: 12,
     borderWidth: 1,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginBottom: 16,
   },
   resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
@@ -366,7 +397,7 @@ const styles = StyleSheet.create({
   },
   resultPrimary: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   resultSecondary: {
     fontSize: 12,
@@ -379,14 +410,14 @@ const styles = StyleSheet.create({
   },
   suggestedLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
+    fontWeight: '600',
+    textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 12,
   },
   chipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   chip: {
@@ -409,16 +440,33 @@ const styles = StyleSheet.create({
   nextButton: {
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#FF1F8C",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FF1F8C',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nextButtonDisabled: {
-    backgroundColor: "#fda0c9",
+    backgroundColor: '#fda0c9',
   },
   nextButtonText: {
-    color: "#ffffff",
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
+  },
+
+  noResults: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  noResultsSub: {
+    fontSize: 14,
+    textAlign: 'center',
+    maxWidth: '80%',
   },
 });

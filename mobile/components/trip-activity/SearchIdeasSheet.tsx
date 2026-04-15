@@ -1,5 +1,4 @@
 import { useTrips } from '@/context/TripsContext';
-import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
 import { Loader2, Search, SlidersHorizontal } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -36,6 +35,7 @@ import {
   useViatorCategory,
   type MappedViatorIdea,
 } from '@/hooks/useViatorCategory';
+import { lookupViatorDestinationId } from '@/utils/viator/viatorDestinationLookup';
 
 interface Props {
   visible: boolean;
@@ -77,7 +77,7 @@ const SpinningLoader = ({
   );
 };
 
-export const MOCK_CATEGORIES = [
+export const SEARCH_CATEGORIES = [
   { id: 'All', label: 'All' },
   { id: 'Eat/Drink', label: '🍹 Eat/Drink' },
   { id: 'Stay', label: '🏨 Stay' },
@@ -91,6 +91,7 @@ interface ViatorCategorySectionProps {
   colors: { textColors: { default: string; subtle: string }; [key: string]: any };
   onAdd: (idea: MappedViatorIdea) => void;
   scrollEnabled?: boolean;
+  destinationId?: string | null;
 }
 
 function ViatorCategorySection({
@@ -99,8 +100,9 @@ function ViatorCategorySection({
   colors,
   onAdd,
   scrollEnabled = true,
+  destinationId,
 }: ViatorCategorySectionProps) {
-  const { products, loading, error, retry } = useViatorCategory(category);
+  const { products, loading, error, retry } = useViatorCategory(category, destinationId);
 
   const filtered = React.useMemo(() => {
     if (!localQuery) return products;
@@ -169,6 +171,9 @@ function ViatorCategorySection({
           title={item.title}
           description={item.description}
           onAdd={() => onAdd(item)}
+          viatorProductCode={item.id}
+          price={item.price}
+          currency={item.currency}
         />
       )}
     />
@@ -206,6 +211,7 @@ interface SearchResultGroupProps {
   localQuery: string;
   colors: { textColors: { default: string; subtle: string }; [key: string]: any };
   onAdd: (idea: MappedViatorIdea) => void;
+  destinationId?: string | null;
 }
 
 function SearchResultGroup({
@@ -213,8 +219,9 @@ function SearchResultGroup({
   localQuery,
   colors,
   onAdd,
+  destinationId,
 }: SearchResultGroupProps) {
-  const { products } = useViatorCategory(category);
+  const { products } = useViatorCategory(category, destinationId);
   const q = localQuery.toLowerCase();
   const filtered = products.filter(
     (p) =>
@@ -245,6 +252,9 @@ function SearchResultGroup({
             title={item.title}
             description={item.description}
             onAdd={() => onAdd(item)}
+            viatorProductCode={item.id}
+            price={item.price}
+            currency={item.currency}
           />
         )}
       />
@@ -256,9 +266,10 @@ interface AllCategoryViewProps {
   localQuery: string;
   colors: { textColors: { default: string; subtle: string }; [key: string]: any };
   onAdd: (idea: MappedViatorIdea) => void;
+  destinationId?: string | null;
 }
 
-function AllCategoryView({ localQuery, colors, onAdd }: AllCategoryViewProps) {
+function AllCategoryView({ localQuery, colors, onAdd, destinationId }: AllCategoryViewProps) {
   if (localQuery) {
     return (
       <ScrollView
@@ -272,6 +283,7 @@ function AllCategoryView({ localQuery, colors, onAdd }: AllCategoryViewProps) {
             localQuery={localQuery}
             colors={colors}
             onAdd={onAdd}
+            destinationId={destinationId}
           />
         ))}
       </ScrollView>
@@ -297,6 +309,7 @@ function AllCategoryView({ localQuery, colors, onAdd }: AllCategoryViewProps) {
             colors={colors}
             onAdd={onAdd}
             scrollEnabled={false}
+            destinationId={destinationId}
           />
         </View>
       ))}
@@ -316,6 +329,15 @@ const allStyles = StyleSheet.create({
   },
 });
 
+interface HotelIdeaData {
+  name: string;
+  hotelId: string;
+  address: string;
+  roomTypes: unknown[];
+  thumbnail?: string | null;
+  all_data: unknown;
+}
+
 export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
@@ -323,9 +345,8 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const [activeCategory, setActiveCategory] = useState<'All' | 'Stay' | Exclude<CategoryKey, 'All'>>('All');
   const [activeIdeaFilter, setActiveIdeaFilter] = useState<string | null>(null);
   const [localQuery, setLocalQuery] = useState('');
+  const [destinationId, setDestinationId] = useState<string | null>(null);
 
-  const { query, setQuery, results, loading, clearResults } =
-    usePlacesAutocomplete();
   const translateY = useRef(new Animated.Value(900)).current;
 
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
@@ -349,13 +370,16 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         friction: 11,
       }).start();
       setTimeout(() => inputRef.current?.focus(), 150);
-      // Warm category caches in parallel so pill taps are instant
-      Promise.all([
-        loadCategoryProducts('Eat/Drink'),
-        loadCategoryProducts('Do'),
-        loadCategoryProducts('Shop'),
-      ]).catch(() => {
-        /* swallow prefetch errors — hooks will retry on mount */
+      lookupViatorDestinationId(trip.destination_label).then((id) => {
+        setDestinationId(id);
+        const filters = id ? { destination: id } : {};
+        Promise.all([
+          loadCategoryProducts('Eat/Drink', filters),
+          loadCategoryProducts('Do', filters),
+          loadCategoryProducts('Shop', filters),
+        ]).catch(() => {
+          /* swallow prefetch errors — hooks will retry on mount */
+        });
       });
     } else {
       Animated.timing(translateY, {
@@ -363,34 +387,35 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         duration: 250,
         useNativeDriver: true,
       }).start();
-      setQuery('');
       setLocalQuery('');
-      clearResults();
       setActiveCategory('All');
+      setDestinationId(null);
     }
   }, [visible]);
 
-  const handleSaveIdea = async (idea: any) => {
+  const handleSaveIdea = async (idea: MappedViatorIdea | HotelIdeaData) => {
     let input;
 
     if (ideaType === 'hotel') {
-      const roomTypes = idea.roomTypes.length;
+      const hotel = idea as HotelIdeaData;
+      const roomTypes = hotel.roomTypes.length;
       input = {
-        name: idea.name,
+        name: hotel.name,
         type: ideaType,
         location: 'Stay',
-        external_id: idea.hotelId,
-        notes: `${idea.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
-        all_data: idea,
-        cover_image: idea.thumbnail || null,
+        external_id: hotel.hotelId,
+        notes: `${hotel.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
+        all_data: hotel,
+        cover_image: hotel.thumbnail || null,
       };
     } else {
+      const activity = idea as MappedViatorIdea;
       input = {
-        name: idea.title,
+        name: activity.title,
         type: ideaType,
-        location: idea.category,
-        external_id: idea.id,
-        notes: idea.description,
+        location: activity.category,
+        external_id: activity.id,
+        notes: activity.description,
       };
     }
     await addIdea(input);
@@ -481,27 +506,20 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
             <TextInput
               ref={inputRef}
               value={localQuery}
-              onChangeText={(txt) => {
-                setLocalQuery(txt);
-                setQuery(txt); // Still power the hook behind the scenes
-              }}
+              onChangeText={setLocalQuery}
               placeholder="Search trips, hotels, experiences..."
               placeholderTextColor={dark ? '#6B7280' : '#AEAEAE'}
               style={[styles.searchInput, { color: colors.textColors.default }]}
             />
-            {loading ? (
-              <SpinningLoader size={18} color="#FF1F8C" style={styles.loader} />
-            ) : (
-              <TouchableOpacity
-                ref={filterBtnRef}
-                onPress={handleFilterPress}
-                hitSlop={10}>
-                <SlidersHorizontal
-                  size={18}
-                  color={dark ? '#9CA3AF' : '#AEAEAE'}
-                />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              ref={filterBtnRef}
+              onPress={handleFilterPress}
+              hitSlop={10}>
+              <SlidersHorizontal
+                size={18}
+                color={dark ? '#9CA3AF' : '#AEAEAE'}
+              />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.categoriesWrapper}>
@@ -509,7 +527,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesContainer}>
-              {MOCK_CATEGORIES.map((cat) => {
+              {SEARCH_CATEGORIES.map((cat) => {
                 const isActive = activeCategory === cat.id;
                 return (
                   <Pressable
@@ -556,6 +574,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
               localQuery={localQuery}
               colors={colors}
               onAdd={handleSaveIdea}
+              destinationId={destinationId}
             />
           ) : (
             <ViatorCategorySection
@@ -563,6 +582,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
               localQuery={localQuery}
               colors={colors}
               onAdd={handleSaveIdea}
+              destinationId={destinationId}
             />
           )}
 
@@ -619,7 +639,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: AppFonts.inter.regular,
   },
-  loader: {},
   categoriesWrapper: {
     marginHorizontal: -20, // Negative margin to allow ScrollView to stretch full width but item padding manages safety
   },
@@ -634,14 +653,10 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     borderWidth: 1,
   },
-  categoryPillActive: {},
   categoryPillText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.medium,
     color: '#6B7280',
-  },
-  categoryPillTextActive: {
-    color: '#ffffff',
   },
   ideaGridContent: {
     paddingBottom: 40,

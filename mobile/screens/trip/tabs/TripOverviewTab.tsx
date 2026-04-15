@@ -17,7 +17,7 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
 import IdeaCard from '@/components/trip-activity/IdeaCard';
 import SearchIdeasSheet, {
-  MOCK_CATEGORIES,
+  SEARCH_CATEGORIES,
 } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
@@ -113,7 +113,7 @@ export default function TripOverviewTab({ trip }: Props) {
     },
   ];
 
-  const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
+  const filterOptions: ActionOption[] = SEARCH_CATEGORIES.map((cat) => ({
     label: cat.label,
     isBold: activeFilter === cat.id,
     onPress: () => {
@@ -198,7 +198,7 @@ export default function TripOverviewTab({ trip }: Props) {
             style={[styles.filterText, { color: colors.textColors.subtle }]}>
             {activeFilter === 'All'
               ? 'All'
-              : MOCK_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
+              : SEARCH_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
                 'All'}
           </Text>
           <ChevronDown

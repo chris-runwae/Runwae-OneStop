@@ -30,6 +30,9 @@ interface IdeaCardProps {
   checkin?: string | null;
   checkout?: string | null;
   adults?: number | null;
+  price?: number | null;
+  currency?: string | null;
+  viatorProductCode?: string;
 }
 
 export default function IdeaCard({
@@ -44,12 +47,28 @@ export default function IdeaCard({
   checkin,
   checkout,
   adults,
+  price,
+  currency,
+  viatorProductCode,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const moreBtnRef = useRef<View>(null);
 
+  function currencySymbol(code: string | null | undefined): string {
+    if (!code) return '$';
+    const map: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$' };
+    return map[code.toUpperCase()] ?? code;
+  }
+
   const handleNavigateToDetails = () => {
+    if (viatorProductCode) {
+      router.push({
+        pathname: '/viator/[productCode]',
+        params: { productCode: viatorProductCode },
+      } as any);
+      return;
+    }
     if (item?.type === 'hotel') {
       router.push({
         pathname: '/hotels/[hotelId]',
@@ -124,15 +143,14 @@ export default function IdeaCard({
         </Text>
         {onAdd && (
           <View style={styles.footer}>
-            <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
+            {price != null && price > 0 ? (
               <Text
-                style={[
-                  styles.viewDetails,
-                  { color: colors.primaryColors.default },
-                ]}>
-                View Details
+                style={[styles.priceLabel, { color: colors.textColors.subtle }]}>
+                {`From ${currencySymbol(currency)}${Math.round(price)}`}
               </Text>
-            </TouchableOpacity>
+            ) : (
+              <View />
+            )}
             <TouchableOpacity
               style={[
                 styles.addButton,
@@ -214,10 +232,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  viewDetails: {
+  priceLabel: {
     fontSize: 11,
     fontFamily: AppFonts.inter.medium,
-    textDecorationLine: 'underline',
   },
   addButton: {
     flexDirection: 'row',

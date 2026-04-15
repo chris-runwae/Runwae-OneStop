@@ -60,8 +60,6 @@ export function useViatorCategory(category: CategoryKey): {
   error: string | null;
   retry: () => void;
 } {
-  const isMountedRef = useRef(true);
-
   const [products, setProducts] = useState<MappedViatorIdea[]>(() =>
     mapSnapshot(getCategorySnapshot(category), category)
   );
@@ -70,63 +68,44 @@ export function useViatorCategory(category: CategoryKey): {
   );
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  // Generation counter: incremented on every new load call.
+  // Guards against both stale category-change fetches and stale retry fetches.
+  const loadGenRef = useRef(0);
 
   const load = useCallback(
     async (staleMs: number) => {
+      const gen = ++loadGenRef.current;
       setError(null);
       setLoading(true);
       try {
         const raw = await loadCategoryProducts(category, {}, staleMs);
-        if (isMountedRef.current) setProducts(mapSnapshot(raw, category));
+        if (loadGenRef.current === gen) {
+          setProducts(mapSnapshot(raw, category));
+        }
       } catch (err) {
-        if (isMountedRef.current)
+        if (loadGenRef.current === gen) {
           setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
       } finally {
-        if (isMountedRef.current) setLoading(false);
+        if (loadGenRef.current === gen) {
+          setLoading(false);
+        }
       }
     },
     [category]
   );
 
   useEffect(() => {
-    let cancelled = false;
-
     if (isCategoryFresh(category, VIATOR_DEFAULT_STALE_MS)) {
-      const snap = getCategorySnapshot(category);
-      setProducts(mapSnapshot(snap, category));
+      setProducts(mapSnapshot(getCategorySnapshot(category), category));
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
-
-    setLoading(true);
-    setError(null);
-    loadCategoryProducts(category, {}, VIATOR_DEFAULT_STALE_MS)
-      .then((raw) => {
-        if (!cancelled) setProducts(mapSnapshot(raw, category));
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : 'Something went wrong');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [category]);
+    load(VIATOR_DEFAULT_STALE_MS);
+  }, [category, load]);
 
   const retry = useCallback(() => {
-    load(0); // staleMs=0 forces a fresh fetch
+    load(0); // staleMs=0 forces a fresh fetch regardless of cache
   }, [load]);
 
   return { products, loading, error, retry };

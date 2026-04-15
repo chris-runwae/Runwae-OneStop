@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ViatorProduct } from '@/types/viator.types';
 import { pickViatorImageUrls } from '@/utils/viator/pickViatorImageUrls';
 import {
@@ -60,6 +60,8 @@ export function useViatorCategory(category: CategoryKey): {
   error: string | null;
   retry: () => void;
 } {
+  const isMountedRef = useRef(true);
+
   const [products, setProducts] = useState<MappedViatorIdea[]>(() =>
     mapSnapshot(getCategorySnapshot(category), category)
   );
@@ -68,17 +70,25 @@ export function useViatorCategory(category: CategoryKey): {
   );
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const load = useCallback(
     async (staleMs: number) => {
       setError(null);
       setLoading(true);
       try {
         const raw = await loadCategoryProducts(category, {}, staleMs);
-        setProducts(mapSnapshot(raw, category));
+        if (isMountedRef.current) setProducts(mapSnapshot(raw, category));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+        if (isMountedRef.current)
+          setError(err instanceof Error ? err.message : 'Something went wrong');
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) setLoading(false);
       }
     },
     [category]

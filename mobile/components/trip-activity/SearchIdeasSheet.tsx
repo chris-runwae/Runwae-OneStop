@@ -26,6 +26,16 @@ import IdeaCard from './IdeaCard';
 import HotelsSection from '../trips/HotelsSection';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { ItemType } from '@/hooks/useItineraryActions';
+import {
+  loadCategoryProducts,
+  CATEGORY_LABELS,
+  type CategoryKey,
+  LEAF_CATEGORIES,
+} from '@/utils/viator/viatorCategoryCache';
+import {
+  useViatorCategory,
+  type MappedViatorIdea,
+} from '@/hooks/useViatorCategory';
 
 interface Props {
   visible: boolean;
@@ -75,78 +85,229 @@ export const MOCK_CATEGORIES = [
   { id: 'Shop', label: '🛍️ Shop' },
 ];
 
-export const MOCK_IDEAS = [
-  {
-    id: '1',
-    category: 'Eat/Drink',
-    categoryLabel: '🍹 Eat/Drink',
-    title: 'Sunset Cocktails',
-    description: 'Savor exotic flavors and stunning views at a beachside bar.',
-    imageUri:
-      'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.9,
-    isFree: false,
-    createdAt: '2024-01-01',
+interface ViatorCategorySectionProps {
+  category: CategoryKey;
+  localQuery: string;
+  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  dark: boolean;
+  onAdd: (idea: MappedViatorIdea) => void;
+}
+
+function ViatorCategorySection({
+  category,
+  localQuery,
+  colors,
+  onAdd,
+}: ViatorCategorySectionProps) {
+  const { products, loading, error, retry } = useViatorCategory(category);
+
+  const filtered = React.useMemo(() => {
+    if (!localQuery) return products;
+    const q = localQuery.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [products, localQuery]);
+
+  if (loading) {
+    return (
+      <View style={sectionStyles.center}>
+        <SpinningLoader size={28} color="#FF1F8C" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={sectionStyles.center}>
+        <Text
+          style={[sectionStyles.errorText, { color: colors.textColors.subtle }]}>
+          {error}
+        </Text>
+        <TouchableOpacity onPress={retry} style={sectionStyles.retryBtn}>
+          <Text style={sectionStyles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => item.id}
+      numColumns={2}
+      columnWrapperStyle={styles.ideaGridRow}
+      contentContainerStyle={styles.ideaGridContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      ListEmptyComponent={() => (
+        <View style={styles.emptyState}>
+          <Text
+            style={[
+              styles.emptyStateTitle,
+              { color: colors.textColors.default },
+            ]}>
+            No ideas found
+          </Text>
+          <Text
+            style={[
+              styles.emptyStateSub,
+              { color: colors.textColors.subtle },
+            ]}>
+            Try searching for something else or changing the category.
+          </Text>
+        </View>
+      )}
+      renderItem={({ item }) => (
+        <IdeaCard
+          imageUri={item.imageUri}
+          categoryLabel={item.categoryLabel}
+          title={item.title}
+          description={item.description}
+          onAdd={() => onAdd(item)}
+        />
+      )}
+    />
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
   },
-  {
-    id: '2',
-    category: 'Stay',
-    categoryLabel: '🏨 Stay',
-    title: 'Boutique Hotel',
-    description:
-      'Rejuvenate your body and mind with amazing room overlooking the serene ocean.',
-    imageUri:
-      'https://images.unsplash.com/photo-1542314831-c6a4d14b1b36?q=80&w=600&auto=format&fit=crop',
-    isMustSee: false,
-    rating: 4.7,
-    isFree: false,
-    isHiddenGem: true,
-    createdAt: '2024-02-01',
+  errorText: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.regular,
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  {
-    id: '3',
-    category: 'Do',
-    categoryLabel: '🎭 Do',
-    title: 'Local Artisans Market',
-    description:
-      'Discover handmade crafts and unique souvenirs from talented local artists.',
-    imageUri:
-      'https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?q=80&w=600&auto=format&fit=crop',
-    isMustSee: false,
-    rating: 4.5,
-    isFree: true,
-    createdAt: '2024-03-01',
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#FF2E92',
+    borderRadius: 99,
   },
-  {
-    id: '4',
-    category: 'Shop',
-    categoryLabel: '🛍️ Shop',
-    title: 'Food Tour',
-    description:
-      "Embark on a culinary adventure sampling dishes from the region's best eateries.",
-    imageUri:
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.8,
-    isFree: false,
-    createdAt: '2024-04-01',
+  retryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: AppFonts.inter.semiBold,
   },
-  {
-    id: '5',
-    category: 'Do',
-    categoryLabel: '🎭 Do',
-    title: 'Sunset Cruise',
-    description:
-      'Experience breathtaking sunsets while sailing on the serene waters of the bay.',
-    imageUri:
-      'https://images.unsplash.com/photo-1514886675239-6d654497e875?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.9,
-    isFree: false,
-    createdAt: '2024-05-01',
+});
+
+interface SearchResultGroupProps {
+  category: Exclude<CategoryKey, 'All'>;
+  localQuery: string;
+  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  onAdd: (idea: MappedViatorIdea) => void;
+}
+
+function SearchResultGroup({
+  category,
+  localQuery,
+  colors,
+  onAdd,
+}: SearchResultGroupProps) {
+  const { products } = useViatorCategory(category);
+  const q = localQuery.toLowerCase();
+  const filtered = products.filter(
+    (p) =>
+      p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) return null;
+
+  return (
+    <View>
+      <Text
+        style={[allStyles.sectionHeader, { color: colors.textColors.default }]}>
+        {CATEGORY_LABELS[category]} · {filtered.length} result
+        {filtered.length !== 1 ? 's' : ''}
+      </Text>
+      <View style={styles.ideaGridRow}>
+        {filtered.map((item) => (
+          <IdeaCard
+            key={item.id}
+            imageUri={item.imageUri}
+            categoryLabel={item.categoryLabel}
+            title={item.title}
+            description={item.description}
+            onAdd={() => onAdd(item)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+interface AllCategoryViewProps {
+  localQuery: string;
+  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  dark: boolean;
+  onAdd: (idea: MappedViatorIdea) => void;
+}
+
+function AllCategoryView({ localQuery, colors, dark, onAdd }: AllCategoryViewProps) {
+  if (localQuery) {
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.ideaGridContent}>
+        {LEAF_CATEGORIES.map((cat) => (
+          <SearchResultGroup
+            key={cat}
+            category={cat}
+            localQuery={localQuery}
+            colors={colors}
+            onAdd={onAdd}
+          />
+        ))}
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled">
+      {LEAF_CATEGORIES.map((cat) => (
+        <View key={cat} style={allStyles.section}>
+          <Text
+            style={[
+              allStyles.sectionHeader,
+              { color: colors.textColors.default },
+            ]}>
+            {CATEGORY_LABELS[cat]}
+          </Text>
+          <ViatorCategorySection
+            category={cat}
+            localQuery=""
+            colors={colors}
+            dark={dark}
+            onAdd={onAdd}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+const allStyles = StyleSheet.create({
+  section: {
+    marginBottom: 8,
   },
-];
+  sectionHeader: {
+    fontSize: 15,
+    fontFamily: AppFonts.inter.semiBold,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+});
 
 export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
@@ -181,6 +342,14 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         friction: 11,
       }).start();
       setTimeout(() => inputRef.current?.focus(), 150);
+      // Warm category caches in parallel so pill taps are instant
+      Promise.all([
+        loadCategoryProducts('Eat/Drink'),
+        loadCategoryProducts('Do'),
+        loadCategoryProducts('Shop'),
+      ]).catch(() => {
+        /* swallow prefetch errors — hooks will retry on mount */
+      });
     } else {
       Animated.timing(translateY, {
         toValue: 600,
@@ -193,39 +362,6 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
       setActiveCategory('All');
     }
   }, [visible]);
-
-  const filteredIdeas = React.useMemo(() => {
-    let result = MOCK_IDEAS.filter((idea) => {
-      const matchesCategory =
-        activeCategory === 'All' || idea.category === activeCategory;
-      const matchesQuery =
-        !localQuery ||
-        idea.title.toLowerCase().includes(localQuery.toLowerCase()) ||
-        idea.description.toLowerCase().includes(localQuery.toLowerCase()) ||
-        idea.category.toLowerCase().includes(localQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
-    });
-
-    if (activeIdeaFilter === 'Must See') {
-      result = result.filter((i) => (i as any).isMustSee);
-    } else if (activeIdeaFilter === 'Hidden Gems') {
-      result = result.filter((i) => (i as any).isHiddenGem);
-    } else if (activeIdeaFilter === 'Free Activities') {
-      result = result.filter((i) => (i as any).isFree);
-    } else if (activeIdeaFilter === 'High Rating') {
-      result = [...result].sort(
-        (a, b) => (b as any).rating - (a as any).rating
-      );
-    } else if (activeIdeaFilter === 'Recently Added') {
-      result = [...result].sort(
-        (a, b) =>
-          new Date((b as any).createdAt).getTime() -
-          new Date((a as any).createdAt).getTime()
-      );
-    }
-
-    return result;
-  }, [activeCategory, localQuery, activeIdeaFilter]);
 
   const handleSaveIdea = async (idea: any) => {
     let input;
@@ -408,42 +544,20 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
 
           {activeCategory === 'Stay' ? (
             <HotelsSection trip={trip} onAdd={handleSaveIdea} />
+          ) : activeCategory === 'All' ? (
+            <AllCategoryView
+              localQuery={localQuery}
+              colors={colors}
+              dark={dark}
+              onAdd={handleSaveIdea}
+            />
           ) : (
-            <FlatList
-              data={filteredIdeas}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.ideaGridRow}
-              contentContainerStyle={styles.ideaGridContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={() => (
-                <View style={styles.emptyState}>
-                  <Text
-                    style={[
-                      styles.emptyStateTitle,
-                      { color: colors.textColors.default },
-                    ]}>
-                    No ideas found
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptyStateSub,
-                      { color: colors.textColors.subtle },
-                    ]}>
-                    Try searching for something else or changing the category.
-                  </Text>
-                </View>
-              )}
-              renderItem={({ item }) => (
-                <IdeaCard
-                  imageUri={item.imageUri}
-                  categoryLabel={item.categoryLabel}
-                  title={item.title}
-                  description={item.description}
-                  onAdd={() => handleSaveIdea(item)}
-                />
-              )}
+            <ViatorCategorySection
+              category={activeCategory as CategoryKey}
+              localQuery={localQuery}
+              colors={colors}
+              dark={dark}
+              onAdd={handleSaveIdea}
             />
           )}
 

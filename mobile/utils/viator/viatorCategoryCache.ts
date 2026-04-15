@@ -1,5 +1,6 @@
 // mobile/utils/viator/viatorCategoryCache.ts
 import type { ViatorProduct } from '@/types/viator.types';
+import { mergeViatorProductsCache } from '@/utils/viator/viatorProductCache';
 import {
   executeViatorProductSearch,
   VIATOR_DEFAULT_STALE_MS,
@@ -146,6 +147,7 @@ export async function loadCategoryProducts(
     .then((products) => {
       entry.products = products;
       entry.fetchedAtMs = Date.now();
+      mergeViatorProductsCache(products);
       return products;
     })
     .finally(() => {

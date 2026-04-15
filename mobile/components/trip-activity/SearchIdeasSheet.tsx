@@ -88,7 +88,10 @@ export const SEARCH_CATEGORIES = [
 interface ViatorCategorySectionProps {
   category: CategoryKey;
   localQuery: string;
-  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
   onAdd: (idea: MappedViatorIdea) => void;
   scrollEnabled?: boolean;
   destinationId?: string | null;
@@ -102,7 +105,10 @@ function ViatorCategorySection({
   scrollEnabled = true,
   destinationId,
 }: ViatorCategorySectionProps) {
-  const { products, loading, error, retry } = useViatorCategory(category, destinationId);
+  const { products, loading, error, retry } = useViatorCategory(
+    category,
+    destinationId
+  );
 
   const filtered = React.useMemo(() => {
     if (!localQuery) return products;
@@ -126,7 +132,10 @@ function ViatorCategorySection({
     return (
       <View style={sectionStyles.center}>
         <Text
-          style={[sectionStyles.errorText, { color: colors.textColors.subtle }]}>
+          style={[
+            sectionStyles.errorText,
+            { color: colors.textColors.subtle },
+          ]}>
           {error}
         </Text>
         <TouchableOpacity onPress={retry} style={sectionStyles.retryBtn}>
@@ -156,10 +165,7 @@ function ViatorCategorySection({
             No ideas found
           </Text>
           <Text
-            style={[
-              styles.emptyStateSub,
-              { color: colors.textColors.subtle },
-            ]}>
+            style={[styles.emptyStateSub, { color: colors.textColors.subtle }]}>
             Try searching for something else or changing the category.
           </Text>
         </View>
@@ -209,7 +215,10 @@ const sectionStyles = StyleSheet.create({
 interface SearchResultGroupProps {
   category: Exclude<CategoryKey, 'All'>;
   localQuery: string;
-  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
   onAdd: (idea: MappedViatorIdea) => void;
   destinationId?: string | null;
 }
@@ -225,7 +234,8 @@ function SearchResultGroup({
   const q = localQuery.toLowerCase();
   const filtered = products.filter(
     (p) =>
-      p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+      p.title.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q)
   );
 
   if (filtered.length === 0) return null;
@@ -264,12 +274,20 @@ function SearchResultGroup({
 
 interface AllCategoryViewProps {
   localQuery: string;
-  colors: { textColors: { default: string; subtle: string }; [key: string]: any };
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
   onAdd: (idea: MappedViatorIdea) => void;
   destinationId?: string | null;
 }
 
-function AllCategoryView({ localQuery, colors, onAdd, destinationId }: AllCategoryViewProps) {
+function AllCategoryView({
+  localQuery,
+  colors,
+  onAdd,
+  destinationId,
+}: AllCategoryViewProps) {
   if (localQuery) {
     return (
       <ScrollView
@@ -342,7 +360,9 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { addIdea } = useTrips();
-  const [activeCategory, setActiveCategory] = useState<'All' | 'Stay' | Exclude<CategoryKey, 'All'>>('All');
+  const [activeCategory, setActiveCategory] = useState<
+    'All' | 'Stay' | Exclude<CategoryKey, 'All'>
+  >('All');
   const [activeIdeaFilter, setActiveIdeaFilter] = useState<string | null>(null);
   const [localQuery, setLocalQuery] = useState('');
   const [destinationId, setDestinationId] = useState<string | null>(null);
@@ -416,6 +436,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         location: activity.category,
         external_id: activity.id,
         notes: activity.description,
+        cover_image: activity.imageUri,
       };
     }
     await addIdea(input);
@@ -532,7 +553,11 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
                 return (
                   <Pressable
                     key={cat.id}
-                    onPress={() => setActiveCategory(cat.id as 'All' | 'Stay' | Exclude<CategoryKey, 'All'>)}
+                    onPress={() =>
+                      setActiveCategory(
+                        cat.id as 'All' | 'Stay' | Exclude<CategoryKey, 'All'>
+                      )
+                    }
                     style={[
                       styles.categoryPill,
                       {

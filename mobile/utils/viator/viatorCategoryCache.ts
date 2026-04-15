@@ -6,6 +6,19 @@ import {
   type ViatorSearchFilters,
 } from '@/utils/viator/viatorSearchSingleton';
 
+/**
+ * Category-keyed Viator product cache.
+ *
+ * State is module-level and persists for the app's runtime.
+ * Call `clearCategoryCache()` on logout or significant context changes.
+ *
+ * When `filters` is empty ({}), results are cached by category for `staleMs`.
+ * When `filters` is non-empty, the cache is bypassed and a direct fetch is made —
+ * this prevents stale data when destination or other filters vary across callers.
+ *
+ * The 'All' category has no dedicated cache entry: it is always the live union
+ * of the three leaf caches ('Eat/Drink', 'Do', 'Shop').
+ */
 export type CategoryKey = 'Eat/Drink' | 'Do' | 'Shop' | 'All';
 
 /** Tag IDs for each leaf category. 'All' is the union. */
@@ -32,13 +45,19 @@ interface CategoryCacheEntry {
 const _cache = new Map<Exclude<CategoryKey, 'All'>, CategoryCacheEntry>();
 
 function _getEntry(category: Exclude<CategoryKey, 'All'>): CategoryCacheEntry {
-  if (!_cache.has(category)) {
-    _cache.set(category, { products: [], fetchedAtMs: 0, inflight: null });
+  let entry = _cache.get(category);
+  if (!entry) {
+    entry = { products: [], fetchedAtMs: 0, inflight: null };
+    _cache.set(category, entry);
   }
-  return _cache.get(category)!;
+  return entry;
 }
 
-const LEAF_CATEGORIES = ['Eat/Drink', 'Do', 'Shop'] as const;
+function _isDefaultFilters(filters: ViatorSearchFilters): boolean {
+  return Object.keys(filters).length === 0;
+}
+
+export const LEAF_CATEGORIES = ['Eat/Drink', 'Do', 'Shop'] as const;
 
 /**
  * Synchronously returns the current cached products for a category.
@@ -96,6 +115,15 @@ export async function loadCategoryProducts(
     });
   }
 
+  // Non-default filters: bypass cache, fetch directly with category tags merged in
+  if (!_isDefaultFilters(filters)) {
+    const mergedFilters: ViatorSearchFilters = {
+      ...filters,
+      tags: CATEGORY_TAGS[category],
+    };
+    return executeViatorProductSearch(mergedFilters);
+  }
+
   const entry = _getEntry(category);
 
   // Return cached if fresh
@@ -125,4 +153,16 @@ export async function loadCategoryProducts(
     });
 
   return entry.inflight;
+}
+
+/**
+ * Clears one or all leaf category caches.
+ * Pass no argument to clear all. Useful for logout, destination change, or tests.
+ */
+export function clearCategoryCache(category?: Exclude<CategoryKey, 'All'>): void {
+  if (category) {
+    _cache.delete(category);
+  } else {
+    _cache.clear();
+  }
 }

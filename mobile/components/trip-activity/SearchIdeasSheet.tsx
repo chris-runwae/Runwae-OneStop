@@ -89,8 +89,8 @@ interface ViatorCategorySectionProps {
   category: CategoryKey;
   localQuery: string;
   colors: { textColors: { default: string; subtle: string }; [key: string]: any };
-  dark: boolean;
   onAdd: (idea: MappedViatorIdea) => void;
+  scrollEnabled?: boolean;
 }
 
 function ViatorCategorySection({
@@ -98,6 +98,7 @@ function ViatorCategorySection({
   localQuery,
   colors,
   onAdd,
+  scrollEnabled = true,
 }: ViatorCategorySectionProps) {
   const { products, loading, error, retry } = useViatorCategory(category);
 
@@ -135,6 +136,7 @@ function ViatorCategorySection({
 
   return (
     <FlatList
+      scrollEnabled={scrollEnabled}
       data={filtered}
       keyExtractor={(item) => item.id}
       numColumns={2}
@@ -228,18 +230,24 @@ function SearchResultGroup({
         {CATEGORY_LABELS[category]} · {filtered.length} result
         {filtered.length !== 1 ? 's' : ''}
       </Text>
-      <View style={styles.ideaGridRow}>
-        {filtered.map((item) => (
+      <FlatList
+        scrollEnabled={false}
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.ideaGridRow}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item }) => (
           <IdeaCard
-            key={item.id}
             imageUri={item.imageUri}
             categoryLabel={item.categoryLabel}
             title={item.title}
             description={item.description}
             onAdd={() => onAdd(item)}
           />
-        ))}
-      </View>
+        )}
+      />
     </View>
   );
 }
@@ -247,11 +255,10 @@ function SearchResultGroup({
 interface AllCategoryViewProps {
   localQuery: string;
   colors: { textColors: { default: string; subtle: string }; [key: string]: any };
-  dark: boolean;
   onAdd: (idea: MappedViatorIdea) => void;
 }
 
-function AllCategoryView({ localQuery, colors, dark, onAdd }: AllCategoryViewProps) {
+function AllCategoryView({ localQuery, colors, onAdd }: AllCategoryViewProps) {
   if (localQuery) {
     return (
       <ScrollView
@@ -288,8 +295,8 @@ function AllCategoryView({ localQuery, colors, dark, onAdd }: AllCategoryViewPro
             category={cat}
             localQuery=""
             colors={colors}
-            dark={dark}
             onAdd={onAdd}
+            scrollEnabled={false}
           />
         </View>
       ))}
@@ -313,7 +320,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { addIdea } = useTrips();
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState<'All' | 'Stay' | Exclude<CategoryKey, 'All'>>('All');
   const [activeIdeaFilter, setActiveIdeaFilter] = useState<string | null>(null);
   const [localQuery, setLocalQuery] = useState('');
 
@@ -507,7 +514,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
                 return (
                   <Pressable
                     key={cat.id}
-                    onPress={() => setActiveCategory(cat.id)}
+                    onPress={() => setActiveCategory(cat.id as 'All' | 'Stay' | Exclude<CategoryKey, 'All'>)}
                     style={[
                       styles.categoryPill,
                       {
@@ -548,15 +555,13 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
             <AllCategoryView
               localQuery={localQuery}
               colors={colors}
-              dark={dark}
               onAdd={handleSaveIdea}
             />
           ) : (
             <ViatorCategorySection
-              category={activeCategory as CategoryKey}
+              category={activeCategory as Exclude<CategoryKey, 'All'>}
               localQuery={localQuery}
               colors={colors}
-              dark={dark}
               onAdd={handleSaveIdea}
             />
           )}

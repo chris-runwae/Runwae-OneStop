@@ -10,7 +10,6 @@ import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
-import { MOCK_IDEAS } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, COLORS, Colors } from '@/constants';
 import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 
@@ -64,7 +63,7 @@ const ItineraryItemCard = ({
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
   
   const displayImageUrl = item.image_url || 
-    (item.external_id ? MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri : null);
+    null;
     
   const hasImage = !!displayImageUrl;
 

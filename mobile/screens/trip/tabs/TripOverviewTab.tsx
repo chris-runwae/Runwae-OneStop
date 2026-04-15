@@ -18,7 +18,6 @@ import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet'
 import IdeaCard from '@/components/trip-activity/IdeaCard';
 import SearchIdeasSheet, {
   MOCK_CATEGORIES,
-  MOCK_IDEAS,
 } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
@@ -232,7 +231,6 @@ export default function TripOverviewTab({ trip }: Props) {
             item={item}
             imageUri={
               item.cover_image ||
-              MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
               'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
             }
             categoryLabel={getCategoryWithEmoji(item.location)}

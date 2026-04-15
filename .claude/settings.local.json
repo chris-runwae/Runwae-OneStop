@@ -24,7 +24,11 @@
       "Read(//Users/christopherobocha/.config/supabase/**)",
       "Read(//Users/christopherobocha/**)",
       "Read(//Users/christopherobocha/.config/**)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git commit:*)"
     ]
   }
 }

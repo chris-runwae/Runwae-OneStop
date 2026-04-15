@@ -122,7 +122,9 @@ export async function loadCategoryProducts(
       ...filters,
       tags: CATEGORY_TAGS[category],
     };
-    return executeViatorProductSearch(mergedFilters);
+    const products = await executeViatorProductSearch(mergedFilters);
+    mergeViatorProductsCache(products);
+    return products;
   }
 
   const entry = _getEntry(category);

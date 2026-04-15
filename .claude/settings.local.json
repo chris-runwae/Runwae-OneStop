@@ -28,7 +28,11 @@
       "Bash(npx tsc:*)",
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git -C /Users/christopherobocha/Documents/GitHub/Runwae-OneStop log --oneline 45fa791323105dc1a2d5e934860f9e519acfc040..852cb9bb92d7530bbf24a83b2eb11fb45546ca9c)",
+      "Bash(git -C /Users/christopherobocha/Documents/GitHub/Runwae-OneStop show 45fa791323105dc1a2d5e934860f9e519acfc040:mobile/utils/savedIdeaInputs.ts)",
+      "Bash(echo \"EXIT $?\")",
+      "Bash(python3 -c ':*)"
     ]
   }
 }

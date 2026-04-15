@@ -274,7 +274,7 @@ export default function TripOverviewTab({ trip }: Props) {
             type: selectedIdea.type as any, // Cast to ItemType
             location: selectedIdea.location,
             external_id: selectedIdea.external_id,
-            image_url: selectedIdea.image_url,
+            image_url: selectedIdea.cover_image,
             start_time: startTime,
             end_time: endTime,
           });

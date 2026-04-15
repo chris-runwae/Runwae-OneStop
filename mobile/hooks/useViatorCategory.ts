@@ -17,6 +17,8 @@ export interface MappedViatorIdea {
   imageUri: string;
   category: string;
   categoryLabel: string;
+  price: number | null;
+  currency: string | null;
 }
 
 function mapProduct(
@@ -31,6 +33,8 @@ function mapProduct(
     imageUri: cover,
     category,
     categoryLabel: CATEGORY_LABELS[category],
+    price: product.pricing?.summary?.fromPrice ?? null,
+    currency: product.pricing?.currency ?? null,
   };
 }
 
@@ -48,13 +52,18 @@ function mapSnapshot(
         imageUri: cover,
         category: 'All',
         categoryLabel: CATEGORY_LABELS['All'],
+        price: p.pricing?.summary?.fromPrice ?? null,
+        currency: p.pricing?.currency ?? null,
       };
     });
   }
   return raw.map((p) => mapProduct(p, category as Exclude<CategoryKey, 'All'>));
 }
 
-export function useViatorCategory(category: CategoryKey): {
+export function useViatorCategory(
+  category: CategoryKey,
+  destinationId?: string | null
+): {
   products: MappedViatorIdea[];
   loading: boolean;
   error: string | null;
@@ -78,7 +87,8 @@ export function useViatorCategory(category: CategoryKey): {
       setError(null);
       setLoading(true);
       try {
-        const raw = await loadCategoryProducts(category, {}, staleMs);
+        const filters = destinationId ? { destination: destinationId } : {};
+        const raw = await loadCategoryProducts(category, filters, staleMs);
         if (loadGenRef.current === gen) {
           setProducts(mapSnapshot(raw, category));
         }
@@ -92,17 +102,18 @@ export function useViatorCategory(category: CategoryKey): {
         }
       }
     },
-    [category]
+    [category, destinationId]
   );
 
   useEffect(() => {
-    if (isCategoryFresh(category, VIATOR_DEFAULT_STALE_MS)) {
+    // Skip cache when a destination filter is active — results are destination-specific
+    if (!destinationId && isCategoryFresh(category, VIATOR_DEFAULT_STALE_MS)) {
       setProducts(mapSnapshot(getCategorySnapshot(category), category));
       setLoading(false);
       return;
     }
     load(VIATOR_DEFAULT_STALE_MS);
-  }, [category, load]);
+  }, [category, destinationId, load]);
 
   const retry = useCallback(() => {
     load(0); // staleMs=0 forces a fresh fetch regardless of cache

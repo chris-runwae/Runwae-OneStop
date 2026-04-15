@@ -126,7 +126,7 @@ const DestinationDetailScreen = () => {
 
         <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
-        <RecommendationsSection />
+        <RecommendationsSection destination={{ title: destination.title, location: destination.location ?? '' }} />
 
         <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 

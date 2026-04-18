@@ -1,5 +1,4 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-04-10',
@@ -9,15 +8,16 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
     const { amount, currency } = await req.json();
 
-    if (!amount || !currency) {
+    if (amount == null || !currency) {
       return new Response(JSON.stringify({ error: 'amount and currency are required' }), {
         status: 400,
         headers: { ...cors, 'Content-Type': 'application/json' },

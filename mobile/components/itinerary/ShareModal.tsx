@@ -1,10 +1,12 @@
 import { BlurView } from "expo-blur";
-import { Upload } from "lucide-react-native";
-import React from "react";
+import * as Clipboard from "expo-clipboard";
+import { Copy, Link2, Upload } from "lucide-react-native";
+import React, { useState } from "react";
 import {
   Dimensions,
   Image,
   Modal,
+  Share,
   Text,
   TouchableOpacity,
   View,
@@ -70,6 +72,7 @@ interface ShareModalProps {
   title: string;
   imageUri: string;
   showImage?: boolean;
+  joinCode?: string | null;
 }
 
 const ShareModal = ({
@@ -78,7 +81,10 @@ const ShareModal = ({
   title,
   imageUri,
   showImage = true,
+  joinCode,
 }: ShareModalProps) => {
+  const [copied, setCopied] = useState(false);
+
   return (
     <Modal
       visible={isVisible}
@@ -132,6 +138,45 @@ const ShareModal = ({
                 >
                   {title}
                 </Text>
+              </View>
+            </View>
+          )}
+
+          {joinCode && (
+            <View style={{ marginBottom: 20 }}>
+              <Text
+                className="text-sm font-semibold text-black dark:text-white mb-3"
+                style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
+                Invite via link
+              </Text>
+              {/* Code chip with copy button */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, gap: 10, marginBottom: 10 }}>
+                <Link2 size={16} color="#6B7280" />
+                <Text style={{ flex: 1, fontSize: 14, color: '#374151', letterSpacing: 3, fontWeight: '700' }}>
+                  {joinCode}
+                </Text>
+                <TouchableOpacity onPress={async () => {
+                  await Clipboard.setStringAsync(`https://app.runwae.io/invite/${joinCode}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}>
+                  <Copy size={16} color={copied ? '#22C55E' : '#6B7280'} />
+                </TouchableOpacity>
+              </View>
+              {/* Native share button */}
+              <TouchableOpacity
+                onPress={() => Share.share({
+                  message: `Join my trip on Runwae!\nhttps://app.runwae.io/invite/${joinCode}`,
+                  url: `https://app.runwae.io/invite/${joinCode}`,
+                })}
+                style={{ backgroundColor: '#FF1F8C', borderRadius: 10, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Share Invite Link</Text>
+              </TouchableOpacity>
+              {/* Divider */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18, marginBottom: 4 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>or share to</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
               </View>
             </View>
           )}

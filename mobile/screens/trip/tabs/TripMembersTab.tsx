@@ -8,6 +8,7 @@ import React from 'react';
 import {
   Alert,
   FlatList,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -187,7 +188,17 @@ export default function TripMembersTab({ trip }: Props) {
       <View style={[styles.footer, { borderTopColor: dark ? '#2c2c2e' : '#f3f4f6' }]}>
         <TouchableOpacity
           style={[styles.inviteButton, { backgroundColor: dark ? '#1c1c1e' : '#f9fafb', borderColor: dark ? '#2c2c2e' : '#e5e7eb' }]}
-          onPress={() => Alert.alert('Coming soon', 'Invite links are coming in a future update.')}
+          onPress={async () => {
+            const code = trip.join_code;
+            if (!code) {
+              Alert.alert('No invite code', 'Please try again later.');
+              return;
+            }
+            await Share.share({
+              message: `Join my trip "${trip.name}" on Runwae!\nhttps://app.runwae.io/invite/${code}`,
+              url: `https://app.runwae.io/invite/${code}`,
+            });
+          }}
         >
           <UserPlus size={18} strokeWidth={1.5} color="#FF1F8C" />
           <Text style={styles.inviteText}>Invite people</Text>

@@ -41,6 +41,7 @@ interface ItineraryHeaderProps {
   /** Heart fill when `onFavoritePress` is used (parent-controlled). */
   favoriteFilled?: boolean;
   dropdownOptions?: DropdownOption[];
+  joinCode?: string | null;
 }
 
 const ItineraryHeader = ({
@@ -55,6 +56,7 @@ const ItineraryHeader = ({
   onFavoritePress,
   favoriteFilled,
   dropdownOptions,
+  joinCode,
 }: ItineraryHeaderProps) => {
   const router = useRouter();
   const segments = useSegments();
@@ -208,6 +210,7 @@ const ItineraryHeader = ({
         title={title}
         showImage={!isExperienceOrDestination}
         imageUri={imageUri}
+        joinCode={joinCode}
       />
     </>
   );

@@ -39,20 +39,21 @@ export async function joinTripByCode(code: string, userId: string): Promise<stri
   if (!preview) throw new Error('Invalid invite code. Check the link and try again.');
 
   // Check if already a member
-  const { data: existing } = await supabase
+  const { data: existing, error: memberCheckError } = await supabase
     .from('group_members')
     .select('id')
     .eq('group_id', preview.id)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
+  if (memberCheckError) throw new Error(memberCheckError.message);
   if (existing) return preview.id; // already a member — navigate silently
 
   const { error } = await supabase
     .from('group_members')
     .insert({ group_id: preview.id, user_id: userId, role: 'member' });
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error('Failed to join the trip. Please try again.');
   return preview.id;
 }
 

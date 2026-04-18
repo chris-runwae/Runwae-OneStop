@@ -5,7 +5,8 @@ import { Libraries, StandaloneSearchBox, useJsApiLoader } from "@react-google-ma
 import { MapPin, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-const libraries: Libraries = ["places"];
+const libraries: Libraries = ["places", "marker"];
+const MAP_ID = "41780673945ab5c646722c1b";
 
 export interface LocationResult {
   address: string;
@@ -39,6 +40,7 @@ export function GoogleMapsInput({
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries,
+    mapIds: [MAP_ID],
   });
 
   // Keep local state in sync with external value changes (e.g. form reset)

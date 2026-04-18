@@ -1,6 +1,7 @@
 "use client";
 
 import { X, MoreHorizontal, Hotel, Plane, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -56,15 +57,29 @@ type Props = {
 };
 
 export function BookingDetailPanel({ booking, onClose, onDownloadReceipt, onCancelBooking }: Props) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (booking) requestAnimationFrame(() => setShow(true));
+    else setShow(false);
+  }, [booking]);
+
   if (!booking) return null;
 
   const TypeIcon = BOOKING_TYPE_ICON[booking.bookingType];
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} aria-hidden />
+      <div
+        className={cn("fixed inset-0 z-40 bg-black/40 transition-opacity duration-300", show ? "opacity-100" : "opacity-0")}
+        onClick={onClose}
+        aria-hidden
+      />
 
-      <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col overflow-y-auto bg-white shadow-2xl">
+      <div className={cn(
+        "fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col overflow-y-auto bg-white shadow-2xl transition-transform duration-300 ease-out",
+        show ? "translate-x-0" : "translate-x-full",
+      )}>
         {/* Header */}
         <div className="flex items-start justify-between border-b border-border p-5">
           <div>

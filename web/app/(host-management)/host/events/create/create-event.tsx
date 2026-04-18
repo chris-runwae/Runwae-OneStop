@@ -25,6 +25,10 @@ import {
   getEventRowForOwner,
   updateEvent,
 } from "@/lib/supabase/events";
+import {
+  adminGetEvent,
+  adminUpdateEvent,
+} from "@/lib/supabase/admin/events";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -63,10 +67,11 @@ type CreateEventFormValues = z.infer<typeof createEventSchema>;
 
 type CreateEventProps = {
   editEventId?: string;
+  adminMode?: boolean;
 };
 
 export default function CreateEvent(props: CreateEventProps = {}) {
-  const { editEventId } = props;
+  const { editEventId, adminMode } = props;
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,9 +106,12 @@ export default function CreateEvent(props: CreateEventProps = {}) {
     isPending: loadPending,
     isSuccess: loadSuccess,
   } = useQuery({
-    queryKey: ["event-row", loadId, user?.id],
-    queryFn: () => getEventRowForOwner(loadId!, user!.id),
-    enabled: Boolean(user && loadId),
+    queryKey: ["event-row", loadId, adminMode ? "admin" : user?.id],
+    queryFn: () =>
+      adminMode
+        ? adminGetEvent(loadId!)
+        : getEventRowForOwner(loadId!, user!.id),
+    enabled: adminMode ? Boolean(loadId) : Boolean(user && loadId),
   });
 
   useEffect(() => {
@@ -160,7 +168,7 @@ export default function CreateEvent(props: CreateEventProps = {}) {
       setIsPending(true);
 
       if (isEditMode && editEventId) {
-        await updateEvent(editEventId, user.id, {
+        const updatePayload = {
           name: values.eventName,
           start_date: values.startDate,
           start_time: values.startTime,
@@ -177,9 +185,16 @@ export default function CreateEvent(props: CreateEventProps = {}) {
           ...(loadedEvent?.status != null && loadedEvent.status !== ""
             ? { status: loadedEvent.status }
             : {}),
-        });
-        toast.success("Event updated sucessfully.");
-        router.push(eventDetail(editEventId));
+        };
+        if (adminMode) {
+          await adminUpdateEvent(editEventId, updatePayload);
+          toast.success("Event updated successfully.");
+          router.push(`/admin/events/${editEventId}`);
+        } else {
+          await updateEvent(editEventId, user.id, updatePayload);
+          toast.success("Event updated sucessfully.");
+          router.push(eventDetail(editEventId));
+        }
         return;
       }
 

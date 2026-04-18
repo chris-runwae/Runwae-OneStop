@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,21 @@ export function AcceptVendorModal({ vendorName, open, onClose, onAccept }: Props
   const [markVerified, setMarkVerified] = useState(true);
   const [sendWelcome, setSendWelcome] = useState(true);
   const [message, setMessage] = useState("");
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => setShow(true));
+    else setShow(false);
+  }, [open]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+    <div
+      className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
+      <div className={cn("w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl transition-all duration-200", show ? "scale-100 opacity-100" : "scale-95 opacity-0")}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-lg font-bold text-black">Accept Vendor</h2>
           <button type="button" onClick={onClose} className="text-muted-foreground hover:text-black transition-colors">

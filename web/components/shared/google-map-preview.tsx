@@ -6,6 +6,7 @@ import { MapPin } from "lucide-react";
 import type { CSSProperties } from "react";
 
 const LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
+const MAP_ID = "41780673945ab5c646722c1b";
 
 const mapContainerStyle: CSSProperties = {
   width: "100%",
@@ -30,6 +31,7 @@ function GoogleMapPreviewLoaded({
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries: LIBRARIES,
+    mapIds: [MAP_ID],
   });
 
   if (loadError) {
@@ -75,7 +77,7 @@ function GoogleMapPreviewLoaded({
           streetViewControl: false,
           fullscreenControl: false,
           clickableIcons: false,
-          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID, // required for AdvancedMarker
+          mapId: MAP_ID,
         }}
         onLoad={(map) => {
           new google.maps.marker.AdvancedMarkerElement({

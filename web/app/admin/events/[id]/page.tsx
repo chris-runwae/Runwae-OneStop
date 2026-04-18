@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ChevronLeft, Edit2, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EventOverviewTab } from "./components/overview-tab";
 import { AttendeesTab } from "./components/attendees-tab";
+import { adminGetEvent } from "@/lib/supabase/admin/events";
 
 const EVENT_ACTIONS = [
   "Add Admin Note",
@@ -22,7 +24,30 @@ const EVENT_ACTIONS = [
 ] as const;
 
 export default function AdminEventDetailPage() {
-  const [_adminNote, setAdminNote] = useState("");
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const { data: event, isPending, isError } = useQuery({
+    queryKey: ["admin-event", id],
+    queryFn: () => adminGetEvent(id),
+    enabled: !!id,
+  });
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center py-32 text-sm text-muted-foreground">
+        Loading event…
+      </div>
+    );
+  }
+
+  if (isError || !event) {
+    return (
+      <div className="flex items-center justify-center py-32 text-sm text-rose-500">
+        Failed to load event.
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6 sm:p-8">
@@ -38,6 +63,7 @@ export default function AdminEventDetailPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => router.push(`/admin/events/${id}/edit`)}
             className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-body hover:bg-muted/40 transition-colors"
           >
             <Edit2 className="size-3.5" /> Edit event
@@ -67,7 +93,7 @@ export default function AdminEventDetailPage() {
       </div>
 
       {/* Title */}
-      <h1 className="font-display text-3xl font-bold text-black">Afrobeat Fest</h1>
+      <h1 className="font-display text-3xl font-bold text-black">{event.name}</h1>
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
@@ -77,7 +103,7 @@ export default function AdminEventDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <EventOverviewTab />
+          <EventOverviewTab event={event} />
         </TabsContent>
 
         <TabsContent value="attendees" className="mt-6">

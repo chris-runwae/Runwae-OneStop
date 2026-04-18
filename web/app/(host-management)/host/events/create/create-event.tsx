@@ -1,6 +1,7 @@
 "use client";
 
 import { eventDetail, ROUTES } from "@/app/routes";
+import { GoogleMapsInput } from "@/components/shared/google-maps-input";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,7 +16,6 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { GoogleMapsInput } from "@/components/shared/google-maps-input";
 import { InputField } from "@/components/ui/input-field";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/context/AuthContext";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/supabase/events";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import {
   Camera,
   ChevronDown,
@@ -39,25 +40,24 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { FormSelect } from "./create-event.components";
 import { EVENT_CATEGORIES, VISIBILITY_OPTIONS } from "./create-event.constants";
+
+import { EventSuccessfulModal } from "@/components/modal/event-successful-modal";
+import { DateSelector, TimeSelector } from "@/components/shared/date";
+import { FormSelect } from "@/components/shared/form-select";
+import { uploadToCloudinary } from "@/lib/cloudinary-image-upload";
+import { supabase } from "@/lib/supabase/client";
 import {
   createEventDefaultValues,
   createEventSchema,
   mapEventRowToFormValues,
-} from "./create-event-schema";
-import { TimeSelector, DateSelector } from "@/components/shared/date";
-import { EventSuccessfulModal } from "@/components/modal/event-successful-modal";
+} from "./event-schema";
 
 const today = new Date().toISOString().split("T")[0];
-
-const DEFAULT_BANNER_URL =
-  "https://gratisography.com/wp-content/uploads/2025/05/gratisography-moon-robot-800x525.jpg";
 
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
 
@@ -93,10 +93,6 @@ export default function CreateEvent(props: CreateEventProps = {}) {
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
-  const visibilityLabel =
-    VISIBILITY_OPTIONS.find((o) => o.value === form.watch("visibility"))
-      ?.label ?? "Public";
-
   const [isPending, setIsPending] = useState(false);
   const [eventSlug, setEventSlug] = useState<string | null>(null);
 
@@ -109,6 +105,18 @@ export default function CreateEvent(props: CreateEventProps = {}) {
     queryFn: () => getEventRowForOwner(loadId!, user!.id),
     enabled: Boolean(user && loadId),
   });
+
+  useEffect(() => {
+    const fn = async () => {
+      const { data } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", editEventId);
+
+      console.log("data here", data);
+    };
+    fn();
+  }, []);
 
   useEffect(() => {
     if (!loadId || !user || loadPending) return;
@@ -128,6 +136,7 @@ export default function CreateEvent(props: CreateEventProps = {}) {
       lng: loadedEvent.longitude,
     });
     setBannerPreview(loadedEvent.image?.trim() || null);
+    if (loadedEvent.image) form.setValue("bannerImage", loadedEvent.image);
   }, [loadedEvent, isDuplicateMode, form]);
 
   const visibilityLabelMemo =
@@ -140,16 +149,18 @@ export default function CreateEvent(props: CreateEventProps = {}) {
       return;
     }
 
-    const imageUrl =
-      values.bannerImage != null
-        ? DEFAULT_BANNER_URL
-        : loadedEvent?.image?.trim() || DEFAULT_BANNER_URL;
+    if (!values.bannerImage) {
+      toast.error("Event image is required, please upload one");
+      return;
+    }
+
+    const imageUrl = await uploadToCloudinary(values.bannerImage);
 
     try {
       setIsPending(true);
 
       if (isEditMode && editEventId) {
-        await updateEvent(editEventId, {
+        await updateEvent(editEventId, user.id, {
           name: values.eventName,
           start_date: values.startDate,
           start_time: values.startTime,
@@ -167,7 +178,7 @@ export default function CreateEvent(props: CreateEventProps = {}) {
             ? { status: loadedEvent.status }
             : {}),
         });
-        toast.success("Event updated.");
+        toast.success("Event updated sucessfully.");
         router.push(eventDetail(editEventId));
         return;
       }
@@ -531,6 +542,7 @@ export default function CreateEvent(props: CreateEventProps = {}) {
                 "min-w-45",
               )}
               isLoading={isPending}
+              disabled={isPending}
             >
               {submitLabel}
             </Button>

@@ -1,10 +1,9 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ROUTES } from "@/app/routes";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { UseDiscloseActions } from "@/hooks/use-disclose";
 import { Check } from "lucide-react";
-import { Button } from "../ui/button";
-import { CopyButton } from "../shared/clipboard-copy-button";
 import Link from "next/link";
-import { ROUTES } from "@/app/routes";
+import { CopyButton } from "../shared/clipboard-copy-button";
 
 export const EventSuccessfulModal = ({
   isOpen,
@@ -20,18 +19,20 @@ export const EventSuccessfulModal = ({
             <Check className="text-white" size={20} strokeWidth={3} />
           </div>
 
-          {/* Heading */}
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight">
+          <DialogTitle className="space-y-2">
+            <p className="text-xl font-semibold tracking-tight">
               Event created successfully!
-            </h2>
+            </p>
             <p className="text-sm text-muted-foreground">
               Share your event link with attendees
             </p>
-          </div>
+          </DialogTitle>
 
           {/* Copy link box */}
-          <CopyButton text={slug} className="w-full" />
+          <CopyButton
+            text={window.location.origin + "/" + slug}
+            className="w-full"
+          />
 
           {/* CTA */}
           <Link

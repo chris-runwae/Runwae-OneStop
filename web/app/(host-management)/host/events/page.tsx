@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  eventDetail,
-  eventDuplicateHref,
-  eventEdit,
-  ROUTES,
-} from "@/app/routes";
+import { eventDetail, ROUTES } from "@/app/routes";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +14,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
@@ -31,82 +25,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
   ChevronDown,
-  Copy,
   DollarSign,
   MapPin,
-  MoreVertical,
-  Pencil,
   Search,
-  Settings2,
-  Trash2,
   Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { EventActionsMenu } from "./components/event-actions-menu";
 
 type ViewMode = "column" | "grid";
 
 const EVENT_FILTERS = ["All Events", "Published", "Upcoming"] as const;
 type EventFilter = (typeof EVENT_FILTERS)[number];
-
-function EventActionsMenu({
-  event,
-  onDelete,
-}: {
-  event: Event;
-  onDelete: (event: Event) => void;
-}) {
-  const router = useRouter();
-
-  return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex size-9 items-center justify-center rounded-md p-0 text-muted-foreground hover:bg-muted hover:text-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={`Actions for ${event.name}`}
-        >
-          <MoreVertical className="size-4 shrink-0" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={4} className="min-w-48">
-        <DropdownMenuItem
-          className="cursor-pointer gap-2"
-          onSelect={() => router.push(eventDetail(event.id))}
-        >
-          <Settings2 className="size-4 shrink-0" aria-hidden />
-          Manage event
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer gap-2"
-          onSelect={() => router.push(eventEdit(event.id))}
-        >
-          <Pencil className="size-4 shrink-0" aria-hidden />
-          Update event
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer gap-2"
-          onSelect={() => router.push(eventDuplicateHref(event.id))}
-        >
-          <Copy className="size-4 shrink-0" aria-hidden />
-          Duplicate event
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          className="cursor-pointer gap-2"
-          onSelect={() => onDelete(event)}
-        >
-          <Trash2 className="size-4 shrink-0" aria-hidden />
-          Delete event
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 export default function EventsPage() {
   const queryClient = useQueryClient();
@@ -306,8 +239,9 @@ export default function EventsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <EventActionsMenu
-                        event={event}
-                        onDelete={setDeleteTarget}
+                        id={event.id}
+                        name={event.name}
+                        onDelete={() => setDeleteTarget(event)}
                       />
                     </td>
                   </tr>
@@ -434,8 +368,9 @@ export default function EventsPage() {
                         Manage Event
                       </Link>
                       <EventActionsMenu
-                        event={event}
-                        onDelete={setDeleteTarget}
+                        id={event.id}
+                        name={event.name}
+                        onDelete={() => setDeleteTarget(event)}
                       />
                     </div>
                   </div>

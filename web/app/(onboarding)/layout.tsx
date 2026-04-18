@@ -1,5 +1,3 @@
-import { Toaster } from "@/components/ui/sonner";
-
 const OnboardingLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div>
@@ -16,14 +14,6 @@ const OnboardingLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex w-full flex-col px-8 lg:pr-6  pt-32 pb-12 lg:px-16 lg:pl-25 lg:w-1/2">
           {children}
         </div>
-        <Toaster
-          position="top-right"
-          // PS: if design has designated icons for success and error states, you can put them here
-          // icons={{
-          //   success: <SvgCheckmarkBig />,
-          //   error: <SvgErrorInfo />,
-          // }}
-        />
       </div>
     </div>
   );

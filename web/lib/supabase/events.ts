@@ -117,9 +117,7 @@ export const getEventDetailForOwner = async (
   const [hostsRes, subsRes] = await Promise.all([
     supabase
       .from("event_hosts")
-      .select(
-        "id, event_id, name, email, show_on_page, is_manager, created_at",
-      )
+      .select("id, event_id, name, email, show_on_page, is_manager, created_at")
       .eq("event_id", eventId)
       .order("created_at", { ascending: true }),
     supabase
@@ -226,16 +224,20 @@ export const createEvent = async (event: CreateEventData): Promise<Event> => {
 
 export const updateEvent = async (
   id: string,
+  userId: string,
   updates: Partial<CreateEventData>,
 ): Promise<Event> => {
   const { data, error } = await supabase
     .from("events")
     .update(updates)
     .eq("id", id)
+    .eq("user_id", userId)
     .select()
     .single();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Event not found or not authorized");
+
   return data;
 };
 

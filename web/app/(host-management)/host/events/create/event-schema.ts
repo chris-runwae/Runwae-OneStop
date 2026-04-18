@@ -18,7 +18,8 @@ export const createEventSchema = z.object({
   eventSlug: z.string().optional(),
   bookings: z.boolean().default(false),
   visibility: z.nativeEnum(EVENT_VISIBILITY),
-  bannerImage: z.instanceof(File).nullable(),
+  // event-schema.ts
+  bannerImage: z.union([z.instanceof(File).nullable(), z.string()]).optional(),
 });
 
 export const createEventDefaultValues = {

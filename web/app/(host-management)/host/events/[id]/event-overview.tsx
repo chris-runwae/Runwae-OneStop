@@ -3,11 +3,12 @@
 import { ROUTES, eventEdit } from "@/app/routes";
 import { GoogleMapPreview } from "@/components/shared/google-map-preview";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/context/AuthContext";
 import { getUserDisplayInfo } from "@/lib/auth";
 import { formatDate } from "@/lib/date";
+import { shareLink } from "@/lib/share";
 import {
   deleteEventHost,
   getEventDetailForOwner,
@@ -322,6 +323,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
               bannerSrc.startsWith("http://") ||
               bannerSrc.startsWith("https://")
             }
+            loading="eager"
           />
           <button
             type="button"
@@ -333,6 +335,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
         </div>
         <div className="flex flex-col gap-4">
           <div className="flex flex-1 flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+            {/* date & time */}
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
                 <Calendar className="size-5 text-muted-foreground" />
@@ -351,6 +354,7 @@ export default function EventOverview({ eventId }: { eventId: string }) {
                 </p>
               </div>
             </div>
+            {/* location */}
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
                 <MapPin className="size-5 text-muted-foreground" />
@@ -377,15 +381,17 @@ export default function EventOverview({ eventId }: { eventId: string }) {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "default" }),
-            "gap-2",
-          )}
+        <Button
+          variant={"outline"}
+          onClick={() =>
+            shareLink(
+              `${window.location.origin}/events/${detail.slug}`,
+              detail.name,
+            )
+          }
         >
           Share Event
-        </button>
+        </Button>
         <Link
           href={eventEdit(eventId)}
           className={cn(
@@ -461,10 +467,6 @@ export default function EventOverview({ eventId }: { eventId: string }) {
             Add Host
           </button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-body">{creatorName}</span> (
-          {user.email}) is the event creator.
-        </p>
         {coHostRows.length > 0 ? (
           <div className="flex flex-col gap-2">
             {coHostRows.map((host) => (

@@ -1,9 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import { MapPin } from "lucide-react";
 import type { CSSProperties } from "react";
+
+const LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
 
 const mapContainerStyle: CSSProperties = {
   width: "100%",
@@ -27,7 +29,7 @@ function GoogleMapPreviewLoaded({
 }) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    libraries: ["places"],
+    libraries: LIBRARIES,
   });
 
   if (loadError) {
@@ -59,7 +61,9 @@ function GoogleMapPreviewLoaded({
   const center = { lat: latitude, lng: longitude };
 
   return (
-    <div className={cn("min-h-36 w-full overflow-hidden rounded-lg", className)}>
+    <div
+      className={cn("min-h-36 w-full overflow-hidden rounded-lg", className)}
+    >
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={center}
@@ -71,10 +75,15 @@ function GoogleMapPreviewLoaded({
           streetViewControl: false,
           fullscreenControl: false,
           clickableIcons: false,
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID, // required for AdvancedMarker
         }}
-      >
-        <Marker position={center} />
-      </GoogleMap>
+        onLoad={(map) => {
+          new google.maps.marker.AdvancedMarkerElement({
+            map,
+            position: center,
+          });
+        }}
+      />
     </div>
   );
 }

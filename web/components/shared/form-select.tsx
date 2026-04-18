@@ -1,5 +1,3 @@
-"use client";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,14 +5,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { ChevronDown, List } from "lucide-react";
-import * as React from "react";
-
-export interface SelectOption {
-  value: string;
-  label: string;
-}
-
+import { ChevronDown } from "lucide-react";
 interface FormSelectProps {
   options: readonly SelectOption[] | SelectOption[];
   value: string;
@@ -22,6 +13,11 @@ interface FormSelectProps {
   placeholder: string;
   triggerClassName?: string;
   contentAlign?: "start" | "end";
+}
+
+export interface SelectOption {
+  value: string;
+  label: string;
 }
 
 export function FormSelect({
@@ -64,43 +60,5 @@ export function FormSelect({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-interface ThemeOption {
-  id: string;
-  name: string;
-}
-
-interface ThemeSelectorProps {
-  themes: readonly ThemeOption[] | ThemeOption[];
-  value: string;
-  onChange: (themeId: string) => void;
-}
-
-export function ThemeSelector({ themes, value, onChange }: ThemeSelectorProps) {
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {themes.map((theme) => {
-        const isSelected = value === theme.id;
-        return (
-          <button
-            key={theme.id}
-            type="button"
-            onClick={() => onChange(theme.id)}
-            className={cn(
-              "group flex aspect-video items-center justify-center rounded-lg border-2 bg-linear-to-br from-primary/10 to-primary/5 transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
-              isSelected
-                ? "border-primary ring-2 ring-primary/30"
-                : "border-border hover:border-primary/50",
-            )}
-            aria-pressed={isSelected}
-            aria-label={`Select ${theme.name}`}
-          >
-            <List className="size-12 text-primary/30" aria-hidden />
-          </button>
-        );
-      })}
-    </div>
   );
 }

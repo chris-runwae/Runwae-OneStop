@@ -33,7 +33,10 @@ export function ConfigureHostModal({
 
   return (
     <div className="flex flex-col gap-6">
-      <ShowOnEventPageToggle checked={showOnPage} onChange={onShowOnPageChange} />
+      <ShowOnEventPageToggle
+        checked={showOnPage}
+        onChange={onShowOnPageChange}
+      />
       <AccessControl isManager={isManager} onSelect={onIsManagerChange} />
       <Button
         variant="primary"

@@ -29,6 +29,6 @@ export function eventEdit(id: string) {
 }
 
 /** Open create flow with an event prefilled as a duplicate */
-export function eventDuplicateHref(id: string) {
+export function eventDuplicate(id: string) {
   return `${ROUTES.host.eventsCreate}?duplicate=${encodeURIComponent(id)}`;
 }

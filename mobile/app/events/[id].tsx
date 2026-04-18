@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
 import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
+import { trackEventView } from '@/utils/supabase/analytics.service';
 import { getEventRegistration, registerForEvent } from '@/utils/supabase/event-registrations.service';
 import { supabase } from '@/utils/supabase/client';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -63,6 +64,10 @@ const EventDetailScreen = () => {
       .then((reg) => setIsRegistered(reg?.status === 'confirmed'))
       .catch(() => {});
   }, [event?.id, user?.id]);
+
+  useEffect(() => {
+    if (event?.id) trackEventView(event.id);
+  }, [event?.id]);
 
   if (loading) return <EventDetailSkeleton />;
   if (error || !event) return <DetailNotFound type="experience" />;

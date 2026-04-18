@@ -33,6 +33,10 @@ CREATE POLICY "Users update own registrations"
   ON public.event_registrations FOR UPDATE TO authenticated
   USING (user_id = auth.uid());
 
+-- Add current_participants counter to events if it doesn't exist yet
+ALTER TABLE public.events
+  ADD COLUMN IF NOT EXISTS current_participants INT NOT NULL DEFAULT 0;
+
 -- Auto-update current_participants on events when registration status changes
 CREATE OR REPLACE FUNCTION public.sync_event_participant_count()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$

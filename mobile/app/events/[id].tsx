@@ -18,12 +18,16 @@ import DetailNotFound from '@/components/experience/DetailNotFound';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
 import { useTrips } from '@/context/TripsContext';
+import { useAuth } from '@/context/AuthContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
 import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
+import { getEventRegistration, registerForEvent } from '@/utils/supabase/event-registrations.service';
+import { supabase } from '@/utils/supabase/client';
+import { useStripe } from '@stripe/stripe-react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
@@ -45,12 +49,75 @@ const EventDetailScreen = () => {
   const [showFullMap, setShowFullMap] = useState(false);
   const [addToTripOpen, setAddToTripOpen] = useState(false);
   const [ideaSaved, setIdeaSaved] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
   const { event, relatedEvents, otherEvents, loading, error } = useEvent(id);
   const { openDirections } = useDirections();
   const { addIdeaToTrip } = useTrips();
+  const { user } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  useEffect(() => {
+    if (!event?.id || !user?.id) return;
+    getEventRegistration(event.id, user.id)
+      .then((reg) => setIsRegistered(reg?.status === 'confirmed'))
+      .catch(() => {});
+  }, [event?.id, user?.id]);
 
   if (loading) return <EventDetailSkeleton />;
   if (error || !event) return <DetailNotFound type="experience" />;
+
+  const handleRegister = async () => {
+    if (!event || !user?.id) return;
+    setRegisterLoading(true);
+    try {
+      if (event.price && event.price > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const resp = await fetch(
+          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token ?? ''}`,
+              apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
+            },
+            body: JSON.stringify({ amount: event.price, currency: event.currency ?? 'USD' }),
+          }
+        );
+        const { clientSecret, error: fnErr } = await resp.json();
+        if (fnErr) throw new Error(fnErr);
+
+        const { error: initErr } = await initPaymentSheet({
+          merchantDisplayName: 'Runwae',
+          paymentIntentClientSecret: clientSecret,
+          applePay: { merchantCountryCode: 'GB' },
+          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
+          style: 'automatic',
+        });
+        if (initErr) throw new Error(initErr.message);
+
+        const { error: payErr } = await presentPaymentSheet();
+        if (payErr) {
+          if (payErr.code !== 'Canceled') Alert.alert('Payment failed', payErr.message);
+          return;
+        }
+
+        await registerForEvent(event.id, user.id, {
+          amountPaid: event.price,
+          currency: event.currency ?? 'USD',
+        });
+      } else {
+        await registerForEvent(event.id, user.id);
+      }
+      setIsRegistered(true);
+      Alert.alert("You're in!", `Successfully registered for ${event.title}.`);
+    } catch (err) {
+      Alert.alert('Registration failed', (err as Error).message);
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
 
   const handleGetDirections = () =>
     openDirections({ title: event.title, location: event.location });
@@ -106,7 +173,7 @@ const EventDetailScreen = () => {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         contentContainerStyle={{
-          paddingBottom: (formattedPrice ? 100 : 40) + insets.bottom,
+          paddingBottom: 100 + insets.bottom,
         }}>
         <EventHero
           imageUri={event.image}
@@ -246,12 +313,13 @@ const EventDetailScreen = () => {
         )}
       </Animated.ScrollView>
 
-      {formattedPrice && (
-        <EventPricingBar
-          formattedPrice={formattedPrice}
-          isSoldOut={spotsLeft != null && spotsLeft <= 0}
-        />
-      )}
+      <EventPricingBar
+        formattedPrice={formattedPrice}
+        isSoldOut={spotsLeft != null && spotsLeft <= 0}
+        isRegistered={isRegistered}
+        isLoading={registerLoading}
+        onPress={handleRegister}
+      />
 
       <FullScreenMapModal
         visible={showFullMap}

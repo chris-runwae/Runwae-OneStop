@@ -9,9 +9,17 @@ export interface EventRegistration {
   currency: string | null;
   stripePaymentIntent: string | null;
   createdAt: string;
+  event?: {
+    id: string;
+    title: string;
+    image: string | null;
+    date: string | null;
+    location: string | null;
+  };
 }
 
 function mapRow(row: Record<string, unknown>): EventRegistration {
+  const eventData = row.events as Record<string, unknown> | null;
   return {
     id: row.id as string,
     eventId: row.event_id as string,
@@ -21,6 +29,15 @@ function mapRow(row: Record<string, unknown>): EventRegistration {
     currency: (row.currency as string | null) ?? null,
     stripePaymentIntent: (row.stripe_payment_intent as string | null) ?? null,
     createdAt: row.created_at as string,
+    event: eventData
+      ? {
+          id: eventData.id as string,
+          title: eventData.title as string,
+          image: (eventData.image as string | null) ?? null,
+          date: (eventData.date as string | null) ?? null,
+          location: (eventData.location as string | null) ?? null,
+        }
+      : undefined,
   };
 }
 
@@ -52,7 +69,7 @@ export async function registerForEvent(
 export async function getUserEventRegistrations(userId: string): Promise<EventRegistration[]> {
   const { data, error } = await supabase
     .from('event_registrations')
-    .select('*')
+    .select('*, events(id, title, image, date, location)')
     .eq('user_id', userId)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false });

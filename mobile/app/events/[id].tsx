@@ -68,7 +68,11 @@ const EventDetailScreen = () => {
   if (error || !event) return <DetailNotFound type="experience" />;
 
   const handleRegister = async () => {
-    if (!event || !user?.id) return;
+    if (!event) return;
+    if (!user?.id) {
+      Alert.alert('Sign in required', 'Please sign in to register for events.');
+      return;
+    }
     setRegisterLoading(true);
     try {
       if (event.price && event.price > 0) {
@@ -88,6 +92,9 @@ const EventDetailScreen = () => {
         const { clientSecret, error: fnErr } = await resp.json();
         if (fnErr) throw new Error(fnErr);
 
+        // Extract payment intent ID from client secret (format: pi_xxx_secret_yyy)
+        const paymentIntentId = clientSecret?.split('_secret_')[0] ?? null;
+
         const { error: initErr } = await initPaymentSheet({
           merchantDisplayName: 'Runwae',
           paymentIntentClientSecret: clientSecret,
@@ -106,6 +113,7 @@ const EventDetailScreen = () => {
         await registerForEvent(event.id, user.id, {
           amountPaid: event.price,
           currency: event.currency ?? 'USD',
+          stripePaymentIntent: paymentIntentId,
         });
       } else {
         await registerForEvent(event.id, user.id);
@@ -154,7 +162,7 @@ const EventDetailScreen = () => {
       : [];
 
   const formattedPrice =
-    event.price != null
+    event.price != null && event.price > 0
       ? `${event.currency ?? 'USD'} ${event.price.toLocaleString()}`
       : null;
 

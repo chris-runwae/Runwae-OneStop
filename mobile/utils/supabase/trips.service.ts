@@ -11,6 +11,51 @@ export interface TripData {
   description?: string;
 }
 
+export interface TripInvitePreview {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+}
+
+export async function getTripByJoinCode(code: string): Promise<TripInvitePreview | null> {
+  const { data, error } = await supabase
+    .rpc('get_group_by_join_code', { p_code: code.toUpperCase().trim() });
+
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) return null;
+
+  const row = data[0];
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string | null) ?? null,
+    memberCount: Number(row.member_count),
+  };
+}
+
+export async function joinTripByCode(code: string, userId: string): Promise<string> {
+  const preview = await getTripByJoinCode(code);
+  if (!preview) throw new Error('Invalid invite code. Check the link and try again.');
+
+  // Check if already a member
+  const { data: existing } = await supabase
+    .from('group_members')
+    .select('id')
+    .eq('group_id', preview.id)
+    .eq('user_id', userId)
+    .single();
+
+  if (existing) return preview.id; // already a member — navigate silently
+
+  const { error } = await supabase
+    .from('group_members')
+    .insert({ group_id: preview.id, user_id: userId, role: 'member' });
+
+  if (error) throw new Error(error.message);
+  return preview.id;
+}
+
 export const createTrip = async (trip: TripData) => {
   try {
     let finalImageUrl = trip.cover_img_url;

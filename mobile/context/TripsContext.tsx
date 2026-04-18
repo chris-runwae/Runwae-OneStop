@@ -56,6 +56,7 @@ import {
   SavedItineraryItem,
   CreateSavedItemInput,
 } from '@/hooks/useIdeaActions';
+import { joinTripByCode } from '@/utils/supabase/trips.service';
 
 // ================================================================
 // Context shape
@@ -137,6 +138,7 @@ export interface TripsContextType {
     input: CreateSavedItemInput
   ) => Promise<void>;
   removeIdea: (ideaId: string) => Promise<void>;
+  joinTrip: (code: string) => Promise<string>;
 }
 
 const TripsContext = createContext<TripsContextType | undefined>(undefined);
@@ -747,6 +749,17 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // ----------------------------------------------------------------
+  // joinTrip — join a trip by invite code, then refresh both lists
+  // ----------------------------------------------------------------
+
+  const joinTrip = useCallback(async (code: string): Promise<string> => {
+    if (!user?.id) throw new Error('Not authenticated');
+    const tripId = await joinTripByCode(code, user.id);
+    await Promise.all([refreshMyTrips(), refreshJoinedTrips()]);
+    return tripId;
+  }, [user?.id, refreshMyTrips, refreshJoinedTrips]);
+
+  // ----------------------------------------------------------------
   // Context value
   // ----------------------------------------------------------------
 
@@ -790,6 +803,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         addIdea,
         addIdeaToTrip,
         removeIdea,
+        joinTrip,
       }}>
       {children}
     </TripsContext.Provider>

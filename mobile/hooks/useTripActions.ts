@@ -49,6 +49,7 @@ export interface Trip {
   created_at: string;
   updated_at: string;
   cover_image_url: string | null;
+  join_code: string | null;
 }
 
 export interface TripDetails {

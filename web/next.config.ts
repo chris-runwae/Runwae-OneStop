@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["@react-pdf/renderer"],
   images: {
     remotePatterns: [
       new URL("https://gratisography.com/**"),

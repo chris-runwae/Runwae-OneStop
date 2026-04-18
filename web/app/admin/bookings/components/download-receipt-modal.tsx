@@ -1,3 +1,5 @@
+"use client";
+
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -11,6 +13,7 @@ type Props = {
 
 export function DownloadReceiptModal({ booking, open, onClose }: Props) {
   const [show, setShow] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (open) requestAnimationFrame(() => setShow(true));
@@ -19,10 +22,38 @@ export function DownloadReceiptModal({ booking, open, onClose }: Props) {
 
   if (!open || !booking) return null;
 
-  const receiptId = `N29F-${Math.floor(10000 + Math.random() * 89999)}`;
+  const receiptId = `RWE-${booking.bookingRef.replace(/\W/g, "").toUpperCase().slice(0, 8)}`;
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const [{ pdf }, { ReceiptPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("./receipt-pdf"),
+      ]);
+
+      const blob = await pdf(
+        // @ts-expect-error — createElement mismatch between react-pdf and react types
+        ReceiptPDF({ booking, receiptId })
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt_${receiptId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      onClose();
+    } catch (err) {
+      console.error("Failed to generate receipt PDF:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
-    <div className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}
+    <div
+      className={cn("fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200", show ? "opacity-100" : "opacity-0")}
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
     >
       <div className={cn(
@@ -36,19 +67,19 @@ export function DownloadReceiptModal({ booking, open, onClose }: Props) {
             <X className="size-5" />
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mb-5">Download and share your Booking receipt</p>
+        <p className="text-xs text-muted-foreground mb-5">Download and share your booking receipt</p>
 
-        {/* Receipt card preview */}
+        {/* Receipt preview */}
         <div className="rounded-xl border border-border bg-muted/20 p-5">
           <p className="text-center text-sm font-semibold text-black mb-4">Booking Receipt</p>
           <dl className="flex flex-col gap-2.5">
             {[
               { label: "Receipt ID", value: receiptId },
-              { label: "Booking #", value: booking.id },
+              { label: "Booking #", value: booking.bookingRef },
               { label: "Date issued", value: booking.bookingDate },
               { label: "Event Name", value: booking.eventName },
               { label: "Booking Type", value: booking.bookingType },
-              { label: "Booking Date", value: booking.bookingDate },
+              { label: "Total", value: booking.totalRevenue },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between">
                 <dt className="text-xs text-muted-foreground">{item.label}</dt>
@@ -60,9 +91,11 @@ export function DownloadReceiptModal({ booking, open, onClose }: Props) {
 
         <button
           type="button"
-          className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary/90 transition-colors"
+          onClick={handleDownload}
+          disabled={downloading}
+          className="mt-5 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60 transition-colors"
         >
-          Download Receipt
+          {downloading ? "Generating…" : "Download Receipt"}
         </button>
       </div>
     </div>

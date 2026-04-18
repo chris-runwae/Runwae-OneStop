@@ -181,6 +181,7 @@ export default function TripDetailScreen() {
         showMoreOptions={true}
         dropdownOptions={dropdownOptions}
         hideFavorite={true}
+        joinCode={activeTrip?.join_code ?? null}
       />
 
       <Animated.ScrollView

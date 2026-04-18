@@ -9,6 +9,7 @@ import {
   Share,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
@@ -84,6 +85,8 @@ const ShareModal = ({
   joinCode,
 }: ShareModalProps) => {
   const [copied, setCopied] = useState(false);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   return (
     <Modal
@@ -150,9 +153,9 @@ const ShareModal = ({
                 Invite via link
               </Text>
               {/* Code chip with copy button */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, gap: 10, marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1c1c1e' : '#F3F4F6', borderRadius: 12, padding: 14, gap: 10, marginBottom: 10 }}>
                 <Link2 size={16} color="#6B7280" />
-                <Text style={{ flex: 1, fontSize: 14, color: '#374151', letterSpacing: 3, fontWeight: '700' }}>
+                <Text style={{ flex: 1, fontSize: 14, color: isDark ? '#e5e7eb' : '#374151', letterSpacing: 3, fontWeight: '700' }}>
                   {joinCode}
                 </Text>
                 <TouchableOpacity onPress={async () => {
@@ -165,18 +168,24 @@ const ShareModal = ({
               </View>
               {/* Native share button */}
               <TouchableOpacity
-                onPress={() => Share.share({
-                  message: `Join my trip on Runwae!\nhttps://app.runwae.io/invite/${joinCode}`,
-                  url: `https://app.runwae.io/invite/${joinCode}`,
-                })}
+                onPress={async () => {
+                  try {
+                    await Share.share({
+                      message: `Join my trip on Runwae!\nhttps://app.runwae.io/invite/${joinCode}`,
+                      url: `https://app.runwae.io/invite/${joinCode}`,
+                    });
+                  } catch {
+                    // user dismissed or share unavailable
+                  }
+                }}
                 style={{ backgroundColor: '#FF1F8C', borderRadius: 10, paddingVertical: 13, alignItems: 'center' }}>
                 <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Share Invite Link</Text>
               </TouchableOpacity>
               {/* Divider */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18, marginBottom: 4 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
-                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>or share to</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#374151' : '#E5E7EB' }} />
+                <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9CA3AF' }}>or share to</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: isDark ? '#374151' : '#E5E7EB' }} />
               </View>
             </View>
           )}

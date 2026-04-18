@@ -194,10 +194,14 @@ export default function TripMembersTab({ trip }: Props) {
               Alert.alert('No invite code', 'Please try again later.');
               return;
             }
-            await Share.share({
-              message: `Join my trip "${trip.name}" on Runwae!\nhttps://app.runwae.io/invite/${code}`,
-              url: `https://app.runwae.io/invite/${code}`,
-            });
+            try {
+              await Share.share({
+                message: `Join my trip "${trip.name}" on Runwae!\nhttps://app.runwae.io/invite/${code}`,
+                url: `https://app.runwae.io/invite/${code}`,
+              });
+            } catch {
+              // user dismissed
+            }
           }}
         >
           <UserPlus size={18} strokeWidth={1.5} color="#FF1F8C" />

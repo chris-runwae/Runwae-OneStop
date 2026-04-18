@@ -211,8 +211,6 @@ export default function HotelDetailScreen() {
     });
   };
 
-  console.log('rates: ', rates);
-
   return (
     <View
       style={[

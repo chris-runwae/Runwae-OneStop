@@ -71,6 +71,7 @@ export default function PaymentScreen() {
   const [email, setEmail] = useState(user?.email ?? "");
   const [loading, setLoading] = useState(false);
   const [paymentReady, setPaymentReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   const price = parseFloat(priceStr ?? "0");
   const commission = parseFloat(commissionStr ?? "0");
@@ -106,7 +107,9 @@ export default function PaymentScreen() {
         if (initErr) throw new Error(initErr.message);
         setPaymentReady(true);
       } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not load payment. Please try again.';
         console.error('[Stripe] init failed:', e);
+        setInitError(msg);
       }
     })();
   }, [price, prebookId]);
@@ -126,13 +129,23 @@ export default function PaymentScreen() {
         return;
       }
 
-      // Stripe confirmed — now finalise the booking with LiteAPI
-      const bookRes = await bookHotel({
-        prebookId,
-        holder: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() },
-        payment: { method: 'TRANSACTION_ID', transactionId },
-        guests: [{ occupancyNumber: 1, firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() }],
-      });
+      // Stripe confirmed — now finalise the booking with LiteAPI.
+      // If this fails, the payment was already captured. Show a support message.
+      let bookRes;
+      try {
+        bookRes = await bookHotel({
+          prebookId,
+          holder: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() },
+          payment: { method: 'TRANSACTION_ID', transactionId },
+          guests: [{ occupancyNumber: 1, firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() }],
+        });
+      } catch (bookErr) {
+        Alert.alert(
+          'Booking error',
+          'Your payment was processed but we could not confirm your booking. Please contact support@runwae.io with your payment reference.',
+        );
+        throw bookErr;
+      }
 
       if (user?.id) {
         await logHotelBooking({
@@ -152,7 +165,7 @@ export default function PaymentScreen() {
           currency: bookRes.data.currency,
           totalAmount: bookRes.data.price,
           commissionAmount: commission,
-          bookingType: (bookingType as 'individual' | 'group') ?? 'individual',
+          bookingType: (bookingType === 'individual' || bookingType === 'group') ? bookingType : 'individual',
           rawResponse: bookRes as unknown as object,
         });
       }
@@ -302,18 +315,22 @@ export default function PaymentScreen() {
           <Lock size={12} color="#22C55E" />
           <Text style={styles.secureText}>Secured & encrypted</Text>
         </View>
-        <Pressable
-          style={[styles.payBtn, (!paymentReady || loading) && { opacity: 0.7 }]}
-          onPress={handlePay}
-          disabled={!paymentReady || loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : !paymentReady ? (
-            <Text style={styles.payBtnText}>Loading payment...</Text>
-          ) : (
-            <Text style={styles.payBtnText}>Pay {currency} {price.toFixed(0)}</Text>
-          )}
-        </Pressable>
+        {initError ? (
+          <Text style={[styles.payBtnText, { color: '#EF4444', fontSize: 13 }]}>{initError}</Text>
+        ) : (
+          <Pressable
+            style={[styles.payBtn, (!paymentReady || loading) && { opacity: 0.7 }]}
+            onPress={handlePay}
+            disabled={!paymentReady || loading}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : !paymentReady ? (
+              <Text style={styles.payBtnText}>Loading payment...</Text>
+            ) : (
+              <Text style={styles.payBtnText}>Pay {currency} {price.toFixed(0)}</Text>
+            )}
+          </Pressable>
+        )}
       </View>
     </KeyboardAvoidingView>
   );

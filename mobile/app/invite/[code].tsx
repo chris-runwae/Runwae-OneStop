@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
-import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { getTripByJoinCode, TripInvitePreview } from '@/utils/supabase/trips.service';
 
@@ -15,13 +14,11 @@ export default function InviteScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
   const { joinTrip } = useTrips();
 
   const [trip, setTrip] = useState<TripInvitePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
-  const [alreadyMember, setAlreadyMember] = useState(false);
 
   useEffect(() => {
     if (!code) { setLoading(false); return; }
@@ -39,11 +36,7 @@ export default function InviteScreen() {
       router.replace(`/(tabs)/(trips)/${tripId}` as any);
     } catch (err) {
       const msg = (err as Error).message;
-      if (msg.toLowerCase().includes('already')) {
-        setAlreadyMember(true);
-      } else {
-        Alert.alert('Could not join', msg);
-      }
+      Alert.alert('Could not join', msg);
     } finally {
       setJoining(false);
     }
@@ -83,20 +76,9 @@ export default function InviteScreen() {
           {trip.memberCount} {trip.memberCount === 1 ? 'member' : 'members'}
         </Text>
 
-        {alreadyMember ? (
-          <>
-            <Text style={[styles.sub, { color: colors.textColors.subtle, marginTop: 12 }]}>
-              You're already a member of this trip.
-            </Text>
-            <Pressable style={styles.btn} onPress={() => router.replace(`/(tabs)/(trips)/${trip.id}` as any)}>
-              <Text style={styles.btnText}>Open Trip</Text>
-            </Pressable>
-          </>
-        ) : (
-          <Pressable style={[styles.btn, joining && { opacity: 0.7 }]} onPress={handleJoin} disabled={joining}>
-            {joining ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Join Trip</Text>}
-          </Pressable>
-        )}
+        <Pressable style={[styles.btn, joining && { opacity: 0.7 }]} onPress={handleJoin} disabled={joining}>
+          {joining ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Join Trip</Text>}
+        </Pressable>
 
         <Pressable style={styles.cancelBtn} onPress={() => router.replace('/(tabs)')}>
           <Text style={[styles.cancelText, { color: colors.textColors.subtle }]}>Maybe later</Text>

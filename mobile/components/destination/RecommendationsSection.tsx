@@ -8,6 +8,7 @@ import { savedItemFromHotel } from '@/utils/savedIdeaInputs';
 import { lookupViatorDestinationId } from '@/utils/viator/viatorDestinationLookup';
 import type { CategoryKey } from '@/utils/viator/viatorCategoryCache';
 import { FlashList } from '@shopify/flash-list';
+import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -122,9 +123,10 @@ function ViatorRecommendationsList({
 
 interface HotelRecommendationCardProps {
   hotel: LiteAPIHotelRateItem;
+  eventId?: string;
 }
 
-function HotelRecommendationCard({ hotel }: HotelRecommendationCardProps) {
+function HotelRecommendationCard({ hotel, eventId }: HotelRecommendationCardProps) {
   const { addIdeaToTrip } = useTrips();
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -151,9 +153,27 @@ function HotelRecommendationCard({ hotel }: HotelRecommendationCardProps) {
     }
   };
 
+  const handleViewHotel = () => {
+    const { checkin, checkout } = defaultCheckinCheckout();
+    router.push({
+      pathname: '/hotel/[hotelId]',
+      params: {
+        hotelId: hotel.hotelId,
+        checkin,
+        checkout,
+        adults: '2',
+        ...(eventId ? { eventId } : {}),
+      },
+    });
+  };
+
   return (
     <>
-      <View className="mb-6 mr-4" style={{ width: 177 }}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={handleViewHotel}
+        className="mb-6 mr-4"
+        style={{ width: 177 }}>
         <View className="relative">
           <Image
             source={{ uri: hotel.thumbnail ?? undefined }}
@@ -187,14 +207,14 @@ function HotelRecommendationCard({ hotel }: HotelRecommendationCardProps) {
           <View className="flex-row items-end justify-between mt-4">
             <View />
             <TouchableOpacity
-              onPress={() => setIsModalVisible(true)}
+              onPress={(e) => { e.stopPropagation?.(); setIsModalVisible(true); }}
               className="bg-primary flex-row items-center gap-x-1 h-[35px] w-[66px] justify-center rounded-[6px]">
               <Plus size={14} color="#fff" />
               <Text className="text-white text-sm">Add</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <CustomModal
         isVisible={isModalVisible}
@@ -216,10 +236,12 @@ function HotelRecommendationCard({ hotel }: HotelRecommendationCardProps) {
 
 interface StayRecommendationsListProps {
   destinationTitle: string;
+  eventId?: string;
 }
 
 function StayRecommendationsList({
   destinationTitle,
+  eventId,
 }: StayRecommendationsListProps) {
   const { checkin, checkout } = useMemo(() => defaultCheckinCheckout(), []);
   const { data, citySections, loading, error } = useHotels(
@@ -262,7 +284,7 @@ function StayRecommendationsList({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 20 }}
       keyExtractor={(item) => item.hotelId}
-      renderItem={({ item }) => <HotelRecommendationCard hotel={item} />}
+      renderItem={({ item }) => <HotelRecommendationCard hotel={item} eventId={eventId} />}
       ListEmptyComponent={
         <View
           className="flex items-center justify-center py-10"
@@ -290,10 +312,12 @@ function StayRecommendationsList({
 
 interface RecommendationsSectionProps {
   destination: { title: string; location: string };
+  eventId?: string;
 }
 
 const RecommendationsSection = ({
   destination,
+  eventId,
 }: RecommendationsSectionProps) => {
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>('All');
   const [destinationId, setDestinationId] = useState<string | null>(null);
@@ -343,7 +367,7 @@ const RecommendationsSection = ({
       />
 
       {activeCategory === 'Stay' ? (
-        <StayRecommendationsList destinationTitle={destination.title} />
+        <StayRecommendationsList destinationTitle={destination.title} eventId={eventId} />
       ) : (
         <ViatorRecommendationsList
           category={activeCategory as CategoryKey}

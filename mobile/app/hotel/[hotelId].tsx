@@ -84,12 +84,14 @@ export default function HotelDetailScreen() {
     checkin,
     checkout,
     adults: adultsStr,
+    eventId,
   } = useLocalSearchParams<{
     hotelId: string;
     tripId: string;
     checkin: string;
     checkout: string;
     adults: string;
+    eventId?: string;
   }>();
 
   const adults = parseInt(adultsStr ?? '1', 10);
@@ -204,6 +206,7 @@ export default function HotelDetailScreen() {
         checkout,
         adults: String(adults),
         tripId,
+        ...(eventId ? { eventId } : {}),
       },
     });
   };

@@ -35,6 +35,7 @@ export default function BookingScreen() {
     adults: adultsStr,
     tripId,
     rateId,
+    eventId,
   } = useLocalSearchParams<{
     hotelId: string;
     hotelName: string;
@@ -50,6 +51,7 @@ export default function BookingScreen() {
     tripId: string;
     /** Carried from room selection for reconciliation with the vendor rate. */
     rateId?: string;
+    eventId?: string;
   }>();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -107,6 +109,7 @@ export default function BookingScreen() {
           guests: String(effectiveAdults),
           bookingType,
           tripId,
+          ...(eventId ? { eventId } : {}),
         },
       });
     } catch (err) {

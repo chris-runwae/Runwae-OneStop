@@ -62,6 +62,7 @@ export interface HotelBookingPayload {
   tripId: string | null;
   userId: string;
   vendorId?: string | null;
+  eventId?: string | null;
   hotelId: string;
   hotelName: string;
   bookingRef: string;

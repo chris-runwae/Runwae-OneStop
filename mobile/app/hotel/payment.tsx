@@ -43,6 +43,7 @@ export default function PaymentScreen() {
     guests: guestsStr,
     bookingType,
     tripId,
+    eventId,
   } = useLocalSearchParams<{
     hotelId: string;
     hotelName: string;
@@ -58,6 +59,7 @@ export default function PaymentScreen() {
     guests: string;
     bookingType: string;
     tripId: string;
+    eventId?: string;
   }>();
 
   const colorScheme = useColorScheme() ?? "light";
@@ -152,6 +154,7 @@ export default function PaymentScreen() {
           tripId: tripId ?? null,
           userId: user.id,
           vendorId: null,
+          eventId: eventId ?? null,
           hotelId,
           hotelName,
           bookingRef: bookRes.data.bookingId,

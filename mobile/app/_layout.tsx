@@ -9,6 +9,7 @@ import {
   Inter_800ExtraBold,
   Inter_900Black,
 } from '@expo-google-fonts/inter';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import {
   DarkTheme,
   DefaultTheme,
@@ -199,22 +200,27 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <KeyboardProvider>
-          <AuthProvider>
-            <TripsProvider>
-              <StatusBar style="auto" />
-              <ToastManager
-                showProgressBar={false}
-                style={{ borderRadius: 20, boxShadow: 'none' }}
-                theme={colorScheme === 'dark' ? 'dark' : 'light'}
-              />
-              <RouteGuard />
-            </TripsProvider>
-          </AuthProvider>
-        </KeyboardProvider>
-      </GestureHandlerRootView>
-    </ThemeProvider>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+      merchantIdentifier="merchant.io.runwae.app"
+    >
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <KeyboardProvider>
+            <AuthProvider>
+              <TripsProvider>
+                <StatusBar style="auto" />
+                <ToastManager
+                  showProgressBar={false}
+                  style={{ borderRadius: 20, boxShadow: 'none' }}
+                  theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                />
+                <RouteGuard />
+              </TripsProvider>
+            </AuthProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    </StripeProvider>
   );
 }

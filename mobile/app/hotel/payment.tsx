@@ -1,7 +1,8 @@
+import { useStripe } from "@stripe/stripe-react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, CreditCard, Lock } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,6 +22,7 @@ import { Colors, textStyles } from "@/constants";
 import { useAuth } from "@/context/AuthContext";
 import { logHotelBooking } from "@/utils/supabase/hotel-bookings.service";
 import { bookHotel } from "@/utils/supabase/liteapi.service";
+import { supabase } from "@/utils/supabase/client";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
@@ -62,38 +64,76 @@ export default function PaymentScreen() {
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(user?.email ?? "");
   const [loading, setLoading] = useState(false);
+  const [paymentReady, setPaymentReady] = useState(false);
 
   const price = parseFloat(priceStr ?? "0");
   const commission = parseFloat(commissionStr ?? "0");
   const guests = parseInt(guestsStr ?? "1", 10);
 
+  useEffect(() => {
+    if (!price || !prebookId) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token ?? ''}`,
+              apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
+            },
+            body: JSON.stringify({ amount: price, currency }),
+          }
+        );
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+
+        const { error: initErr } = await initPaymentSheet({
+          merchantDisplayName: 'Runwae',
+          paymentIntentClientSecret: json.clientSecret,
+          applePay: { merchantCountryCode: 'GB' },
+          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
+          style: 'automatic',
+        });
+        if (initErr) throw new Error(initErr.message);
+        setPaymentReady(true);
+      } catch (e) {
+        console.error('[Stripe] init failed:', e);
+      }
+    })();
+  }, [price, prebookId]);
+
   const handlePay = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      Alert.alert("Missing info", "Please fill in your name and email.");
+      Alert.alert('Missing info', 'Please fill in your name and email.');
       return;
     }
     setLoading(true);
     try {
+      const { error: paymentError } = await presentPaymentSheet();
+      if (paymentError) {
+        if (paymentError.code !== 'Canceled') {
+          Alert.alert('Payment failed', paymentError.message);
+        }
+        return;
+      }
+
+      // Stripe confirmed — now finalise the booking with LiteAPI
       const bookRes = await bookHotel({
         prebookId,
         holder: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() },
-        payment: { method: "TRANSACTION_ID", transactionId },
-        guests: [
-          {
-            occupancyNumber: 1,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: email.trim(),
-          },
-        ],
+        payment: { method: 'TRANSACTION_ID', transactionId },
+        guests: [{ occupancyNumber: 1, firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() }],
       });
 
-      // Log booking in Supabase
       if (user?.id) {
         await logHotelBooking({
           tripId: tripId ?? null,
@@ -108,22 +148,22 @@ export default function PaymentScreen() {
           checkin,
           checkout,
           guests,
-          roomCount: bookingType === "group" ? guests : 1,
+          roomCount: bookingType === 'group' ? guests : 1,
           currency: bookRes.data.currency,
           totalAmount: bookRes.data.price,
           commissionAmount: commission,
-          bookingType: (bookingType as "individual" | "group") ?? "individual",
+          bookingType: (bookingType as 'individual' | 'group') ?? 'individual',
           rawResponse: bookRes as unknown as object,
         });
       }
 
       router.replace({
-        pathname: "/hotel/confirmation",
+        pathname: '/hotel/confirmation',
         params: {
           hotelName,
           hotelThumb,
           bookingRef: bookRes.data.bookingId,
-          confirmationCode: bookRes.data.hotelConfirmationCode ?? "",
+          confirmationCode: bookRes.data.hotelConfirmationCode ?? '',
           checkin,
           checkout,
           hotelId,
@@ -131,7 +171,7 @@ export default function PaymentScreen() {
         },
       });
     } catch (err) {
-      Alert.alert("Payment failed", (err as Error).message || "Please try again.");
+      Alert.alert('Booking failed', (err as Error).message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -240,7 +280,7 @@ export default function PaymentScreen() {
           <View style={styles.paymentNote}>
             <CreditCard size={16} color="#FF1F8C" />
             <Text style={[styles.paymentNoteText, { color: colors.textColors.subtle }]}>
-              Payment is processed securely via LiteAPI. Card details are not stored.
+              Payments secured by Stripe. Supports Apple Pay & Google Pay.
             </Text>
           </View>
 
@@ -263,15 +303,15 @@ export default function PaymentScreen() {
           <Text style={styles.secureText}>Secured & encrypted</Text>
         </View>
         <Pressable
-          style={[styles.payBtn, loading && { opacity: 0.7 }]}
+          style={[styles.payBtn, (!paymentReady || loading) && { opacity: 0.7 }]}
           onPress={handlePay}
-          disabled={loading}>
+          disabled={!paymentReady || loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
+          ) : !paymentReady ? (
+            <Text style={styles.payBtnText}>Loading payment...</Text>
           ) : (
-            <Text style={styles.payBtnText}>
-              Pay {currency} {price.toFixed(0)}
-            </Text>
+            <Text style={styles.payBtnText}>Pay {currency} {price.toFixed(0)}</Text>
           )}
         </Pressable>
       </View>

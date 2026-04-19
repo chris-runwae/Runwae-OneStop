@@ -84,7 +84,7 @@ export default function IdeaCard({
   };
 
   return (
-    <Pressable style={styles.card} onPress={handleNavigateToDetails}>
+    <Pressable style={styles.card} onPress={onViewDetails ?? handleNavigateToDetails}>
       <View
         style={[
           styles.imageContainer,

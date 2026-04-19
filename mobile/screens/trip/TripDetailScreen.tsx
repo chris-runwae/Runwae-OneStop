@@ -275,7 +275,6 @@ export default function TripDetailScreen() {
               { id: 'ideas', label: 'IDEAS' },
               { id: 'itinerary', label: 'ITINERARY' },
               { id: 'activity', label: 'ACTIVITY' },
-              { id: 'info', label: 'INFO' },
             ]}
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -294,14 +293,6 @@ export default function TripDetailScreen() {
           {activeTab === 'activity' && (
             <ActivityTab tripId={activeTrip.id} trip={activeTrip} />
           )}
-          {activeTab === 'info' && (
-            <View style={styles.tabContent}>
-              <Text style={{ color: colors.textColors.subtle }}>
-                Trip Information coming soon...
-              </Text>
-            </View>
-          )}
-
           <Spacer size={100} vertical />
         </View>
       </Animated.ScrollView>

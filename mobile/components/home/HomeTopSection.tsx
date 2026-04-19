@@ -65,7 +65,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
       </Text>
 
       {/* Categories */}
-      <View className="mb-8 flex-row justify-between px-2">
+      {/* <View className="mb-8 flex-row justify-between px-2">
         <CategoryItem
           imageSrc={require('@/assets/images/plane.png')}
           label="Flights"
@@ -102,7 +102,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
         <Text className="text-sm text-gray-500">Paste a Link</Text>
         <MoveRight size={14} color="#6b7280" className="mx-2" />
         <Text className="text-sm text-gray-500">Generate Itinerary</Text>
-      </Pressable>
+      </Pressable> */}
 
       {/* Search Bar */}
       <Pressable

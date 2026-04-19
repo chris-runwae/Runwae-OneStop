@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
   segmentLabelActive: {},
   content: {
     flex: 1,
+    alignSelf: 'stretch',
   },
   membersList: {
     paddingBottom: 24,

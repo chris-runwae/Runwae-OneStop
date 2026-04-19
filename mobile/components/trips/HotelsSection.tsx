@@ -68,7 +68,7 @@ export default function HotelsSection({ trip, onAdd }: Props) {
     return (
       <View style={styles.center}>
         <Text style={[styles.hint, { color: colors.textColors.subtle }]}>
-          Couldn&apos;t load hotels. Pull to refresh.
+          There are no hotels in this area at for this duration.
         </Text>
       </View>
     );

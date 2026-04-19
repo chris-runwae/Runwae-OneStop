@@ -179,10 +179,10 @@ export async function fetchMyTrips(
   const { data, error } = await supabase
     .from('groups')
     .select(
-      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
+      '*, trip_details(*), group_members!inner(*, profiles(id, full_name, avatar_url))'
     )
     .eq('type', 'trip')
-    .eq('created_by', userId)
+    .eq('group_members.user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };

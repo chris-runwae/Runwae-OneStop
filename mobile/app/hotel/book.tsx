@@ -86,12 +86,10 @@ export default function BookingScreen() {
     });
   };
 
-  // console.log('offerId: ', offerId);
-
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const prebook = await prebookOffer({ offerId, usePaymentSdk: false });
+      const prebook = await prebookOffer({ offerId, usePaymentSdk: true });
       router.push({
         pathname: '/hotel/payment',
         params: {

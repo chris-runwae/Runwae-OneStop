@@ -1,4 +1,6 @@
 import { supabase } from './client';
+import { mapRow as mapEventRow } from './events.service';
+import { Event } from '@/types/content.types';
 
 export interface EventRegistration {
   id: string;
@@ -9,13 +11,7 @@ export interface EventRegistration {
   currency: string | null;
   stripePaymentIntent: string | null;
   createdAt: string;
-  event?: {
-    id: string;
-    title: string;
-    image: string | null;
-    date: string | null;
-    location: string | null;
-  };
+  event?: Event;
 }
 
 function mapRow(row: Record<string, unknown>): EventRegistration {
@@ -29,22 +25,18 @@ function mapRow(row: Record<string, unknown>): EventRegistration {
     currency: (row.currency as string | null) ?? null,
     stripePaymentIntent: (row.stripe_payment_intent as string | null) ?? null,
     createdAt: row.created_at as string,
-    event: eventData
-      ? {
-          id: eventData.id as string,
-          title: eventData.title as string,
-          image: (eventData.image as string | null) ?? null,
-          date: (eventData.date as string | null) ?? null,
-          location: (eventData.location as string | null) ?? null,
-        }
-      : undefined,
+    event: eventData ? mapEventRow(eventData as unknown as Event) : undefined,
   };
 }
 
 export async function registerForEvent(
   eventId: string,
   userId: string,
-  opts: { amountPaid?: number; currency?: string; stripePaymentIntent?: string } = {}
+  opts: {
+    amountPaid?: number;
+    currency?: string;
+    stripePaymentIntent?: string;
+  } = {}
 ): Promise<EventRegistration> {
   const { data, error } = await supabase
     .from('event_registrations')
@@ -66,15 +58,20 @@ export async function registerForEvent(
   return mapRow(data as Record<string, unknown>);
 }
 
-export async function getUserEventRegistrations(userId: string): Promise<EventRegistration[]> {
+export async function getUserEventRegistrations(
+  userId: string
+): Promise<EventRegistration[]> {
   const { data, error } = await supabase
     .from('event_registrations')
-    .select('*, events(id, title, image, date, location)')
+    .select('*, events(*)')
     .eq('user_id', userId)
     .eq('status', 'confirmed')
     .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('Error fetching user event registrations:', error);
+    throw new Error(error.message);
+  }
   return (data as Record<string, unknown>[]).map(mapRow);
 }
 

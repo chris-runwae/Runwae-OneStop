@@ -100,6 +100,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         locationPermission: 'Allow Runwae to use your location',
       },
     ],
+    '@stripe/stripe-react-native',
   ],
   experiments: {
     typedRoutes: true,

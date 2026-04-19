@@ -15,6 +15,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -30,6 +31,10 @@ import { TripsProvider } from '@/context/TripsContext';
 import { useColorScheme } from 'nativewind';
 import { getThemePreference } from '@/utils/storage';
 import '../global.css';
+
+const stripeMerchantIdentifier =
+  (Constants.expoConfig?.extra as { stripeMerchantIdentifier?: string } | undefined)
+    ?.stripeMerchantIdentifier ?? 'merchant.io.runwae.app';
 
 function RouteGuard() {
   const segments = useSegments();
@@ -202,7 +207,7 @@ export default function RootLayout() {
   return (
     <StripeProvider
       publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
-      merchantIdentifier="merchant.io.runwae.app"
+      merchantIdentifier={stripeMerchantIdentifier}
     >
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <GestureHandlerRootView style={{ flex: 1 }}>

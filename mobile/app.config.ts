@@ -1,24 +1,77 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import pjson from './package.json';
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
-  name: 'Runwae',
-  slug: 'runwae-rn',
-  version: pjson.version,
-  orientation: 'portrait',
-  icon: './assets/images/icon.png',
-  scheme: 'runwae',
-  userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'io.runwae.app',
-    associatedDomains: ['applinks:app.runwae.io'],
-    runtimeVersion: {
-      policy: 'appVersion',
-    },
+type AppVariant = 'development' | 'preview' | 'production';
+
+/** Set by EAS per profile (eas.json). For local builds, use APP_VARIANT or EXPO_PUBLIC_APP_VARIANT. */
+function resolveAppVariant(): AppVariant {
+  const raw =
+    process.env.APP_VARIANT ??
+    process.env.EXPO_PUBLIC_APP_VARIANT ??
+    process.env.EAS_BUILD_PROFILE;
+
+  if (raw === 'development' || raw === 'preview' || raw === 'production') {
+    return raw;
+  }
+  // Default: development for local `expo run:*` so the dev app can install alongside prod.
+  return 'development';
+}
+
+const VARIANT_CONFIG: Record<
+  AppVariant,
+  {
+    name: string;
+    iosBundleIdentifier: string;
+    androidPackage: string;
+    scheme: string;
+    stripeMerchantIdentifier: string;
+  }
+> = {
+  development: {
+    name: 'Runwae (Dev)',
+    iosBundleIdentifier: 'io.runwae.app.dev',
+    androidPackage: 'io.runwae.app.dev',
+    scheme: 'runwae-dev',
+    stripeMerchantIdentifier: 'merchant.io.runwae.app.dev',
   },
+  preview: {
+    name: 'Runwae (Preview)',
+    iosBundleIdentifier: 'io.runwae.app.preview',
+    androidPackage: 'io.runwae.app.preview',
+    scheme: 'runwae-preview',
+    stripeMerchantIdentifier: 'merchant.io.runwae.app.preview',
+  },
+  production: {
+    name: 'Runwae',
+    iosBundleIdentifier: 'io.runwae.app',
+    androidPackage: 'io.runwae.app',
+    scheme: 'runwae',
+    stripeMerchantIdentifier: 'merchant.io.runwae.app',
+  },
+};
+
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const variant = resolveAppVariant();
+  const v = VARIANT_CONFIG[variant];
+
+  return {
+    ...config,
+    name: v.name,
+    slug: 'runwae-rn',
+    version: pjson.version,
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: v.scheme,
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: v.iosBundleIdentifier,
+      associatedDomains: ['applinks:app.runwae.io'],
+      runtimeVersion: {
+        policy: 'appVersion',
+      },
+    },
   android: {
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
@@ -28,7 +81,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    package: 'io.runwae.app',
+    package: v.androidPackage,
     intentFilters: [
       {
         action: 'VIEW',
@@ -100,7 +153,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         locationPermission: 'Allow Runwae to use your location',
       },
     ],
-    '@stripe/stripe-react-native',
+    [
+      '@stripe/stripe-react-native',
+      {
+        merchantIdentifier: v.stripeMerchantIdentifier,
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
@@ -145,6 +203,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   ],
   extra: {
+    appVariant: variant,
+    stripeMerchantIdentifier: v.stripeMerchantIdentifier,
     router: {},
     eas: {
       projectId: '06ce5302-3e4b-43dd-bcdc-7ea53aa4e45d',
@@ -156,4 +216,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     fallbackToCacheTimeout: 0,
     checkAutomatically: 'ON_LOAD',
   },
-});
+};
+};

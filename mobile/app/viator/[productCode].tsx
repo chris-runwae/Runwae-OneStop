@@ -8,12 +8,7 @@ import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToE
 import { getViatorProductByCode } from '@/utils/viator/viatorProductCache';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Linking,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Linking, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -23,6 +18,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Experience } from '@/types/content.types';
+import { Spacer } from '@/components';
 
 const ViatorProductDetailScreen = () => {
   const params = useLocalSearchParams<{ productCode: string }>();
@@ -120,6 +116,8 @@ const ViatorProductDetailScreen = () => {
           cost={experience.cost}
           currency={experience.currency}
         />
+
+        <Spacer size={32} vertical />
 
         {bookUrl ? (
           <View className="px-5 pb-6">

@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { Text as RNText } from '@/components';
 import { Colors, textStyles } from '@/constants';
+import pjson from '@/package.json';
 
 const ProfileScreen = () => {
   const { user, isLoading, signOut } = useAuth();
@@ -35,7 +36,7 @@ const ProfileScreen = () => {
   const [hostMode, setHostMode] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const { dark } = useTheme();
-  const VERSION = Constants.expoConfig?.version || '1.0.0';
+  const VERSION = pjson.version;
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 

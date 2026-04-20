@@ -64,13 +64,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: v.scheme,
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: v.iosBundleIdentifier,
       associatedDomains: ['applinks:app.runwae.io'],
-      runtimeVersion: {
-        policy: 'appVersion',
-      },
       infoPlist: {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
       },

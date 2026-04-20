@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { useDestinationById, useDestinations } from '@/hooks/useDestinations';
 import { FlashList } from '@shopify/flash-list';
+import { Spacer } from '@/components';
 
 const DestinationDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -126,7 +127,12 @@ const DestinationDetailScreen = () => {
 
         <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
-        <RecommendationsSection destination={{ title: destination.title, location: destination.location ?? '' }} />
+        <RecommendationsSection
+          destination={{
+            title: destination.title,
+            location: destination.location ?? '',
+          }}
+        />
 
         <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
@@ -145,7 +151,7 @@ const DestinationDetailScreen = () => {
               paddingHorizontal: 20,
             }}
             keyExtractor={(item) => item.id}
-            ItemSeparatorComponent={() => <View className="w-4" />}
+            ItemSeparatorComponent={() => <Spacer size={12} horizontal />}
             renderItem={({ item }) => (
               <DestinationCard
                 item={item}
@@ -164,8 +170,7 @@ const DestinationDetailScreen = () => {
         title="Add to Trip"
         centeredTitle
         showCloseButton={false}
-        showIndicator
-      >
+        showIndicator>
         <AddToTripContent
           onCancel={() => setAddToTripOpen(false)}
           onDone={handleAddToTripDone}

@@ -61,7 +61,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
       <Text
         className="mb-8 text-2xl font-bold leading-tight text-black dark:text-white"
         style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
-        Let's plan your next{'\n'}adventure, {firstName}. ☀️
+        Let&apos;s plan your next{'\n'}adventure, {firstName}. ☀️
       </Text>
 
       {/* Categories */}
@@ -105,7 +105,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
       </Pressable> */}
 
       {/* Search Bar */}
-      <Pressable
+      {/* <Pressable
         className="h-14 flex-row items-center gap-x-3 rounded-full bg-white px-4 dark:bg-dark-seconndary"
         style={shadowStyles}
         onPress={() => router.push('/search' as any)}>
@@ -113,7 +113,7 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
         <Text className="flex-1 text-base text-[#9ca3af]">
           Search or paste link
         </Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }

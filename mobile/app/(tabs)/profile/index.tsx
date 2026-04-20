@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
+import Constants from 'expo-constants';
 import { ExternalPathString, RelativePathString, router } from 'expo-router';
 import {
   Check,
@@ -17,7 +18,16 @@ import {
   X,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Image, Modal, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  Modal,
+  TouchableOpacity,
+  View,
+  Text,
+  useColorScheme,
+} from 'react-native';
+import { Text as RNText } from '@/components';
+import { Colors, textStyles } from '@/constants';
 
 const ProfileScreen = () => {
   const { user, isLoading, signOut } = useAuth();
@@ -25,6 +35,9 @@ const ProfileScreen = () => {
   const [hostMode, setHostMode] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const { dark } = useTheme();
+  const VERSION = Constants.expoConfig?.version || '1.0.0';
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   return (
     <AppSafeAreaView>
@@ -107,7 +120,7 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View className="mt-5">
+        {/* <View className="mt-5">
           <View className="flex-row items-center gap-x-2">
             <Text className="text-base font-semibold uppercase text-black dark:text-white">
               Rewards
@@ -133,9 +146,9 @@ const ProfileScreen = () => {
               </View>
             ))}
           </View>
-        </View>
+        </View> */}
 
-        <View className="mt-5">
+        {/* <View className="mt-5">
           <View className="rouded-[8px] flex-row items-center justify-between rounded-[10px] border-[0.5px] border-gray-200 bg-[#F8F9FA] px-[16px] py-[14px] dark:border-dark-seconndary dark:bg-dark-seconndary/50">
             <Text className="text-base font-semibold text-black dark:text-white">
               Switch to Host Mode
@@ -146,7 +159,7 @@ const ProfileScreen = () => {
               inactiveColor="#ADB5BD"
             />
           </View>
-        </View>
+        </View> */}
 
         <View className="mt-5">
           <View className="flex-col gap-y-6">
@@ -193,6 +206,17 @@ const ProfileScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        <RNText
+          style={{
+            ...textStyles.regular_12,
+            color: colors.textColors.subtle,
+            width: '100%',
+            textAlign: 'center',
+            marginTop: 32,
+          }}>
+          Version {VERSION}
+        </RNText>
       </View>
 
       {/* Full Screen Image Preview Modal */}

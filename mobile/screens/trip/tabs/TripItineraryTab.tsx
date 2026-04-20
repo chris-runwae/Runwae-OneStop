@@ -100,11 +100,13 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
         data={items}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
+        keyExtractor={(item) => item.type === 'add' ? 'add' : String((item as { type: 'day'; index: number }).index)}
         renderItem={renderItem}
         contentContainerStyle={styles.dateStripContent}
         getItemLayout={(_, index) => ({ length: DATE_COLUMN_WIDTH, offset: DATE_COLUMN_WIDTH * index, index })}
-        onScrollToIndexFailed={() => {}}
+        onScrollToIndexFailed={({ index }) => {
+          flatListRef.current?.scrollToOffset({ offset: index * DATE_COLUMN_WIDTH, animated: true });
+        }}
       />
     </View>
   );
@@ -318,13 +320,20 @@ export default function TripItineraryTab() {
   const tripStartDate = activeTrip?.trip_details?.start_date ?? null;
 
   const handleAddDay = async () => {
-    const nextDayNumber = days.length + 1;
+    const currentLength = days.length;  // snapshot before await
+    const nextDayNumber = currentLength + 1;
     const nextDate = tripStartDate
-      ? format(addDays(parseISO(tripStartDate), days.length), 'yyyy-MM-dd')
+      ? format(addDays(parseISO(tripStartDate), currentLength), 'yyyy-MM-dd')
       : undefined;
     await addDay({ title: `Day ${nextDayNumber}`, date: nextDate });
-    setSelectedDayIndex(days.length); // points at new day after state updates
+    setSelectedDayIndex(currentLength);  // index of the newly added day
   };
+
+  useEffect(() => {
+    if (days.length > 0 && selectedDayIndex >= days.length) {
+      setSelectedDayIndex(days.length - 1);
+    }
+  }, [days.length]);
 
   const handleAddItem = async (
     dayId: string,
@@ -397,7 +406,7 @@ export default function TripItineraryTab() {
         {days
           .filter((_, idx) => idx === selectedDayIndex)
           .map((day) => {
-            const dayIndex = days.indexOf(day);
+            const dayIndex = selectedDayIndex;
             return (
               <DaySection
                 key={day.id}

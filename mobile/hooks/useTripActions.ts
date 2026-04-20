@@ -179,10 +179,10 @@ export async function fetchMyTrips(
   const { data, error } = await supabase
     .from('groups')
     .select(
-      '*, trip_details(*), group_members!inner(*, profiles(id, full_name, avatar_url))'
+      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
     )
     .eq('type', 'trip')
-    .eq('group_members.user_id', userId)
+    .eq('created_by', userId)
     .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };
@@ -200,21 +200,28 @@ export async function fetchMyTrips(
 export async function fetchJoinedTrips(
   userId: string
 ): Promise<ActionResult<TripWithEverything[]>> {
-  const { data, error } = await supabase
+  const { data: memberRows, error: memberError } = await supabase
     .from('group_members')
+    .select('group_id')
+    .eq('user_id', userId);
+
+  if (memberError) return { data: null, error: memberError.message };
+
+  const groupIds = (memberRows ?? []).map((r) => r.group_id);
+  if (groupIds.length === 0) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from('groups')
     .select(
-      'groups!inner(*, trip_details(*)), group_members(*, profiles(id, full_name, avatar_url))'
+      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
     )
-    .eq('user_id', userId)
-    .eq('groups.type', 'trip');
+    .eq('type', 'trip')
+    .neq('created_by', userId)
+    .in('id', groupIds)
+    .order('created_at', { ascending: false });
 
   if (error) return { data: null, error: error.message };
-
-  const trips = (data ?? [])
-    .map((row: any) => row.groups as TripWithEverything)
-    .filter((trip) => trip.created_by !== userId);
-
-  return { data: trips, error: null };
+  return { data: (data ?? []) as TripWithEverything[], error: null };
 }
 
 // ================================================================

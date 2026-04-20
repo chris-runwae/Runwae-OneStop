@@ -16,7 +16,7 @@ import { fetchItineraryItemsCount } from '@/hooks/useItineraryActions';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { formatDaysToGo, getDaysUntil } from '@/utils/date';
 import { useTheme } from '@react-navigation/native';
-import AvatarGroup from './AvatarGroup';
+import { AvatarGroup } from '@/components/containers/AvatarGroup';
 
 interface TripCardProps {
   trip: TripWithEverything;
@@ -45,12 +45,6 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const daysUntil = getDaysUntil(trip.trip_details?.start_date ?? '');
   const countdown = formatDaysToGo(daysUntil);
 
-  // Map real group_members to the AvatarGroup props
-  const displayMembers = (trip.group_members || []).slice(0, 3).map((m) => ({
-    image: m.profiles?.avatar_url || undefined,
-    initials: m.profiles?.full_name?.charAt(0) || '?',
-  }));
-  const extraCount = Math.max(0, (trip.group_members?.length || 0) - 3);
   const DARK_SEC = '#212529';
 
   const { dark } = useTheme();
@@ -161,9 +155,10 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
 
           <View style={styles.avatarWrapper}>
             <AvatarGroup
-              members={displayMembers as any}
-              extraMembers={extraCount}
-              maxDisplay={3}
+              members={trip.group_members || []}
+              maxVisible={3}
+              size={30}
+              overlap={12}
             />
           </View>
         </View>

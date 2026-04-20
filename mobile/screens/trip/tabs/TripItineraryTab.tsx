@@ -151,7 +151,7 @@ function DaySection({
   onItemPress,
   onUpdateItemNotes,
 }: DaySectionProps) {
-  const [collapsed, setCollapsed] = useState(!isFirstDay);
+  const [collapsed, setCollapsed] = useState(false);
   const [titleEdit, setTitleEdit] = useState(false);
   const [titleVal, setTitleVal] = useState(day.title ?? '');
   const [showSheet, setShowSheet] = useState(false);

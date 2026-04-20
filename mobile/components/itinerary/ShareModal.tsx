@@ -95,31 +95,46 @@ const ShareModal = ({
   const variant = resolveAppVariant();
   const appConfig = VARIANT_CONFIG[variant];
 
-  const universalLink = joinCode ? `https://app.runwae.io/invite/${joinCode}` : '';
-  const shareMessage = `Join my trip on Runwae! ${universalLink}`;
+  const universalLink = joinCode ? `https://app.runwae.io/invite/${joinCode}` : null;
+  const shareMessage = universalLink
+    ? `Join my trip on Runwae! ${universalLink}`
+    : 'Join my trip on Runwae!';
   const encoded = encodeURIComponent(shareMessage);
-  const encodedUrl = encodeURIComponent(universalLink);
+  const encodedUrl = universalLink ? encodeURIComponent(universalLink) : '';
 
   const openNativeShare = async () => {
     try {
-      await Share.share({ message: shareMessage, url: universalLink });
+      await Share.share(
+        universalLink
+          ? { message: shareMessage, url: universalLink }
+          : { message: shareMessage }
+      );
     } catch {}
   };
 
   const shareHandlers: Record<string, () => void> = {
-    Facebook: () => Linking.openURL(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`),
-    WhatsApp: () =>
-      Linking.canOpenURL('whatsapp://send').then((can) =>
-        can
-          ? Linking.openURL(`whatsapp://send?text=${encoded}`)
-          : Linking.openURL(`https://wa.me/?text=${encoded}`)
-      ),
-    X: () =>
-      Linking.canOpenURL('twitter://post').then((can) =>
-        can
-          ? Linking.openURL(`twitter://post?message=${encoded}`)
-          : Linking.openURL(`https://twitter.com/intent/tweet?text=${encoded}`)
-      ),
+    Facebook: () => {
+      Linking.openURL(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`)
+        .catch(() => openNativeShare());
+    },
+    WhatsApp: () => {
+      Linking.canOpenURL('whatsapp://send')
+        .then((can) =>
+          can
+            ? Linking.openURL(`whatsapp://send?text=${encoded}`)
+            : Linking.openURL(`https://wa.me/?text=${encoded}`)
+        )
+        .catch(() => openNativeShare());
+    },
+    X: () => {
+      Linking.canOpenURL('twitter://post')
+        .then((can) =>
+          can
+            ? Linking.openURL(`twitter://post?message=${encoded}`)
+            : Linking.openURL(`https://twitter.com/intent/tweet?text=${encoded}`)
+        )
+        .catch(() => openNativeShare());
+    },
     Instagram: openNativeShare,
     Snapchat: openNativeShare,
     More: openNativeShare,

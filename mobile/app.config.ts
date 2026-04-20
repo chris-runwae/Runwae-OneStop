@@ -71,6 +71,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       runtimeVersion: {
         policy: 'appVersion',
       },
+      infoPlist: {
+        LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
+      },
     },
     android: {
       adaptiveIcon: {

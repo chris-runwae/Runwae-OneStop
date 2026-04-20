@@ -2,7 +2,7 @@ import TripCard from '@/components/home/TripCard';
 import EmptyTripsState from '@/components/trips/EmptyTripsState';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
-import NotificationBell from '@/components/ui/NotificationBell';
+// import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
@@ -186,7 +186,7 @@ export default function TripsIndexScreen() {
             ]}>
             Trips
           </Text>
-          <NotificationBell />
+          {/* <NotificationBell /> */}
         </View>
 
         <View style={styles.tabRow}>

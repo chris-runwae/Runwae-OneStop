@@ -129,6 +129,7 @@ type DaySectionProps = {
   onClearDay: (dayId: string) => void;
   isFirstDay: boolean;
   onItemPress: (item: ItineraryItem) => void;
+  onUpdateItemNotes: (itemId: string, notes: string) => void;
 };
 
 function DaySection({
@@ -148,6 +149,7 @@ function DaySection({
   onClearDay,
   isFirstDay,
   onItemPress,
+  onUpdateItemNotes,
 }: DaySectionProps) {
   const [collapsed, setCollapsed] = useState(!isFirstDay);
   const [titleEdit, setTitleEdit] = useState(false);
@@ -243,6 +245,7 @@ function DaySection({
               canMoveUp={i > 0}
               canMoveDown={i < day.itinerary_items.length - 1}
               onPress={() => onItemPress(item)}
+              onUpdateNotes={(notes) => onUpdateItemNotes(item.id, notes)}
             />
           ))}
 
@@ -284,6 +287,7 @@ export default function TripItineraryTab() {
     removeDay,
     addItem,
     removeItem,
+    updateItemCtx,
     reorderItemsCtx,
     reorderDaysCtx,
     moveItemToDayCtx,
@@ -465,6 +469,7 @@ export default function TripItineraryTab() {
                 }}
                 isFirstDay={dayIndex === 0}
                 onItemPress={handleCardPress}
+                onUpdateItemNotes={(itemId, notes) => updateItemCtx(itemId, { notes })}
               />
             );
           })}

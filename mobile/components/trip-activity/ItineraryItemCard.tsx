@@ -5,8 +5,18 @@ import {
   Ellipsis,
   ImageIcon,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
@@ -41,6 +51,7 @@ type Props = {
   canMoveUp: boolean;
   canMoveDown: boolean;
   onPress?: () => void;
+  onUpdateNotes?: (notes: string) => void;
 };
 
 const ItineraryItemCard = ({
@@ -55,12 +66,29 @@ const ItineraryItemCard = ({
   canMoveUp,
   canMoveDown,
   onPress,
+  onUpdateNotes,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';
   const colors = Colors[colorScheme];
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
+  const [notesModalVisible, setNotesModalVisible] = useState(false);
+  const [notesText, setNotesText] = useState(item.notes ?? '');
+
+  useEffect(() => {
+    setNotesText(item.notes ?? '');
+  }, [item.notes]);
+
+  const openNotesModal = () => {
+    setMenuVisible(false);
+    setNotesModalVisible(true);
+  };
+
+  const handleSaveNotes = () => {
+    onUpdateNotes?.(notesText);
+    setNotesModalVisible(false);
+  };
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
   
@@ -77,7 +105,7 @@ const ItineraryItemCard = ({
   };
 
   const menuOptions: ActionOption[] = [
-    { label: 'View notes', onPress: () => {} },
+    { label: 'View notes', onPress: openNotesModal },
     { label: 'Adjust', onPress: () => {} },
     { label: 'Move to previous day', onPress: onMoveToPrevDay || (() => {}) },
     { label: 'Move to next day', onPress: onMoveToNextDay || (() => {}) },
@@ -166,12 +194,14 @@ const ItineraryItemCard = ({
         </View>
       </Pressable>
 
-      <View style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
+      <Pressable
+        onPress={openNotesModal}
+        style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
         <Text
           style={[styles.notesText, { color: dark ? '#9BA1A6' : '#666' }, !item.notes && [styles.notesPlaceholder, { color: colors.textColors.subtle }]]}>
           {item.notes || 'Add notes, links, etc here.'}
         </Text>
-      </View>
+      </Pressable>
 
       <ActionMenu
         visible={menuVisible}
@@ -179,6 +209,47 @@ const ItineraryItemCard = ({
         options={menuOptions}
         anchorPosition={menuAnchor}
       />
+
+      <Modal
+        visible={notesModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setNotesModalVisible(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setNotesModalVisible(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: dark ? '#1C1C1E' : '#fff' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textColors.default }]}>Notes</Text>
+              <TouchableOpacity onPress={() => setNotesModalVisible(false)}>
+                <Text style={[styles.modalCancel, { color: colors.textColors.subtle }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              value={notesText}
+              onChangeText={setNotesText}
+              multiline
+              placeholder="Add notes, links, reminders…"
+              placeholderTextColor={dark ? '#6B7280' : '#9CA3AF'}
+              style={[
+                styles.notesInput,
+                {
+                  color: colors.textColors.default,
+                  backgroundColor: dark ? '#2C2C2E' : '#F9FAFB',
+                  borderColor: dark ? '#374151' : '#E5E7EB',
+                },
+              ]}
+              autoFocus
+            />
+            <TouchableOpacity
+              onPress={handleSaveNotes}
+              style={styles.saveBtn}>
+              <Text style={styles.saveBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -267,5 +338,55 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   notesPlaceholder: {
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 36,
+    gap: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontFamily: AppFonts.bricolage.semiBold,
+  },
+  modalCancel: {
+    fontSize: 15,
+    fontFamily: AppFonts.inter.regular,
+  },
+  notesInput: {
+    minHeight: 120,
+    maxHeight: 240,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    fontFamily: AppFonts.inter.regular,
+    lineHeight: 22,
+    textAlignVertical: 'top',
+  },
+  saveBtn: {
+    backgroundColor: '#FF1F8C',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontFamily: AppFonts.inter.medium,
   },
 });

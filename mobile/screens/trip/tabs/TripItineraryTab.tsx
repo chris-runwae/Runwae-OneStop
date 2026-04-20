@@ -12,6 +12,7 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { ChevronDown, ChevronRight, Ellipsis, Plus } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -32,7 +33,7 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
 import { AppFonts, Colors } from '@/constants';
-import { CreateItineraryItemInput } from '@/hooks/useItineraryActions';
+import { CreateItineraryItemInput, ItineraryItem } from '@/hooks/useItineraryActions';
 import { uploadItineraryItemImage } from '@/utils/supabase/storage';
 
 const DATE_COLUMN_WIDTH = 55;
@@ -157,6 +158,7 @@ type DaySectionProps = {
   onDeleteDay: (day: ItineraryDayWithItems) => void;
   onClearDay: (dayId: string) => void;
   isFirstDay: boolean;
+  onItemPress: (item: ItineraryItem) => void;
 };
 
 function DaySection({
@@ -175,6 +177,7 @@ function DaySection({
   onDeleteDay,
   onClearDay,
   isFirstDay,
+  onItemPress,
 }: DaySectionProps) {
   const [collapsed, setCollapsed] = useState(!isFirstDay);
   const [titleEdit, setTitleEdit] = useState(false);
@@ -269,6 +272,7 @@ function DaySection({
               onMoveToNextDay={() => onMoveItemToNextDay?.(item.id)}
               canMoveUp={i > 0}
               canMoveDown={i < day.itinerary_items.length - 1}
+              onPress={() => onItemPress(item)}
             />
           ))}
 
@@ -304,6 +308,7 @@ export default function TripItineraryTab() {
   const {
     days,
     itineraryLoading,
+    activeTrip,
     addDay,
     updateDayCtx,
     removeDay,
@@ -313,6 +318,31 @@ export default function TripItineraryTab() {
     reorderDaysCtx,
     moveItemToDayCtx,
   } = useTrips();
+  const router = useRouter();
+
+  const handleCardPress = (item: ItineraryItem) => {
+    if (item.type === 'hotel' && item.external_id) {
+      router.push({
+        pathname: '/hotel/[hotelId]',
+        params: {
+          hotelId: item.external_id,
+          tripId: activeTrip?.id ?? '',
+        },
+      });
+      return;
+    }
+    if (item.type === 'activity' && item.external_id) {
+      router.push({
+        pathname: '/viator/[productCode]',
+        params: { productCode: item.external_id },
+      });
+      return;
+    }
+    router.push({
+      pathname: '/itinerary/item/[itemId]',
+      params: { itemId: item.id },
+    });
+  };
 
   const [reorderingDayId, setReorderingDayId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(
@@ -438,6 +468,7 @@ export default function TripItineraryTab() {
               day.itinerary_items.forEach((it) => removeItem(it.id));
             }}
             isFirstDay={index === 0}
+            onItemPress={handleCardPress}
           />
         ))}
 

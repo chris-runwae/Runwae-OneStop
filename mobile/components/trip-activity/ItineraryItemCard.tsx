@@ -40,6 +40,7 @@ type Props = {
   onMoveToNextDay?: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  onPress?: () => void;
 };
 
 const ItineraryItemCard = ({
@@ -53,6 +54,7 @@ const ItineraryItemCard = ({
   onMoveToNextDay,
   canMoveUp,
   canMoveDown,
+  onPress,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';
@@ -90,14 +92,18 @@ const ItineraryItemCard = ({
 
   return (
     <View>
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.backgroundColors.default,
-            borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
-          },
-        ]}>
+      <Pressable
+        onPress={!isReordering ? onPress : undefined}
+        style={({ pressed }) => [{ opacity: pressed && !isReordering && onPress ? 0.75 : 1 }]}
+      >
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.backgroundColors.default,
+              borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
+            },
+          ]}>
         {hasImage ? (
           <Image
             source={{ uri: displayImageUrl! }}
@@ -157,7 +163,8 @@ const ItineraryItemCard = ({
             </Pressable>
           )}
         </View>
-      </View>
+        </View>
+      </Pressable>
 
       <View style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
         <Text

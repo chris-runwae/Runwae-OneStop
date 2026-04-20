@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import {
   Dimensions,
   Image,
+  Linking,
   Modal,
   Share,
   Text,
@@ -22,10 +23,11 @@ interface ShareOptionProps {
   icon: any;
   label: string;
   isImage?: boolean;
+  onPress: () => void;
 }
 
-const ShareOption = ({ icon, label, isImage = true }: ShareOptionProps) => (
-  <TouchableOpacity className="mb-6 w-1/4 items-center">
+const ShareOption = ({ icon, label, isImage = true, onPress }: ShareOptionProps) => (
+  <TouchableOpacity className="mb-6 w-1/4 items-center" onPress={onPress}>
     <View className="mb-2 h-14 w-14 items-center justify-center overflow-hidden rounded-full">
       {isImage ? (
         <Image source={icon} className="h-full w-full" resizeMode="cover" />
@@ -92,6 +94,36 @@ const ShareModal = ({
 
   const variant = resolveAppVariant();
   const appConfig = VARIANT_CONFIG[variant];
+
+  const universalLink = joinCode ? `https://app.runwae.io/invite/${joinCode}` : '';
+  const shareMessage = `Join my trip on Runwae! ${universalLink}`;
+  const encoded = encodeURIComponent(shareMessage);
+  const encodedUrl = encodeURIComponent(universalLink);
+
+  const openNativeShare = async () => {
+    try {
+      await Share.share({ message: shareMessage, url: universalLink });
+    } catch {}
+  };
+
+  const shareHandlers: Record<string, () => void> = {
+    Facebook: () => Linking.openURL(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`),
+    WhatsApp: () =>
+      Linking.canOpenURL('whatsapp://send').then((can) =>
+        can
+          ? Linking.openURL(`whatsapp://send?text=${encoded}`)
+          : Linking.openURL(`https://wa.me/?text=${encoded}`)
+      ),
+    X: () =>
+      Linking.canOpenURL('twitter://post').then((can) =>
+        can
+          ? Linking.openURL(`twitter://post?message=${encoded}`)
+          : Linking.openURL(`https://twitter.com/intent/tweet?text=${encoded}`)
+      ),
+    Instagram: openNativeShare,
+    Snapchat: openNativeShare,
+    More: openNativeShare,
+  };
 
   return (
     <Modal
@@ -248,6 +280,7 @@ const ShareModal = ({
                 label={option.label}
                 icon={option.icon}
                 isImage={option.isImage}
+                onPress={shareHandlers[option.label] ?? openNativeShare}
               />
             ))}
           </View>

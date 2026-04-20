@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   useColorScheme,
@@ -13,15 +12,16 @@ import {
 } from 'react-native';
 
 import { Text } from '@/components';
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { AppFonts, Colors } from '@/constants';
-import { ItineraryItem } from '@/hooks/useItineraryActions';
+import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 import { supabase } from '@/utils/supabase/client';
 
-const TYPE_EMOJI: Record<string, string> = {
+const TYPE_EMOJI: Record<ItemType, string> = {
   flight: '✈️', hotel: '🏨', activity: '🏝', restaurant: '🍽',
   transport: '🚗', cruise: '🚢', event: '🎫', other: '📌',
 };
-const TYPE_LABEL: Record<string, string> = {
+const TYPE_LABEL: Record<ItemType, string> = {
   flight: 'Flight', hotel: 'Stay', activity: 'Activity', restaurant: 'Dine',
   transport: 'Transport', cruise: 'Cruise', event: 'Event', other: 'Other',
 };
@@ -38,24 +38,25 @@ export default function ItineraryItemDetail() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('itinerary_items')
         .select('*')
         .eq('id', itemId)
         .single();
+      if (error) console.warn('[ItineraryItemDetail] fetch failed:', error.message);
       setItem(data ?? null);
       setLoading(false);
     })();
   }, [itemId]);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.backgroundColors.default }]}>
+    <AppSafeAreaView edges={['top']} style={{ backgroundColor: colors.backgroundColors.default, flex: 1 }}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
           <ArrowLeft size={22} color={colors.textColors.default} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.textColors.default }]}>
-          Item Detail
+          {item?.title ?? 'Item Detail'}
         </Text>
       </View>
 
@@ -112,12 +113,11 @@ export default function ItineraryItemDetail() {
           ) : null}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </AppSafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 17, fontFamily: AppFonts.bricolage.semiBold },

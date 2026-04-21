@@ -2,27 +2,26 @@ import AddOnsForYou from '@/components/home/AddOnsForYou';
 import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
 import ItineraryForYou from '@/components/home/IteneryForYou';
-import PublicTripsSection from '@/components/home/PublicTripsSection';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
-import ViatorProductsForYou from '@/components/viator/ViatorProductsForYou';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
+import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
 import MainTabHeader from '@/components/ui/MainTabHeader';
 import SearchInput from '@/components/ui/SearchInput';
 import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
 import { useAuth } from '@/context/AuthContext';
-import {
-  Destination,
-  Event,
-  Experience,
-  ItineraryTemplate,
-} from '@/types/content.types';
-import type { ViatorProduct } from '@/types/viator.types';
 import { useExploreData } from '@/hooks/useExploreData';
 import { fetchPublicTrips, TripWithEverything } from '@/hooks/useTripActions';
 import { useViator } from '@/hooks/useViator';
+import type { ViatorProduct } from '@/types/viator.types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -136,12 +135,7 @@ const ExploreScreen = () => {
         price <= maxPrice
       );
     });
-  }, [
-    searchQuery,
-    selectedTopCategory,
-    selectedPrice,
-    viatorProducts,
-  ]);
+  }, [searchQuery, selectedTopCategory, selectedPrice, viatorProducts]);
 
   const filteredDestinations = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
@@ -168,94 +162,83 @@ const ExploreScreen = () => {
             onFilterPress={() => setIsFilterModalVisible(true)}
           />
         </View>
-        <ExploreCategories
-          categories={EXPLORE_CATEGORIES}
-          selectedCategory={selectedSubCategory}
-          onCategoryPress={(cat) => setSelectedSubCategory(cat)}
-          showClear={
-            searchQuery !== '' ||
-            selectedSubCategory !== 'All' ||
-            selectedTopCategory !== 'All' ||
-            selectedPrice !== '$50 - $200'
-          }
-          onClear={() => {
-            setSearchQuery('');
-            setSelectedSubCategory('All');
-            setSelectedTopCategory('All');
-            setSelectedPrice('$50 - $200');
-          }}
-        />
 
-        {(loading || filteredItineraries.length > 0) && (
-          <ItineraryForYou
-            data={filteredItineraries}
-            title="Featured Trip Itineraries"
-            subtitle="Recommended by Runwae"
-            loading={loading}
-          />
+        {loading ? (
+          <ExploreSkeleton />
+        ) : (
+          <>
+            <ExploreCategories
+              categories={EXPLORE_CATEGORIES}
+              selectedCategory={selectedSubCategory}
+              onCategoryPress={(cat) => setSelectedSubCategory(cat)}
+              showClear={
+                searchQuery !== '' ||
+                selectedSubCategory !== 'All' ||
+                selectedTopCategory !== 'All' ||
+                selectedPrice !== '$50 - $200'
+              }
+              onClear={() => {
+                setSearchQuery('');
+                setSelectedSubCategory('All');
+                setSelectedTopCategory('All');
+                setSelectedPrice('$50 - $200');
+              }}
+            />
+
+            {filteredItineraries.length > 0 && (
+              <ItineraryForYou
+                data={filteredItineraries}
+                title="Featured Trip Itineraries"
+                subtitle="Recommended by Runwae"
+                loading={loading}
+              />
+            )}
+
+            {filteredEvents.length > 0 && (
+              <UpcomingEvents data={filteredEvents} loading={loading} />
+            )}
+
+            {filteredExperiences.length > 0 && (
+              <AddOnsForYou
+                data={filteredExperiences}
+                title="Experience Highlights"
+                subtitle="Top picks for you"
+                loading={loading}
+              />
+            )}
+
+            {filteredDestinations.length > 0 && (
+              <DestinationsForYou
+                data={filteredDestinations}
+                title="Popular Destinations"
+                subtitle="Places that everyone else is crazy about"
+                loading={loading}
+              />
+            )}
+
+            {filteredItineraries.length === 0 &&
+              filteredEvents.length === 0 &&
+              filteredExperiences.length === 0 &&
+              filteredDestinations.length === 0 && (
+                <View className="items-center justify-center px-5 py-10">
+                  <Text className="text-center text-lg font-medium text-gray-400">
+                    No results found for "{searchQuery}"
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery('');
+                      setSelectedSubCategory('All');
+                      setSelectedTopCategory('All');
+                    }}
+                    className="mt-4">
+                    <Text className="font-semibold text-primary">
+                      Clear all filters
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+          </>
         )}
-
-        {(publicTripsLoading || publicTrips.length > 0) && (
-          <PublicTripsSection
-            data={publicTrips}
-            loading={publicTripsLoading}
-          />
-        )}
-
-        {(loading || filteredEvents.length > 0) && (
-          <UpcomingEvents data={filteredEvents} loading={loading} />
-        )}
-
-        {(loading || filteredExperiences.length > 0) && (
-          <AddOnsForYou
-            data={filteredExperiences}
-            title="Experience Highlights"
-            subtitle="Top picks for you"
-            loading={loading}
-          />
-        )}
-
-        {(viatorLoading || filteredViatorProducts.length > 0) && (
-          <ViatorProductsForYou
-            data={filteredViatorProducts}
-            title="Tours & activities"
-            subtitle="Powered by Viator"
-            loading={viatorLoading}
-          />
-        )}
-
-        {(loading || filteredDestinations.length > 0) && (
-          <DestinationsForYou
-            data={filteredDestinations}
-            title="Popular Destinations"
-            subtitle="Places that everyone else is crazy about"
-            loading={loading}
-          />
-        )}
-
-        {filteredItineraries.length === 0 &&
-          filteredEvents.length === 0 &&
-          filteredExperiences.length === 0 &&
-          !viatorLoading &&
-          filteredViatorProducts.length === 0 &&
-          filteredDestinations.length === 0 && (
-            <View className="items-center justify-center px-5 py-10">
-              <Text className="text-center text-lg font-medium text-gray-400">
-                No results found for &quot;{searchQuery}&quot;
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setSelectedSubCategory('All');
-                  setSelectedTopCategory('All');
-                }}
-                className="mt-4">
-                <Text className="font-semibold text-primary">
-                  Clear all filters
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
       </ScrollView>
 
       <CustomModal

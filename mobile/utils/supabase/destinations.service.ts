@@ -8,10 +8,14 @@ function mapRow(row: any): Destination {
     title: row.title,
     location: row.location,
     image: row.image,
+    country: row.country,
     rating: row.rating ? Number(row.rating) : undefined,
     reviewCount: row.review_count,
     description: row.description,
     featured: row.featured,
+    tags: row.tags,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 

@@ -45,6 +45,8 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
+
+  const tripDetails = trip?.trip_details;
   const [searchVisible, setSearchVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
@@ -247,21 +249,13 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
             categoryLabel={getCategoryWithEmoji(item.location)}
             title={item.name}
             description={item.notes || ''}
-            onOptionsPress={
-              isMember
-                ? (position: {
-                    top: number;
-                    right?: number;
-                    left?: number;
-                  }) => {
-                    setSelectedIdea(item);
-                    setMenuAnchor(position);
-                    setMenuVisible(true);
-                  }
-                : undefined
-            }
-            checkin={trip.trip_details?.start_date}
-            checkout={trip.trip_details?.end_date}
+            onOptionsPress={isMember ? (position: any) => {
+              setSelectedIdea(item);
+              setMenuAnchor(position);
+              setMenuVisible(true);
+            } : undefined}
+            checkin={tripDetails?.start_date}
+            checkout={tripDetails?.end_date}
             adults={trip.group_members?.length ?? 1}
             isMember={isMember}
           />

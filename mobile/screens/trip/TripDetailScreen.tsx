@@ -93,7 +93,7 @@ export default function TripDetailScreen() {
   );
 
   const creator = activeTrip?.group_members?.find(
-    (m) => m.user_id === activeTrip.created_by
+    (m) => m.role === 'owner' || m.role === 'admin'
   );
 
   const dropdownOptions = [
@@ -263,18 +263,16 @@ export default function TripDetailScreen() {
           />
           <Spacer size={24} vertical />
 
-          {activeTab === 'ideas' && (
+          {activeTab === 'ideas' && isMember && (
             <View style={styles.tabContent}>
               <TripOverviewTab trip={activeTrip} isMember={isMember} />
               <Spacer size={24} vertical />
-              {/* <HotelsSection trip={activeTrip} onAdd={() => {}} />
-              <Spacer size={14} vertical /> */}
             </View>
           )}
-          {activeTab === 'itinerary' && (
+          {activeTab === 'itinerary' && isMember && (
             <TripItineraryTab isMember={isMember} />
           )}
-          {activeTab === 'activity' && (
+          {activeTab === 'activity' && isMember && (
             <ActivityTab
               tripId={activeTrip.id}
               trip={activeTrip}

@@ -190,12 +190,14 @@ const ItineraryItemCard = ({
         </View>
       </View>
 
-      <View style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
-        <Text
-          style={[styles.notesText, { color: dark ? '#9BA1A6' : '#666' }, !item.notes && [styles.notesPlaceholder, { color: colors.textColors.subtle }]]}>
-          {item.notes || 'Add notes, links, etc here.'}
-        </Text>
-      </View>
+      {(item.notes || isMember) && (
+        <View style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
+          <Text
+            style={[styles.notesText, { color: dark ? '#9BA1A6' : '#666' }, !item.notes && [styles.notesPlaceholder, { color: colors.textColors.subtle }]]}>
+            {item.notes || 'Add notes, links, etc here.'}
+          </Text>
+        </View>
+      )}
 
       <ActionMenu
         visible={menuVisible}

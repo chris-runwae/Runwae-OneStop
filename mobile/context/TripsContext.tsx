@@ -174,7 +174,11 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     if (err) {
       setError(err);
     } else {
-      setMyTrips(data ?? []);
+      const normalizedData = (data ?? []).map((t: any) => ({
+        ...t,
+        trip_details: t.trip_details,
+      }));
+      setMyTrips(normalizedData);
     }
   }, [user?.id]);
 
@@ -184,7 +188,11 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     if (err) {
       setError(err);
     } else {
-      setJoinedTrips(data ?? []);
+      const normalizedData = (data ?? []).map((t: any) => ({
+        ...t,
+        trip_details: t.trip_details,
+      }));
+      setJoinedTrips(normalizedData);
     }
   }, [user?.id]);
 
@@ -219,29 +227,26 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   // ----------------------------------------------------------------
 
   const loadItinerary = useCallback(
-    async (groupId: string, allowCreate: boolean = true) => {
-      if (!user?.id) return;
+    async (groupId: string, isMember: boolean) => {
       setItineraryLoading(true);
       try {
         const itin = await fetchOrCreateItinerary(
           groupId,
-          user.id,
-          allowCreate
+          user!.id,
+          isMember // only allow creation if isMember
         );
         setItinerary(itin);
         if (itin) {
-          const daysWithItems = await fetchDaysWithItems(itin.id);
-          setDays(daysWithItems);
-        } else {
-          setDays([]);
+          const daysData = await fetchDaysWithItems(itin.id);
+          setDays(daysData);
         }
-      } catch (err) {
-        console.error('Failed to load itinerary:', err);
+      } catch (error) {
+        console.error('Error loading itinerary:', error);
       } finally {
         setItineraryLoading(false);
       }
     },
-    [user?.id]
+    [user]
   );
 
   const refreshItinerary = useCallback(async () => {
@@ -424,8 +429,8 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const data = await fetchSavedItems(groupId);
       setIdeas(data);
-    } catch (err) {
-      console.error('Failed to load ideas:', err);
+    } catch (error) {
+      console.error('Error loading ideas:', error);
     } finally {
       setIdeasLoading(false);
     }
@@ -478,10 +483,12 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setActiveTrip(data);
 
+        const tripDetails = data?.trip_details;
+
         const isMember = data?.group_members?.some(
           (m) => m.user_id === user?.id
         );
-        const isPublic = data?.trip_details?.visibility === 'public';
+        const isPublic = tripDetails?.visibility === 'public';
 
         if (isMember || isPublic) {
           await Promise.all([loadItinerary(id, isMember), loadIdeas(id)]);
@@ -489,7 +496,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
       }
       setIsLoading(false);
     },
-    [loadItinerary, loadIdeas]
+    [user?.id, loadItinerary, loadIdeas]
   );
 
   const clearActiveTrip = useCallback(() => {

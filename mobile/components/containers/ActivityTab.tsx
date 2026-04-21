@@ -10,6 +10,9 @@ import {
   ViewStyle,
 } from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
+import { useTrips } from '@/context/TripsContext';
+
 import * as Haptics from 'expo-haptics';
 
 // Feature modules
@@ -20,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 
 import { Colors, textStyles } from '@/constants';
 import ExpensesContainer from '@/components/trip-activity/ExpensesContainer';
+import MemberCard from '@/components/trip-activity/MemberCard';
 import PollsContainer from '@/components/trip-activity/PollsContainer';
 import PostsContainer from '@/components/trip-activity/PostsContainer';
 import Spacer from '@/components/utils/Spacer';
@@ -57,6 +61,15 @@ export default function ActivityTab({
   const [activeSection, setActiveSection] = useState<ActivitySection>('polls');
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const dark = colorScheme === 'dark';
+
+  const { user } = useAuth();
+  const { removeMember } = useTrips();
+
+  const members = trip?.group_members ?? [];
+  const myMember = members.find((m) => m.user_id === user?.id);
+  const myRole = myMember?.role;
+  const canDelete = myRole === 'owner' || myRole === 'admin';
 
   const dynamicStyles = {
     segment: (isActive: boolean) => ({
@@ -101,7 +114,25 @@ export default function ActivityTab({
       case 'posts':
         return <PostsContainer groupId={tripId} isMember={isMember} />;
       case 'members':
-        return <Text>Members</Text>; // <AnnouncementsList tripId={tripId} userId={userId} isAdmin={isAdmin} />;
+        return (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.membersList}>
+            {members.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                isMe={member.user_id === user?.id}
+                canDelete={canDelete}
+                dark={dark}
+                onDelete={() => removeMember(tripId, member.user_id)}
+              />
+            ))}
+            {members.length === 0 && (
+              <Text style={{ color: dark ? '#9CA3AF' : '#6b7280', textAlign: 'center', marginTop: 24 }}>
+                No members found.
+              </Text>
+            )}
+          </ScrollView>
+        );
       default:
         return null;
     }
@@ -180,5 +211,9 @@ const styles = StyleSheet.create({
   segmentLabelActive: {},
   content: {
     flex: 1,
+    alignSelf: 'stretch',
+  },
+  membersList: {
+    paddingBottom: 24,
   },
 });

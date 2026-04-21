@@ -1,15 +1,28 @@
 {
   "cli": {
     "version": ">= 14.0.2",
-    "appVersionSource": "remote"
+    "appVersionSource": "remote",
+    "promptToConfigurePushNotifications": false
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "APP_VARIANT": "development"
+      },
+      "ios": {
+        "simulator": false
+      }
     },
     "preview": {
+      "autoIncrement": true,
       "distribution": "store",
+      "channel": "preview",
+      "env": {
+        "APP_VARIANT": "preview"
+      },
       "ios": {
         "simulator": false
       },
@@ -18,7 +31,11 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "APP_VARIANT": "production"
+      }
     }
   },
   "submit": {
@@ -32,7 +49,7 @@
     "preview": {
       "ios": {
         "appleId": "chrisobocha@gmail.com",
-        "ascAppId": "6754623801",
+        "ascAppId": "6762600392",
         "appleTeamId": "VSC85SPZ2A"
       }
     }

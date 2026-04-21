@@ -84,15 +84,18 @@ export default function HotelDetailScreen() {
     checkin,
     checkout,
     adults: adultsStr,
+    eventId,
   } = useLocalSearchParams<{
     hotelId: string;
     tripId: string;
     checkin: string;
     checkout: string;
     adults: string;
+    eventId?: string;
   }>();
 
-  const adults = parseInt(adultsStr ?? '1', 10);
+  const adults = parseInt(adultsStr ?? '', 10);
+  const canFetchRates = Boolean(checkin && checkout && adultsStr && !isNaN(adults));
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
@@ -109,22 +112,24 @@ export default function HotelDetailScreen() {
     try {
       const [detailsRes, ratesRes] = await Promise.all([
         getHotelDetails(hotelId),
-        searchRates({
-          hotelIds: [hotelId],
-          checkin,
-          checkout,
-          occupancies: [{ adults }],
-          currency: 'USD',
-          guestNationality: 'US',
-          includeHotelData: false,
-        }),
+        canFetchRates
+          ? searchRates({
+              hotelIds: [hotelId],
+              checkin: checkin!,
+              checkout: checkout!,
+              occupancies: [{ adults }],
+              currency: 'USD',
+              guestNationality: 'US',
+              includeHotelData: false,
+            })
+          : Promise.resolve(null),
       ]);
 
       const mapped = mapDetails(detailsRes.data);
       setHotel(mapped);
 
       const hotelRates: HotelRate[] = [];
-      const hotelRateData = ratesRes.data.find((h) => h.hotelId === hotelId);
+      const hotelRateData = ratesRes?.data.find((h) => h.hotelId === hotelId);
       if (hotelRateData) {
         for (const roomType of hotelRateData.roomTypes) {
           for (const rate of roomType.rates) {
@@ -148,7 +153,7 @@ export default function HotelDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [hotelId, checkin, checkout, adults]);
+  }, [hotelId, checkin, checkout, adults, canFetchRates]);
 
   useEffect(() => {
     fetchData();
@@ -204,11 +209,10 @@ export default function HotelDetailScreen() {
         checkout,
         adults: String(adults),
         tripId,
+        ...(eventId ? { eventId } : {}),
       },
     });
   };
-
-  console.log('rates: ', rates);
 
   return (
     <View
@@ -325,14 +329,18 @@ export default function HotelDetailScreen() {
           ) : null}
 
           {/* Rates */}
-          <Text style={styles.sectionLabel}>Available Rooms</Text>
-          <Spacer size={12} vertical />
+          {(canFetchRates || rates.length > 0) && (
+            <>
+              <Text style={styles.sectionLabel}>Available Rooms</Text>
+              <Spacer size={12} vertical />
+            </>
+          )}
 
-          {rates.length === 0 ? (
+          {canFetchRates && rates.length === 0 ? (
             <Text style={{ color: colors.textColors.subtle, fontSize: 13 }}>
               No rates available for the selected dates.
             </Text>
-          ) : (
+          ) : rates.length > 0 ? (
             rates.map((rate, index) => (
               <Pressable
                 key={`${index}-${rate?.offerId ?? ''}`}
@@ -385,7 +393,7 @@ export default function HotelDetailScreen() {
                 </View>
               </Pressable>
             ))
-          )}
+          ) : null}
 
           <Spacer size={40} vertical />
         </View>

@@ -17,8 +17,7 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
 import IdeaCard from '@/components/trip-activity/IdeaCard';
 import SearchIdeasSheet, {
-  MOCK_CATEGORIES,
-  MOCK_IDEAS,
+  SEARCH_CATEGORIES,
 } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
@@ -121,7 +120,7 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
       : []),
   ];
 
-  const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
+  const filterOptions: ActionOption[] = SEARCH_CATEGORIES.map((cat) => ({
     label: cat.label,
     isBold: activeFilter === cat.id,
     onPress: () => {
@@ -208,7 +207,7 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
             style={[styles.filterText, { color: colors.textColors.subtle }]}>
             {activeFilter === 'All'
               ? 'All'
-              : MOCK_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
+              : SEARCH_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
                 'All'}
           </Text>
           <ChevronDown
@@ -243,7 +242,6 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
             item={item}
             imageUri={
               item.cover_image ||
-              MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
               'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
             }
             categoryLabel={getCategoryWithEmoji(item.location)}
@@ -284,7 +282,7 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
             type: selectedIdea.type as any, // Cast to ItemType
             location: selectedIdea.location,
             external_id: selectedIdea.external_id,
-            image_url: selectedIdea.image_url,
+            image_url: selectedIdea.cover_image,
             start_time: startTime,
             end_time: endTime,
           });

@@ -1,4 +1,4 @@
-import NotificationBell from "@/components/ui/NotificationBell";
+// import NotificationBell from "@/components/ui/NotificationBell";
 import React from "react";
 import { Text, View } from "react-native";
 
@@ -15,7 +15,7 @@ const MainTabHeader = ({ title }: MainTabHeaderProps) => {
       >
         {title}
       </Text>
-      <NotificationBell />
+      {/* <NotificationBell /> */}
     </View>
   );
 };

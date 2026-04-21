@@ -14,6 +14,8 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
+import { StripeProvider } from '@stripe/stripe-react-native';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -26,9 +28,16 @@ import ToastManager from 'toastify-react-native';
 import SplashScreen from '@/components/ui/splash-screen';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
-import { useColorScheme } from 'nativewind';
 import { getThemePreference } from '@/utils/storage';
+import { useColorScheme } from 'nativewind';
 import '../global.css';
+
+const stripeMerchantIdentifier =
+  (
+    Constants.expoConfig?.extra as
+      | { stripeMerchantIdentifier?: string }
+      | undefined
+  )?.stripeMerchantIdentifier ?? 'merchant.io.runwae.app';
 
 function RouteGuard() {
   const segments = useSegments();
@@ -82,6 +91,7 @@ function RouteGuard() {
     'events',
     'search',
     'hotels',
+    'invite',
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -114,6 +124,7 @@ function RouteGuard() {
     'search',
     'hotel',
     'hotels',
+    'invite',
   ].includes(currentSegment as any);
 
   // Redirection Logic
@@ -148,7 +159,9 @@ function RouteGuard() {
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />
       <Stack.Screen name="hotels" options={{ headerShown: false }} />
-
+      <Stack.Screen name="invite" options={{ headerShown: false }} />
+      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
         options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
@@ -195,22 +208,26 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <KeyboardProvider>
-          <AuthProvider>
-            <TripsProvider>
-              <StatusBar style="auto" />
-              <ToastManager
-                showProgressBar={false}
-                style={{ borderRadius: 20, boxShadow: 'none' }}
-                theme={colorScheme === 'dark' ? 'dark' : 'light'}
-              />
-              <RouteGuard />
-            </TripsProvider>
-          </AuthProvider>
-        </KeyboardProvider>
-      </GestureHandlerRootView>
-    </ThemeProvider>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+      merchantIdentifier={stripeMerchantIdentifier}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <KeyboardProvider>
+            <AuthProvider>
+              <TripsProvider>
+                <StatusBar style="auto" />
+                <ToastManager
+                  showProgressBar={false}
+                  style={{ borderRadius: 20, boxShadow: 'none' }}
+                  theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                />
+                <RouteGuard />
+              </TripsProvider>
+            </AuthProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    </StripeProvider>
   );
 }

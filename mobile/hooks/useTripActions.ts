@@ -45,6 +45,7 @@ export interface Trip {
   created_at: string;
   updated_at: string;
   cover_image_url: string | null;
+  join_code: string | null;
 }
 
 export interface TripDetails {
@@ -181,67 +182,25 @@ export async function fetchMyTrips(
 export async function fetchJoinedTrips(
   userId: string
 ): Promise<ActionResult<TripWithEverything[]>> {
-  // 1. Get IDs of groups where user is a member
-  const { data: membershipData, error: membError } = await supabase
+  const { data: memberRows, error: memberError } = await supabase
     .from('group_members')
     .select('group_id')
     .eq('user_id', userId);
 
-  if (membError) return { data: null, error: membError.message };
+  if (memberError) return { data: null, error: memberError.message };
 
-  const groupIds = (membershipData ?? []).map((m) => m.group_id);
+  const groupIds = (memberRows ?? []).map((r) => r.group_id);
   if (groupIds.length === 0) return { data: [], error: null };
 
-  // 2. Fetch those groups with full expansion, excluding those created by the user
   const { data, error } = await supabase
     .from('groups')
     .select(
       '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
     )
-    .in('id', groupIds)
+    .eq('type', 'trip')
     .neq('created_by', userId)
-    .eq('type', 'trip')
+    .in('id', groupIds)
     .order('created_at', { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data as TripWithEverything[]) ?? [], error: null };
-}
-
-/**
- * Returns all trips with visibility='public' that were NOT created
- * by the given user. Used on the Explore tab for discovery.
- */
-
-export async function fetchPublicTrips(
-  userId: string
-): Promise<ActionResult<TripWithEverything[]>> {
-  // 1. Get IDs of groups the user is already a member of
-  const { data: membershipData } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .eq('user_id', userId);
-
-  const joinedGroupIds = (membershipData ?? []).map((m) => m.group_id);
-
-  // 2. Fetch public trips, excluding those the user is already part of
-  let query = supabase
-    .from('groups')
-    .select(
-      '*, trip_details!inner(*), group_members(*, profiles(id, full_name, avatar_url))'
-    )
-    .eq('type', 'trip')
-    .eq('trip_details.visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  if (joinedGroupIds.length > 0) {
-    query = query.not('id', 'in', `(${joinedGroupIds.join(',')})`);
-  } else {
-    // Fallback: if no joined groups found, at least exclude own trips by created_by
-    query = query.neq('created_by', userId);
-  }
-
-  const { data, error } = await query;
 
   if (error) return { data: null, error: error.message };
   return { data: (data ?? []) as TripWithEverything[], error: null };

@@ -2,21 +2,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { ItineraryDayWithItems } from '@/hooks/useItineraryActions';
 import { useTheme } from '@react-navigation/native';
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  getDate,
-  isSameDay,
-  startOfDay,
-  startOfMonth,
-} from 'date-fns';
+import { addDays, format, parseISO } from 'date-fns';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { ChevronDown, ChevronRight, Ellipsis, Plus } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   Text as RNText,
@@ -32,64 +24,116 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
 import { AppFonts, Colors } from '@/constants';
-import { CreateItineraryItemInput } from '@/hooks/useItineraryActions';
+import {
+  CreateItineraryItemInput,
+  ItineraryItem,
+} from '@/hooks/useItineraryActions';
 import { uploadItineraryItemImage } from '@/utils/supabase/storage';
 
 const DATE_COLUMN_WIDTH = 55;
 
 type DateStripProps = {
-  selectedDate: Date;
-  onSelectDate: (date: Date) => void;
+  startDate: string | null; // trip_details.start_date e.g. "2026-11-27"
+  totalDays: number; // days.length
+  selectedIndex: number; // 0-based
+  onSelectIndex: (i: number) => void;
+  onAddDay: () => void;
 };
 
-function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
+function DateStrip({
+  startDate,
+  totalDays,
+  selectedIndex,
+  onSelectIndex,
+  onAddDay,
+}: DateStripProps) {
   const flatListRef = useRef<FlatList>(null);
-  const [containerWidth, setContainerWidth] = useState(
-    Dimensions.get('window').width
-  );
-  const hasScrolled = useRef(false);
-  const today = useMemo(() => startOfDay(new Date()), []);
-
-  const dates = useMemo(() => {
-    const start = startOfMonth(today);
-    const end = endOfMonth(today);
-    return eachDayOfInterval({ start, end });
-  }, [today]);
-
-  const todayIndex = getDate(today) - 1;
-
-  useEffect(() => {
-    if (hasScrolled.current) return;
-    const timer = setTimeout(() => {
-      const offset =
-        todayIndex * DATE_COLUMN_WIDTH -
-        containerWidth / 2 +
-        DATE_COLUMN_WIDTH / 2;
-      flatListRef.current?.scrollToOffset({
-        offset: Math.max(0, offset),
-        animated: false,
-      });
-      hasScrolled.current = true;
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [containerWidth, todayIndex]);
-
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
 
-  const renderItem = ({ item: date }: { item: Date }) => {
-    const isSelected = isSameDay(date, selectedDate);
-    const dayLetter = format(date, 'EEEEE');
-    const dayNum = format(date, 'd');
+  type DayItem = {
+    type: 'day';
+    index: number;
+    label: string;
+    sublabel: string;
+  };
+  type AddItem = { type: 'add' };
+  type StripItem = DayItem | AddItem;
 
+  const items = useMemo<StripItem[]>(() => {
+    const base: StripItem[] = [];
+    for (let i = 0; i < totalDays; i++) {
+      if (startDate) {
+        const date = addDays(parseISO(startDate), i);
+        base.push({
+          type: 'day',
+          index: i,
+          label: format(date, 'EEEEE'),
+          sublabel: format(date, 'd'),
+        });
+      } else {
+        base.push({
+          type: 'day',
+          index: i,
+          label: 'D',
+          sublabel: String(i + 1),
+        });
+      }
+    }
+    base.push({ type: 'add' });
+    return base;
+  }, [startDate, totalDays]);
+
+  useEffect(() => {
+    if (selectedIndex < totalDays) {
+      flatListRef.current?.scrollToIndex({
+        index: selectedIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }
+  }, [selectedIndex, totalDays]);
+
+  const renderItem = ({ item }: { item: StripItem }) => {
+    if (item.type === 'add') {
+      return (
+        <Pressable onPress={onAddDay} style={styles.dateColumn}>
+          <Text
+            style={[styles.dayLetter, { color: dark ? '#9BA1A6' : '#AEAEAE' }]}>
+            {' '}
+          </Text>
+          <View
+            style={[
+              styles.dateCircle,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#F8F9FA',
+                borderColor: dark ? '#374151' : '#F0F5FA',
+                borderStyle: 'dashed',
+              },
+            ]}>
+            <Plus
+              size={16}
+              color={dark ? '#ADB5BD' : '#AEAEAE'}
+              strokeWidth={2}
+            />
+          </View>
+        </Pressable>
+      );
+    }
+
+    const isSelected = item.index === selectedIndex;
     return (
-      <Pressable onPress={() => onSelectDate(date)} style={styles.dateColumn}>
+      <Pressable
+        onPress={() => onSelectIndex(item.index)}
+        style={styles.dateColumn}>
         <Text
           style={[
             styles.dayLetter,
-            isSelected ? styles.dayLetterSelected : { color: dark ? '#9BA1A6' : '#AEAEAE' },
+            isSelected
+              ? styles.dayLetterSelected
+              : { color: dark ? '#9BA1A6' : '#AEAEAE' },
           ]}>
-          {dayLetter}
+          {item.label}
         </Text>
         <View
           style={[
@@ -104,9 +148,9 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
           <Text
             style={[
               styles.dateNumber,
-              isSelected ? styles.dateNumberSelected : { color: dark ? '#ADB5BD' : '#ADB5BD' },
+              isSelected ? styles.dateNumberSelected : { color: '#ADB5BD' },
             ]}>
-            {dayNum}
+            {item.sublabel}
           </Text>
         </View>
       </Pressable>
@@ -121,14 +165,17 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
           backgroundColor: colors.backgroundColors.default,
           borderBottomColor: dark ? '#374151' : '#E0E0E0',
         },
-      ]}
-      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+      ]}>
       <FlatList
         ref={flatListRef}
-        data={dates}
+        data={items}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.toISOString()}
+        keyExtractor={(item) =>
+          item.type === 'add'
+            ? 'add'
+            : String((item as { type: 'day'; index: number }).index)
+        }
         renderItem={renderItem}
         contentContainerStyle={styles.dateStripContent}
         getItemLayout={(_, index) => ({
@@ -136,6 +183,12 @@ function DateStrip({ selectedDate, onSelectDate }: DateStripProps) {
           offset: DATE_COLUMN_WIDTH * index,
           index,
         })}
+        onScrollToIndexFailed={({ index }) => {
+          flatListRef.current?.scrollToOffset({
+            offset: index * DATE_COLUMN_WIDTH,
+            animated: true,
+          });
+        }}
       />
     </View>
   );
@@ -157,7 +210,8 @@ type DaySectionProps = {
   onDeleteDay: (day: ItineraryDayWithItems) => void;
   onClearDay: (dayId: string) => void;
   isFirstDay: boolean;
-  isMember: boolean;
+  onItemPress: (item: ItineraryItem) => void;
+  onUpdateItemNotes: (itemId: string, notes: string) => void;
 };
 
 function DaySection({
@@ -176,9 +230,10 @@ function DaySection({
   onDeleteDay,
   onClearDay,
   isFirstDay,
-  isMember,
+  onItemPress,
+  onUpdateItemNotes,
 }: DaySectionProps) {
-  const [collapsed, setCollapsed] = useState(!isFirstDay);
+  const [collapsed, setCollapsed] = useState(false);
   const [titleEdit, setTitleEdit] = useState(false);
   const [titleVal, setTitleVal] = useState(day.title ?? '');
   const [showSheet, setShowSheet] = useState(false);
@@ -243,7 +298,8 @@ function DaySection({
               onSubmitEditing={handleTitleBlur}
             />
           ) : (
-            <Text style={[styles.dayTitle, { color: colors.textColors.default }]}>
+            <Text
+              style={[styles.dayTitle, { color: colors.textColors.default }]}>
               {day.title || `Day ${index + 1}`}
             </Text>
           )}
@@ -277,7 +333,8 @@ function DaySection({
               onMoveToNextDay={() => onMoveItemToNextDay?.(item.id)}
               canMoveUp={i > 0}
               canMoveDown={i < day.itinerary_items.length - 1}
-              isMember={isMember}
+              onPress={() => onItemPress(item)}
+              onUpdateNotes={(notes) => onUpdateItemNotes(item.id, notes)}
             />
           ))}
 
@@ -331,20 +388,63 @@ export default function TripItineraryTab({
   const {
     days,
     itineraryLoading,
+    activeTrip,
     addDay,
     updateDayCtx,
     removeDay,
     addItem,
     removeItem,
+    updateItemCtx,
     reorderItemsCtx,
     reorderDaysCtx,
     moveItemToDayCtx,
   } = useTrips();
+  const router = useRouter();
+
+  const handleCardPress = (item: ItineraryItem) => {
+    if (item.type === 'hotel' && item.external_id) {
+      router.push({
+        pathname: '/hotel/[hotelId]',
+        params: {
+          hotelId: item.external_id,
+          tripId: activeTrip?.id ?? '',
+        },
+      });
+      return;
+    }
+    if (item.type === 'activity' && item.external_id) {
+      router.push({
+        pathname: '/viator/[productCode]',
+        params: { productCode: item.external_id },
+      });
+      return;
+    }
+    router.push({
+      pathname: '/itinerary/item/[itemId]',
+      params: { itemId: item.id },
+    });
+  };
 
   const [reorderingDayId, setReorderingDayId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(
-    startOfDay(new Date())
-  );
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
+
+  const tripStartDate = activeTrip?.trip_details?.start_date ?? null;
+
+  const handleAddDay = async () => {
+    const currentLength = days.length; // snapshot before await
+    const nextDayNumber = currentLength + 1;
+    const nextDate = tripStartDate
+      ? format(addDays(parseISO(tripStartDate), currentLength), 'yyyy-MM-dd')
+      : undefined;
+    await addDay({ title: `Day ${nextDayNumber}`, date: nextDate });
+    setSelectedDayIndex(currentLength); // index of the newly added day
+  };
+
+  useEffect(() => {
+    if (days.length > 0 && selectedDayIndex >= days.length) {
+      setSelectedDayIndex(days.length - 1);
+    }
+  }, [days.length]);
 
   const handleAddItem = async (
     dayId: string,
@@ -385,116 +485,104 @@ export default function TripItineraryTab({
           style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
           No itinerary yet
         </RNText>
-        <RNText style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
+        <RNText
+          style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
           Every adventure begins with an empty page. Start planning now.
         </RNText>
 
-        {isMember && (
-          <TouchableOpacity
-            onPress={() => addDay({})}
-            style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
-            activeOpacity={0.8}>
-            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
-            <RNText style={styles.createDayLabel}>Create Day 1</RNText>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={handleAddDay}
+          style={[styles.createDayBtn, { backgroundColor: '#FF2E92' }]}
+          activeOpacity={0.8}>
+          <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+          <RNText style={styles.createDayLabel}>Create Day 1</RNText>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
-      <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+      <DateStrip
+        startDate={tripStartDate}
+        totalDays={days.length}
+        selectedIndex={selectedDayIndex}
+        onSelectIndex={setSelectedDayIndex}
+        onAddDay={handleAddDay}
+      />
 
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        {days.map((day, index) => (
-          <DaySection
-            key={day.id}
-            day={day}
-            index={index}
-            userId={user?.id ?? ''}
-            reorderingDayId={reorderingDayId}
-            onToggleReorder={setReorderingDayId}
-            onAddItem={handleAddItem}
-            onDeleteItem={removeItem}
-            onMoveItemUp={async (dId, iId) => {
-              const dayItems = day.itinerary_items;
-              const idx = dayItems.findIndex((it) => it.id === iId);
-              if (idx <= 0) return;
-              const newOrder = [...dayItems];
-              [newOrder[idx - 1], newOrder[idx]] = [
-                newOrder[idx],
-                newOrder[idx - 1],
-              ];
-              await reorderItemsCtx(
-                dId,
-                newOrder.map((it) => it.id)
-              );
-            }}
-            onMoveItemDown={async (dId, iId) => {
-              const dayItems = day.itinerary_items;
-              const idx = dayItems.findIndex((it) => it.id === iId);
-              if (idx < 0 || idx >= dayItems.length - 1) return;
-              const newOrder = [...dayItems];
-              [newOrder[idx], newOrder[idx + 1]] = [
-                newOrder[idx + 1],
-                newOrder[idx],
-              ];
-              await reorderItemsCtx(
-                dId,
-                newOrder.map((it) => it.id)
-              );
-            }}
-            onMoveItemToPrevDay={async (itemId) => {
-              if (index > 0) {
-                const prevDay = days[index - 1];
-                await moveItemToDayCtx(itemId, day.id, prevDay.id);
-              }
-            }}
-            onMoveItemToNextDay={async (itemId) => {
-              if (index < days.length - 1) {
-                const nextDay = days[index + 1];
-                await moveItemToDayCtx(itemId, day.id, nextDay.id);
-              }
-            }}
-            onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
-            onDeleteDay={(d) => removeDay(d.id)}
-            onClearDay={(dId) => {
-              // For each item in the day, remove it
-              day.itinerary_items.forEach((it) => removeItem(it.id));
-            }}
-            isFirstDay={index === 0}
-            isMember={isMember}
-          />
-        ))}
-
-        {isMember && (
-          <Pressable
-            onPress={() => addDay({ title: `Day ${days.length + 1}` })}
-            style={[
-              styles.addDayPill,
-              {
-                backgroundColor: dark ? '#1F1F1F' : '#fff',
-                borderColor: dark ? '#374151' : '#E0E0E0',
-              },
-            ]}>
-            <Plus
-              size={14}
-              color={dark ? '#ADB5BD' : '#AEAEAE'}
-              strokeWidth={2}
-            />
-            <Text
-              style={[
-                styles.addDayPillText,
-                { color: dark ? '#ADB5BD' : '#AEAEAE' },
-              ]}>
-              Add Day
-            </Text>
-          </Pressable>
-        )}
+        {days
+          .filter((_, idx) => idx === selectedDayIndex)
+          .map((day) => {
+            const dayIndex = selectedDayIndex;
+            return (
+              <DaySection
+                key={day.id}
+                day={day}
+                index={dayIndex}
+                userId={user?.id ?? ''}
+                reorderingDayId={reorderingDayId}
+                onToggleReorder={setReorderingDayId}
+                onAddItem={handleAddItem}
+                onDeleteItem={removeItem}
+                onMoveItemUp={async (dId, iId) => {
+                  const dayItems = day.itinerary_items;
+                  const idx = dayItems.findIndex((it) => it.id === iId);
+                  if (idx <= 0) return;
+                  const newOrder = [...dayItems];
+                  [newOrder[idx - 1], newOrder[idx]] = [
+                    newOrder[idx],
+                    newOrder[idx - 1],
+                  ];
+                  await reorderItemsCtx(
+                    dId,
+                    newOrder.map((it) => it.id)
+                  );
+                }}
+                onMoveItemDown={async (dId, iId) => {
+                  const dayItems = day.itinerary_items;
+                  const idx = dayItems.findIndex((it) => it.id === iId);
+                  if (idx < 0 || idx >= dayItems.length - 1) return;
+                  const newOrder = [...dayItems];
+                  [newOrder[idx], newOrder[idx + 1]] = [
+                    newOrder[idx + 1],
+                    newOrder[idx],
+                  ];
+                  await reorderItemsCtx(
+                    dId,
+                    newOrder.map((it) => it.id)
+                  );
+                }}
+                onMoveItemToPrevDay={async (itemId) => {
+                  if (dayIndex > 0) {
+                    const prevDay = days[dayIndex - 1];
+                    await moveItemToDayCtx(itemId, day.id, prevDay.id);
+                  }
+                }}
+                onMoveItemToNextDay={async (itemId) => {
+                  if (dayIndex < days.length - 1) {
+                    const nextDay = days[dayIndex + 1];
+                    await moveItemToDayCtx(itemId, day.id, nextDay.id);
+                  }
+                }}
+                onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
+                onDeleteDay={(d) => removeDay(d.id)}
+                onClearDay={(dId) => {
+                  // For each item in the day, remove it
+                  day.itinerary_items.forEach((it) => removeItem(it.id));
+                }}
+                isFirstDay={dayIndex === 0}
+                onItemPress={handleCardPress}
+                onUpdateItemNotes={(itemId, notes) =>
+                  updateItemCtx(itemId, { notes })
+                }
+              />
+            );
+          })}
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -635,22 +723,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
-  },
-  addDayPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 99,
-    paddingVertical: 10,
-    width: 110,
-    alignSelf: 'flex-start',
-    marginTop: 20,
-    borderStyle: 'dashed',
-  },
-  addDayPillText: {
-    fontSize: 13,
-    fontFamily: AppFonts.inter.medium,
   },
 });

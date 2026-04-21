@@ -65,6 +65,7 @@ export async function searchRates(
         'X-API-Key': 'sand_283f1436-ff62-4562-8f64-cdefc5605d29',
       },
       body: JSON.stringify(requestBody),
+      timeout: 6,
     };
 
     const response = await fetch(
@@ -223,13 +224,14 @@ export async function searchHotelsByCityOrPlaceId(
   //Skip if placeId is provided
   // Resolve city to a LiteAPI placeId
   const placesResponse = await searchPlaces(
-    cityName || destinationPlaceId || ''
+    destinationPlaceId || (cityName ? cityName : '')
   );
-  const place = placesResponse.data?.[0];
-  if (!place || !destinationPlaceId) return [];
+
+  const place = placesResponse.data?.[0] ?? null;
+  if (!place && !destinationPlaceId) return [];
 
   const ratesResponse = await searchRates({
-    placeId: place.placeId || destinationPlaceId,
+    placeId: place?.placeId ?? destinationPlaceId ?? '',
     checkin,
     checkout,
     occupancies: [{ adults }],

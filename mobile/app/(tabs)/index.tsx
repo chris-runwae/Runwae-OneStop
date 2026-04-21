@@ -28,7 +28,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const { myTrips, joinedTrips } = useTrips();
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>([]);
+  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>(
+    []
+  );
 
   function isActive(trip: TripWithEverything): boolean {
     const endDate = trip.trip_details?.end_date;

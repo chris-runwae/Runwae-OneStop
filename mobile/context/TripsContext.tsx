@@ -35,7 +35,6 @@ import {
   UpdateItineraryItemInput,
 } from '@/hooks/useItineraryActions';
 import {
-  addMember,
   createTrip as createTripAction,
   CreateTripInput,
   deleteTrip as deleteTripAction,
@@ -54,6 +53,7 @@ import {
   UpdateTripDetailsInput,
   UpdateTripInput,
 } from '@/hooks/useTripActions';
+import { joinTripByCode } from '@/utils/supabase/trips.service';
 
 // ================================================================
 // Context shape
@@ -137,6 +137,7 @@ export interface TripsContextType {
   /** Saves an idea to a specific trip (e.g. picker from detail screens). */
   addIdeaToTrip: (tripId: string, input: CreateSavedItemInput) => Promise<void>;
   removeIdea: (ideaId: string) => Promise<void>;
+  joinTrip: (code: string) => Promise<string>;
 }
 
 const TripsContext = createContext<TripsContextType | undefined>(undefined);
@@ -775,24 +776,18 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     [activeTrip]
   );
 
+  // ----------------------------------------------------------------
+  // joinTrip — join a trip by invite code, then refresh both lists
+  // ----------------------------------------------------------------
+
   const joinTrip = useCallback(
-    async (groupId: string): Promise<{ error: string | null }> => {
-      if (!user?.id) return { error: 'Not authenticated' };
-
-      const { data: member, error: err } = await addMember(groupId, user.id);
-      if (err || !member) return { error: err ?? 'Failed to join trip' };
-
-      // Refresh active trip to get updated members list
-      if (activeTrip?.id === groupId) {
-        await loadTrip(groupId);
-      }
-
-      // Also refresh joined trips list
-      await refreshJoinedTrips();
-
-      return { error: null };
+    async (code: string): Promise<string> => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const tripId = await joinTripByCode(code, user.id);
+      await Promise.all([refreshMyTrips(), refreshJoinedTrips()]);
+      return tripId;
     },
-    [user?.id, activeTrip, loadTrip, refreshJoinedTrips]
+    [user?.id, refreshMyTrips, refreshJoinedTrips]
   );
 
   // ----------------------------------------------------------------

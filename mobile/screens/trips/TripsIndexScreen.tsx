@@ -4,6 +4,7 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 // import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
+import { useAuth } from '@/hooks/useAuth';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';

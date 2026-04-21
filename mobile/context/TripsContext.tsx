@@ -109,10 +109,9 @@ export interface TripsContextType {
     groupId: string,
     userId: string
   ) => Promise<{ error: string | null }>;
-  joinTrip: (groupId: string) => Promise<{ error: string | null }>;
 
   // Itinerary actions
-  loadItinerary: (groupId: string) => Promise<void>;
+  loadItinerary: (groupId: string, isMember?: boolean) => Promise<void>;
   refreshItinerary: () => Promise<void>;
   addDay: (input: { title?: string; date?: string }) => Promise<void>;
   updateDayCtx: (dayId: string, input: Partial<ItineraryDay>) => Promise<void>;
@@ -228,7 +227,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   // ----------------------------------------------------------------
 
   const loadItinerary = useCallback(
-    async (groupId: string, isMember: boolean) => {
+    async (groupId: string, isMember = false) => {
       setItineraryLoading(true);
       try {
         const itin = await fetchOrCreateItinerary(
@@ -486,7 +485,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
 
         const tripDetails = data?.trip_details;
 
-        const isMember = data?.group_members?.some(
+        const isMember = !!data?.group_members?.some(
           (m) => m.user_id === user?.id
         );
         const isPublic = tripDetails?.visibility === 'public';

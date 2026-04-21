@@ -26,6 +26,7 @@ import 'react-native-reanimated';
 import ToastManager from 'toastify-react-native';
 
 import SplashScreen from '@/components/ui/splash-screen';
+import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
 import { getThemePreference } from '@/utils/storage';
@@ -208,7 +209,7 @@ export default function RootLayout() {
   }
 
   return (
-    <StripeProvider
+    <StripeProviderSafe
       publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
       merchantIdentifier={stripeMerchantIdentifier}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -228,6 +229,6 @@ export default function RootLayout() {
           </KeyboardProvider>
         </GestureHandlerRootView>
       </ThemeProvider>
-    </StripeProvider>
+    </StripeProviderSafe>
   );
 }

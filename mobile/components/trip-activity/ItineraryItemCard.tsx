@@ -52,6 +52,7 @@ type Props = {
   canMoveDown: boolean;
   onPress?: () => void;
   onUpdateNotes?: (notes: string) => void;
+  isMember?: boolean;
 };
 
 const ItineraryItemCard = ({
@@ -67,6 +68,7 @@ const ItineraryItemCard = ({
   canMoveDown,
   onPress,
   onUpdateNotes,
+  isMember = true,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';

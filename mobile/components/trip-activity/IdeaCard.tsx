@@ -33,6 +33,7 @@ interface IdeaCardProps {
   price?: number | null;
   currency?: string | null;
   viatorProductCode?: string;
+  isMember?: boolean;
 }
 
 export default function IdeaCard({
@@ -50,6 +51,7 @@ export default function IdeaCard({
   price,
   currency,
   viatorProductCode,
+  isMember = true,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];

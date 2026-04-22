@@ -15,6 +15,7 @@ import { useExploreData } from '@/hooks/useExploreData';
 import { fetchPublicTrips, TripWithEverything } from '@/hooks/useTripActions';
 import { useViator } from '@/hooks/useViator';
 import type { ViatorProduct } from '@/types/viator.types';
+import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToExperience';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshControl,
@@ -145,6 +146,7 @@ const ExploreScreen = () => {
       matchesSearch(item.title + item.location, searchQuery)
     );
   }, [searchQuery, selectedTopCategory, destinations]);
+
   const filteredPublicTrips = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
@@ -152,6 +154,10 @@ const ExploreScreen = () => {
       matchesSearch(item.name + (item.destination_label ?? ''), searchQuery)
     );
   }, [searchQuery, selectedTopCategory, publicTrips]);
+
+  const mappedViatorExperiences = useMemo(() => {
+    return filteredViatorProducts.map(mapViatorProductToExperience);
+  }, [filteredViatorProducts]);
 
   return (
     <AppSafeAreaView edges={['top']}>
@@ -219,6 +225,17 @@ const ExploreScreen = () => {
                 title="Experience Highlights"
                 subtitle="Top picks for you"
                 loading={loading}
+              />
+            )}
+
+            {mappedViatorExperiences.length > 0 && (
+              <AddOnsForYou
+                data={mappedViatorExperiences}
+                title="Tours & Activities"
+                subtitle="powered by viator"
+                loading={viatorLoading}
+                itemPathPrefix="/viator"
+                headerPath="/viator"
               />
             )}
 

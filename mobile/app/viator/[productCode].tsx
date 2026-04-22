@@ -8,7 +8,7 @@ import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToE
 import { getViatorProductByCode } from '@/utils/viator/viatorProductCache';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -17,16 +17,34 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { Experience } from '@/types/content.types';
 import { Spacer } from '@/components';
+import type { Experience } from '@/types/content.types';
 
 const ViatorProductDetailScreen = () => {
-  const params = useLocalSearchParams<{ productCode: string }>();
+  const params = useLocalSearchParams<{
+    productCode: string;
+    productData: string;
+  }>();
   const productCode = Array.isArray(params.productCode)
     ? params.productCode[0]
     : params.productCode;
+  const productDataParam = params.productData as string | undefined;
 
-  const raw = productCode ? getViatorProductByCode(productCode) : undefined;
+  const raw = useMemo(() => {
+    if (productCode) {
+      const cached = getViatorProductByCode(productCode);
+      if (cached) return cached;
+    }
+    if (productDataParam) {
+      try {
+        return JSON.parse(productDataParam);
+      } catch (e) {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [productCode, productDataParam]);
+
   const experience = useMemo<Experience | null>(
     () => (raw ? mapViatorProductToExperience(raw) : null),
     [raw]
@@ -40,6 +58,26 @@ const ViatorProductDetailScreen = () => {
       scrollY.value = event.contentOffset.y;
     },
   });
+
+  const handleBook = async () => {
+    if (!raw?.productUrl) return;
+    try {
+      const supported = await Linking.canOpenURL(raw.productUrl);
+      if (supported) {
+        await Linking.openURL(raw.productUrl);
+      } else {
+        Alert.alert(
+          'Cannot open link',
+          'We could not open the Viator website on this device.'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'An unexpected error occurred while trying to book.'
+      );
+    }
+  };
 
   const allImages = useMemo(() => {
     if (!experience) return [];
@@ -70,8 +108,6 @@ const ViatorProductDetailScreen = () => {
   if (!productCode || !raw || !experience) {
     return <DetailNotFound type="viator" />;
   }
-
-  const bookUrl = raw.productUrl;
 
   return (
     <View className="flex-1">
@@ -119,10 +155,10 @@ const ViatorProductDetailScreen = () => {
 
         <Spacer size={32} vertical />
 
-        {bookUrl ? (
+        {raw.productUrl ? (
           <View className="px-5 pb-6">
             <TouchableOpacity
-              onPress={() => Linking.openURL(bookUrl)}
+              onPress={handleBook}
               className="items-center rounded-[6px] bg-primary py-3.5">
               <Text className="text-base font-semibold text-white">
                 View on Viator

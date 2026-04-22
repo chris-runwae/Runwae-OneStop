@@ -8,16 +8,22 @@ interface AddOnCardProps {
   item: Experience;
   index?: number;
   fullWidth?: boolean;
+  pathPrefix?: string;
 }
 
-const AddOnCard = ({ item, index = 0, fullWidth = false }: AddOnCardProps) => {
+const AddOnCard = ({
+  item,
+  index = 0,
+  fullWidth = false,
+  pathPrefix = '/experience',
+}: AddOnCardProps) => {
   const router = useRouter();
   const isNavigating = React.useRef(false);
 
   const handlePress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate(`/experience/${item.id}`);
+    router.navigate(`${pathPrefix}/${item.id}`);
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);

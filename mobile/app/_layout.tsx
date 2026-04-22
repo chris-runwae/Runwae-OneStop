@@ -43,6 +43,7 @@ const stripeMerchantIdentifier =
 function RouteGuard() {
   const segments = useSegments();
   const {
+    user,
     isLoading,
     hasSeenOnboarding,
     hasCompletedBoarding,
@@ -67,6 +68,9 @@ function RouteGuard() {
     'forgot-password',
     'check-email',
     'reset-password',
+    'verification-sent',
+    'reset-success',
+    'email-confirmation',
     'onboarding',
     'onboarding-steps',
   ]);
@@ -131,6 +135,10 @@ function RouteGuard() {
   // Redirection Logic
   if (!isAuthenticated && !isInAuthFlow) {
     return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  if (isAuthenticated && !user?.email_verified && !isInAuthFlow) {
+    return <Redirect href={{ pathname: "/(auth)/verification-sent", params: { email: user?.email } } as any} />;
   }
 
   if (

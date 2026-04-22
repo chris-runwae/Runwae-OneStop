@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,29 +17,31 @@ import { Spacer } from "@/components";
 import CustomTextInput from "@/components/containers/TextInput";
 import { useAuth } from "@/context/AuthContext";
 import {
-  SignUpFormData,
-  signUpSchema,
+  ResetPasswordFormData,
+  resetPasswordSchema,
 } from "@/utils/validation/auth.validation";
+import { ArrowLeft } from "lucide-react-native";
 import z from "zod";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 
-const SignUpScreen = () => {
-  const router = useRouter();
+const ResetPasswordScreen = () => {
   const insets = useSafeAreaInsets();
-  const { signUp, isLoading: authLoading, completeOnboarding } = useAuth();
+  const router = useRouter();
+  const { updatePassword, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<SignUpFormData>({
-    fullName: "",
-    email: "",
+  const [formData, setFormData] = useState<ResetPasswordFormData>({
     password: "",
+    confirmPassword: "",
   });
-  const [errors, setErrors] = useState<SignUpFormData>({
-    fullName: "",
-    email: "",
+  const [errors, setErrors] = useState<ResetPasswordFormData>({
     password: "",
+    confirmPassword: "",
   });
 
-  const handleInputChange = (field: keyof SignUpFormData, value: string) => {
+  const handleInputChange = (
+    field: keyof ResetPasswordFormData,
+    value: string,
+  ) => {
     setFormData({ ...formData, [field]: value });
     setErrors({ ...errors, [field]: "" });
   };
@@ -47,56 +49,48 @@ const SignUpScreen = () => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      signUpSchema.parse(formData);
+      resetPasswordSchema.parse(formData);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      const result = await signUp(
-        formData.email,
-        formData.password,
-        formData.fullName
-      );
+      const result = await updatePassword(formData.password);
 
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
           type: "error",
-          text1: "Sign Up Error",
+          text1: "Reset Password Error",
           text2: result.error,
           position: "bottom",
           visibilityTime: 4000,
           autoHide: true,
         });
       } else {
-        // Navigate to verification sent screen instead of boarding
-        // to encourage email verification first.
-        router.push({
-          pathname: "/(auth)/verification-sent",
-          params: { email: formData.email },
-        } as any);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Toast.show({
+          type: "success",
+          text1: "Password Reset",
+          text2: "Your password has been successfully reset",
+          position: "bottom",
+          visibilityTime: 3000,
+          autoHide: true,
+        });
+        // Navigate to success screen
+        router.replace("/(auth)/reset-success");
       }
     } catch (error: any) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (error instanceof z.ZodError) {
-        const newErrors: SignUpFormData = {
-          fullName: "",
-          email: "",
+        const newErrors: ResetPasswordFormData = {
           password: "",
+          confirmPassword: "",
         };
         error.issues.forEach((issue) => {
           if (issue.path.length > 0) {
-            const field = issue.path[0] as keyof SignUpFormData;
+            const field = issue.path[0] as keyof ResetPasswordFormData;
             newErrors[field] = issue.message;
           }
         });
         setErrors(newErrors);
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Sign Up Error",
-          text2: error.message || "An error occurred during sign up",
-          position: "bottom",
-          visibilityTime: 4000,
-        });
       }
     } finally {
       setIsSubmitting(false);
@@ -110,44 +104,32 @@ const SignUpScreen = () => {
         className="flex-1"
       >
         <View style={{ paddingTop: 24 }}>
-          <Spacer size={24} vertical />
+          <View style={styles.headerContainer}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-[50px] h-[50px] rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+            >
+              <ArrowLeft size={20} color="#374151" className="dark:text-gray-300" />
+            </TouchableOpacity>
+          </View>
+
+          <Spacer size={32} vertical />
+
           <Text
             style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
             className="text-3xl font-bold dark:text-white"
           >
-            Welcome to{"\n"}Runwae 🎉
+            Reset Password
           </Text>
-          <Spacer size={5} vertical />
-
-          <Text className="text-gray-400">
-            Sign up for an account or{" "}
-            <Link href="/(auth)/login" className="text-primary underline">
-              log in
-            </Link>{" "}
-            here.
-          </Text>
-          <Spacer size={50} vertical />
-
-          <CustomTextInput
-            label="Full Name"
-            placeholder="John Doe"
-            value={formData.fullName}
-            onChangeText={(value) => handleInputChange("fullName", value)}
-            error={errors.fullName}
-          />
 
           <Spacer size={16} vertical />
 
-          <CustomTextInput
-            label="Email address"
-            keyboardType="email-address"
-            placeholder="example@email.com"
-            value={formData.email}
-            onChangeText={(value) => handleInputChange("email", value)}
-            error={errors.email}
-          />
+          <Text className="text-gray-400 leading-relaxed">
+            Please enter a new password that is different from your old
+            password, and then confirm it in the field below.
+          </Text>
 
-          <Spacer size={16} vertical />
+          <Spacer size={40} vertical />
 
           <CustomTextInput
             label="Password"
@@ -159,7 +141,18 @@ const SignUpScreen = () => {
 
           <Spacer size={16} vertical />
 
-          <Spacer size={20} vertical />
+          <CustomTextInput
+            label="Confirm Password"
+            isPassword
+            value={formData.confirmPassword}
+            onChangeText={(value) =>
+              handleInputChange("confirmPassword", value)
+            }
+            error={errors.confirmPassword}
+          />
+
+          <Spacer size={32} vertical />
+
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isSubmitting || authLoading}
@@ -168,7 +161,7 @@ const SignUpScreen = () => {
             {isSubmitting || authLoading ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text className="text-white font-medium text-base">Sign Up</Text>
+              <Text className="text-white font-medium text-base">Save</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -177,11 +170,11 @@ const SignUpScreen = () => {
   );
 };
 
-export default SignUpScreen;
+export default ResetPasswordScreen;
 
 const styles = StyleSheet.create({
-  forgotPasswordContainer: {
-    alignItems: "flex-end",
-    width: "100%",
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

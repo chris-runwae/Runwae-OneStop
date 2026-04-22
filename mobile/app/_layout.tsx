@@ -83,6 +83,7 @@ function RouteGuard() {
     'step-2',
     'step-3',
     'step-4',
+    'step-5',
   ]);
 
   const AUTHORIZED_ROOT_ROUTES = new Set([

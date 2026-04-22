@@ -142,46 +142,46 @@ const ItineraryHeader = ({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            onPress={() => setIsShareModalVisible(true)}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-            <Upload
-              size={17}
-              strokeWidth={1.5}
-              color={dark ? '#fff' : '#000'}
-            />
-          </TouchableOpacity>
+{/* <TouchableOpacity
+  onPress={() => setIsShareModalVisible(true)}
+  className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
+  <Upload
+    size={17}
+    strokeWidth={1.5}
+    color={dark ? '#fff' : '#000'}
+  />
+</TouchableOpacity>
 
-          {!showMoreOptions && (
-            <>
-              {!hideFavorite && (
-                <TouchableOpacity
-                  onPress={() =>
-                    onFavoritePress
-                      ? onFavoritePress()
-                      : setIsFavorite(!isFavorite)
-                  }
-                  className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-                  <Heart
-                    size={17}
-                    strokeWidth={1.5}
-                    color={
-                      (onFavoritePress ? favoriteFilled : isFavorite)
-                        ? '#FF2E92'
-                        : dark
-                          ? '#fff'
-                          : '#000'
-                    }
-                    fill={
-                      (onFavoritePress ? favoriteFilled : isFavorite)
-                        ? '#FF2E92'
-                        : 'transparent'
-                    }
-                  />
-                </TouchableOpacity>
-              )}
-            </>
-          )}
+{!showMoreOptions && (
+  <>
+    {!hideFavorite && (
+      <TouchableOpacity
+        onPress={() =>
+          onFavoritePress
+            ? onFavoritePress()
+            : setIsFavorite(!isFavorite)
+        }
+        className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
+        <Heart
+          size={17}
+          strokeWidth={1.5}
+          color={
+            (onFavoritePress ? favoriteFilled : isFavorite)
+              ? '#FF2E92'
+              : dark
+                ? '#fff'
+                : '#000'
+          }
+          fill={
+            (onFavoritePress ? favoriteFilled : isFavorite)
+              ? '#FF2E92'
+              : 'transparent'
+          }
+        />
+      </TouchableOpacity>
+    )}
+  </>
+)} */}
 
           {(isMember || isOwner) && dropdownOptions && (
             <TouchableOpacity

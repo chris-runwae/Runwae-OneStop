@@ -10,7 +10,7 @@ import { uploadGroupCoverImage } from '@/utils/supabase/storage';
 export const useTripDetailActions = (tripId: string) => {
   const router = useRouter();
   const { user } = useAuth();
-  const { activeTrip, updateTrip, joinTrip, leaveTrip, deleteTrip } = useTrips();
+  const { activeTrip, updateTrip, joinTrip, joinTripById, leaveTrip, deleteTrip } = useTrips();
   const [isJoining, setIsJoining] = useState(false);
 
   const uploadTripCoverImage = async (imageUri: string) => {
@@ -86,7 +86,7 @@ export const useTripDetailActions = (tripId: string) => {
   const handleJoinTrip = async () => {
     if (!activeTrip) return;
     setIsJoining(true);
-    const { error: joinErr } = await joinTrip(activeTrip.id);
+    const { error: joinErr } = await joinTripById(activeTrip.id);
     setIsJoining(false);
     if (joinErr) {
       Alert.alert('Error', 'Failed to join trip: ' + joinErr);

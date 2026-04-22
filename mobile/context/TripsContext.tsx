@@ -35,6 +35,7 @@ import {
   UpdateItineraryItemInput,
 } from '@/hooks/useItineraryActions';
 import {
+  addMember as addMemberAction,
   createTrip as createTripAction,
   CreateTripInput,
   deleteTrip as deleteTripAction,
@@ -137,6 +138,7 @@ export interface TripsContextType {
   addIdeaToTrip: (tripId: string, input: CreateSavedItemInput) => Promise<void>;
   removeIdea: (ideaId: string) => Promise<void>;
   joinTrip: (code: string) => Promise<string>;
+  joinTripById: (groupId: string) => Promise<{ error: string | null }>;
 }
 
 const TripsContext = createContext<TripsContextType | undefined>(undefined);
@@ -789,6 +791,37 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     [user?.id, refreshMyTrips, refreshJoinedTrips]
   );
 
+  const joinTripById = useCallback(
+    async (groupId: string): Promise<{ error: string | null }> => {
+      if (!user?.id) return { error: 'Not authenticated' };
+
+      // Optimistic check: if we already see ourselves in the member list, skip
+      const isAlreadyMember = activeTrip?.group_members?.some(
+        (m) => m.user_id === user.id
+      );
+      if (isAlreadyMember) return { error: null };
+
+      const { data, error: err } = await addMemberAction(groupId, user.id);
+
+      if (err) {
+        // If the error is about duplicate membership, treat as success
+        if (err.includes('duplicate key') || err.includes('already exists')) {
+          return { error: null };
+        }
+        return { error: err };
+      }
+
+      // Refresh both the lists and the active trip detail
+      await Promise.all([
+        refreshMyTrips(),
+        refreshJoinedTrips(),
+        loadTrip(groupId),
+      ]);
+      return { error: null };
+    },
+    [user?.id, activeTrip, refreshMyTrips, refreshJoinedTrips]
+  );
+
   // ----------------------------------------------------------------
   // Context value
   // ----------------------------------------------------------------
@@ -834,6 +867,7 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
         addIdeaToTrip,
         removeIdea,
         joinTrip,
+        joinTripById,
       }}>
       {children}
     </TripsContext.Provider>

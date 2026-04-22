@@ -3,6 +3,7 @@ import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
 import ItineraryForYou from '@/components/home/IteneryForYou';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
+import PublicTripsSection from '@/components/home/PublicTripsSection';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
 import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
@@ -144,6 +145,13 @@ const ExploreScreen = () => {
       matchesSearch(item.title + item.location, searchQuery)
     );
   }, [searchQuery, selectedTopCategory, destinations]);
+  const filteredPublicTrips = useMemo(() => {
+    if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
+      return [];
+    return publicTrips.filter((item) =>
+      matchesSearch(item.name + (item.destination_label ?? ''), searchQuery)
+    );
+  }, [searchQuery, selectedTopCategory, publicTrips]);
 
   return (
     <AppSafeAreaView edges={['top']}>
@@ -191,6 +199,13 @@ const ExploreScreen = () => {
                 title="Featured Trip Itineraries"
                 subtitle="Recommended by Runwae"
                 loading={loading}
+              />
+            )}
+
+            {filteredPublicTrips.length > 0 && (
+              <PublicTripsSection
+                data={filteredPublicTrips}
+                loading={publicTripsLoading}
               />
             )}
 

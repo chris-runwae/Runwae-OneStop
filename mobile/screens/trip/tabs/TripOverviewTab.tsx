@@ -152,7 +152,9 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
           </Text>
           <Text
             style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
-            Looking for what to do? Add them to Ideas now.
+            {isMember
+              ? 'Looking for what to do? Add them to Ideas now.'
+              : "This trip doesn't have any ideas saved yet. Check back later!"}
           </Text>
 
           {isMember && (
@@ -236,28 +238,40 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
       </View>
 
       <View style={styles.ideaGridContent}>
-        {filteredIdeas.map((item) => (
-          <IdeaCard
-            key={item.id}
-            item={item}
-            imageUri={
-              item.cover_image ||
-              'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
-            }
-            categoryLabel={getCategoryWithEmoji(item.location)}
-            title={item.name}
-            description={item.notes || ''}
-            onOptionsPress={isMember ? (position: any) => {
-              setSelectedIdea(item);
-              setMenuAnchor(position);
-              setMenuVisible(true);
-            } : undefined}
-            checkin={tripDetails?.start_date}
-            checkout={tripDetails?.end_date}
-            adults={trip.group_members?.length ?? 1}
-            isMember={isMember}
-          />
-        ))}
+        {filteredIdeas.map((item) => {
+          const price = item.all_data?.price || item.all_data?.representativePrice?.amount;
+          const currency = item.all_data?.currency || item.all_data?.representativePrice?.currency;
+
+          return (
+            <IdeaCard
+              key={item.id}
+              item={item}
+              imageUri={
+                item.cover_image ||
+                item.image_url || // check both
+                'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
+              }
+              categoryLabel={getCategoryWithEmoji(item.location)}
+              title={item.name}
+              description={item.notes || ''}
+              onOptionsPress={
+                isMember
+                  ? (position: any) => {
+                      setSelectedIdea(item);
+                      setMenuAnchor(position);
+                      setMenuVisible(true);
+                    }
+                  : undefined
+              }
+              checkin={tripDetails?.start_date}
+              checkout={tripDetails?.end_date}
+              adults={trip.group_members?.length ?? 1}
+              price={price}
+              currency={currency}
+              isMember={isMember}
+            />
+          );
+        })}
       </View>
 
       <SearchIdeasSheet

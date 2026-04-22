@@ -437,6 +437,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         external_id: activity.id,
         notes: activity.description,
         cover_image: activity.imageUri,
+        all_data: activity,
       };
     }
     await addIdea(input);

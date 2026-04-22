@@ -71,6 +71,10 @@ export default function TripDetailScreen() {
       borderColor: dark ? '#374151' : '#E9ECEF',
       maxWidth: 150,
     },
+    soloBadge: {
+      backgroundColor: dark ? 'rgba(255, 31, 140, 0.1)' : '#FDF2F8',
+      borderColor: dark ? 'rgba(255, 31, 140, 0.2)' : '#FCE7F3',
+    },
     infoText: {
       color: dark ? '#ADB5BD' : '#A8A8A8',
     },
@@ -91,6 +95,8 @@ export default function TripDetailScreen() {
   const isMember = activeTrip?.group_members?.some(
     (m) => m.user_id === user?.id
   );
+  const isPublic = activeTrip?.trip_details?.visibility === 'public';
+  const isSolo = isOwner && activeTrip?.group_members?.length === 1;
 
   const creator = activeTrip?.group_members?.find(
     (m) => m.role === 'owner' || m.role === 'admin'
@@ -214,41 +220,58 @@ export default function TripDetailScreen() {
           </Text>
 
           <Spacer size={14} vertical />
-          {activeTrip?.group_members && activeTrip.group_members.length > 1 ? (
-            <AvatarGroup
-              members={activeTrip.group_members}
-              maxVisible={4}
-              size={30}
-              overlap={12}
-            />
-          ) : (
-            <View style={styles.creatorInfo}>
-              <ProfileAvatar
-                name={creator?.profiles?.full_name || 'User'}
-                imageUrl={creator?.profiles?.avatar_url}
-                size={32}
+          <View style={styles.membershipRow}>
+            {activeTrip?.group_members &&
+            activeTrip.group_members.length > 1 ? (
+              <AvatarGroup
+                members={activeTrip.group_members}
+                maxVisible={4}
+                size={30}
+                overlap={12}
               />
-              <Spacer size={8} horizontal />
-              <View>
-                <Text style={styles.creatorName}>
-                  {creator?.profiles?.full_name || 'Guest'}
-                </Text>
-                <Text style={styles.createdByLabel}>Created by</Text>
+            ) : (
+              <View style={styles.creatorInfo}>
+                <ProfileAvatar
+                  name={creator?.profiles?.full_name || 'User'}
+                  imageUrl={creator?.profiles?.avatar_url}
+                  size={32}
+                />
+                <Spacer size={8} horizontal />
+                <View>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={styles.creatorName}>
+                    {creator?.profiles?.full_name || 'Guest'}
+                    {isOwner ? ' (You)' : ''}
+                  </Text>
+                  <Text style={styles.createdByLabel}>Created by</Text>
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
-          {!isMember && (
-            <TouchableOpacity
-              style={[styles.inlineJoinButton, { backgroundColor: '#FF2E92' }]}
-              onPress={handleJoinTrip}
-              disabled={isJoining}
-              activeOpacity={0.8}>
-              <Text style={styles.joinTripButtonText}>
-                {isJoining ? 'Joining...' : 'Join Trip'}
-              </Text>
-            </TouchableOpacity>
-          )}
+            <View style={styles.actionArea}>
+              {isSolo && (
+                <View style={[styles.soloBadge, dynamicStyles.soloBadge]}>
+                  <Text style={styles.soloBadgeText}>Solo Trip</Text>
+                </View>
+              )}
+              {!isMember && (
+                <TouchableOpacity
+                  style={[
+                    styles.soloBadge,
+                    { backgroundColor: '#FF2E92', borderColor: '#FF2E92' },
+                  ]}
+                  onPress={handleJoinTrip}
+                  disabled={isJoining}
+                  activeOpacity={0.8}>
+                  <Text style={[styles.soloBadgeText, { color: '#ffffff' }]}>
+                    {isJoining ? 'Joining...' : 'Join Trip'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
           <Spacer size={32} vertical />
 
@@ -263,16 +286,16 @@ export default function TripDetailScreen() {
           />
           <Spacer size={24} vertical />
 
-          {activeTab === 'ideas' && isMember && (
+          {activeTab === 'ideas' && (isMember || isPublic) && (
             <View style={styles.tabContent}>
               <TripOverviewTab trip={activeTrip} isMember={isMember} />
               <Spacer size={24} vertical />
             </View>
           )}
-          {activeTab === 'itinerary' && isMember && (
+          {activeTab === 'itinerary' && (isMember || isPublic) && (
             <TripItineraryTab isMember={isMember} />
           )}
-          {activeTab === 'activity' && isMember && (
+          {activeTab === 'activity' && (isMember || isPublic) && (
             <ActivityTab
               tripId={activeTrip.id}
               trip={activeTrip}
@@ -386,12 +409,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: AppFonts.inter.medium,
     color: COLORS.gray[500],
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   creatorName: {
     fontSize: 14,
+    maxWidth: 150,
     fontFamily: AppFonts.inter.semiBold,
+  },
+  membershipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  actionArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   fab: {
     position: 'absolute',
@@ -452,5 +486,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  soloBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  soloBadgeText: {
+    color: '#FF1F8C',
+    fontSize: 10,
+    fontFamily: AppFonts.inter.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

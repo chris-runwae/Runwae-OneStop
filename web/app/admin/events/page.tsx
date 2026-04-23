@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ROUTES } from "@/app/routes";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -11,7 +10,7 @@ export default function AdminEventsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-black">Events</h1>
         <Link
-          href={ROUTES.host.eventsCreate}
+          href="/admin/events/create"
           className={cn(buttonVariants({ variant: "primary", size: "default" }), "gap-2")}
         >
           <Plus className="size-4" />

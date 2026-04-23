@@ -27,6 +27,34 @@ export const adminGetEvent = async (id: string): Promise<Event | null> => {
   return data as Event | null;
 };
 
+/** Create an event as admin — user_id is the selected host's id (or null if not assigned). */
+export const adminCreateEvent = async (payload: {
+  name: string;
+  start_date: string;
+  start_time: string;
+  end_date: string;
+  end_time: string;
+  location: string;
+  description: string;
+  category: string;
+  ticket_link: string | null;
+  bookings: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  image: string;
+  status: string;
+  user_id: string | null;
+}): Promise<Event> => {
+  const { data, error } = await supabase
+    .from("events")
+    .insert(payload)
+    .select(EVENT_COLS)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Event;
+};
+
 /** Update any event regardless of owner — admin only. */
 export const adminUpdateEvent = async (
   id: string,

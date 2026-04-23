@@ -4,21 +4,15 @@ export type AdminUser = {
   id: string;
   email: string;
   created_at: string;
-  last_sign_in_at: string | null;
+  updated_at: string | null;
   full_name: string | null;
   avatar_url: string | null;
-  role: string | null;
 };
 
-/**
- * Fetches all auth users via the public profiles table.
- * Requires a `profiles` table that mirrors auth.users with public columns.
- * Falls back to auth.users metadata if profiles table isn't available.
- */
 export const adminGetAllUsers = async (): Promise<AdminUser[]> => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, created_at, last_sign_in_at, full_name, avatar_url, role")
+    .select("id, email, created_at, updated_at, full_name, avatar_url")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -28,7 +22,7 @@ export const adminGetAllUsers = async (): Promise<AdminUser[]> => {
 export const adminGetUserById = async (id: string): Promise<AdminUser | null> => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, created_at, last_sign_in_at, full_name, avatar_url, role")
+    .select("id, email, created_at, updated_at, full_name, avatar_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -51,7 +45,7 @@ export const adminGetAllHosts = async () => {
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, email, created_at, last_sign_in_at, full_name, avatar_url, role")
+    .select("id, email, created_at, updated_at, full_name, avatar_url")
     .in("id", uniqueIds);
 
   if (profilesError) throw new Error(profilesError.message);

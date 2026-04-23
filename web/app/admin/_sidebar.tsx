@@ -13,7 +13,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/AuthContext";
+import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { label: "Overview", href: "/admin/overview", icon: LayoutDashboard },
@@ -27,11 +28,17 @@ const NAV_ITEMS = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { admin, signOut } = useAdminAuth();
+  const router = useRouter();
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
-  const email = user?.email ?? "admin@runwae.com";
+  const displayName = admin?.name ?? "Admin";
+  const email = admin?.email ?? "admin@runwae.com";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+
+  const handleSignOut = () => {
+    signOut();
+    router.replace("/admin/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-white border-r border-border">
@@ -79,18 +86,9 @@ export function AdminSidebar() {
       <div className="shrink-0 px-3 pb-5">
         <div className="rounded-xl border border-border bg-muted/30 p-4">
           <div className="flex items-center gap-3">
-            {user?.user_metadata?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.user_metadata.avatar_url}
-                alt={displayName}
-                className="size-9 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                {initials}
-              </div>
-            )}
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+              {initials}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-black">{displayName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
@@ -99,7 +97,7 @@ export function AdminSidebar() {
 
           <button
             type="button"
-            onClick={signOut}
+            onClick={handleSignOut}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-500 hover:bg-rose-100 transition-colors"
           >
             <LogOut className="size-4" />

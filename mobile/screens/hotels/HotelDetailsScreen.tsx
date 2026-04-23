@@ -10,8 +10,10 @@ import {
   ScrollView,
   StyleSheet,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import RenderHTML from 'react-native-render-html';
 import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -107,6 +109,7 @@ export default function HotelDetailScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
 
   const { openDirections } = useDirections();
   const [showFullMap, setShowFullMap] = useState(false);
@@ -120,16 +123,28 @@ export default function HotelDetailScreen() {
     setLoading(true);
     setError(null);
     try {
+      // 1. Fetch Details (Required)
       const detailsRes = await getHotelDetails(hotelId);
-      const ratesRes = await getHotelRatesByHotelIds(
-        [hotelId],
-        checkin ?? activeTrip?.trip_details?.start_date ?? '',
-        checkout ?? activeTrip?.trip_details?.end_date ?? '',
-        adults
-      );
-
-      setRates(ratesRes);
       setHotel(mapDetails(detailsRes.data));
+
+      // 2. Fetch Rates (Optional)
+      try {
+        const checkinDate = checkin ?? activeTrip?.trip_details?.start_date ?? '';
+        const checkoutDate = checkout ?? activeTrip?.trip_details?.end_date ?? '';
+
+        if (checkinDate && checkoutDate) {
+          const ratesRes = await getHotelRatesByHotelIds(
+            [hotelId],
+            checkinDate,
+            checkoutDate,
+            adults
+          );
+          setRates(ratesRes);
+        }
+      } catch (rateErr) {
+        console.warn('[LiteAPI] Could not fetch rates:', (rateErr as Error).message);
+        setRates(null);
+      }
     } catch (err) {
       setError((err as Error).message || 'Failed to load hotel details');
     } finally {
@@ -313,13 +328,15 @@ export default function HotelDetailScreen() {
             <>
               <Text style={styles.sectionLabel}>About</Text>
               <Spacer size={8} vertical />
-              <Text
-                style={[
-                  styles.description,
-                  { color: colors.textColors.subtle },
-                ]}>
-                {hotel.description}
-              </Text>
+              <RenderHTML
+                contentWidth={width - 32}
+                source={{ html: hotel.description }}
+                baseStyle={{
+                  color: colors.textColors.subtle,
+                  ...textStyles.textBody14,
+                  lineHeight: 22,
+                } as any}
+              />
               <Spacer size={16} vertical />
             </>
           ) : null}

@@ -407,19 +407,22 @@ export default function TripItineraryTab({
   const handleCardPress = (item: ItineraryItem) => {
     if (item.type === 'hotel' && item.external_id) {
       router.push({
-        pathname: '/hotel/[hotelId]',
+        pathname: '/hotels/[hotelId]',
         params: {
           hotelId: item.external_id,
-          tripId: activeTrip?.id ?? '',
+          hotelData: JSON.stringify(item.all_data),
+          checkin: activeTrip?.trip_details?.start_date,
+          checkout: activeTrip?.trip_details?.end_date,
+          adults: activeTrip?.group_members?.length ?? 1,
         },
-      });
+      } as any);
       return;
     }
     if (item.type === 'activity' && item.external_id) {
       router.push({
         pathname: '/viator/[productCode]',
         params: { productCode: item.external_id },
-      });
+      } as any);
       return;
     }
     router.push({

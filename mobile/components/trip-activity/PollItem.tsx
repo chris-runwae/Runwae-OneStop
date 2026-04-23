@@ -108,20 +108,41 @@ const PollItem = ({
   };
 
   const styles = StyleSheet.create({
+    card: {
+      backgroundColor: colors.backgroundColors.subtle,
+      borderRadius: 24,
+      padding: 20,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.borderColors.subtle,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
+      elevation: 2,
+    },
     creatorContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 10,
     },
     creatorNameText: {
-      ...textStyles.textHeading16,
+      ...textStyles.textHeading14,
+      color: colors.textColors.default,
     },
     createdAtText: {
-      ...textStyles.textBody12,
+      ...textStyles.textBody10,
       color: colors.textColors.subtle,
     },
     titleText: {
-      ...textStyles.textHeading16,
+      ...textStyles.textHeading18,
+      color: colors.textColors.default,
+      lineHeight: 24,
+    },
+    metaText: {
+      ...textStyles.textBody12,
+      color: colors.textColors.subtle,
+      fontWeight: '600',
     },
   });
 
@@ -135,7 +156,7 @@ const PollItem = ({
   const votesCount = poll.poll_votes.length;
 
   return (
-    <View>
+    <View style={styles.card}>
       <View
         style={{
           flexDirection: 'row',
@@ -147,6 +168,7 @@ const PollItem = ({
           <ProfileAvatar
             name={poll.creator.full_name}
             imageUrl={poll.creator.avatar_url}
+            size={36}
           />
           <View>
             <Text style={styles.creatorNameText}>{poll.creator.full_name}</Text>
@@ -159,12 +181,14 @@ const PollItem = ({
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               alignItems: 'center',
               justifyContent: 'center',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 16,
             }}>
-            <MoreVertical size={20} color={colors.textColors.subtle} />
+            <MoreVertical size={18} color={colors.textColors.subtle} />
           </Pressable>
         )}
       </View>
@@ -172,12 +196,13 @@ const PollItem = ({
       <Spacer size={16} vertical />
 
       <Text style={styles.titleText}>{poll.title}</Text>
+      <Spacer size={4} vertical />
       <Text
         style={
-          styles.createdAtText
+          styles.metaText
         }>{`${selectionText} · ${votesCount} votes`}</Text>
 
-      <Spacer size={12} vertical />
+      <Spacer size={20} vertical />
       {poll.poll_options.map((option: PollOption) => (
         <PollOptionItem
           key={option.id}

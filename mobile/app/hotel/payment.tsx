@@ -104,8 +104,12 @@ export default function PaymentScreen() {
         const { error: initErr } = await initPaymentSheet({
           merchantDisplayName: 'Runwae',
           paymentIntentClientSecret: json.clientSecret,
-          applePay: { merchantCountryCode: 'GB' },
+          applePay: { 
+            merchantCountryCode: 'GB',
+            merchantIdentifier: 'merchant.io.runwae.app', // Explicitly provide even if in provider
+          },
           googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
+          returnURL: 'runwae://stripe-redirect', // Required for some payment methods/redirects
           style: 'automatic',
         });
         if (initErr) throw new Error(initErr.message);
@@ -121,23 +125,36 @@ export default function PaymentScreen() {
     })();
   }, [price, prebookId]);
 
+  const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+
   const handlePay = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       Alert.alert('Missing info', 'Please fill in your name and email.');
       return;
     }
     setLoading(true);
+    setBookingStatus('Confirming payment...');
+    
     try {
+      // 1. Present Stripe Payment Sheet
       const { error: paymentError } = await presentPaymentSheet();
+      
       if (paymentError) {
         if (paymentError.code !== 'Canceled') {
-          Alert.alert('Payment failed', paymentError.message);
+          console.error('[Stripe] Payment presented error:', paymentError);
+          Alert.alert(
+            'Payment failed',
+            paymentError.message || 'The payment could not be processed. Please check your card details.'
+          );
         }
+        setBookingStatus(null);
+        setLoading(false);
         return;
       }
 
-      // Stripe confirmed — now finalise the booking with LiteAPI.
-      // If this fails, the payment was already captured. Show a support message.
+      // 2. Stripe confirmed — finalize the booking with LiteAPI.
+      setBookingStatus('Finalizing your booking...');
+      
       let bookRes;
       try {
         bookRes = await bookHotel({
@@ -157,41 +174,52 @@ export default function PaymentScreen() {
             },
           ],
         });
-      } catch (bookErr) {
+      } catch (bookErr: any) {
+        console.error('[LiteAPI] Booking finalization failed:', bookErr);
+        // CRITICAL: The payment was already processed by Stripe.
         Alert.alert(
-          'Booking error',
-          'Your payment was processed but we could not confirm your booking. Please contact support@runwae.io with your payment reference.'
+          'Booking Confirmation Pending',
+          'Your payment was successful, but we encountered an error while confirming your room with the hotel. \n\nIMPORTANT: Please do not try to book again. Contact support@runwae.io with your email and we will manually confirm your booking.',
+          [{ text: 'OK' }]
         );
         throw bookErr;
       }
 
+      // 3. Log to Supabase for itinerary tracking
+      setBookingStatus('Updating your itinerary...');
       if (user?.id) {
-        await logHotelBooking({
-          tripId: tripId ?? null,
-          userId: user.id,
-          vendorId: null,
-          eventId: eventId ?? null,
-          hotelId,
-          hotelName,
-          bookingRef: bookRes.data.bookingId,
-          confirmationCode: bookRes.data.hotelConfirmationCode ?? null,
-          prebookId,
-          transactionId,
-          checkin,
-          checkout,
-          guests,
-          roomCount: bookingType === 'group' ? guests : 1,
-          currency: bookRes.data.currency,
-          totalAmount: bookRes.data.price,
-          commissionAmount: commission,
-          bookingType:
-            bookingType === 'individual' || bookingType === 'group'
-              ? bookingType
-              : 'individual',
-          rawResponse: bookRes as unknown as object,
-        });
+        try {
+          await logHotelBooking({
+            tripId: tripId ?? null,
+            userId: user.id,
+            vendorId: null,
+            eventId: eventId ?? null,
+            hotelId,
+            hotelName,
+            bookingRef: bookRes.data.bookingId,
+            confirmationCode: bookRes.data.hotelConfirmationCode ?? null,
+            prebookId,
+            transactionId,
+            checkin,
+            checkout,
+            guests,
+            roomCount: bookingType === 'group' ? guests : 1,
+            currency: bookRes.data.currency,
+            totalAmount: bookRes.data.price,
+            commissionAmount: commission,
+            bookingType:
+              bookingType === 'individual' || bookingType === 'group'
+                ? bookingType
+                : 'individual',
+            rawResponse: bookRes as unknown as object,
+          });
+        } catch (logErr) {
+          console.warn('[DB] Failed to log booking to history, but booking is confirmed:', logErr);
+          // We don't throw here so the user still gets to the confirmation screen.
+        }
       }
 
+      // 4. Success!
       router.replace({
         pathname: '/hotel/confirmation',
         params: {
@@ -206,12 +234,11 @@ export default function PaymentScreen() {
         },
       });
     } catch (err) {
-      Alert.alert(
-        'Booking failed',
-        (err as Error).message || 'Please try again.'
-      );
+      console.error('[PaymentFlow] Error:', err);
+      // Main error handler for everything else
     } finally {
       setLoading(false);
+      setBookingStatus(null);
     }
   };
 
@@ -370,7 +397,14 @@ export default function PaymentScreen() {
             onPress={handlePay}
             disabled={!paymentReady || loading}>
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" />
+                {bookingStatus && (
+                  <Text style={[styles.payBtnText, { marginLeft: 10 }]}>
+                    {bookingStatus}
+                  </Text>
+                )}
+              </View>
             ) : !paymentReady ? (
               <Text style={styles.payBtnText}>Loading payment...</Text>
             ) : (

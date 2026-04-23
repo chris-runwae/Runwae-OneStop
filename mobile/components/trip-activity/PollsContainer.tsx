@@ -2,20 +2,14 @@ import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Plus, Vote } from 'lucide-react-native';
 import React, { useCallback, useEffect } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PollItem from '@/components/trip-activity/PollItem';
+import { ActivityPollSkeleton } from '@/components/ui/CardSkeletons';
 import Text from '@/components/ui/Text';
-import Spacer from '@/components/utils/Spacer';
 import { Colors, textStyles } from '@/constants';
-import usePollActions from '@/hooks/usePollActions';
+import usePollActions, { Poll } from '@/hooks/usePollActions';
 
 export default function PollsContainer({
   groupId,
@@ -26,84 +20,91 @@ export default function PollsContainer({
 }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { polls, fetchPolls, castVote, removeVote, swapVote, deletePoll } =
-    usePollActions();
+  const {
+    polls,
+    isLoading,
+    fetchPolls,
+    castVote,
+    removeVote,
+    swapVote,
+    deletePoll,
+  } = usePollActions();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     callFetchPolls();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [groupId]);
 
   const callFetchPolls = useCallback(async () => {
     await fetchPolls(groupId);
   }, [groupId, fetchPolls]);
 
-  // const dynamicStyles = StyleSheet.create({
-  //   headerDivider: {
-  //     width: '100%',
-  //     height: 2,
-  //     backgroundColor: colors.borderColors.subtle,
-  //     marginVertical: -16,
-  //   },
-  // });
-
   const renderHeader = () => {
     const pollCount = polls?.length ?? 0;
     const pollCountText =
       pollCount === 0
-        ? `${pollCount} polls`
+        ? `No polls yet`
         : pollCount === 1
-          ? '1 poll'
-          : `${pollCount} polls`;
+          ? '1 active poll'
+          : `${pollCount} active polls`;
 
     return (
-      <>
-        <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>{pollCountText}</Text>
-
-          {isMember && (
-            <Pressable
-              style={styles.headerButton}
-              onPress={() => {
-                router.push(`/(tabs)/(trips)/${groupId}/add-poll`);
-              }}>
-              <Plus size={16} color={colors.primaryColors.default} />
-              <Text style={{ color: colors.primaryColors.default }}>
-                Add poll
-              </Text>
-            </Pressable>
-          )}
+      <View style={styles.headerContainer}>
+        <View>
+          <Text style={styles.headerTitle}>Trip Polls</Text>
+          <Text style={styles.headerSubtitle}>{pollCountText}</Text>
         </View>
 
-        {/* <View style={dynamicStyles.headerDivider} /> */}
-
-        <Spacer size={16} vertical />
-      </>
-    );
-  };
-  const renderEmptyState = () => {
-    return (
-      <View style={styles.emptyStateContainer}>
-        <Vote size={40} color={colors.primaryColors.default} />
-        <Text style={styles.emptyStateTitle}>No polls found</Text>
-        <Text style={styles.emptyStateBody}>
-          Create your first poll to get started
-        </Text>
+        {isMember && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.headerButton,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+            onPress={() => {
+              router.push(`/(tabs)/(trips)/${groupId}/add-poll`);
+            }}>
+            <Plus size={18} color={colors.white} />
+            <Text style={styles.headerButtonText}>Create</Text>
+          </Pressable>
+        )}
       </View>
     );
   };
 
+  const renderEmptyState = () => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyIconContainer}>
+        <Vote size={32} color={colors.primaryColors.default} />
+      </View>
+      <Text style={styles.emptyStateTitle}>No polls found</Text>
+      <Text style={styles.emptyStateBody}>
+        Start a poll to decide on activities, dining, or schedules with your
+        group.
+      </Text>
+    </View>
+  );
+
+  if (isLoading && (!polls || polls.length === 0)) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View>
+          {[1, 2, 3].map((i) => (
+            <ActivityPollSkeleton key={i} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
-      <FlashList
-        data={polls}
+    <View style={styles.container}>
+      <FlashList<Poll>
+        data={polls as Poll[]}
         renderItem={({ item }) => (
           <PollItem
             poll={item}
-            key={item.id}
             groupId={groupId}
             onCastVote={castVote}
             onRemoveVote={removeVote}
@@ -112,13 +113,15 @@ export default function PollsContainer({
             isMember={isMember}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Poll) => item.id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 32,
+        }}
+        showsVerticalScrollIndicator={false}
       />
-
-      <Spacer size={16} vertical />
-    </ScrollView>
+    </View>
   );
 }
 
@@ -126,19 +129,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerTitle: {
-    ...textStyles.textHeading16,
-  },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  headerTitle: {
+    ...textStyles.textHeading20,
+    fontSize: 22,
+  },
+  headerSubtitle: {
+    ...textStyles.textBody12,
+    color: '#6b7280',
+    marginTop: 2,
   },
   headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
+    backgroundColor: '#FF1F8C',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#FF1F8C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 
   // Empty state
@@ -146,12 +171,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    marginTop: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 31, 140, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyStateTitle: {
-    ...textStyles.textHeading16,
+    ...textStyles.textHeading18,
+    marginBottom: 8,
   },
   emptyStateBody: {
-    ...textStyles.textBody12,
+    ...textStyles.textBody14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

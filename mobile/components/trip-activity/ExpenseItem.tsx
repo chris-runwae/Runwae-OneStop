@@ -133,10 +133,12 @@ function ParticipantRow({
   currency,
   onMarkPaid,
   onConfirmPayment,
+  isMember,
 }: {
   participant: ExpenseParticipant;
   isCurrentUser: boolean;
   isOwner: boolean;
+  currency: string;
   onMarkPaid: () => void;
   onConfirmPayment: () => void;
   isMember: boolean;
@@ -231,6 +233,7 @@ const ExpenseItem = ({
 }: ExpenseItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const isCreator = expense.created_by === userId;
@@ -295,43 +298,58 @@ const ExpenseItem = ({
     <View
       style={{
         backgroundColor: colors.backgroundColors.subtle,
-        borderRadius: 16,
-        padding: 14,
-        marginBottom: 12,
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.borderColors.subtle,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
       }}>
-      {/* Top row: category + title + amount + ellipsis */}
+      {/* Top row: category + amount */}
       <View
         style={{
           flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: 10,
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
         }}>
-        {/* Category pill */}
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 4,
-            backgroundColor: '#FF1F8C',
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 20,
-            alignSelf: 'flex-start',
+            gap: 6,
+            backgroundColor: 'rgba(255, 31, 140, 0.1)',
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 12,
           }}>
-          {categoryIcon}
-          <Text style={{ fontSize: 11, color: '#fff', fontWeight: '600' }}>
+          <View style={{ backgroundColor: '#FF1F8C', borderRadius: 6, padding: 3 }}>
+            {categoryIcon}
+          </View>
+          <Text style={{ fontSize: 12, color: '#FF1F8C', fontWeight: '700', textTransform: 'capitalize' }}>
             {expense.category}
           </Text>
         </View>
 
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.textColors.default }}>
+          {formatCurrency(expense.amount, expense.currency)}
+        </Text>
+      </View>
+
+      {/* Title + Ellipsis */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
-          <Text style={textStyles.textHeading16}>{expense.title}</Text>
+          <Text style={{ ...textStyles.textHeading18, color: colors.textColors.default }}>{expense.title}</Text>
           {expense.description ? (
             <Text
               style={{
-                ...textStyles.textBody12,
+                ...textStyles.textBody14,
                 color: colors.textColors.subtle,
-                marginTop: 2,
+                marginTop: 4,
               }}
               numberOfLines={2}>
               {expense.description}
@@ -339,74 +357,79 @@ const ExpenseItem = ({
           ) : null}
         </View>
 
-        <View style={{ alignItems: 'flex-end', gap: 2 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: '#FF1F8C' }}>
-            {formatCurrency(expense.amount, expense.currency)}
-          </Text>
-          <Text
-            style={{
-              ...textStyles.textBody12,
-              color: colors.textColors.subtle,
-            }}>
-            {formattedDate}
-          </Text>
-        </View>
-
         {isMember && isCreator && (
           <Pressable
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{
-              width: 24,
-              height: 24,
+              width: 32,
+              height: 32,
               alignItems: 'center',
               justifyContent: 'center',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 16,
+              marginLeft: 8,
             }}>
             <MoreVertical size={18} color={colors.textColors.subtle} />
           </Pressable>
         )}
       </View>
 
-      {/* Creator row */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-          marginTop: 10,
-        }}>
-        <ProfileAvatar
-          name={expense.creator.full_name}
-          imageUrl={expense.creator.avatar_url}
-        />
-        <Text
-          style={{ ...textStyles.textBody12, color: colors.textColors.subtle }}>
-          {expense.creator.full_name} · {createdAt} ago
-        </Text>
-      </View>
+      <Spacer size={16} vertical />
 
+      {/* Settlement Pill */}
       {totalParticipants > 0 && (
-        <>
-          <Spacer size={12} vertical />
+        <View style={{ marginBottom: 16 }}>
           <SettlementPill
             settledCount={settledCount}
             total={totalParticipants}
           />
-          <Spacer size={4} vertical />
-          {expense.expense_participants.map((participant) => (
-            <ParticipantRow
-              key={participant.id}
-              participant={participant}
-              isCurrentUser={participant.user_id === userId}
-              isOwner={isCreator}
-              currency={expense.currency}
-              onMarkPaid={() => onMarkPaid(participant.id)}
-              onConfirmPayment={() => onConfirmPayment(participant.id)}
-              isMember={isMember}
-            />
-          ))}
-        </>
+          <View style={{ marginTop: 12, gap: 4 }}>
+            {expense.expense_participants.map((participant) => (
+              <ParticipantRow
+                key={participant.id}
+                participant={participant}
+                isCurrentUser={participant.user_id === userId}
+                isOwner={isCreator}
+                currency={expense.currency}
+                onMarkPaid={() => onMarkPaid(participant.id)}
+                onConfirmPayment={() => onConfirmPayment(participant.id)}
+                isMember={isMember}
+              />
+            ))}
+          </View>
+        </View>
       )}
+
+      {/* Footer: Creator + Date */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTopWidth: 1,
+          borderTopColor: colors.borderColors.subtle,
+          paddingTop: 16,
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <ProfileAvatar
+            name={expense.creator.full_name}
+            imageUrl={expense.creator.avatar_url}
+            size={24}
+          />
+          <Text
+            style={{ ...textStyles.textBody12, color: colors.textColors.subtle, fontWeight: '600' }}>
+            {expense.creator.full_name}
+          </Text>
+        </View>
+        <Text
+          style={{
+            ...textStyles.textBody12,
+            color: colors.textColors.subtle,
+          }}>
+          {formattedDate} · {createdAt} ago
+        </Text>
+      </View>
     </View>
   );
 };

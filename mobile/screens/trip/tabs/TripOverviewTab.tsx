@@ -92,11 +92,24 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
     {
       label: 'View Details',
       onPress: () => {
-        if (selectedIdea?.external_id) {
+        if (!selectedIdea?.external_id) return;
+
+        if (selectedIdea.type === 'hotel') {
           router.push({
-            pathname: '/experience/[id]',
-            params: { id: selectedIdea.external_id },
-          });
+            pathname: '/hotels/[hotelId]',
+            params: {
+              hotelId: selectedIdea.external_id,
+              hotelData: JSON.stringify(selectedIdea.all_data),
+              checkin: trip?.trip_details?.start_date,
+              checkout: trip?.trip_details?.end_date,
+              adults: trip?.group_members?.length ?? 1,
+            },
+          } as any);
+        } else {
+          router.push({
+            pathname: '/viator/[productCode]',
+            params: { productCode: selectedIdea.external_id },
+          } as any);
         }
       },
     },

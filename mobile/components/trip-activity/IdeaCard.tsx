@@ -70,13 +70,16 @@ export default function IdeaCard({
   }
 
   const handleNavigateToDetails = () => {
-    if (viatorProductCode) {
+    const pCode = viatorProductCode || (item?.type === 'activity' ? item.external_id : null);
+    
+    if (pCode) {
       router.push({
         pathname: '/viator/[productCode]',
-        params: { productCode: viatorProductCode },
+        params: { productCode: pCode },
       } as any);
       return;
     }
+
     if (item?.type === 'hotel') {
       router.push({
         pathname: '/hotels/[hotelId]',

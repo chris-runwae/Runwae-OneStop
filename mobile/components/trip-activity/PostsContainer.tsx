@@ -2,17 +2,11 @@ import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { FileText, Plus } from 'lucide-react-native';
 import React, { useCallback, useEffect } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActivityPostSkeleton } from '@/components/ui/CardSkeletons';
 import Text from '@/components/ui/Text';
-import Spacer from '@/components/utils/Spacer';
 import { Colors, textStyles } from '@/constants';
 import usePostActions from '@/hooks/usePostActions';
 import PostItem from './PostItem';
@@ -26,7 +20,7 @@ export default function PostsContainer({
 }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { posts, fetchPosts, deletePost } = usePostActions();
+  const { posts, isLoading, fetchPosts, deletePost } = usePostActions();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -42,52 +36,65 @@ export default function PostsContainer({
     const postCount = posts?.length ?? 0;
     const postCountText =
       postCount === 0
-        ? `${postCount} posts`
+        ? `No posts yet`
         : postCount === 1
           ? '1 post'
           : `${postCount} posts`;
     return (
-      <>
-        <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>{postCountText}</Text>
-          {isMember && (
-            <Pressable
-              style={styles.headerButton}
-              onPress={() =>
-                router.push(`/(tabs)/(trips)/${groupId}/add-post`)
-              }>
-              <Plus size={16} color={colors.primaryColors.default} />
-              <Text style={{ color: colors.primaryColors.default }}>
-                Add post
-              </Text>
-            </Pressable>
-          )}
+      <View style={styles.headerContainer}>
+        <View>
+          <Text style={styles.headerTitle}>Trip Feed</Text>
+          <Text style={styles.headerSubtitle}>{postCountText}</Text>
         </View>
-        <Spacer size={16} vertical />
-      </>
+
+        {isMember && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.headerButton,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+            onPress={() => router.push(`/(tabs)/(trips)/${groupId}/add-post`)}>
+            <Plus size={18} color={colors.white} />
+            <Text style={styles.headerButtonText}>Post</Text>
+          </Pressable>
+        )}
+      </View>
     );
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyStateContainer}>
-      <FileText size={40} color={colors.primaryColors.default} />
+      <View style={styles.emptyIconContainer}>
+        <FileText size={32} color={colors.primaryColors.default} />
+      </View>
       <Text style={styles.emptyStateTitle}>No posts yet</Text>
       <Text style={styles.emptyStateBody}>
-        Be the first to post something to the trip
+        Share updates, photos, or tips with your travel companions.
       </Text>
     </View>
   );
 
+  if (isLoading && (!posts || posts.length === 0)) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View>
+          {[1, 2, 3].map((i) => (
+            <ActivityPostSkeleton key={i} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+    <View style={styles.container}>
       <FlashList
         data={posts}
+        // estimatedItemSize={150}
         renderItem={({ item }) => (
           <PostItem
             post={item}
-            key={item.id}
             groupId={groupId}
             onDeletePost={deletePost}
             isMember={isMember}
@@ -96,9 +103,12 @@ export default function PostsContainer({
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 32,
+        }}
+        showsVerticalScrollIndicator={false}
       />
-      <Spacer size={16} vertical />
-    </ScrollView>
+    </View>
   );
 }
 
@@ -106,30 +116,66 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerTitle: {
-    ...textStyles.textHeading16,
-  },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+    marginBottom: 24,
+    marginTop: 8,
+  },
+  headerTitle: {
+    ...textStyles.textHeading20,
+    fontSize: 22,
+  },
+  headerSubtitle: {
+    ...textStyles.textBody12,
+    color: '#6b7280',
+    marginTop: 2,
   },
   headerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
+    backgroundColor: '#FF1F8C',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#FF1F8C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
+    marginTop: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 31, 140, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyStateTitle: {
-    ...textStyles.textHeading16,
+    ...textStyles.textHeading18,
+    marginBottom: 8,
   },
   emptyStateBody: {
-    ...textStyles.textBody12,
+    ...textStyles.textBody14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

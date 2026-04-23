@@ -43,9 +43,8 @@ export async function searchPlaces(
     return data as LiteAPIPlacesResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to search places'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to search places';
+    throw new Error(errorMessage);
   }
 }
 
@@ -75,16 +74,18 @@ export async function searchRates(
 
     const data = await response.json();
     if ((data as LiteAPIError).error) {
-      console.log('error getting rates: ', data);
-      throw new Error((data as LiteAPIError).error.message);
+      const err = (data as LiteAPIError).error;
+      if (err.code !== 2001) {
+        console.log('error getting rates: ', data);
+      }
+      throw new Error(err.message);
     }
 
     return data as LiteAPIRatesResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to search rates'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to search rates';
+    throw new Error(errorMessage);
   }
 }
 
@@ -118,9 +119,8 @@ export async function prebookOffer(
     return data as LiteAPIPrebookResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to prebook offer'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to prebook offer';
+    throw new Error(errorMessage);
   }
 }
 
@@ -141,11 +141,14 @@ export async function bookHotel(
       body: JSON.stringify(request),
     };
 
+    console.log('[LiteAPI] Booking request:', JSON.stringify(request, null, 2));
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_LITE_API_URL}/rates/book`,
       options
     );
     const data = await response.json();
+    console.log('[LiteAPI] Booking response data:', JSON.stringify(data, null, 2));
+
     if ((data as LiteAPIError).error) {
       throw new Error((data as LiteAPIError).error.message);
     }
@@ -153,9 +156,8 @@ export async function bookHotel(
     return data as LiteAPIBookResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to book hotel'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to book hotel';
+    throw new Error(errorMessage);
   }
 }
 
@@ -276,9 +278,8 @@ export async function getHotelDetails(
     return data as LiteAPIHotelDetailsResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to get hotel details'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to get hotel details';
+    throw new Error(errorMessage);
   }
 }
 
@@ -318,15 +319,17 @@ export async function getHotelRatesByHotelIds(
 
     const data = await response.json();
     if ((data as LiteAPIError).error) {
-      console.log('error getting rates: ', data);
-      throw new Error((data as LiteAPIError).error.message);
+      const err = (data as LiteAPIError).error;
+      if (err.code !== 2001) {
+        console.log('error getting rates: ', data);
+      }
+      throw new Error(err.message);
     }
 
     return data as LiteAPIHotelRatesResponse;
   } catch (error) {
     console.log('error: ', error);
-    throw new Error(
-      (error as LiteAPIError).error.message || 'Failed to search rates'
-    );
+    const errorMessage = (error as any).error?.message || (error as Error).message || 'Failed to search rates';
+    throw new Error(errorMessage);
   }
 }

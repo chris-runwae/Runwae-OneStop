@@ -10,9 +10,11 @@ export function formatCurrency(
   currency: string,
   displayCurrency?: string
 ): string {
-  return new Intl.NumberFormat("en-GB", {
+  const effectiveCurrency = displayCurrency ?? currency;
+  // Use en-US locale so that USD formats as "$" rather than "US$"
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: displayCurrency ?? currency,
+    currency: effectiveCurrency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);

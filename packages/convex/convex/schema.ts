@@ -5,7 +5,17 @@ import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
   ...authTables,
 
-  users: authTables.users.extend({
+  // Override the users table to add custom fields while preserving auth indexes.
+  users: defineTable({
+    // Auth fields (from authTables.users)
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    // Custom fields
     username: v.optional(v.string()),
     bio: v.optional(v.string()),
     currency: v.optional(v.string()),
@@ -13,6 +23,8 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
+    .index("email", ["email"])
+    .index("phone", ["phone"])
     .index("by_username", ["username"]),
 
   trips: defineTable({

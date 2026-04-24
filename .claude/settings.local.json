@@ -34,7 +34,21 @@
       "Bash(echo \"EXIT $?\")",
       "Bash(python3 -c ':*)",
       "Bash(find /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/supabase -name \"*.sql\" -exec grep -l \"profiles\" {} \\\\;)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
+      "Bash(npx vitest *)",
+      "Bash(pnpm install *)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(export PATH=\"$PATH:/Users/christopherobocha/.nvm/versions/node/v20.19.5/bin\")",
+      "Bash(pnpm --version)",
+      "Bash(pnpm view *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(timeout 30 npx convex dev --once)",
+      "Bash(node *)",
+      "Bash(xargs -I{} node -e \"const p=require\\('{}'\\); console.log\\(p.version\\)\")",
+      "Bash(git rm *)",
+      "Bash(git *)"
     ]
   }
 }

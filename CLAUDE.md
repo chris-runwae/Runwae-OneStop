@@ -119,3 +119,22 @@ Environment variables needed on the Convex dashboard:
 AUTH_GOOGLE_ID=...
 AUTH_GOOGLE_SECRET=...
 ```
+## Claude Code Conventions
+
+- All Convex queries: `useQuery(api.[table].[function], args)`
+- All Convex mutations: `useMutation(api.[table].[function])`
+- Auth: Convex Auth only. Access user via `useConvexAuth()` + viewer query
+- Currency: stored in item's native currency, displayed in `users.currency`
+- Dates: stored as UTC epoch ms, displayed via `Intl.DateTimeFormat` with timezone
+- Images: UploadThing for uploads, picsum for dev placeholders
+- Components: `apps/web/components/[domain]/`
+- Pages: `apps/web/app/(app)/[route]/page.tsx`
+
+## Do Not
+
+- Never use Clerk — auth is Convex Auth (`@convex-dev/auth`)
+- Never use Supabase — fully migrated away
+- Never add loading spinners — use Suspense + skeleton components
+- Never hardcode currency symbols — use `Intl.NumberFormat`
+- Never hardcode timezone — always use the entity's `.timezone` field
+- Never import from `web/` (legacy vendor app) — use `apps/web/`

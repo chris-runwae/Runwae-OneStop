@@ -1,49 +1,82 @@
-import HomeHeader from "@/components/home/HomeHeader";
-import ItineraryForYou from "@/components/home/IteneryForYou";
-import AddOnsForYou from "@/components/home/AddOnsForYou";
-import UpcomingTrips from "@/components/home/UpcomingTrips";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import WelcomeModal from "@/components/WelcomeModal";
-import {
-  ADD_ONS_FOR_YOU,
-  DESTINATIONS_FOR_YOU,
-  ITINERARIES_FOR_YOU,
-  UPCOMING_TRIPS,
-} from "@/constants/home.constant";
-import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@react-navigation/native";
-import React, { useState, useCallback } from "react";
-import { ScrollView, RefreshControl } from "react-native";
+import AddOnsForYou from '@/components/home/AddOnsForYou';
+import HomeTopSection from '@/components/home/HomeTopSection';
+import UpcomingEvents from '@/components/home/UpcomingEvents';
+import UpcomingTrips from '@/components/home/UpcomingTrips';
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import WelcomeModal from '@/components/WelcomeModal';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView } from 'react-native';
 
-import DestinationsForYou from "@/components/home/DestinationsForYou";
+import { useTrips } from '@/context/TripsContext';
+import { TripWithEverything } from '@/hooks/useTripActions';
+import { Event, Experience } from '@/types/content.types';
+import { getFeaturedEvents } from '@/utils/supabase/events.service';
+import { getFeaturedExperiences } from '@/utils/supabase/experiences.service';
 
 export default function HomeScreen() {
-  const { showWelcomeModal, setShowWelcomeModal, user, isLoading: authLoading } = useAuth();
+  const {
+    showWelcomeModal,
+    setShowWelcomeModal,
+    user,
+    isLoading: authLoading,
+  } = useAuth();
   const { dark } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { myTrips, joinedTrips } = useTrips();
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>(
+    []
+  );
+
+  function isActive(trip: TripWithEverything): boolean {
+    const endDate = trip.trip_details?.end_date;
+    if (!endDate) return true;
+    return new Date(endDate) >= new Date(new Date().toDateString());
+  }
+
+  const allTrips = useMemo(
+    () => [...myTrips, ...joinedTrips],
+    [myTrips, joinedTrips]
+  );
+
+  const upcomingTrips = useMemo(
+    () => allTrips.filter((t) => isActive(t as TripWithEverything)),
+    [allTrips]
+  );
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [eventsData, experiencesData] = await Promise.all([
+          getFeaturedEvents(),
+          getFeaturedExperiences(),
+        ]);
+        setFeaturedEvents(eventsData);
+        setFeaturedExperiences(experiencesData);
+      } catch (err) {
+        console.error('HomeScreen: Error fetching featured data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Simulate a network request
     setTimeout(() => {
       setRefreshing(false);
     }, 1500);
   }, []);
 
-
   return (
-    <AppSafeAreaView edges={["top"]}>
-      <HomeHeader user={user} isLoading={authLoading} dark={dark} />
-
+    <AppSafeAreaView edges={['top']}>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -51,16 +84,19 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={dark ? "#ffffff" : "#000000"}
+            tintColor={dark ? '#ffffff' : '#000000'}
           />
-        }
-      >
-        <UpcomingTrips trips={UPCOMING_TRIPS} loading={loading} />
-        <ItineraryForYou data={ITINERARIES_FOR_YOU} loading={loading} />
-        <AddOnsForYou data={ADD_ONS_FOR_YOU} loading={loading} />
-        <DestinationsForYou data={DESTINATIONS_FOR_YOU} loading={loading} />
+        }>
+        <HomeTopSection user={user} dark={dark} />
+        <UpcomingTrips trips={upcomingTrips} loading={loading} />
+        <UpcomingEvents
+          data={featuredEvents}
+          title="Featured Events"
+          showSubtitle={false}
+          loading={loading}
+        />
+        <AddOnsForYou data={featuredExperiences} loading={loading} />
       </ScrollView>
-
 
       <WelcomeModal
         visible={showWelcomeModal}

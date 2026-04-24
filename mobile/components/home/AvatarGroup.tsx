@@ -1,6 +1,6 @@
-import { TripMember } from "@/constants/home.constant";
-import React from "react";
-import { Image, Text, View } from "react-native";
+import { TripMember } from '@/constants/home.constant';
+import React from 'react';
+import { Image, Text, View } from 'react-native';
 
 interface AvatarGroupProps {
   members: TripMember[];
@@ -18,12 +18,11 @@ const AvatarGroup = ({
       {members.slice(0, maxDisplay).map((member, index) => (
         <View
           key={index}
-          className="h-[25px] w-[25px] rounded-full border border-white overflow-hidden items-center justify-center"
+          className="h-[25px] w-[25px] items-center justify-center overflow-hidden rounded-full"
           style={{
             marginLeft: index > 0 ? -10 : 0,
-            backgroundColor: member.color || "#6b7280",
-          }}
-        >
+            backgroundColor: member.color || '#6b7280',
+          }}>
           {member.image ? (
             <Image
               source={{ uri: member.image }}
@@ -31,7 +30,7 @@ const AvatarGroup = ({
               resizeMode="cover"
             />
           ) : (
-            <Text className="text-white text-[9px] font-bold">
+            <Text className="text-[9px] font-bold text-white">
               {member.initials}
             </Text>
           )}
@@ -39,10 +38,9 @@ const AvatarGroup = ({
       ))}
       {extraMembers > 0 && (
         <View
-          className="h-[25px] w-[25px] rounded-full border border-white items-center justify-center bg-black"
-          style={{ marginLeft: -10 }}
-        >
-          <Text className="text-white text-[9px] font-bold">
+          className="h-[25px] w-[25px] items-center justify-center rounded-full bg-primary"
+          style={{ marginLeft: -10 }}>
+          <Text className="text-[9px] font-bold text-white">
             +{extraMembers}
           </Text>
         </View>

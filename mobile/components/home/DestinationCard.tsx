@@ -1,20 +1,29 @@
-import { Destination } from "@/constants/home.constant";
-import { useRouter } from "expo-router";
-import React from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { useRouter } from 'expo-router';
+import React from 'react';
+import {
+  Image,
+  Pressable,
+  StyleProp,
+  ViewStyle,
+  Text,
+  View,
+} from 'react-native';
+import { Destination } from '@/hooks/useDestinations';
 
 interface DestinationCardProps {
   item: Destination;
   fullWidth?: boolean;
   width?: number;
-  imageHieght?: number;
+  imageHeight?: number;
+  style?: StyleProp<ViewStyle>;
 }
 
 const DestinationCard = ({
   item,
   fullWidth = false,
   width = 240,
-  imageHieght = 200,
+  imageHeight = 200,
+  style,
 }: DestinationCardProps) => {
   const router = useRouter();
   const isNavigating = React.useRef(false);
@@ -31,27 +40,28 @@ const DestinationCard = ({
   return (
     <Pressable
       onPress={handlePress}
-      className={fullWidth ? "" : "mr-3"}
-      style={{ width: fullWidth ? "100%" : width }}
-    >
+      style={[style, { width: fullWidth ? '100%' : width }]}>
       <Image
-        source={{ uri: item.image }}
-        className={`w-full h-[${imageHieght}px] rounded-t-[16px]`}
+        source={{
+          uri:
+            item?.image ??
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
+        }}
+        className="w-full rounded-t-[16px]"
+        style={{ height: imageHeight }}
         resizeMode="cover"
       />
       <View className="mt-3">
         <Text
-          className="text-black dark:text-white font-semibold text-lg leading-tight mb-1"
+          className="mb-1 text-lg font-semibold leading-tight text-black dark:text-white"
           numberOfLines={1}
-          style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-        >
+          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
           {item.title}
         </Text>
 
         <Text
-          className="text-gray-500 dark:text-gray-400 text-sm leading-snug"
-          numberOfLines={1}
-        >
+          className="text-sm leading-snug text-gray-500 dark:text-gray-400"
+          numberOfLines={1}>
           {item.location}
         </Text>
       </View>

@@ -8,25 +8,33 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
   Inter_900Black,
-} from "@expo-google-fonts/inter";
+} from '@expo-google-fonts/inter';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from "@react-navigation/native";
-import { useFonts } from "expo-font";
-import { Redirect, Stack, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
-import "react-native-reanimated";
-import ToastManager from "toastify-react-native";
+} from '@react-navigation/native';
+import Constants from 'expo-constants';
+import { useFonts } from 'expo-font';
+import { Redirect, Stack, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+import 'react-native-reanimated';
+import ToastManager from 'toastify-react-native';
 
-import SplashScreen from "@/components/ui/splash-screen";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import "../global.css";
+import SplashScreen from '@/components/ui/splash-screen';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { TripsProvider } from '@/context/TripsContext';
+import { useColorScheme } from 'nativewind';
+import { getThemePreference } from '@/utils/storage';
+import '../global.css';
+
+const stripeMerchantIdentifier =
+  (Constants.expoConfig?.extra as { stripeMerchantIdentifier?: string } | undefined)
+    ?.stripeMerchantIdentifier ?? 'merchant.io.runwae.app';
 
 function RouteGuard() {
   const segments = useSegments();
@@ -48,63 +56,73 @@ function RouteGuard() {
   }
 
   const AUTH_ROUTES = new Set([
-    "(auth)",
-    "login",
-    "signup",
-    "register",
-    "forgot-password",
-    "check-email",
-    "reset-password",
-    "onboarding",
-    "onboarding-steps",
+    '(auth)',
+    'login',
+    'signup',
+    'register',
+    'forgot-password',
+    'check-email',
+    'reset-password',
+    'onboarding',
+    'onboarding-steps',
   ]);
 
-  const ONBOARDING_STEPS = new Set(["onboarding", "onboarding-steps"]);
+  const ONBOARDING_STEPS = new Set(['onboarding', 'onboarding-steps']);
 
   const BOARDING_STEPS = new Set([
-    "boarding",
-    "step-1",
-    "step-2",
-    "step-3",
-    "step-4",
+    'boarding',
+    'step-1',
+    'step-2',
+    'step-3',
+    'step-4',
   ]);
 
   const AUTHORIZED_ROOT_ROUTES = new Set([
-    "(tabs)",
-    "notifications",
-    "modal",
-    "itinerary",
-    "experience",
-    "create-trip",
+    '(tabs)',
+    'notifications',
+    'modal',
+    'itinerary',
+    'experience',
+    'viator',
+    'create-trip',
+    'events',
+    'search',
+    'hotels',
+    'invite',
   ]);
 
-  const [currentSegment, secondSegment] = segments;
+  const [currentSegment, secondSegment] = segments as string[];
   const isInAuthFlow =
     AUTH_ROUTES.has(currentSegment) ||
-    (currentSegment === "(auth)" &&
+    (currentSegment === '(auth)' &&
       secondSegment &&
       AUTH_ROUTES.has(secondSegment));
   const isInOnboardingSteps =
-    currentSegment === "(auth)" &&
+    currentSegment === '(auth)' &&
     secondSegment &&
     ONBOARDING_STEPS.has(secondSegment);
   const isInBoardingSteps =
-    currentSegment === "boarding" &&
+    currentSegment === 'boarding' &&
     secondSegment &&
     BOARDING_STEPS.has(secondSegment);
-  const isInTabs = currentSegment === "(tabs)";
-  const isInOnboarding = currentSegment === "onboarding";
+  const isInTabs = currentSegment === '(tabs)';
+  const isInOnboarding = currentSegment === 'onboarding';
   const isInAuthorizedRoot = [
     undefined,
-    "(tabs)",
-    "notifications",
-    "modal",
-    "itinerary",
-    "experience",
-    "destination",
-    "create-trip",
+    '(tabs)',
+    'notifications',
+    'modal',
+    'itinerary',
+    'experience',
+    'viator',
+    'destination',
+    'create-trip',
+    'events',
+    'search',
+    'hotel',
+    'hotels',
+    'invite',
   ].includes(currentSegment as any);
-
 
   // Redirection Logic
   if (!isAuthenticated && !isInAuthFlow) {
@@ -129,30 +147,46 @@ function RouteGuard() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="viator" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
-      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen name="hotel" options={{ headerShown: false }} />
+      <Stack.Screen name="hotels" options={{ headerShown: false }} />
+      <Stack.Screen name="invite" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
         name="modal"
-        options={{ presentation: "modal", headerShown: true, title: "Modal" }}
+        options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
       />
     </Stack>
   );
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  useEffect(() => {
+    async function loadTheme() {
+      const storedTheme = await getThemePreference();
+      if (storedTheme) {
+        setColorScheme(storedTheme);
+      }
+    }
+    loadTheme();
+  }, [setColorScheme]);
   const [fontsLoaded] = useFonts({
-    "BricolageGrotesque-Regular": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Regular.ttf"),
-    "BricolageGrotesque-Medium": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Medium.ttf"),
-    "BricolageGrotesque-SemiBold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-SemiBold.ttf"),
-    "BricolageGrotesque-Bold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Bold.ttf"),
-    "BricolageGrotesque-ExtraBold": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraBold.ttf"),
-    "BricolageGrotesque-Light": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Light.ttf"),
-    "BricolageGrotesque-ExtraLight": require("../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraLight.ttf"),
+    'BricolageGrotesque-Regular': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Regular.ttf'),
+    'BricolageGrotesque-Medium': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Medium.ttf'),
+    'BricolageGrotesque-SemiBold': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-SemiBold.ttf'),
+    'BricolageGrotesque-Bold': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Bold.ttf'),
+    'BricolageGrotesque-ExtraBold': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraBold.ttf'),
+    'BricolageGrotesque-Light': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Light.ttf'),
+    'BricolageGrotesque-ExtraLight': require('../assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-ExtraLight.ttf'),
 
     // inter
     InterThin: Inter_100Thin,
@@ -171,20 +205,27 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <KeyboardProvider>
-          <AuthProvider>
-            <StatusBar style="auto" />
-            <ToastManager
-              showProgressBar={false}
-              style={{ borderRadius: 20, boxShadow: "none" }}
-              theme={colorScheme === "dark" ? "dark" : "light"}
-            />
-            <RouteGuard />
-          </AuthProvider>
-        </KeyboardProvider>
-      </GestureHandlerRootView>
-    </ThemeProvider>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+      merchantIdentifier={stripeMerchantIdentifier}
+    >
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <KeyboardProvider>
+            <AuthProvider>
+              <TripsProvider>
+                <StatusBar style="auto" />
+                <ToastManager
+                  showProgressBar={false}
+                  style={{ borderRadius: 20, boxShadow: 'none' }}
+                  theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                />
+                <RouteGuard />
+              </TripsProvider>
+            </AuthProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    </StripeProvider>
   );
 }

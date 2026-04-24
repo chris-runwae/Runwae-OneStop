@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Link } from "expo-router";
 import React, { useState } from "react";
-import {
+import { 
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,

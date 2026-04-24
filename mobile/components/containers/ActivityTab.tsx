@@ -1,0 +1,214 @@
+import React, { useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  ScrollView,
+  UIManager,
+  useColorScheme,
+  ViewStyle,
+} from 'react-native';
+
+import { useAuth } from '@/context/AuthContext';
+import { useTrips } from '@/context/TripsContext';
+
+import * as Haptics from 'expo-haptics';
+
+// Feature modules
+// import ExpensesList from './expenses/ExpensesList';
+// import PollsList from './polls/PollsList';
+// import ChecklistsList from './checklists/ChecklistsList';
+// import AnnouncementsList from './announcements/AnnouncementsList';
+
+import { Colors, textStyles } from '@/constants';
+import ExpensesContainer from '@/components/trip-activity/ExpensesContainer';
+import MemberCard from '@/components/trip-activity/MemberCard';
+import PollsContainer from '@/components/trip-activity/PollsContainer';
+import PostsContainer from '@/components/trip-activity/PostsContainer';
+import Spacer from '@/components/utils/Spacer';
+import Text from '@/components/ui/Text';
+import { TripWithEverything } from '@/hooks/useTripActions';
+
+type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';
+
+// Enable LayoutAnimation on Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
+  { key: 'polls', label: 'Polls', icon: '🗳️' },
+  { key: 'expenses', label: 'Expenses', icon: '💳' },
+  { key: 'posts', label: 'Posts', icon: '📝' },
+  { key: 'members', label: 'Members', icon: '👥' },
+];
+
+interface ActivityTabProps {
+  tripId: string;
+  trip?: TripWithEverything;
+}
+
+export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
+  const [activeSection, setActiveSection] = useState<ActivitySection>('polls');
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const dark = colorScheme === 'dark';
+
+  const { user } = useAuth();
+  const { removeMember } = useTrips();
+
+  const members = trip?.group_members ?? [];
+  const myMember = members.find((m) => m.user_id === user?.id);
+  const myRole = myMember?.role;
+  const canDelete = myRole === 'owner' || myRole === 'admin';
+
+  const dynamicStyles = {
+    segment: (isActive: boolean) => ({
+      borderRadius: 100,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      alignItems: 'center',
+      alignSelf: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 6,
+      zIndex: 1,
+      ...(!isActive && {
+        backgroundColor: colors.backgroundColors.subtle,
+        borderColor: colors.borderColors.subtle,
+        borderWidth: 0.5,
+      }),
+      ...(isActive && {
+        backgroundColor: colors.primaryColors.default,
+      }),
+    }),
+    segmentLabel: {
+      color: colors.textColors.subtle,
+      ...textStyles.textBody12,
+    },
+    segmentLabelActive: {
+      color: colors.white,
+    },
+  };
+
+  const handleSegmentPress = (section: ActivitySection) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveSection(section);
+  };
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'polls':
+        return <PollsContainer groupId={tripId} />;
+      case 'expenses':
+        return <ExpensesContainer groupId={tripId} />;
+      case 'posts':
+        return <PostsContainer groupId={tripId} />;
+      case 'members':
+        return (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.membersList}>
+            {members.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                isMe={member.user_id === user?.id}
+                canDelete={canDelete}
+                dark={dark}
+                onDelete={() => removeMember(tripId, member.user_id)}
+              />
+            ))}
+            {members.length === 0 && (
+              <Text style={{ color: dark ? '#9CA3AF' : '#6b7280', textAlign: 'center', marginTop: 24 }}>
+                No members found.
+              </Text>
+            )}
+          </ScrollView>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Segment Control */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.segmentControl}>
+        <View style={styles.segmentWrapper}>
+          {/* Segments */}
+          {SEGMENTS.map((segment, index) => {
+            const isActive = activeSection === segment.key;
+            return (
+              <TouchableOpacity
+                key={segment.key}
+                style={[
+                  styles.segment,
+                  dynamicStyles.segment(isActive) as ViewStyle,
+                ]}
+                onPress={() =>
+                  handleSegmentPress(segment.key as ActivitySection)
+                }
+                activeOpacity={0.7}>
+                <Text
+                  style={[
+                    styles.segmentLabel,
+                    dynamicStyles.segmentLabel,
+                    isActive && dynamicStyles.segmentLabelActive,
+                  ]}>
+                  {segment.icon} {segment.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Content Area */}
+      <Spacer size={32} vertical />
+      <View style={styles.content}>{renderContent()}</View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  segmentControl: {},
+  segmentWrapper: {
+    position: 'relative',
+    borderRadius: 12,
+    gap: 4,
+    flexDirection: 'row',
+    width: '100%',
+  },
+  segment: {
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 1,
+  },
+  segmentIcon: {
+    fontSize: 12,
+  },
+  segmentLabel: {
+    ...textStyles.textBody12,
+  },
+  segmentLabelActive: {},
+  content: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  membersList: {
+    paddingBottom: 24,
+  },
+});

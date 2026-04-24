@@ -19,11 +19,13 @@ export const TripContent: React.FC<TripContentProps> = ({ destination, isDarkMod
       </Text>
 
       <Text
-        className={`mb-8 text-center leading-6 ${textStyles.regular_16} ${
-          isDarkMode ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-        You're off to {destination}! A confirmation {'\n'}email is on its
-        way so be on the lookout {'\n'}for it.
+        style={[textStyles.regular_16]}
+        className={`mb-8 text-center leading-6 ${
+          isDarkMode ? "text-gray-300" : "text-gray-600"
+        }`}
+      >
+        You're off to {destination}! A confirmation {"\n"}email is on its way so
+        be on the lookout {"\n"}for it.
       </Text>
     </>
   );

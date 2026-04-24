@@ -1,0 +1,14 @@
+{
+  "name": "@runwae/convex",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "@auth/core": "^0.37.4",
+    "@convex-dev/auth": "^0.0.87",
+    "convex": "^1.23.0"
+  }
+}

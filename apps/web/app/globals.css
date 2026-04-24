@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-bricolage);
+
+  /* Brand */
+  --color-primary: hsla(327, 99%, 42%, 1);
+  --color-primary-foreground: hsl(0, 0%, 98.5%);
+
+  /* Semantic */
+  --color-background: hsl(0, 0%, 96%);
+  --color-foreground: hsl(0, 0%, 14.5%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(0, 0%, 14.5%);
+  --color-muted: hsl(0, 0%, 97%);
+  --color-muted-foreground: hsla(208, 7%, 46%, 1);
+  --color-border: hsl(0, 0%, 92.2%);
+  --color-input: hsl(0, 0%, 92.2%);
+  --color-ring: hsl(0, 0%, 70.8%);
+  --color-destructive: hsl(0, 72%, 58%);
+  --color-success: hsl(142, 76%, 36%);
+  --color-error: hsl(0, 84%, 50%);
+  --color-error-light: hsl(0, 84%, 97%);
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.875rem;
+  --radius-3xl: 1rem;
+  --radius-4xl: 1.125rem;
+}
+
+.dark {
+  --color-background: hsl(0, 0%, 14.5%);
+  --color-foreground: hsl(0, 0%, 98.5%);
+  --color-card: hsl(0, 0%, 20.5%);
+  --color-card-foreground: hsl(0, 0%, 98.5%);
+  --color-muted: hsl(0, 0%, 26.9%);
+  --color-muted-foreground: hsla(208, 7%, 46%, 1);
+  --color-border: hsl(0, 0%, 100% / 10%);
+  --color-input: hsl(0, 0%, 100% / 15%);
+  --color-ring: hsl(0, 0%, 55.6%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  button {
+    @apply cursor-pointer disabled:pointer-events-none disabled:opacity-50;
+  }
+}

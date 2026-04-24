@@ -97,7 +97,7 @@ export const searchEvents = async (query: string): Promise<Event[]> => {
     .from('events')
     .select('*')
     .or(
-      `title.ilike.%${query}%,location.ilike.%${query}%,category.ilike.%${query}%`
+      `name.ilike.%${query}%,location.ilike.%${query}%,category.ilike.%${query}%`
     )
     .order('created_at', { ascending: false });
 

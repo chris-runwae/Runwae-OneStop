@@ -1,3 +1,4 @@
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { ArrowLeft, Calendar } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -9,17 +10,16 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FlashList } from '@shopify/flash-list';
 
 import { Text } from '@/components';
+import EventCard from '@/components/home/EventCard';
 import { Colors, textStyles } from '@/constants';
 import { useAuth } from '@/context/AuthContext';
-import {
-  getUserEventRegistrations,
-  EventRegistration,
-} from '@/utils/supabase/event-registrations.service';
-import EventCard from '@/components/home/EventCard';
 import { Event } from '@/types/content.types';
+import {
+  EventRegistration,
+  getUserEventRegistrations,
+} from '@/utils/supabase/event-registrations.service';
 
 export default function MyEventsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -73,8 +73,14 @@ export default function MyEventsScreen() {
         <FlashList
           data={registrations}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ padding: 16, gap: 12 }}
-          renderItem={({ item }) => <EventCard event={item.event as Event} />}
+          numColumns={2}
+          // estimatedItemSize={250}
+          contentContainerStyle={{ padding: 10 }}
+          renderItem={({ item, index }) => (
+            <View style={{ flex: 1, padding: 6 }}>
+              <EventCard event={item.event as Event} index={index} fullWidth />
+            </View>
+          )}
         />
       )}
     </View>

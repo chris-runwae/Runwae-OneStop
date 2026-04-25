@@ -95,7 +95,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.2.0
-        version: 3.2.4(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)
+        version: 3.2.4(@edge-runtime/vm@5.0.0)(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)
 
   packages/convex:
     dependencies:
@@ -109,12 +109,21 @@ importers:
         specifier: ^1.23.0
         version: 1.36.1(react@19.2.5)
     devDependencies:
+      '@edge-runtime/vm':
+        specifier: ^5.0.0
+        version: 5.0.0
       '@types/node':
         specifier: '20'
         version: 20.19.39
+      convex-test:
+        specifier: ^0.0.50
+        version: 0.0.50(convex@1.36.1(react@19.2.5))
       typescript:
         specifier: 5.5.4
         version: 5.5.4
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@edge-runtime/vm@5.0.0)(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)
 
   packages/ui: {}
 
@@ -148,6 +157,14 @@ packages:
     peerDependenciesMeta:
       react:
         optional: true
+
+  '@edge-runtime/primitives@6.0.0':
+    resolution: {integrity: sha512-FqoxaBT+prPBHBwE1WXS1ocnu/VLTQyZ6NMUBAdbP7N2hsFTTxMC/jMu2D/8GAlMQfxeuppcPuCUk/HO3fpIvA==}
+    engines: {node: '>=18'}
+
+  '@edge-runtime/vm@5.0.0':
+    resolution: {integrity: sha512-NKBGBSIKUG584qrS1tyxVpX/AKJKQw5HgjYEnPLC0QsTw79JrGn+qUr8CXFb955Iy7GUdiiUv1rJ6JBGvaKb6w==}
+    engines: {node: '>=18'}
 
   '@effect/platform@0.90.3':
     resolution: {integrity: sha512-XvQ37yzWQKih4Du2CYladd1i/MzqtgkTPNCaN6Ku6No4CK83hDtXIV/rP03nEoBg2R3Pqgz6gGWmE2id2G81HA==}
@@ -1649,6 +1666,11 @@ packages:
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
+  convex-test@0.0.50:
+    resolution: {integrity: sha512-rMNfrgcKJGToYDqNns2n1AO9KUP1NyC/AF9ldYEuWwTfRbgC9RQiHjlZsZQ/sOjLIVPUyKKIjoI/fNJUzy1urw==}
+    peerDependencies:
+      convex: ^1.32.0
+
   convex@1.36.1:
     resolution: {integrity: sha512-NVnwNqU+h8jyPuS0Itvj4MPH9c2yF+tA/RNoSDpCqiLhmYD4+kZxm0dDkVM0QDzz66wem9NqheBb9YQGsHwzBQ==}
     engines: {node: '>=18.0.0', npm: '>=7.0.0'}
@@ -3085,6 +3107,12 @@ snapshots:
     optionalDependencies:
       react: 19.2.5
 
+  '@edge-runtime/primitives@6.0.0': {}
+
+  '@edge-runtime/vm@5.0.0':
+    dependencies:
+      '@edge-runtime/primitives': 6.0.0
+
   '@effect/platform@0.90.3(effect@3.17.7)':
     dependencies:
       '@opentelemetry/semantic-conventions': 1.40.0
@@ -4280,6 +4308,10 @@ snapshots:
   color-name@1.1.4: {}
 
   concat-map@0.0.1: {}
+
+  convex-test@0.0.50(convex@1.36.1(react@19.2.5)):
+    dependencies:
+      convex: 1.36.1(react@19.2.5)
 
   convex@1.36.1(react@19.2.5):
     dependencies:
@@ -5892,7 +5924,7 @@ snapshots:
       jiti: 2.6.1
       lightningcss: 1.32.0
 
-  vitest@3.2.4(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0):
+  vitest@3.2.4(@edge-runtime/vm@5.0.0)(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
@@ -5918,6 +5950,7 @@ snapshots:
       vite-node: 3.2.4(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
+      '@edge-runtime/vm': 5.0.0
       '@types/node': 20.19.39
     transitivePeerDependencies:
       - jiti

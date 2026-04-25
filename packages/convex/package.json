@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "convex dev",
-    "deploy": "convex deploy"
+    "deploy": "convex deploy",
+    "test": "vitest"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",
@@ -12,7 +13,10 @@
     "convex": "^1.23.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@types/node": "20",
-    "typescript": "5.5.4"
+    "convex-test": "^0.0.50",
+    "typescript": "5.5.4",
+    "vitest": "^3.2.0"
   }
 }

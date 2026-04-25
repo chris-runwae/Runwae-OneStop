@@ -36,6 +36,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STEP_LABELS = [
   "Email",
   "Password & name",
+  "Username",
   "Location prefs",
   "Traveller type",
   "Find friends",
@@ -225,6 +226,99 @@ function Step2Password({
   );
 }
 
+interface StepUsernameProps {
+  username: string;
+  setUsername: (v: string) => void;
+  availability: { available: boolean; reason?: string } | undefined;
+  error: string | null;
+  loading: boolean;
+  onNext: () => void;
+  onBack: () => void;
+}
+
+function StepUsername({
+  username,
+  setUsername,
+  availability,
+  error,
+  loading,
+  onNext,
+  onBack,
+}: StepUsernameProps) {
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onNext();
+  }
+  const showStatus = username.trim().length >= 3;
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1 text-center">
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          Pick a username
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          This is how friends will find you on Runwae. You can change it later.
+        </p>
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex h-11 items-center rounded-xl border border-border bg-background px-3 focus-within:border-primary">
+          <span className="text-sm text-muted-foreground">@</span>
+          <input
+            type="text"
+            required
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="your_username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
+            className="ml-1 h-full flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
+        {showStatus && availability !== undefined && (
+          <p
+            className={cn(
+              "text-xs",
+              availability.available ? "text-emerald-600" : "text-destructive"
+            )}
+          >
+            {availability.available
+              ? `@${username} is available.`
+              : availability.reason ?? "Not available."}
+          </p>
+        )}
+        <p className="text-[11px] text-muted-foreground">
+          3–20 characters. Lowercase letters, digits, and underscores only.
+        </p>
+      </div>
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="flex-1"
+          onClick={onBack}
+          disabled={loading}
+        >
+          Back
+        </Button>
+        <Button
+          type="submit"
+          size="lg"
+          className="flex-1"
+          isLoading={loading}
+          disabled={loading || !showStatus || availability?.available === false}
+        >
+          Continue
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 interface Step3Props {
   preferredCurrency: Currency;
   setPreferredCurrency: (v: Currency) => void;
@@ -381,6 +475,7 @@ interface SearchResult {
   _id: string;
   name?: string;
   image?: string;
+  username?: string;
 }
 
 interface Step5Props {
@@ -413,14 +508,18 @@ function Step5FindFriends({
         </p>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search by email…"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className={inputCls}
-        autoComplete="off"
-      />
+      <div className="flex h-11 items-center rounded-xl border border-border bg-background px-3 focus-within:border-primary">
+        <span className="text-sm text-muted-foreground">@</span>
+        <input
+          type="text"
+          placeholder="Search by username…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+          className="ml-1 h-full flex-1 bg-transparent text-sm focus:outline-none"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
 
       {results && results.length > 0 && (
         <ul className="space-y-2 rounded-xl border border-border bg-background p-2">
@@ -435,18 +534,23 @@ function Step5FindFriends({
                 />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium uppercase text-muted-foreground">
-                  {(u.name ?? "?").charAt(0)}
+                  {(u.name ?? u.username ?? "?").charAt(0)}
                 </div>
               )}
-              <span className="text-sm font-medium text-foreground">
-                {u.name ?? "Unnamed user"}
-              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-foreground">
+                  {u.name ?? "Unnamed user"}
+                </div>
+                {u.username && (
+                  <div className="truncate text-xs text-muted-foreground">@{u.username}</div>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      {results && results.length === 0 && searchTerm.length >= 3 && (
+      {results && results.length === 0 && searchTerm.length >= 2 && (
         <p className="text-center text-sm text-muted-foreground">No users found</p>
       )}
 
@@ -486,6 +590,7 @@ export default function SignUpPage() {
   const router = useRouter();
   const { signIn } = useAuthActions();
   const updateProfile = useMutation(api.users.updateProfile);
+  const setUsernameMut = useMutation(api.users.setUsername);
   const completeOnboarding = useMutation(api.users.completeOnboarding);
 
   // Wizard state
@@ -501,22 +606,26 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
-  // Step 3
+  // Step 3 — username
+  const [username, setUsername] = useState("");
+
+  // Step 4
   const [preferredCurrency, setPreferredCurrency] = useState<Currency>("GBP");
   const [preferredTimezone, setPreferredTimezone] = useState<string>(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone
   );
 
   // If the user is already authenticated when they land here (e.g. after
-  // Google OAuth) but hasn't finished onboarding, jump straight to step 3.
-  // Steps 1–2 (email + password) only apply to the password sign-up flow.
+  // Google OAuth) but hasn't finished onboarding, jump straight to step 2
+  // (Username — auto-generated by the auth callback, but the user can edit).
   const viewer = useQuery(api.users.getCurrentUser, {});
   const jumpedRef = useRef(false);
   useEffect(() => {
     if (jumpedRef.current) return;
     if (viewer && viewer.onboardingComplete !== true) {
       jumpedRef.current = true;
-      // Pre-fill from the OAuth profile so we don't lose the data.
+      // Pre-fill from the existing profile so the user sees their data.
+      if (viewer.username) setUsername(viewer.username);
       if (viewer.preferredCurrency) {
         const c = viewer.preferredCurrency as Currency;
         if ((CURRENCIES as readonly string[]).includes(c)) setPreferredCurrency(c);
@@ -531,16 +640,22 @@ export default function SignUpPage() {
     }
   }, [viewer, router]);
 
-  // Step 4
+  // Step 5
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Step 5
+  // Step 6
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Debounced query arg: only send if >= 3 chars
+  // Username live availability check — only when the field is non-trivial.
+  const usernameAvailability = useQuery(
+    api.users.isUsernameAvailable,
+    username.trim().length >= 3 ? { username: username.trim() } : "skip",
+  );
+
+  // Debounced username search: only send if >= 2 chars
   const searchResults = useQuery(
-    api.users.searchByEmail,
-    searchTerm.length >= 3 ? { email: searchTerm } : "skip"
+    api.users.searchByUsername,
+    searchTerm.length >= 2 ? { term: searchTerm } : "skip",
   ) as SearchResult[] | undefined;
 
   // ------------------------------------------------------------------
@@ -570,7 +685,7 @@ export default function SignUpPage() {
     setStep(1);
   }
 
-  // Step 2 → 3: call signIn("password", {..., flow:"signUp"})
+  // Step 2 → 3 (Username): call signIn("password", {..., flow:"signUp"})
   async function handleStep2Next() {
     clearError();
     if (!name.trim()) {
@@ -606,8 +721,27 @@ export default function SignUpPage() {
     }
   }
 
-  // Step 3 → 4: save currency + timezone
+  // Step 3 → 4 (Location): persist username
   async function handleStep3Next() {
+    clearError();
+    const u = username.trim();
+    if (u.length < 3) {
+      setError("Pick a username (at least 3 characters).");
+      return;
+    }
+    setLoading(true);
+    try {
+      await setUsernameMut({ username: u });
+      setStep(3);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save that username.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Step 4 → 5 (Tags): save currency + timezone
+  async function handleStep4Next() {
     clearError();
     setLoading(true);
     try {
@@ -615,7 +749,7 @@ export default function SignUpPage() {
         preferredCurrency,
         preferredTimezone: preferredTimezone.trim() || "UTC",
       });
-      setStep(3);
+      setStep(4);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save preferences.");
     } finally {
@@ -623,8 +757,8 @@ export default function SignUpPage() {
     }
   }
 
-  // Step 4 → 5: save traveller tags
-  async function handleStep4Next() {
+  // Step 5 → 6 (Find friends): save traveller tags
+  async function handleStep5Next() {
     clearError();
     if (selectedTags.length === 0) {
       setError("Please select at least one traveller type.");
@@ -633,7 +767,7 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       await updateProfile({ travellerTags: selectedTags });
-      setStep(4);
+      setStep(5);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save your preferences.");
     } finally {
@@ -707,11 +841,10 @@ export default function SignUpPage() {
       )}
 
       {step === 2 && (
-        <Step3Location
-          preferredCurrency={preferredCurrency}
-          setPreferredCurrency={setPreferredCurrency}
-          preferredTimezone={preferredTimezone}
-          setPreferredTimezone={setPreferredTimezone}
+        <StepUsername
+          username={username}
+          setUsername={(v) => { setUsername(v); clearError(); }}
+          availability={usernameAvailability}
           error={error}
           loading={loading}
           onNext={handleStep3Next}
@@ -720,9 +853,11 @@ export default function SignUpPage() {
       )}
 
       {step === 3 && (
-        <Step4TravellerType
-          selectedTags={selectedTags}
-          toggleTag={toggleTag}
+        <Step3Location
+          preferredCurrency={preferredCurrency}
+          setPreferredCurrency={setPreferredCurrency}
+          preferredTimezone={preferredTimezone}
+          setPreferredTimezone={setPreferredTimezone}
           error={error}
           loading={loading}
           onNext={handleStep4Next}
@@ -731,6 +866,17 @@ export default function SignUpPage() {
       )}
 
       {step === 4 && (
+        <Step4TravellerType
+          selectedTags={selectedTags}
+          toggleTag={toggleTag}
+          error={error}
+          loading={loading}
+          onNext={handleStep5Next}
+          onBack={handleBack}
+        />
+      )}
+
+      {step === 5 && (
         <Step5FindFriends
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}

@@ -35,68 +35,76 @@ describe("completeOnboarding", () => {
   });
 });
 
-describe("searchByEmail", () => {
-  it("returns [] when query is shorter than 3 characters", async () => {
+describe("usernames", () => {
+  it("isUsernameAvailable rejects invalid format", async () => {
     const t = convexTest(schema, modules);
-    const results = await t.query(api.users.searchByEmail, { email: "ab" });
-    expect(results).toEqual([]);
+    const r = await t.query(api.users.isUsernameAvailable, { username: "ab" });
+    expect(r.available).toBe(false);
   });
 
-  it("returns matching users excluding the caller", async () => {
+  it("isUsernameAvailable returns true for a free username", async () => {
     const t = convexTest(schema, modules);
-    const meId = await t.run((ctx) =>
-      ctx.db.insert("users", { email: "me@x.com", name: "Me" })
+    const r = await t.query(api.users.isUsernameAvailable, { username: "freebird" });
+    expect(r.available).toBe(true);
+  });
+
+  it("isUsernameAvailable returns false when taken by another user", async () => {
+    const t = convexTest(schema, modules);
+    await t.run((c) =>
+      c.db.insert("users", { email: "a@x.com", name: "A", username: "alpha1" })
     );
-    const otherId = await t.run((ctx) =>
-      ctx.db.insert("users", { email: "other@x.com", name: "Other" })
-    );
-    const asMe = t.withIdentity({ subject: meId, email: "me@x.com" });
-    const results = await asMe.query(api.users.searchByEmail, {
-      email: "other@x.com",
-    });
-    expect(results).toHaveLength(1);
-    expect(results[0]._id).toBe(otherId);
-    expect(results[0].name).toBe("Other");
-    // email must not be leaked in response
-    expect((results[0] as Record<string, unknown>).email).toBeUndefined();
+    const r = await t.query(api.users.isUsernameAvailable, { username: "alpha1" });
+    expect(r.available).toBe(false);
   });
 
-  it("excludes the caller even if their email matches", async () => {
+  it("setUsername persists and rejects duplicates", async () => {
     const t = convexTest(schema, modules);
-    const meId = await t.run((ctx) =>
-      ctx.db.insert("users", { email: "me@x.com", name: "Me" })
-    );
-    const asMe = t.withIdentity({ subject: meId, email: "me@x.com" });
-    const results = await asMe.query(api.users.searchByEmail, {
-      email: "me@x.com",
-    });
-    expect(results).toEqual([]);
-  });
-
-  it("returns [] for an email that does not match any user", async () => {
-    const t = convexTest(schema, modules);
-    const results = await t.query(api.users.searchByEmail, {
-      email: "nobody@x.com",
-    });
-    expect(results).toEqual([]);
-  });
-
-  it("matches by partial email substring", async () => {
-    const t = convexTest(schema, modules);
-    const me = await t.run((c) =>
+    const meId = await t.run((c) =>
       c.db.insert("users", { email: "me@x.com", name: "Me" })
     );
-    await t.run((c) =>
-      c.db.insert("users", { email: "alice@example.com", name: "Alice" })
+    const otherId = await t.run((c) =>
+      c.db.insert("users", { email: "other@x.com", name: "Other", username: "taken1" })
+    );
+    void otherId;
+    const asMe = t.withIdentity({ subject: meId, email: "me@x.com" });
+    const updated = await asMe.mutation(api.users.setUsername, { username: "Mine_01" });
+    expect(updated?.username).toBe("mine_01");
+    await expect(
+      asMe.mutation(api.users.setUsername, { username: "taken1" })
+    ).rejects.toThrow("already taken");
+  });
+
+  it("setUsername rejects reserved words", async () => {
+    const t = convexTest(schema, modules);
+    const meId = await t.run((c) =>
+      c.db.insert("users", { email: "me@x.com", name: "Me" })
+    );
+    const asMe = t.withIdentity({ subject: meId, email: "me@x.com" });
+    await expect(
+      asMe.mutation(api.users.setUsername, { username: "admin" })
+    ).rejects.toThrow();
+  });
+
+  it("searchByUsername prefix-matches and excludes the caller", async () => {
+    const t = convexTest(schema, modules);
+    const meId = await t.run((c) =>
+      c.db.insert("users", { email: "me@x.com", name: "Me", username: "alex_me" })
     );
     await t.run((c) =>
-      c.db.insert("users", { email: "bob@example.com", name: "Bob" })
+      c.db.insert("users", { email: "a@x.com", name: "Alice", username: "alex01" })
     );
-    const asMe = t.withIdentity({ subject: me, email: "me@x.com" });
-    const results = await asMe.query(api.users.searchByEmail, {
-      email: "example",
-    });
-    expect(results.map((r) => r.name).sort()).toEqual(["Alice", "Bob"]);
+    await t.run((c) =>
+      c.db.insert("users", { email: "b@x.com", name: "Bob", username: "alex02" })
+    );
+    await t.run((c) =>
+      c.db.insert("users", { email: "c@x.com", name: "Cara", username: "zelda" })
+    );
+    const asMe = t.withIdentity({ subject: meId, email: "me@x.com" });
+    const results = await asMe.query(api.users.searchByUsername, { term: "alex" });
+    const usernames = results.map((r) => r.username).sort();
+    expect(usernames).toEqual(["alex01", "alex02"]);
+    // email never returned
+    expect((results[0] as Record<string, unknown>).email).toBeUndefined();
   });
 });
 

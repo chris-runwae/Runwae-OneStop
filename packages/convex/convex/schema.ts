@@ -28,10 +28,12 @@ export default defineSchema({
     stripeConnectId: v.optional(v.string()),
     onboardingComplete: v.optional(v.boolean()),
     travellerTags: v.optional(v.array(v.string())),
+    username: v.optional(v.string()),
     createdAt: v.optional(v.number()),
   })
     .index("email", ["email"])
-    .index("phone", ["phone"]),
+    .index("phone", ["phone"])
+    .index("by_username", ["username"]),
 
   friendships: defineTable({
     requesterId: v.id("users"),

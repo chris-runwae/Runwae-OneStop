@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import { Check, Copy, Mail } from "lucide-react";
+import { Check, Copy, AtSign } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 export function ShareClient({ trip }: { trip: Doc<"trips"> }) {
   const [search, setSearch] = useState("");
   const results = useQuery(
-    api.users.searchByEmail,
-    search.trim().length >= 3 ? { email: search } : "skip",
+    api.users.searchByUsername,
+    search.trim().length >= 2 ? { term: search } : "skip",
   );
 
   const shareUrl =
@@ -47,15 +47,17 @@ export function ShareClient({ trip }: { trip: Doc<"trips"> }) {
       <section className="mt-6 rounded-2xl border border-border bg-card p-4">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invite friends</h3>
         <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-3">
-          <Mail className="h-4 w-4 text-muted-foreground" />
+          <AtSign className="h-4 w-4 text-muted-foreground" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email"
+            onChange={(e) => setSearch(e.target.value.toLowerCase())}
+            placeholder="Search by username"
+            spellCheck={false}
+            autoComplete="off"
             className="h-10 flex-1 bg-transparent text-sm focus:outline-none"
           />
         </div>
-        {search.trim().length >= 3 && results !== undefined && (
+        {search.trim().length >= 2 && results !== undefined && (
           <ul className="mt-3 space-y-2">
             {results.length === 0 ? (
               <li className="px-3 py-2 text-center text-xs text-muted-foreground">No matches.</li>
@@ -67,7 +69,12 @@ export function ShareClient({ trip }: { trip: Doc<"trips"> }) {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar src={u.image ?? null} name={u.name ?? undefined} size="sm" />
-                    <span className="truncate text-sm font-medium">{u.name ?? "Member"}</span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">{u.name ?? "Member"}</div>
+                      {u.username && (
+                        <div className="truncate text-xs text-muted-foreground">@{u.username}</div>
+                      )}
+                    </div>
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground">Invite — coming soon</span>
                 </li>

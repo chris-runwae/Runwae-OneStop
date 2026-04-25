@@ -17,6 +17,7 @@ export const updateProfile = mutation({
     avatarUrl: v.optional(v.string()),
     preferredCurrency: v.optional(v.string()),
     preferredTimezone: v.optional(v.string()),
+    travellerTags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -32,11 +33,38 @@ export const updateProfile = mutation({
       patch.preferredCurrency = args.preferredCurrency;
     if (args.preferredTimezone !== undefined)
       patch.preferredTimezone = args.preferredTimezone;
+    if (args.travellerTags !== undefined) patch.travellerTags = args.travellerTags;
 
     if (existing.createdAt === undefined) patch.createdAt = Date.now();
 
     await ctx.db.patch(userId, patch);
     return await ctx.db.get(userId);
+  },
+});
+
+export const completeOnboarding = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    await ctx.db.patch(userId, { onboardingComplete: true });
+    return await ctx.db.get(userId);
+  },
+});
+
+export const searchByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const trimmed = email.trim().toLowerCase();
+    if (trimmed.length < 3) return [];
+    const me = await getAuthUserId(ctx);
+    const matches = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", trimmed))
+      .take(5);
+    return matches
+      .filter((u) => u._id !== me)
+      .map((u) => ({ _id: u._id, name: u.name, image: u.image }));
   },
 });
 

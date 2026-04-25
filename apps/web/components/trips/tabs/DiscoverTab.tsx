@@ -1,93 +1,127 @@
 "use client";
-import { useState } from "react";
-import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ALL_CATEGORIES } from "@/lib/categories";
-import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import { AddDiscoveryItemSheet } from "../AddDiscoveryItemSheet";
 
-export function DiscoverTab({ trip }: { trip: Doc<"trips">; viewer: Doc<"users"> | null }) {
-  const [active, setActive] = useState<string>("all");
+type DiscoveryItem = {
+  provider: string;
+  apiRef: string;
+  category: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  price?: number;
+  currency?: string;
+};
+
+const RAILS = [
+  { id: "stay",      label: "Where to stay" },
+  { id: "tour",      label: "Tours & experiences" },
+  { id: "adventure", label: "Adventure" },
+  { id: "eat",       label: "Where to eat" },
+  { id: "event",     label: "Events" },
+];
+
+export function DiscoverTab({
+  trip, viewer,
+}: { trip: Doc<"trips">; viewer: Doc<"users"> | null }) {
+  const search = useAction(api.discovery.searchByCategory);
+  const [byCategory, setByCategory] = useState<Record<string, DiscoveryItem[] | undefined>>({});
+  const [active, setActive] = useState<DiscoveryItem | null>(null);
   const term = trip.destinationLabel ?? "";
-  const results = useQuery(
-    api.search.searchAll,
-    term.trim().length >= 2 ? { term, limit: 12 } : "skip",
-  );
+  const displayCurrency = viewer?.preferredCurrency;
 
-  const experiences = results?.experiences ?? [];
-  const events      = results?.events ?? [];
-
-  if (!term) {
-    return (
-      <div className="rounded-2xl border border-dashed border-foreground/15 px-6 py-8 text-center text-sm text-foreground/60">
-        Set a destination on this trip to see suggestions.
-      </div>
-    );
-  }
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      for (const rail of RAILS) {
+        try {
+          const items = await search({ category: rail.id, term, limit: 10 });
+          if (!cancelled) {
+            setByCategory((prev) => ({ ...prev, [rail.id]: items as DiscoveryItem[] }));
+          }
+        } catch (err) {
+          console.error("[discover] failed", rail.id, err);
+          if (!cancelled) setByCategory((prev) => ({ ...prev, [rail.id]: [] }));
+        }
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [search, term]);
 
   return (
-    <>
-      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-        <Chip on={active === "all"} onClick={() => setActive("all")}>All</Chip>
-        {ALL_CATEGORIES.map(c => (
-          <Chip key={c.id} on={active === c.id} onClick={() => setActive(c.id)}>{c.emoji} {c.label}</Chip>
-        ))}
-      </div>
+    <div className="space-y-6">
+      {!term && (
+        <div className="rounded-2xl border border-dashed border-foreground/15 px-6 py-8 text-center text-sm text-foreground/60">
+          Set a destination on this trip to tailor suggestions.
+        </div>
+      )}
+      {RAILS.map((rail) => {
+        const items = byCategory[rail.id];
+        return (
+          <section key={rail.id}>
+            <header className="mb-2 flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-foreground">{rail.label}</h3>
+            </header>
+            {items === undefined ? (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                <Skeleton className="h-44 w-52 shrink-0 rounded-xl" />
+                <Skeleton className="h-44 w-52 shrink-0 rounded-xl" />
+              </div>
+            ) : items.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nothing yet for this category.</p>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {items.map((item) => (
+                  <article
+                    key={`${item.provider}:${item.apiRef}`}
+                    onClick={() => setActive(item)}
+                    className="w-52 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-transform hover:-translate-y-0.5"
+                  >
+                    {item.imageUrl && (
+                      <img src={item.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+                    )}
+                    <div className="p-3">
+                      <div className="text-sm font-semibold text-foreground">{item.title}</div>
+                      {item.description && (
+                        <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                          {item.description}
+                        </div>
+                      )}
+                      <div className="mt-2 flex items-center justify-between">
+                        {item.price != null && item.currency ? (
+                          <span className="text-sm font-semibold text-foreground">
+                            {formatCurrency(item.price, item.currency, displayCurrency)}
+                          </span>
+                        ) : <span />}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setActive(item); }}
+                          className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
 
-      <Section title="Suggested for you">
-        {results === undefined ? <Skeleton className="h-44 w-full" /> : experiences.length === 0 ? (
-          <p className="text-xs text-foreground/60">No experiences found for &ldquo;{term}&rdquo;.</p>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {experiences.map(e => (
-              <article key={e._id} className="w-52 flex-shrink-0 overflow-hidden rounded-xl border border-foreground/10 bg-background">
-                {e.imageUrl && <img src={e.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />}
-                <div className="p-3">
-                  <div className="text-sm font-semibold">{e.title}</div>
-                  {e.description && <div className="line-clamp-2 text-xs text-foreground/60">{e.description}</div>}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      <Section title="Top events">
-        {results === undefined ? <Skeleton className="h-44 w-full" /> : events.length === 0 ? (
-          <p className="text-xs text-foreground/60">No events found for &ldquo;{term}&rdquo;.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {events.map(e => (
-              <article key={e._id} className="overflow-hidden rounded-xl border border-foreground/10 bg-background">
-                {e.imageUrl && <img src={e.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />}
-                <div className="p-3">
-                  <div className="text-sm font-semibold">{e.name}</div>
-                  {e.description && <div className="line-clamp-2 text-xs text-foreground/60">{e.description}</div>}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </Section>
-    </>
-  );
-}
-
-function Chip({ on, onClick, children }: React.PropsWithChildren<{ on: boolean; onClick: () => void }>) {
-  return (
-    <button onClick={onClick} className={cn(
-      "h-9 flex-shrink-0 rounded-full px-4 text-xs font-medium",
-      on ? "bg-primary text-primary-foreground" : "bg-foreground/5 text-foreground/70 hover:text-foreground",
-    )}>{children}</button>
-  );
-}
-
-function Section({ title, children }: React.PropsWithChildren<{ title: string }>) {
-  return (
-    <section className="mt-5">
-      <header className="mb-2 flex items-center justify-between"><h3 className="font-display text-lg font-bold">{title}</h3></header>
-      {children}
-    </section>
+      <AddDiscoveryItemSheet
+        open={active !== null}
+        onClose={() => setActive(null)}
+        tripId={trip._id}
+        item={active}
+      />
+    </div>
   );
 }

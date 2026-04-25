@@ -6,12 +6,12 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CreatePollSheet } from "../../CreatePollSheet";
 
 export function PollsView({ trip }: { trip: Doc<"trips">; viewer: Doc<"users"> | null }) {
   const polls = useQuery(api.polls.getByTrip, { tripId: trip._id });
   const vote  = useMutation(api.polls.vote);
-  const create = useMutation(api.polls.create);
-  const [creating, setCreating] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   if (polls === undefined) {
     return <div className="space-y-3"><Skeleton className="h-40" /><Skeleton className="h-40" /></div>;
@@ -50,29 +50,18 @@ export function PollsView({ trip }: { trip: Doc<"trips">; viewer: Doc<"users"> |
         </article>
       ))}
       <button
-        disabled={creating}
-        onClick={async () => {
-          setCreating(true);
-          try {
-            const title = window.prompt("Poll question?");
-            if (title) {
-              const optionsRaw = window.prompt("Options (comma-separated)") ?? "";
-              const opts = optionsRaw.split(",").map(s => s.trim()).filter(Boolean);
-              if (opts.length >= 2) {
-                await create({ tripId: trip._id, title, type: "single_choice", options: opts });
-              }
-            }
-          } finally {
-            setCreating(false);
-          }
-        }}
+        onClick={() => setCreateOpen(true)}
         className={cn(
           "flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary text-sm font-semibold text-primary",
-          creating && "opacity-60",
         )}
       >
         <Plus className="h-4 w-4" /> Create poll
       </button>
+      <CreatePollSheet
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        tripId={trip._id}
+      />
     </div>
   );
 }

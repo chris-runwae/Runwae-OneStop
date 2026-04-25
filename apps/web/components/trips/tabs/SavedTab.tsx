@@ -1,24 +1,24 @@
 "use client";
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ALL_CATEGORIES, categoryFromType } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { SavedCard } from "../SavedCard";
+import { AddSavedItemActionsSheet } from "../AddSavedItemActionsSheet";
 
 type Props = { trip: Doc<"trips">; viewer: Doc<"users"> | null };
 
 export function SavedTab({ trip, viewer }: Props) {
   const [activeCat, setActiveCat] = useState<string>("all");
+  const [activeSavedId, setActiveSavedId] = useState<Id<"saved_items"> | null>(null);
   const items = useQuery(api.saved_items.getSavedItems, { tripId: trip._id });
-  const days  = useQuery(api.itinerary.getItinerary, { tripId: trip._id });
   const counts = useQuery(
     api.posts.countBySavedItems,
     items ? { savedItemIds: items.map(i => i._id) } : "skip",
   );
-  const promote = useMutation(api.saved_items.promoteToItinerary);
 
   if (items === undefined) {
     return (
@@ -32,8 +32,6 @@ export function SavedTab({ trip, viewer }: Props) {
   const filtered = activeCat === "all"
     ? items
     : items.filter(i => categoryFromType(i.type).id === activeCat);
-
-  const firstDayId: Id<"itinerary_days"> | undefined = days?.days?.[0]?._id;
 
   return (
     <>
@@ -57,11 +55,17 @@ export function SavedTab({ trip, viewer }: Props) {
               item={item}
               commentCount={counts?.[item._id] ?? 0}
               displayCurrency={viewer?.preferredCurrency}
-              onPromote={() => firstDayId && promote({ savedItemId: item._id, dayId: firstDayId })}
+              onPromote={() => setActiveSavedId(item._id)}
             />
           ))}
         </div>
       )}
+      <AddSavedItemActionsSheet
+        open={activeSavedId !== null}
+        onClose={() => setActiveSavedId(null)}
+        tripId={trip._id}
+        savedItemId={activeSavedId}
+      />
     </>
   );
 }

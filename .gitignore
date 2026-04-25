@@ -7,3 +7,6 @@ out
 .env.local
 .env*.local
 .DS_Store
+
+# Local worktrees
+.worktrees/

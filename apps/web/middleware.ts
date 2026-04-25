@@ -12,9 +12,10 @@ const isPublicRoute = createRouteMatcher([
   "/d/(.*)",
 ]);
 
-export default convexAuthNextjsMiddleware((request, { convexAuth }) => {
-  if (!isPublicRoute(request) && !convexAuth.isAuthenticated()) {
-    return nextjsMiddlewareRedirect(request, "/sign-in");
+export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
+  if (!isPublicRoute(request) && !(await convexAuth.isAuthenticated())) {
+    const next = encodeURIComponent(request.nextUrl.pathname + request.nextUrl.search);
+    return nextjsMiddlewareRedirect(request, `/sign-in?next=${next}`);
   }
 });
 

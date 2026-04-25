@@ -7,6 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@/convex": resolve(__dirname, "../../packages/convex/convex"),
       "@": resolve(__dirname, "."),
     },
   },

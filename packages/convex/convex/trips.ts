@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "./_generated/server";
 import type { Id, Doc } from "./_generated/dataModel";
+import { pickDefaultCover } from "./lib/coverImage";
 
 const SLUG_SUFFIX_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -69,6 +70,7 @@ export const createTrip = mutation({
     description: v.optional(v.string()),
     destinationId: v.optional(v.id("destinations")),
     destinationLabel: v.optional(v.string()),
+    destinationCoords: v.optional(v.object({ lat: v.number(), lng: v.number() })),
     startDate: v.string(),
     endDate: v.string(),
     category: v.optional(TRIP_CATEGORY),
@@ -81,22 +83,33 @@ export const createTrip = mutation({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
+    const startMs = Date.parse(args.startDate);
+    const endMs = Date.parse(args.endDate);
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+      throw new Error("Invalid date format. Use YYYY-MM-DD.");
+    }
+    if (endMs < startMs) {
+      throw new Error("End date cannot be before start date.");
+    }
+
     const now = Date.now();
     const slug = slugify(args.title);
     const joinCode = randomId(JOIN_CODE_ALPHABET, 8);
+    const finalCover = args.coverImageUrl ?? pickDefaultCover(slug);
 
     const tripId = await ctx.db.insert("trips", {
       title: args.title,
       description: args.description,
       destinationId: args.destinationId,
       destinationLabel: args.destinationLabel,
+      destinationCoords: args.destinationCoords,
       creatorId: userId,
       startDate: args.startDate,
       endDate: args.endDate,
       category: args.category,
       visibility: args.visibility,
       status: "planning",
-      coverImageUrl: args.coverImageUrl,
+      coverImageUrl: finalCover,
       slug,
       joinCode,
       estimatedBudget: args.estimatedBudget,
@@ -113,7 +126,7 @@ export const createTrip = mutation({
       joinedAt: now,
     });
 
-    return tripId;
+    return { tripId, slug };
   },
 });
 

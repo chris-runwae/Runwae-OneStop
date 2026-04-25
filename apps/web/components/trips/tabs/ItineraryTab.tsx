@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { ItineraryCard } from "../ItineraryCard";
 import { TravelConnector } from "../TravelConnector";
+import { AddItemSheet } from "../AddItemSheet";
 
 type Props = { trip: Doc<"trips">; viewer: Doc<"users"> | null };
 
@@ -23,6 +24,7 @@ export function ItineraryTab({ trip }: Props) {
     if (!days.length) return null;
     return days.find(d => d._id === activeDayId) ?? days[0];
   }, [days, activeDayId]);
+  const [addDayId, setAddDayId] = useState<Id<"itinerary_days"> | null>(null);
 
   if (data === undefined) {
     return (
@@ -78,17 +80,24 @@ export function ItineraryTab({ trip }: Props) {
       </div>
 
       {mode === "day" && activeDay ? (
-        <DayView day={activeDay} />
+        <DayView day={activeDay} onAdd={() => setAddDayId(activeDay._id)} />
       ) : (
         <div className="space-y-6">
-          {days.map(d => <DayView key={d._id} day={d} />)}
+          {days.map(d => <DayView key={d._id} day={d} onAdd={() => setAddDayId(d._id)} />)}
         </div>
+      )}
+      {addDayId && (
+        <AddItemSheet
+          open
+          onClose={() => setAddDayId(null)}
+          target={{ kind: "itinerary", tripId: trip._id, dayId: addDayId }}
+        />
       )}
     </>
   );
 }
 
-function DayView({ day }: { day: ItineraryDay }) {
+function DayView({ day, onAdd }: { day: ItineraryDay; onAdd: () => void }) {
   const detail = useQuery(api.itinerary.getDayWithTravelTimes, { dayId: day._id });
   const items: Doc<"itinerary_items">[] = detail?.items ?? day.items ?? [];
   const legs = detail?.legs ?? [];
@@ -108,7 +117,7 @@ function DayView({ day }: { day: ItineraryDay }) {
             {i < items.length - 1 && <TravelConnector distanceKm={legs[i]?.distanceKm} durationMin={legs[i]?.durationMin} />}
           </div>
         ))}
-        <button className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary text-sm font-semibold text-primary">
+        <button onClick={onAdd} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary text-sm font-semibold text-primary">
           <Plus className="h-4 w-4" /> Add to Day {day.dayNumber}
         </button>
       </div>

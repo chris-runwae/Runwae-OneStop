@@ -688,4 +688,26 @@ export default defineSchema({
     ),
     createdAt: v.number(),
   }).index("by_status", ["status"]),
+
+  // ── TRIP CREATION / DISCOVER ───────────────────────────────
+  saved_item_comments: defineTable({
+    tripId: v.id("trips"),
+    savedItemId: v.id("saved_items"),
+    userId: v.id("users"),
+    content: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_saved_item", ["savedItemId"])
+    .index("by_trip", ["tripId"]),
+
+  discovery_cache: defineTable({
+    provider: v.string(),
+    category: v.string(),
+    queryKey: v.string(),
+    expiresAt: v.number(),
+    payload: v.any(),
+  })
+    .index("by_key", ["provider", "category", "queryKey"])
+    .index("by_category_key", ["category", "queryKey"]),
 });

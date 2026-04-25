@@ -1,16 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 async function resolveUserId(ctx: { auth: any; db: any }): Promise<Id<"users">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  const user = await ctx.db
-    .query("users")
-    .filter((q: any) => q.eq(q.field("email"), identity.email))
-    .unique();
-  if (!user) throw new Error("User not found");
-  return user._id as Id<"users">;
+  const userId = await getAuthUserId(ctx);
+  if (userId === null) throw new Error("Not authenticated");
+  return userId;
 }
 
 export const getByTrip = query({

@@ -17,7 +17,7 @@ describe("members.listByTrip", () => {
     const tripId = await t.run(async (ctx) =>
       ctx.db.insert("trips", {
         title: "T", creatorId: userA, startDate: "2026-03-14", endDate: "2026-03-18",
-        visibility: "private", status: "planning", slug: "t", joinCode: "j",
+        visibility: "public", status: "planning", slug: "t", joinCode: "j",
         currency: "GBP", createdAt: 0, updatedAt: 0,
       })
     );
@@ -40,7 +40,7 @@ describe("members.listByTrip", () => {
     const tripId = await t.run(async (ctx) =>
       ctx.db.insert("trips", {
         title: "T", creatorId: userA, startDate: "2026-03-14", endDate: "2026-03-18",
-        visibility: "private", status: "planning", slug: "t", joinCode: "j",
+        visibility: "public", status: "planning", slug: "t", joinCode: "j",
         currency: "GBP", createdAt: 0, updatedAt: 0,
       })
     );

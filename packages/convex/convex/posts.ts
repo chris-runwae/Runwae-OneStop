@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const getByTrip = query({
   args: { tripId: v.id("trips") },
@@ -43,17 +44,12 @@ export const create = mutation({
     savedItemId: v.optional(v.id("saved_items")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    const user = await ctx.db
-      .query("users")
-      .filter(q => q.eq(q.field("email"), identity.email))
-      .unique();
-    if (!user) throw new Error("User not found");
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
     const now = Date.now();
     return ctx.db.insert("trip_posts", {
       tripId: args.tripId,
-      createdByUserId: user._id,
+      createdByUserId: userId,
       content: args.content,
       imageUrls: args.imageUrls,
       savedItemId: args.savedItemId,

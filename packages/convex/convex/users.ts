@@ -55,15 +55,18 @@ export const completeOnboarding = mutation({
 export const searchByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
-    const trimmed = email.trim().toLowerCase();
-    if (trimmed.length < 3) return [];
+    const needle = email.trim().toLowerCase();
+    if (needle.length < 3) return [];
     const me = await getAuthUserId(ctx);
-    const matches = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", trimmed))
-      .take(5);
-    return matches
-      .filter((u) => u._id !== me)
+    const all = await ctx.db.query("users").collect();
+    return all
+      .filter(
+        (u) =>
+          u._id !== me &&
+          typeof u.email === "string" &&
+          u.email.toLowerCase().includes(needle)
+      )
+      .slice(0, 5)
       .map((u) => ({ _id: u._id, name: u.name, image: u.image }));
   },
 });

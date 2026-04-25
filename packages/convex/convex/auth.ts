@@ -3,7 +3,17 @@ import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Google, Password],
+  providers: [
+    Google,
+    Password({
+      profile(params) {
+        return {
+          email: params.email as string,
+          ...(params.name !== undefined ? { name: params.name as string } : {}),
+        };
+      },
+    }),
+  ],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
       // existingUserId is non-null on subsequent sign-ins — keep the row as-is.

@@ -80,6 +80,24 @@ describe("searchByEmail", () => {
     });
     expect(results).toEqual([]);
   });
+
+  it("matches by partial email substring", async () => {
+    const t = convexTest(schema, modules);
+    const me = await t.run((c) =>
+      c.db.insert("users", { email: "me@x.com", name: "Me" })
+    );
+    await t.run((c) =>
+      c.db.insert("users", { email: "alice@example.com", name: "Alice" })
+    );
+    await t.run((c) =>
+      c.db.insert("users", { email: "bob@example.com", name: "Bob" })
+    );
+    const asMe = t.withIdentity({ subject: me, email: "me@x.com" });
+    const results = await asMe.query(api.users.searchByEmail, {
+      email: "example",
+    });
+    expect(results.map((r) => r.name).sort()).toEqual(["Alice", "Bob"]);
+  });
 });
 
 describe("updateProfile — travellerTags", () => {

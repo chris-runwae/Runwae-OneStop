@@ -1,22 +1,46 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import { ChevronsUpDown, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type LocationValue = {
   destinationLabel: string;
-  destinationId?: Id<"destinations">;
   coords?: { lat: number; lng: number };
 };
+
+type NominatimResult = {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  type?: string;
+  class?: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    country?: string;
+  };
+};
+
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+
+function shortenLabel(r: NominatimResult): string {
+  const a = r.address;
+  if (!a) return r.display_name.split(",").slice(0, 3).join(",").trim();
+  const place = a.city ?? a.town ?? a.village ?? a.state ?? "";
+  const country = a.country ?? "";
+  if (place && country) return `${place}, ${country}`;
+  return r.display_name.split(",").slice(0, 3).join(",").trim();
+}
 
 export function LocationPicker({
   value,
   onChange,
   className,
-  placeholder = "Search destinations…",
+  placeholder = "Search a city or country…",
 }: {
   value: LocationValue;
   onChange: (v: LocationValue) => void;
@@ -25,19 +49,54 @@ export function LocationPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState(value.destinationLabel);
+  const [results, setResults] = useState<NominatimResult[] | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reqIdRef = useRef(0);
 
-  // Sync external value into the search term when picker is closed
   useEffect(() => {
     if (!open) setTerm(value.destinationLabel);
   }, [value.destinationLabel, open]);
 
-  const results = useQuery(
-    api.search.searchAll,
-    open && term.trim().length >= 2 ? { term, limit: 8 } : "skip"
-  );
+  useEffect(() => {
+    if (!open) return;
+    const q = term.trim();
+    if (q.length < 2) {
+      setResults(undefined);
+      setLoading(false);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      const myReq = ++reqIdRef.current;
+      try {
+        const url = `${NOMINATIM_URL}?q=${encodeURIComponent(
+          q
+        )}&format=json&addressdetails=1&limit=6`;
+        const res = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+        const data = (await res.json()) as NominatimResult[];
+        if (myReq === reqIdRef.current) {
+          setResults(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("[location-picker] geocoding failed", err);
+        if (myReq === reqIdRef.current) {
+          setResults([]);
+          setLoading(false);
+        }
+      }
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [term, open]);
 
-  // Outside click / Escape
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
@@ -55,19 +114,14 @@ export function LocationPicker({
     };
   }, [open]);
 
-  function pickDestination(d: { _id: Id<"destinations">; name: string; country: string; coords?: { lat: number; lng: number } }) {
+  function pick(r: NominatimResult) {
+    const lat = parseFloat(r.lat);
+    const lng = parseFloat(r.lon);
+    const label = shortenLabel(r);
     onChange({
-      destinationLabel: `${d.name}, ${d.country}`,
-      destinationId: d._id,
-      coords: d.coords,
+      destinationLabel: label,
+      coords: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined,
     });
-    setOpen(false);
-  }
-
-  function commitFreeText() {
-    const trimmed = term.trim();
-    if (trimmed.length === 0) return;
-    onChange({ destinationLabel: trimmed, destinationId: undefined, coords: undefined });
     setOpen(false);
   }
 
@@ -98,35 +152,35 @@ export function LocationPicker({
             />
           </div>
 
-          <ul className="max-h-56 overflow-y-auto py-1">
+          <ul className="max-h-64 overflow-y-auto py-1">
             {term.trim().length < 2 ? (
               <li className="px-3 py-4 text-center text-xs text-muted-foreground">
-                Type at least 2 characters to search.
+                Type a place name to search.
               </li>
-            ) : results === undefined ? (
+            ) : loading ? (
               <li className="px-3 py-4 text-center text-xs text-muted-foreground">Searching…</li>
-            ) : (results.destinations ?? []).length === 0 ? (
+            ) : !results || results.length === 0 ? (
               <li className="px-3 py-4 text-center text-xs text-muted-foreground">
-                No matches — use as typed below.
+                No matches for &ldquo;{term.trim()}&rdquo;.
               </li>
             ) : (
-              (results.destinations ?? []).map((d) => (
-                <li key={d._id}>
+              results.map((r) => (
+                <li key={r.place_id}>
                   <button
                     type="button"
-                    onClick={() => pickDestination(d)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                    onClick={() => pick(r)}
+                    className="flex w-full items-start gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
                   >
-                    {d.heroImageUrl ? (
-                      <img src={d.heroImageUrl} alt="" className="h-10 w-10 rounded-md object-cover" />
-                    ) : (
-                      <span className="grid h-10 w-10 place-items-center rounded-md bg-muted">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                      </span>
-                    )}
+                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                    </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">{d.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{d.country}</span>
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {shortenLabel(r)}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {r.display_name}
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -134,15 +188,9 @@ export function LocationPicker({
             )}
           </ul>
 
-          {term.trim().length > 0 && (
-            <button
-              type="button"
-              onClick={commitFreeText}
-              className="block w-full border-t border-border px-3 py-2 text-left text-xs font-medium text-primary hover:bg-muted"
-            >
-              Use &ldquo;{term.trim()}&rdquo; as typed
-            </button>
-          )}
+          <p className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
+            Place data &copy; OpenStreetMap contributors
+          </p>
         </div>
       )}
     </div>

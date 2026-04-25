@@ -33,6 +33,8 @@ export function DiscoverTab({
   const [byCategory, setByCategory] = useState<Record<string, DiscoveryItem[] | undefined>>({});
   const [active, setActive] = useState<DiscoveryItem | null>(null);
   const term = trip.destinationLabel ?? "";
+  const lat = trip.destinationCoords?.lat;
+  const lng = trip.destinationCoords?.lng;
   const displayCurrency = viewer?.preferredCurrency;
 
   useEffect(() => {
@@ -40,7 +42,13 @@ export function DiscoverTab({
     async function load() {
       for (const rail of RAILS) {
         try {
-          const items = await search({ category: rail.id, term, limit: 10 });
+          const items = await search({
+            category: rail.id,
+            term,
+            lat,
+            lng,
+            limit: 10,
+          });
           if (!cancelled) {
             setByCategory((prev) => ({ ...prev, [rail.id]: items as DiscoveryItem[] }));
           }
@@ -52,13 +60,13 @@ export function DiscoverTab({
     }
     void load();
     return () => { cancelled = true; };
-  }, [search, term]);
+  }, [search, term, lat, lng]);
 
   return (
     <div className="space-y-6">
       {!term && (
         <div className="rounded-2xl border border-dashed border-foreground/15 px-6 py-8 text-center text-sm text-foreground/60">
-          Set a destination on this trip to tailor suggestions.
+          Set a destination on this trip to tailor suggestions, or browse popular picks below.
         </div>
       )}
       {RAILS.map((rail) => {

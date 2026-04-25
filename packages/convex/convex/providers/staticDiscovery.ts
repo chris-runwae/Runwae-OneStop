@@ -33,7 +33,14 @@ const SAMPLES: Record<string, DiscoveryItem[]> = {
 };
 
 export const search = internalAction({
-  args: { category: v.string(), term: v.string(), limit: v.number() },
+  args: {
+    category: v.string(),
+    term: v.string(),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
+    limit: v.number(),
+  },
+  // Coords ignored — this fallback returns curated samples keyed only by category.
   handler: async (_ctx, { category, term, limit }) => {
     const arr = SAMPLES[category] ?? [];
     const needle = term.trim().toLowerCase();

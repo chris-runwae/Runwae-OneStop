@@ -3,7 +3,17 @@ import { internalAction } from "../_generated/server";
 import type { DiscoveryItem } from "./types";
 
 export const search = internalAction({
-  args: { category: v.string(), term: v.string(), limit: v.number() },
+  args: {
+    category: v.string(),
+    term: v.string(),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
+    limit: v.number(),
+  },
+  // NOTE: Viator's /products/search is destinationId-based, not lat/lng-based.
+  // We use `term` (the destination label resolved by Nominatim) as the search
+  // string. Future improvement: resolve destinationLabel → Viator destinationId
+  // via /taxonomy/destinations, then pass it as `destinations: [{ ref }]`.
   handler: async (_ctx, { category, term, limit }): Promise<DiscoveryItem[]> => {
     const apiKey = process.env.VIATOR_KEY;
     if (!apiKey) {

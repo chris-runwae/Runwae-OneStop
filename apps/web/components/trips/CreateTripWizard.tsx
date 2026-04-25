@@ -105,7 +105,6 @@ export function CreateTripWizard() {
         title: details.title.trim(),
         description: details.description.trim() || undefined,
         destinationLabel: destination.destinationLabel,
-        destinationId: destination.destinationId,
         destinationCoords: destination.coords,
         startDate: dates.start,
         endDate: dates.end,

@@ -19,11 +19,17 @@ export const searchByCategory = action({
   args: {
     category: v.string(),
     term: v.string(),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { category, term, limit }): Promise<DiscoveryItem[]> => {
+  handler: async (ctx, { category, term, lat, lng, limit }): Promise<DiscoveryItem[]> => {
     const cap = limit ?? 12;
-    const queryKey = `${term.trim().toLowerCase()}|limit=${cap}`;
+    const coordsKey =
+      lat !== undefined && lng !== undefined
+        ? `@${lat.toFixed(3)},${lng.toFixed(3)}`
+        : "";
+    const queryKey = `${term.trim().toLowerCase()}${coordsKey}|limit=${cap}`;
     const provider = providerFor(category);
 
     const cached = await ctx.runQuery(internal.discovery.getCached, {
@@ -34,16 +40,22 @@ export const searchByCategory = action({
     let items: DiscoveryItem[] = [];
     try {
       if (provider === "viator") {
-        items = await ctx.runAction(internal.providers.viator.search, { category, term, limit: cap });
+        items = await ctx.runAction(internal.providers.viator.search, {
+          category, term, lat, lng, limit: cap,
+        });
       } else if (provider === "liteapi") {
-        items = await ctx.runAction(internal.providers.liteapi.search, { category, term, limit: cap });
+        items = await ctx.runAction(internal.providers.liteapi.search, {
+          category, term, lat, lng, limit: cap,
+        });
       }
     } catch (err) {
       console.error("[discovery] provider call threw", { category, error: String(err) });
     }
 
     if (items.length === 0) {
-      items = await ctx.runAction(internal.providers.staticDiscovery.search, { category, term, limit: cap });
+      items = await ctx.runAction(internal.providers.staticDiscovery.search, {
+        category, term, lat, lng, limit: cap,
+      });
     }
 
     await ctx.runMutation(internal.discovery.setCache, {

@@ -115,3 +115,45 @@ export const create = mutation({
     return pollId;
   },
 });
+
+export const createForSavedItem = mutation({
+  args: {
+    tripId: v.id("trips"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    type: v.union(v.literal("single_choice"), v.literal("multi_choice"), v.literal("ranked")),
+    savedItemIds: v.array(v.id("saved_items")),
+    closesAt: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await resolveUserId(ctx);
+    if (args.savedItemIds.length < 2) {
+      throw new Error("Need at least 2 saved items to create a poll.");
+    }
+    const pollId = await ctx.db.insert("trip_polls", {
+      tripId: args.tripId,
+      createdByUserId: userId,
+      title: args.title,
+      description: args.description,
+      type: args.type,
+      status: "open",
+      closesAt: args.closesAt,
+      allowAddOptions: false,
+      isAnonymous: args.isAnonymous ?? false,
+      createdAt: Date.now(),
+    });
+    for (const savedItemId of args.savedItemIds) {
+      const saved = await ctx.db.get(savedItemId);
+      if (!saved || saved.tripId !== args.tripId) continue;
+      await ctx.db.insert("poll_options", {
+        pollId,
+        label: saved.title,
+        addedByUserId: userId,
+        savedItemId,
+        createdAt: Date.now(),
+      });
+    }
+    return pollId;
+  },
+});

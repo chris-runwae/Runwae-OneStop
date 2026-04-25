@@ -16,30 +16,46 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   ],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
-      // existingUserId is non-null on subsequent sign-ins — keep the row as-is.
       if (args.existingUserId) {
         return args.existingUserId;
       }
 
-      // First sign-in (sign-up): insert the user row with default profile fields.
-      const now = Date.now();
       const profile = args.profile as {
         email?: string;
         name?: string;
         image?: string;
       };
 
-      return await ctx.db.insert("users", {
-        email: profile.email,
-        name: profile.name,
-        image: profile.image,
-        plan: "free",
-        isHost: false,
-        isAdmin: false,
-        preferredCurrency: "GBP",
-        onboardingComplete: false,
-        createdAt: now,
-      });
+      // If a users row already exists for this email (e.g., a previous sign-up
+      // attempt populated it), reuse it instead of inserting a duplicate —
+      // a duplicate row would orphan the new account from the existing user.
+      if (profile.email) {
+        const existing = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("email"), profile.email))
+          .first();
+        if (existing) return existing._id;
+      }
+
+      try {
+        return await ctx.db.insert("users", {
+          email: profile.email,
+          name: profile.name,
+          image: profile.image,
+          plan: "free",
+          isHost: false,
+          isAdmin: false,
+          preferredCurrency: "GBP",
+          onboardingComplete: false,
+          createdAt: Date.now(),
+        });
+      } catch (err) {
+        console.error("[auth:createOrUpdateUser] insert failed", {
+          profile,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      }
     },
   },
 });

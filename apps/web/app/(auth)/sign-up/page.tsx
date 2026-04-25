@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -8,6 +8,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { TimezonePicker } from "@/components/ui/timezone-picker";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -73,9 +74,19 @@ interface Step1Props {
   error: string | null;
   loading: boolean;
   onNext: () => void;
+  onGoogle: () => void;
+  googleLoading: boolean;
 }
 
-function Step1Email({ email, setEmail, error, loading, onNext }: Step1Props) {
+function Step1Email({
+  email,
+  setEmail,
+  error,
+  loading,
+  onNext,
+  onGoogle,
+  googleLoading,
+}: Step1Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onNext();
@@ -90,6 +101,23 @@ function Step1Email({ email, setEmail, error, loading, onNext }: Step1Props) {
         <p className="text-sm text-muted-foreground">
           Start planning unforgettable trips
         </p>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="w-full"
+        onClick={onGoogle}
+        isLoading={googleLoading}
+        disabled={googleLoading || loading}
+      >
+        Continue with Google
+      </Button>
+
+      <div className="relative text-center text-xs text-muted-foreground">
+        <span className="relative z-10 bg-background px-3">Or with email</span>
+        <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
       </div>
 
       <input
@@ -255,12 +283,9 @@ function Step3Location({
         <label className="text-sm font-medium text-foreground">
           Timezone
         </label>
-        <input
-          type="text"
+        <TimezonePicker
           value={preferredTimezone}
-          onChange={(e) => setPreferredTimezone(e.target.value)}
-          className={inputCls}
-          placeholder="e.g. Europe/London"
+          onChange={setPreferredTimezone}
         />
       </div>
 
@@ -466,6 +491,7 @@ export default function SignUpPage() {
   // Wizard state
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Step 1
@@ -480,6 +506,30 @@ export default function SignUpPage() {
   const [preferredTimezone, setPreferredTimezone] = useState<string>(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone
   );
+
+  // If the user is already authenticated when they land here (e.g. after
+  // Google OAuth) but hasn't finished onboarding, jump straight to step 3.
+  // Steps 1–2 (email + password) only apply to the password sign-up flow.
+  const viewer = useQuery(api.users.getCurrentUser, {});
+  const jumpedRef = useRef(false);
+  useEffect(() => {
+    if (jumpedRef.current) return;
+    if (viewer && viewer.onboardingComplete !== true) {
+      jumpedRef.current = true;
+      // Pre-fill from the OAuth profile so we don't lose the data.
+      if (viewer.preferredCurrency) {
+        const c = viewer.preferredCurrency as Currency;
+        if ((CURRENCIES as readonly string[]).includes(c)) setPreferredCurrency(c);
+      }
+      if (viewer.preferredTimezone) setPreferredTimezone(viewer.preferredTimezone);
+      if (viewer.travellerTags && viewer.travellerTags.length > 0) {
+        setSelectedTags([...viewer.travellerTags]);
+      }
+      setStep(2);
+    } else if (viewer && viewer.onboardingComplete === true) {
+      router.replace("/home");
+    }
+  }, [viewer, router]);
 
   // Step 4
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -542,7 +592,15 @@ export default function SignUpPage() {
       });
       setStep(2);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed. Please try again.");
+      console.error("[sign-up] signIn failed", err);
+      let msg = "Sign up failed. Please try again.";
+      if (err instanceof Error && err.message) msg = err.message;
+      else if (err && typeof err === "object") {
+        const anyErr = err as { data?: unknown; message?: string };
+        if (anyErr.message) msg = anyErr.message;
+        else if (anyErr.data) msg = `Sign up failed: ${JSON.stringify(anyErr.data)}`;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -601,6 +659,20 @@ export default function SignUpPage() {
     setStep((s) => Math.max(0, s - 1));
   }
 
+  async function handleGoogle() {
+    clearError();
+    setGoogleLoading(true);
+    try {
+      // Google OAuth handles its own redirect; on return the user lands
+      // authenticated. Onboarding fields can be completed via Profile later.
+      await signIn("google");
+    } catch (err) {
+      console.error("[sign-up] Google signIn failed", err);
+      setError(err instanceof Error ? err.message : "Google sign in failed.");
+      setGoogleLoading(false);
+    }
+  }
+
   // ------------------------------------------------------------------
   // Render
   // ------------------------------------------------------------------
@@ -616,6 +688,8 @@ export default function SignUpPage() {
           error={error}
           loading={loading}
           onNext={handleStep1Next}
+          onGoogle={handleGoogle}
+          googleLoading={googleLoading}
         />
       )}
 

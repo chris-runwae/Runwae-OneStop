@@ -31,8 +31,18 @@ export const updateProfile = mutation({
     if (args.avatarUrl !== undefined) patch.avatarUrl = args.avatarUrl;
     if (args.preferredCurrency !== undefined)
       patch.preferredCurrency = args.preferredCurrency;
-    if (args.preferredTimezone !== undefined)
+    if (args.preferredTimezone !== undefined) {
+      // Validate against the runtime IANA database to reject typos like "London"
+      // (must be "Europe/London") or invented strings like "Ghana".
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: args.preferredTimezone });
+      } catch {
+        throw new Error(
+          `Unknown timezone "${args.preferredTimezone}" — pass an IANA id like "Europe/London".`
+        );
+      }
       patch.preferredTimezone = args.preferredTimezone;
+    }
     if (args.travellerTags !== undefined) patch.travellerTags = args.travellerTags;
 
     if (existing.createdAt === undefined) patch.createdAt = Date.now();

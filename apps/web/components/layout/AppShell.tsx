@@ -2,10 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@/convex/_generated/api";
-import { Bell, Compass, Home, Map, Plus, User } from "lucide-react";
+import { Bell, Compass, Home, LogOut, Map, Plus, User } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { CreateSheet } from "./CreateSheet";
@@ -25,8 +26,15 @@ function isActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useAuthActions();
   const viewer = useQuery(api.users.getCurrentUser, {});
   const [createOpen, setCreateOpen] = useState(false);
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/sign-in");
+  }
 
   return (
     <div className="min-h-screen bg-background lg:flex">
@@ -60,16 +68,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </nav>
         <div className="border-t border-border px-3 py-4">
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted"
-          >
-            <Avatar src={viewer?.image} name={viewer?.name ?? undefined} size="md" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-foreground">{viewer?.name ?? "Profile"}</div>
-              <div className="truncate text-xs text-muted-foreground">{viewer?.email ?? ""}</div>
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/profile"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted"
+            >
+              <Avatar src={viewer?.image} name={viewer?.name ?? undefined} size="md" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-foreground">{viewer?.name ?? "Profile"}</div>
+                <div className="truncate text-xs text-muted-foreground">{viewer?.email ?? ""}</div>
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </aside>
 

@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as itinerary from "../itinerary.js";
 import type * as members from "../members.js";
 import type * as notifications from "../notifications.js";
+import type * as polls from "../polls.js";
 import type * as posts from "../posts.js";
 import type * as saved_items from "../saved_items.js";
 import type * as search from "../search.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   itinerary: typeof itinerary;
   members: typeof members;
   notifications: typeof notifications;
+  polls: typeof polls;
   posts: typeof posts;
   saved_items: typeof saved_items;
   search: typeof search;

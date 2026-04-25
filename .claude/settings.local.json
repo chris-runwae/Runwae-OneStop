@@ -53,7 +53,24 @@
       "Bash(npx -p typescript@5.5.4 tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --skipLibCheck --jsx preserve /Users/christopherobocha/Documents/GitHub/Runwae-OneStop/packages/convex/convex/*.ts)",
       "Bash(npx -p typescript@5.5.4 -p @types/node@20 tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --skipLibCheck --jsx preserve --types node convex/*.ts)",
       "Bash(echo \"---exit: $?---\")",
-      "Bash(pnpm --filter @runwae/convex add -D typescript@5.5.4 @types/node@20)"
+      "Bash(pnpm --filter @runwae/convex add -D typescript@5.5.4 @types/node@20)",
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(echo \"---EXIT: $?\")",
+      "Bash(pnpm exec *)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(npm list *)",
+      "Bash(xargs cat *)",
+      "Bash(xargs ls *)",
+      "Bash(pnpm list *)",
+      "Bash(echo \"TSC Exit code: $?\")",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(pnpm add *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(echo \"TSC_EXIT:$?\")"
     ]
   }
 }

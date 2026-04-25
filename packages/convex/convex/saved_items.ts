@@ -128,6 +128,70 @@ export const removeSavedItem = mutation({
   },
 });
 
+export const addComment = mutation({
+  args: { savedItemId: v.id("saved_items"), content: v.string() },
+  handler: async (ctx, { savedItemId, content }) => {
+    const text = content.trim();
+    if (text.length === 0) throw new Error("Comment cannot be empty.");
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const saved = await ctx.db.get(savedItemId);
+    if (!saved) throw new Error("Saved item not found.");
+    await assertTripMember(ctx, saved.tripId, userId);
+    const now = Date.now();
+    return await ctx.db.insert("saved_item_comments", {
+      tripId: saved.tripId,
+      savedItemId,
+      userId,
+      content: text,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const getComments = query({
+  args: { savedItemId: v.id("saved_items") },
+  handler: async (ctx, { savedItemId }) => {
+    const saved = await ctx.db.get(savedItemId);
+    if (!saved) return [];
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+    const trip = await ctx.db.get(saved.tripId);
+    if (!trip) return [];
+    if (trip.visibility !== "public") {
+      const membership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", saved.tripId))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .first();
+      if (!membership) return [];
+    }
+    const rows = await ctx.db
+      .query("saved_item_comments")
+      .withIndex("by_saved_item", (q) => q.eq("savedItemId", savedItemId))
+      .order("asc")
+      .collect();
+    return Promise.all(rows.map(async (r) => ({
+      ...r,
+      author: await ctx.db.get(r.userId),
+    })));
+  },
+});
+
+export const removeComment = mutation({
+  args: { commentId: v.id("saved_item_comments") },
+  handler: async (ctx, { commentId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const comment = await ctx.db.get(commentId);
+    if (!comment) return;
+    await assertTripMember(ctx, comment.tripId, userId);
+    if (comment.userId !== userId) throw new Error("Not your comment.");
+    await ctx.db.delete(commentId);
+  },
+});
+
 export const promoteToItinerary = mutation({
   args: {
     savedItemId: v.id("saved_items"),

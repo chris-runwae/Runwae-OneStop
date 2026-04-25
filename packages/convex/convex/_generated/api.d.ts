@@ -8,8 +8,22 @@
  * @module
  */
 
+import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
+import type * as bookings from "../bookings.js";
+import type * as commissions from "../commissions.js";
+import type * as crons from "../crons.js";
+import type * as currency from "../currency.js";
+import type * as destinations from "../destinations.js";
+import type * as events from "../events.js";
 import type * as http from "../http.js";
+import type * as itinerary from "../itinerary.js";
+import type * as notifications from "../notifications.js";
+import type * as saved_items from "../saved_items.js";
+import type * as search from "../search.js";
+import type * as social from "../social.js";
+import type * as trips from "../trips.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +32,22 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ai: typeof ai;
   auth: typeof auth;
+  bookings: typeof bookings;
+  commissions: typeof commissions;
+  crons: typeof crons;
+  currency: typeof currency;
+  destinations: typeof destinations;
+  events: typeof events;
   http: typeof http;
+  itinerary: typeof itinerary;
+  notifications: typeof notifications;
+  saved_items: typeof saved_items;
+  search: typeof search;
+  social: typeof social;
+  trips: typeof trips;
+  users: typeof users;
 }>;
 
 /**

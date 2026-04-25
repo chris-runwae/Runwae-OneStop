@@ -138,3 +138,16 @@ AUTH_GOOGLE_SECRET=...
 - Never hardcode currency symbols — use `Intl.NumberFormat`
 - Never hardcode timezone — always use the entity's `.timezone` field
 - Never import from `web/` (legacy vendor app) — use `apps/web/`
+
+## Convex structure (confirmed working)
+- Package lives at: ./packages/convex/convex/
+- Schema: 34 tables, authTables merged into users
+- All auth uses ctx.auth.getUserIdentity() — subject field is the user identifier
+- Find user record: ctx.db.query("users").filter(q => q.eq(q.field("_id"), ...))
+- users table: all app fields are v.optional() — auth insert populates email only,
+  onboarding populates the rest
+- No username field exists — getUserByUsername currently filters on name
+- itinerary.ts has addDay mutation (not in original spec, required by addItem/promoteToItinerary)
+- getDayWithTravelTimes returns stub data: distanceKm = 2 + i*1.5, durationMin = 10 + i*5
+- crons.ts: refreshRates runs daily at 03:00 UTC, base currency GBP
+- npx convex dev --once --typecheck=enable passes clean (exit 0)

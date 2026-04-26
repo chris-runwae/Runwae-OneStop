@@ -357,7 +357,9 @@ export default defineSchema({
     savedItemId: v.optional(v.id("saved_items")),
     metadata: v.optional(v.any()),
     createdAt: v.number(),
-  }).index("by_poll", ["pollId"]),
+  })
+    .index("by_poll", ["pollId"])
+    .index("by_saved_item", ["savedItemId"]),
 
   poll_votes: defineTable({
     pollId: v.id("trip_polls"),

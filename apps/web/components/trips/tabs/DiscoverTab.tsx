@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -35,6 +36,8 @@ export function DiscoverTab({
   const term = trip.destinationLabel ?? "";
   const lat = trip.destinationCoords?.lat;
   const lng = trip.destinationCoords?.lng;
+  const checkin = trip.startDate;
+  const checkout = trip.endDate;
   const displayCurrency = viewer?.preferredCurrency;
 
   useEffect(() => {
@@ -48,6 +51,8 @@ export function DiscoverTab({
             lat,
             lng,
             limit: 10,
+            checkin,
+            checkout,
           });
           if (!cancelled) {
             setByCategory((prev) => ({ ...prev, [rail.id]: items as DiscoveryItem[] }));
@@ -60,7 +65,7 @@ export function DiscoverTab({
     }
     void load();
     return () => { cancelled = true; };
-  }, [search, term, lat, lng]);
+  }, [search, term, lat, lng, checkin, checkout]);
 
   return (
     <div className="space-y-6">
@@ -86,10 +91,10 @@ export function DiscoverTab({
             ) : (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {items.map((item) => (
-                  <article
+                  <Link
                     key={`${item.provider}:${item.apiRef}`}
-                    onClick={() => setActive(item)}
-                    className="w-52 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-transform hover:-translate-y-0.5"
+                    href={`/discover/${item.provider}/${encodeURIComponent(item.apiRef)}?category=${item.category}&tripId=${trip._id}`}
+                    className="block w-52 shrink-0 overflow-hidden rounded-xl border border-border bg-card transition-transform hover:-translate-y-0.5"
                   >
                     {item.imageUrl && (
                       <img src={item.imageUrl} alt="" className="aspect-[4/3] w-full object-cover" />
@@ -109,14 +114,14 @@ export function DiscoverTab({
                         ) : <span />}
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setActive(item); }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActive(item); }}
                           className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
                         >
                           + Add
                         </button>
                       </div>
                     </div>
-                  </article>
+                  </Link>
                 ))}
               </div>
             )}

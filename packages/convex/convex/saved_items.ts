@@ -179,6 +179,21 @@ export const getComments = query({
   },
 });
 
+export const getCommentCounts = query({
+  args: { savedItemIds: v.array(v.id("saved_items")) },
+  handler: async (ctx, { savedItemIds }) => {
+    const counts: Record<string, number> = {};
+    for (const id of savedItemIds) {
+      const rows = await ctx.db
+        .query("saved_item_comments")
+        .withIndex("by_saved_item", (q) => q.eq("savedItemId", id))
+        .collect();
+      counts[id] = rows.length;
+    }
+    return counts as Record<Id<"saved_items">, number>;
+  },
+});
+
 export const removeComment = mutation({
   args: { commentId: v.id("saved_item_comments") },
   handler: async (ctx, { commentId }) => {

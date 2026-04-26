@@ -8,15 +8,21 @@ import { ALL_CATEGORIES, categoryFromType } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { SavedCard } from "../SavedCard";
 import { AddSavedItemActionsSheet } from "../AddSavedItemActionsSheet";
+import { CommentDialog } from "../CommentDialog";
 
 type Props = { trip: Doc<"trips">; viewer: Doc<"users"> | null };
 
 export function SavedTab({ trip, viewer }: Props) {
   const [activeCat, setActiveCat] = useState<string>("all");
   const [activeSavedId, setActiveSavedId] = useState<Id<"saved_items"> | null>(null);
+  const [commentingId, setCommentingId] = useState<Id<"saved_items"> | null>(null);
   const items = useQuery(api.saved_items.getSavedItems, { tripId: trip._id });
   const counts = useQuery(
-    api.posts.countBySavedItems,
+    api.saved_items.getCommentCounts,
+    items ? { savedItemIds: items.map(i => i._id) } : "skip",
+  );
+  const pollByItem = useQuery(
+    api.polls.openOptionsBySavedItems,
     items ? { savedItemIds: items.map(i => i._id) } : "skip",
   );
 
@@ -54,8 +60,10 @@ export function SavedTab({ trip, viewer }: Props) {
               key={item._id}
               item={item}
               commentCount={counts?.[item._id] ?? 0}
+              poll={pollByItem?.[item._id] ?? null}
               displayCurrency={viewer?.preferredCurrency}
               onPromote={() => setActiveSavedId(item._id)}
+              onOpenComments={() => setCommentingId(item._id)}
             />
           ))}
         </div>
@@ -65,6 +73,11 @@ export function SavedTab({ trip, viewer }: Props) {
         onClose={() => setActiveSavedId(null)}
         tripId={trip._id}
         savedItemId={activeSavedId}
+      />
+      <CommentDialog
+        open={commentingId !== null}
+        onClose={() => setCommentingId(null)}
+        savedItemId={commentingId ?? ("" as unknown as Id<"saved_items">)}
       />
     </>
   );

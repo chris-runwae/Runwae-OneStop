@@ -116,6 +116,51 @@ export const create = mutation({
   },
 });
 
+export const openOptionsBySavedItems = query({
+  args: { savedItemIds: v.array(v.id("saved_items")) },
+  handler: async (ctx, { savedItemIds }) => {
+    const out: Record<string, {
+      pollId: Id<"trip_polls">;
+      optionId: Id<"poll_options">;
+      pollTitle: string;
+      voteCount: number;
+      totalVotes: number;
+    }> = {};
+    for (const savedItemId of savedItemIds) {
+      const options = await ctx.db
+        .query("poll_options")
+        .withIndex("by_saved_item", (q: any) => q.eq("savedItemId", savedItemId))
+        .collect();
+      for (const opt of options) {
+        const poll = await ctx.db.get(opt.pollId);
+        if (!poll || poll.status !== "open") continue;
+        const votes = await ctx.db
+          .query("poll_votes")
+          .withIndex("by_poll", (q: any) => q.eq("pollId", poll._id))
+          .collect();
+        const voteCount = votes.filter((v2: Doc<"poll_votes">) => v2.optionId === opt._id).length;
+        const existing = out[savedItemId];
+        if (!existing || poll.createdAt > 0 && voteCount > existing.voteCount) {
+          out[savedItemId] = {
+            pollId: poll._id,
+            optionId: opt._id,
+            pollTitle: poll.title,
+            voteCount,
+            totalVotes: votes.length,
+          };
+        }
+      }
+    }
+    return out as Record<Id<"saved_items">, {
+      pollId: Id<"trip_polls">;
+      optionId: Id<"poll_options">;
+      pollTitle: string;
+      voteCount: number;
+      totalVotes: number;
+    }>;
+  },
+});
+
 export const createForSavedItem = mutation({
   args: {
     tripId: v.id("trips"),

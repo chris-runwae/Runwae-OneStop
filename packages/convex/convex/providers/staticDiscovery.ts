@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
-import type { DiscoveryItem } from "./types";
+import type { DiscoveryDetail, DiscoveryItem } from "./types";
 
 const SAMPLES: Record<string, DiscoveryItem[]> = {
   stay: [
@@ -48,5 +48,22 @@ export const search = internalAction({
       ? arr.filter(i => i.title.toLowerCase().includes(needle) || (i.description ?? "").toLowerCase().includes(needle))
       : arr;
     return filtered.slice(0, limit);
+  },
+});
+
+export const getDetail = internalAction({
+  args: { apiRef: v.string() },
+  handler: async (_ctx, { apiRef }): Promise<DiscoveryDetail | null> => {
+    for (const arr of Object.values(SAMPLES)) {
+      const found = arr.find((i) => i.apiRef === apiRef);
+      if (found) {
+        return {
+          ...found,
+          gallery: [found.imageUrl!, found.imageUrl!].filter(Boolean) as string[],
+          highlights: ["Curated sample item", "Replace with provider-backed result"],
+        };
+      }
+    }
+    return null;
   },
 });

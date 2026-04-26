@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+type Mode = "text" | "savedItems";
+
 export function CreatePollSheet({
   open, onClose, tripId, seedSavedItemId,
 }: {
@@ -17,12 +19,18 @@ export function CreatePollSheet({
   tripId: Id<"trips">;
   seedSavedItemId?: Id<"saved_items">;
 }) {
-  const [mode, setMode] = useState<"text" | "savedItems">(seedSavedItemId ? "savedItems" : "text");
+  // When seeded with a saved item, default to "text" — the user is attaching a
+  // question to that item. They can switch to "savedItems" to compare instead.
+  const [mode, setMode] = useState<Mode>("text");
   const [title, setTitle] = useState("");
   const [textOptions, setTextOptions] = useState<string[]>(["", ""]);
   const [pickedSavedIds, setPickedSavedIds] = useState<Id<"saved_items">[]>(
     seedSavedItemId ? [seedSavedItemId] : [],
   );
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [hasExpiry, setHasExpiry] = useState(false);
+  const [expiry, setExpiry] = useState<string>(""); // datetime-local string
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,13 +41,16 @@ export function CreatePollSheet({
   const createTextPoll = useMutation(api.polls.create);
   const createSavedPoll = useMutation(api.polls.createForSavedItem);
 
-  // Reset state on open with new seed
   useEffect(() => {
     if (!open) return;
-    setMode(seedSavedItemId ? "savedItems" : "text");
+    setMode("text");
     setTitle("");
     setTextOptions(["", ""]);
     setPickedSavedIds(seedSavedItemId ? [seedSavedItemId] : []);
+    setAllowMultiple(false);
+    setIsAnonymous(false);
+    setHasExpiry(false);
+    setExpiry("");
     setError(null);
   }, [open, seedSavedItemId]);
 
@@ -55,6 +66,21 @@ export function CreatePollSheet({
       setError("Add a poll question.");
       return;
     }
+    let closesAt: number | undefined;
+    if (hasExpiry) {
+      if (!expiry) {
+        setError("Pick an expiry date and time.");
+        return;
+      }
+      const ts = new Date(expiry).getTime();
+      if (!Number.isFinite(ts) || ts <= Date.now()) {
+        setError("Expiry must be in the future.");
+        return;
+      }
+      closesAt = ts;
+    }
+    const pollType = allowMultiple ? "multi_choice" : "single_choice";
+
     setSubmitting(true);
     try {
       if (mode === "text") {
@@ -67,8 +93,10 @@ export function CreatePollSheet({
         await createTextPoll({
           tripId,
           title: title.trim(),
-          type: "single_choice",
+          type: pollType,
           options: cleaned,
+          closesAt,
+          isAnonymous,
         });
       } else {
         if (pickedSavedIds.length < 2) {
@@ -79,8 +107,10 @@ export function CreatePollSheet({
         await createSavedPoll({
           tripId,
           title: title.trim(),
-          type: "single_choice",
+          type: pollType,
           savedItemIds: pickedSavedIds,
+          closesAt,
+          isAnonymous,
         });
       }
       onClose();
@@ -105,7 +135,7 @@ export function CreatePollSheet({
                 mode === m ? "bg-primary text-primary-foreground" : "bg-foreground/5 text-foreground/70",
               )}
             >
-              {m === "text" ? "Free text" : "From Saved"}
+              {m === "text" ? "Attach a question" : "Compare saved items"}
             </button>
           ))}
         </div>
@@ -186,6 +216,35 @@ export function CreatePollSheet({
           </ul>
         )}
 
+        <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
+          <Toggle
+            label="Allow multiple selections"
+            sub="Voters can pick more than one option"
+            checked={allowMultiple}
+            onChange={setAllowMultiple}
+          />
+          <Toggle
+            label="Anonymous voting"
+            sub="Hide who voted for what"
+            checked={isAnonymous}
+            onChange={setIsAnonymous}
+          />
+          <Toggle
+            label="Set expiry"
+            sub="Auto-close at a chosen time"
+            checked={hasExpiry}
+            onChange={setHasExpiry}
+          />
+          {hasExpiry && (
+            <input
+              type="datetime-local"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+              className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm focus:border-primary focus:outline-none"
+            />
+          )}
+        </div>
+
         {error && <p className="text-xs text-destructive">{error}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -195,5 +254,35 @@ export function CreatePollSheet({
         </div>
       </div>
     </Sheet>
+  );
+}
+
+function Toggle({
+  label, sub, checked, onChange,
+}: { label: string; sub: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-3">
+      <span className="flex-1">
+        <span className="block text-sm font-semibold text-foreground">{label}</span>
+        <span className="block text-xs text-muted-foreground">{sub}</span>
+      </span>
+      <span
+        role="switch"
+        aria-checked={checked}
+        tabIndex={0}
+        onClick={() => onChange(!checked)}
+        onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onChange(!checked); } }}
+        className={cn(
+          "relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-foreground/15",
+        )}
+      >
+        <span className={cn(
+          "inline-block h-5 w-5 translate-x-0.5 transform rounded-full bg-white shadow transition-transform",
+          checked && "translate-x-[18px]",
+        )} />
+      </span>
+      <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
   );
 }

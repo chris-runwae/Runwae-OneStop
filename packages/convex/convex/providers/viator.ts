@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
-import type { DiscoveryItem } from "./types";
+import type { DiscoveryDetail, DiscoveryItem } from "./types";
 
 export const search = internalAction({
   args: {
@@ -56,6 +56,48 @@ export const search = internalAction({
     } catch (err) {
       console.error("[viator] fetch failed", err);
       return [];
+    }
+  },
+});
+
+export const getDetail = internalAction({
+  args: { apiRef: v.string() },
+  handler: async (_ctx, { apiRef }): Promise<DiscoveryDetail | null> => {
+    const apiKey = process.env.VIATOR_KEY;
+    if (!apiKey) return null;
+    try {
+      const res = await fetch(`https://api.viator.com/partner/products/${encodeURIComponent(apiRef)}`, {
+        headers: {
+          "exp-api-key": apiKey,
+          Accept: "application/json;version=2.0",
+        },
+      });
+      if (!res.ok) return null;
+      const p = await res.json() as any;
+      const gallery = Array.isArray(p.images)
+        ? p.images.flatMap((img: any) => [img.url, ...(img.variants?.map((v2: any) => v2.url) ?? [])]).filter(Boolean).slice(0, 12)
+        : undefined;
+      return {
+        provider: "viator",
+        apiRef: String(p.productCode ?? apiRef),
+        category: "tour",
+        title: p.title ?? "Tour",
+        description: p.description ?? p.shortDescription,
+        imageUrl: p.images?.[0]?.url ?? gallery?.[0],
+        price: p.pricing?.summary?.fromPrice,
+        currency: p.pricing?.currency,
+        externalUrl: p.productUrl,
+        rating: p.reviews?.combinedAverageRating,
+        reviewCount: p.reviews?.totalReviews,
+        gallery,
+        highlights: p.inclusions?.map((i: any) => i.otherDescription ?? i.description ?? i).filter(Boolean),
+        duration: p.duration?.fixedDurationInMinutes
+          ? `${p.duration.fixedDurationInMinutes} min`
+          : p.duration?.description,
+      };
+    } catch (err) {
+      console.error("[viator] getDetail failed", err);
+      return null;
     }
   },
 });

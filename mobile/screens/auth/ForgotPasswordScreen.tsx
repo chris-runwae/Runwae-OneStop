@@ -44,6 +44,20 @@ const ForgotPasswordScreen = () => {
     setErrors({ ...errors, [field]: "" });
   };
 
+  const handleBlur = (field: keyof ForgotPasswordFormData) => {
+    const result = forgotPasswordSchema.safeParse(formData);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path[0] === field);
+      if (issue) {
+        setErrors((prev) => ({ ...prev, [field]: issue.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
@@ -134,6 +148,7 @@ const ForgotPasswordScreen = () => {
             placeholder="example@email.com"
             value={formData.email}
             onChangeText={(value) => handleInputChange("email", value)}
+            onBlur={() => handleBlur("email")}
             error={errors.email}
           />
 

@@ -92,9 +92,12 @@ const FloatingTabBar = () => {
     router.push('/(tabs)/create-trip/destination' as RelativePathString);
   }, [router]);
 
+  const isInCreateTripFlow = (segments as string[]).includes('create-trip');
+
   return (
     <View className="absolute bottom-0 left-0 right-0 mx-auto flex flex-row items-center justify-center py-[20px]">
-      <View className="flex w-[378px] flex-row items-center gap-x-3">
+      <View
+        className={`flex flex-row items-center gap-x-3 ${isInCreateTripFlow ? 'w-[375px]' : 'w-[378px]'}`}>
         <BlurView
           intensity={70}
           tint="default"
@@ -112,11 +115,13 @@ const FloatingTabBar = () => {
             );
           })}
         </BlurView>
-        <TouchableOpacity
-          onPress={handleNewTripPress}
-          className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600">
-          <Plus size={20} color={'#ffffff'} />
-        </TouchableOpacity>
+        {!isInCreateTripFlow && (
+          <TouchableOpacity
+            onPress={handleNewTripPress}
+            className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-pink-600">
+            <Plus size={20} color={'#ffffff'} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

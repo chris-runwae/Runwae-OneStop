@@ -46,6 +46,20 @@ const ResetPasswordScreen = () => {
     setErrors({ ...errors, [field]: "" });
   };
 
+  const handleBlur = (field: keyof ResetPasswordFormData) => {
+    const result = resetPasswordSchema.safeParse(formData);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path[0] === field);
+      if (issue) {
+        setErrors((prev) => ({ ...prev, [field]: issue.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
@@ -136,6 +150,7 @@ const ResetPasswordScreen = () => {
             isPassword
             value={formData.password}
             onChangeText={(value) => handleInputChange("password", value)}
+            onBlur={() => handleBlur("password")}
             error={errors.password}
           />
 
@@ -148,6 +163,7 @@ const ResetPasswordScreen = () => {
             onChangeText={(value) =>
               handleInputChange("confirmPassword", value)
             }
+            onBlur={() => handleBlur("confirmPassword")}
             error={errors.confirmPassword}
           />
 

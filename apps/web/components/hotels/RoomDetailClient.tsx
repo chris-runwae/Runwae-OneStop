@@ -7,26 +7,9 @@ import { ArrowLeft, Check, Star, Users } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn, formatCurrency } from "@/lib/utils";
+import { readRoomRate, type CachedRate } from "@/lib/roomRateCache";
 
-type Rate = {
-  rateId: string;
-  offerId: string;
-  roomName: string;
-  roomDescription?: string;
-  boardName?: string;
-  bedTypes?: string[];
-  maxOccupancy?: number;
-  adultCount?: number;
-  childCount?: number;
-  refundable: boolean;
-  cancellationPolicy?: string;
-  photos?: string[];
-  amenities?: string[];
-  remarks?: string;
-  pricePerNight: number;
-  totalPrice: number;
-  currency: string;
-};
+type Rate = CachedRate;
 
 type HotelDetail = {
   apiRef: string;
@@ -69,15 +52,30 @@ export function RoomDetailClient({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([
-      getDetail({ apiRef }),
-      getRates({ apiRef, checkin, checkout, adults }),
-    ])
-      .then(([d, rates]) => {
+
+    // LiteAPI rateId/offerId tokens regenerate on every /hotels/rates call,
+    // so refetching and matching by rateId never works. The hotel page stashes
+    // the chosen rate to sessionStorage on click — read that first. Refetching
+    // is only a fallback for direct navigation (refresh, shared link); we
+    // can't reuse the prior offerId there, so we look up a fresh one by
+    // matching on stable fields like room name + board + price.
+    const cached = readRoomRate(apiRef, checkin, checkout, adults, rateId);
+
+    const detailPromise = getDetail({ apiRef });
+    const ratePromise = cached
+      ? Promise.resolve({ rate: cached, fresh: false })
+      : getRates({ apiRef, checkin, checkout, adults }).then((rates) => {
+          const list = rates as Rate[];
+          const exact = list.find((r) => r.rateId === rateId);
+          if (exact) return { rate: exact, fresh: true };
+          return { rate: null, fresh: true };
+        });
+
+    Promise.all([detailPromise, ratePromise])
+      .then(([d, rateRes]) => {
         if (cancelled) return;
         setDetail(d as HotelDetail | null);
-        const found = (rates as Rate[]).find((r) => r.rateId === rateId);
-        setRate(found ?? null);
+        setRate(rateRes.rate);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -87,19 +85,52 @@ export function RoomDetailClient({
     };
   }, [apiRef, rateId, checkin, checkout, adults, getDetail, getRates]);
 
+  async function startBookingWithRefresh(currentRate: Rate): Promise<{
+    bookingId: string;
+    finalPrice: number;
+    currency: string;
+  }> {
+    try {
+      return await startBooking({
+        apiRef,
+        offerId: currentRate.offerId,
+        hotelName: detail!.title,
+        checkin,
+        checkout,
+        eventId,
+      });
+    } catch (err) {
+      // OfferId tokens expire after ~30min. If prebook fails, refetch rates
+      // and find the same room by stable fields, then retry once. This makes
+      // the room detail page survive sessionStorage entries that are still
+      // within our 25-min TTL but already past LiteAPI's expiry.
+      const fresh = (await getRates({ apiRef, checkin, checkout, adults })) as Rate[];
+      const match = fresh.find(
+        (r) =>
+          r.roomName === currentRate.roomName &&
+          r.boardName === currentRate.boardName &&
+          r.totalPrice === currentRate.totalPrice &&
+          r.currency === currentRate.currency,
+      );
+      if (!match) throw err;
+      setRate(match);
+      return await startBooking({
+        apiRef,
+        offerId: match.offerId,
+        hotelName: detail!.title,
+        checkin,
+        checkout,
+        eventId,
+      });
+    }
+  }
+
   async function book() {
     if (!rate || !detail) return;
     setReserving(true);
     setError(null);
     try {
-      const { bookingId, finalPrice, currency } = await startBooking({
-        apiRef,
-        offerId: rate.offerId,
-        hotelName: detail.title,
-        checkin,
-        checkout,
-        eventId,
-      });
+      const { bookingId, finalPrice, currency } = await startBookingWithRefresh(rate);
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +148,7 @@ export function RoomDetailClient({
         throw new Error(msg ?? "Could not start checkout");
       }
       const { url } = (await res.json()) as { url: string };
+      if (!url) throw new Error("Checkout did not return a redirect URL");
       window.location.href = url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reservation failed");

@@ -8,6 +8,7 @@ import { ArrowLeft, Check, MapPin, Star, Users, Wifi } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn, formatCurrency } from "@/lib/utils";
+import { stashRoomRate } from "@/lib/roomRateCache";
 
 type HotelDetail = {
   apiRef: string;
@@ -92,7 +93,10 @@ export function HotelDetailClient({
   useEffect(() => {
     let cancelled = false;
     setRatesLoading(true);
-    setError(null);
+    // Don't blanket-clear error here — the refresh-after-failed-reserve flow
+    // bumps refreshTick to fetch fresh offerIds, and we want the failure
+    // message to stay visible so the user knows why their click did nothing.
+    // Errors are cleared explicitly when the user retries or changes inputs.
     getRates({ apiRef, checkin, checkout, adults })
       .then((r) => {
         if (!cancelled) setRates(r as Rate[]);
@@ -248,7 +252,10 @@ export function HotelDetailClient({
           <input
             type="date"
             value={checkin}
-            onChange={(e) => setCheckin(e.target.value)}
+            onChange={(e) => {
+              setCheckin(e.target.value);
+              setError(null);
+            }}
             className="w-full bg-transparent text-sm font-semibold outline-none"
           />
         </Field>
@@ -257,7 +264,10 @@ export function HotelDetailClient({
             type="date"
             value={checkout}
             min={checkin}
-            onChange={(e) => setCheckout(e.target.value)}
+            onChange={(e) => {
+              setCheckout(e.target.value);
+              setError(null);
+            }}
             className="w-full bg-transparent text-sm font-semibold outline-none"
           />
         </Field>
@@ -267,7 +277,10 @@ export function HotelDetailClient({
             value={adults}
             min={1}
             max={6}
-            onChange={(e) => setAdults(Number(e.target.value) || 1)}
+            onChange={(e) => {
+              setAdults(Number(e.target.value) || 1);
+              setError(null);
+            }}
             className="w-full bg-transparent text-sm font-semibold outline-none"
           />
         </Field>
@@ -304,6 +317,9 @@ export function HotelDetailClient({
             <Link
               key={r.rateId}
               href={roomHref}
+              onClick={() =>
+                stashRoomRate(apiRef, checkin, checkout, adults, r.rateId, r)
+              }
               className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5 sm:flex-row sm:gap-4"
             >
               {roomImage && (

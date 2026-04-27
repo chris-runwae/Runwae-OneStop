@@ -10,7 +10,8 @@
   "dependencies": {
     "@auth/core": "^0.37.4",
     "@convex-dev/auth": "^0.0.87",
-    "convex": "^1.23.0"
+    "convex": "^1.23.0",
+    "stripe": "^17.7.0"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",

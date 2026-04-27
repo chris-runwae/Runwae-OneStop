@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-import { fetchMutation } from "convex/nextjs";
+import { fetchAction, fetchMutation } from "convex/nextjs";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-
-const stripeKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeKey ? new Stripe(stripeKey) : null;
 
 type TicketsBody = {
   type: "tickets";
@@ -36,13 +32,6 @@ type FlightBody = {
 type CheckoutBody = TicketsBody | HotelBody | FlightBody;
 
 export async function POST(request: NextRequest) {
-  if (!stripe) {
-    return NextResponse.json(
-      { error: "Payments aren't configured. Set STRIPE_SECRET_KEY and try again." },
-      { status: 503 },
-    );
-  }
-
   const token = await convexAuthNextjsToken();
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -51,19 +40,13 @@ export async function POST(request: NextRequest) {
   const body = (await request.json()) as CheckoutBody;
   const origin = request.nextUrl.origin;
 
-  if (body.type === "tickets") {
-    return handleTickets(body, origin, token, stripe);
-  }
-  if (body.type === "hotel") {
-    return handleHotel(body, origin, token, stripe);
-  }
-  if (body.type === "flight") {
-    return handleFlight(body, origin, token, stripe);
-  }
+  if (body.type === "tickets") return handleTickets(body, origin, token);
+  if (body.type === "hotel") return handleHotel(body, origin, token);
+  if (body.type === "flight") return handleFlight(body, origin, token);
   return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 }
 
-async function handleTickets(body: TicketsBody, origin: string, token: string, stripe: Stripe) {
+async function handleTickets(body: TicketsBody, origin: string, token: string) {
   if (!body.eventId || !body.items?.length) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -71,102 +54,96 @@ async function handleTickets(body: TicketsBody, origin: string, token: string, s
   const result = await fetchMutation(
     api.bookings.createTicketBooking,
     { eventId: body.eventId, items: body.items },
-    { token }
+    { token },
   );
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    line_items: result.lineItems.map((li) => ({
-      price_data: {
-        currency: result.currency.toLowerCase(),
-        product_data: { name: li.name },
-        unit_amount: Math.round(li.unitAmount * 100),
-      },
+  return await createSessionAndRespond({
+    bookingId: result.bookingId,
+    token,
+    lineItems: result.lineItems.map((li) => ({
+      name: li.name,
+      unitAmountMinor: Math.round(li.unitAmount * 100),
       quantity: li.qty,
     })),
-    success_url: `${origin}/bookings/${result.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/e/${body.eventSlug}?checkout=cancelled`,
+    currency: result.currency,
+    successUrl: `${origin}/bookings/${result.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${origin}/e/${body.eventSlug}?checkout=cancelled`,
     metadata: { bookingId: result.bookingId, type: "event_ticket" },
   });
-
-  if (!session.url) {
-    return NextResponse.json({ error: "Stripe did not return URL" }, { status: 500 });
-  }
-
-  await fetchMutation(
-    api.bookings.attachStripeSession,
-    { bookingId: result.bookingId, stripeSessionId: session.id },
-    { token }
-  );
-
-  return NextResponse.json({ url: session.url, bookingId: result.bookingId });
 }
 
-async function handleFlight(body: FlightBody, origin: string, token: string, stripe: Stripe) {
+async function handleFlight(body: FlightBody, origin: string, token: string) {
   if (!body.bookingId || !body.totalAmount || !body.currency) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    line_items: [
+  return await createSessionAndRespond({
+    bookingId: body.bookingId,
+    token,
+    lineItems: [
       {
-        price_data: {
-          currency: body.currency.toLowerCase(),
-          product_data: { name: body.summary },
-          unit_amount: Math.round(body.totalAmount * 100),
-        },
+        name: body.summary,
+        unitAmountMinor: Math.round(body.totalAmount * 100),
         quantity: 1,
       },
     ],
-    success_url: `${origin}/bookings/${body.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}${body.backHref}?checkout=cancelled`,
+    currency: body.currency,
+    successUrl: `${origin}/bookings/${body.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${origin}${body.backHref}?checkout=cancelled`,
     metadata: { bookingId: body.bookingId, type: "flight" },
   });
-  if (!session.url) {
-    return NextResponse.json({ error: "Stripe did not return URL" }, { status: 500 });
-  }
-  await fetchMutation(
-    api.bookings.attachStripeSession,
-    { bookingId: body.bookingId, stripeSessionId: session.id },
-    { token }
-  );
-  return NextResponse.json({ url: session.url, bookingId: body.bookingId });
 }
 
-async function handleHotel(body: HotelBody, origin: string, token: string, stripe: Stripe) {
+async function handleHotel(body: HotelBody, origin: string, token: string) {
   if (!body.bookingId || !body.totalAmount || !body.currency) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    line_items: [
+  return await createSessionAndRespond({
+    bookingId: body.bookingId,
+    token,
+    lineItems: [
       {
-        price_data: {
-          currency: body.currency.toLowerCase(),
-          product_data: { name: body.hotelName },
-          unit_amount: Math.round(body.totalAmount * 100),
-        },
+        name: body.hotelName,
+        unitAmountMinor: Math.round(body.totalAmount * 100),
         quantity: 1,
       },
     ],
-    success_url: `${origin}/bookings/${body.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}${body.backHref}?checkout=cancelled`,
+    currency: body.currency,
+    successUrl: `${origin}/bookings/${body.bookingId}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${origin}${body.backHref}?checkout=cancelled`,
     metadata: { bookingId: body.bookingId, type: "hotel" },
   });
+}
 
-  if (!session.url) {
-    return NextResponse.json({ error: "Stripe did not return URL" }, { status: 500 });
+async function createSessionAndRespond(args: {
+  bookingId: Id<"bookings">;
+  token: string;
+  lineItems: Array<{ name: string; unitAmountMinor: number; quantity: number }>;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+  metadata: Record<string, string>;
+}) {
+  try {
+    const { sessionId, url } = await fetchAction(
+      api.payments.createCheckoutSession,
+      {
+        lineItems: args.lineItems,
+        currency: args.currency,
+        successUrl: args.successUrl,
+        cancelUrl: args.cancelUrl,
+        metadata: args.metadata,
+      },
+      { token: args.token },
+    );
+    await fetchMutation(
+      api.bookings.attachStripeSession,
+      { bookingId: args.bookingId, stripeSessionId: sessionId },
+      { token: args.token },
+    );
+    return NextResponse.json({ url, bookingId: args.bookingId });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Could not start checkout";
+    const status = msg.toLowerCase().includes("payments aren't configured") ? 503 : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
-
-  await fetchMutation(
-    api.bookings.attachStripeSession,
-    { bookingId: body.bookingId, stripeSessionId: session.id },
-    { token }
-  );
-
-  return NextResponse.json({ url: session.url, bookingId: body.bookingId });
 }

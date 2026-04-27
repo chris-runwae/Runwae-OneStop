@@ -108,6 +108,9 @@ importers:
       convex:
         specifier: ^1.23.0
         version: 1.36.1(react@19.2.5)
+      stripe:
+        specifier: ^17.7.0
+        version: 17.7.0
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^5.0.0

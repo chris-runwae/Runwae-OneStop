@@ -90,14 +90,24 @@ export const search = internalAction({
       }));
 
       if (checkin && checkout && items.length > 0) {
-        const rates = await fetchRates(apiKey, items.map((i) => i.apiRef), checkin, checkout);
+        const rates = await fetchRates(
+          apiKey,
+          items.map((i) => i.apiRef),
+          checkin,
+          checkout,
+        );
+        // Only keep hotels with at least one bookable rate for the requested
+        // dates. Hotels priced from the catalogue but unsellable on these
+        // nights add noise — the user can't book them anyway.
+        const filtered: DiscoveryItem[] = [];
         for (const it of items) {
           const r = rates[it.apiRef];
-          if (r) {
-            it.price = r.price ?? it.price;
-            it.currency = r.currency ?? it.currency;
-          }
+          if (!r) continue;
+          it.price = r.price;
+          it.currency = r.currency;
+          filtered.push(it);
         }
+        return filtered;
       }
       return items;
     } catch (err) {
@@ -150,15 +160,21 @@ export const getDetail = internalAction({
 
 export type LiteApiRate = {
   rateId: string;
+  // The room-level offer token. LiteAPI v3 prebook actually wants offerId,
+  // not rateId — we keep both around so the UI can still key on rateId.
+  offerId: string;
   roomName: string;
   roomDescription?: string;
   boardName?: string;
   bedTypes?: string[];
   maxOccupancy?: number;
+  adultCount?: number;
+  childCount?: number;
   refundable: boolean;
   cancellationPolicy?: string;
   photos?: string[];
   amenities?: string[];
+  remarks?: string;
   pricePerNight: number;
   totalPrice: number;
   currency: string;
@@ -209,20 +225,24 @@ export const getRoomRates = internalAction({
 
       const out: LiteApiRate[] = [];
       for (const room of hotel.roomTypes ?? []) {
-        // LiteAPI puts room-level metadata at the roomType layer.
-        const photos: string[] = Array.isArray(room.photos)
+        // LiteAPI v3: each rate is the bookable unit, and the human-readable
+        // room name lives on the rate (rate.name = "Classic Room" etc).
+        // Room-level fields like roomTypeName don't exist in the response.
+        const offerId = String(room.offerId ?? "").trim();
+
+        const roomPhotos: string[] = Array.isArray(room.photos)
           ? room.photos
               .map((p: any) => (typeof p === "string" ? p : p?.url))
               .filter((u: any): u is string => !!u)
               .slice(0, 6)
           : [];
-        const amenities: string[] = Array.isArray(room.amenities)
+        const roomAmenities: string[] = Array.isArray(room.amenities)
           ? room.amenities
               .map((a: any) => (typeof a === "string" ? a : a?.name))
               .filter((a: any): a is string => !!a)
               .slice(0, 8)
           : [];
-        const bedTypes: string[] = Array.isArray(room.bedTypes)
+        const roomBedTypes: string[] = Array.isArray(room.bedTypes)
           ? room.bedTypes
               .map((b: any) =>
                 typeof b === "string"
@@ -233,41 +253,14 @@ export const getRoomRates = internalAction({
               )
               .filter((b: any): b is string => !!b)
           : [];
-        const maxOccupancy =
-          typeof room.maxOccupancy === "number"
-            ? room.maxOccupancy
-            : typeof room.adultCount === "number"
-              ? room.adultCount
-              : undefined;
-        const roomName = room.roomTypeName ?? room.name ?? "Room";
         const roomDescription =
           typeof room.description === "string" ? room.description : undefined;
 
         for (const rate of room.rates ?? []) {
-          // LiteAPI sometimes returns rates without a usable rateId — those
-          // will fail prebook every time; drop them up front.
+          // Shared with the search-list filter so the catalogue and the
+          // detail page agree on which rates are bookable.
+          if (!isBookableRate(rate)) continue;
           const rateId = String(rate.rateId ?? rate.id ?? "").trim();
-          if (!rateId) continue;
-
-          // Package-only rates can't be booked standalone via /rates/prebook.
-          // They surface from /hotels/rates because LiteAPI returns the full
-          // catalogue, but trying to prebook them returns a 400.
-          if (rate.package_rate === true || rate.packageRate === true) continue;
-
-          // Drop rates whose payment options don't include a card. Some net
-          // rates settle differently and aren't bookable through this flow.
-          const paymentTypes: unknown[] = rate.paymentTypes ?? [];
-          if (
-            paymentTypes.length > 0 &&
-            !paymentTypes.some(
-              (p) =>
-                typeof p === "string" &&
-                (p.toUpperCase().includes("CREDIT_CARD") ||
-                  p.toUpperCase().includes("CARD")),
-            )
-          ) {
-            continue;
-          }
 
           const total =
             rate.retailRate?.total?.[0]?.amount ?? rate.minPrice ?? rate.price;
@@ -284,15 +277,22 @@ export const getRoomRates = internalAction({
 
           out.push({
             rateId,
-            roomName,
+            offerId,
+            roomName: rate.name ?? roomDescription ?? "Room",
             roomDescription,
             boardName: rate.boardName ?? rate.boardType,
-            bedTypes: bedTypes.length > 0 ? bedTypes : undefined,
-            maxOccupancy,
+            bedTypes: roomBedTypes.length > 0 ? roomBedTypes : undefined,
+            maxOccupancy:
+              typeof rate.maxOccupancy === "number" ? rate.maxOccupancy : undefined,
+            adultCount:
+              typeof rate.adultCount === "number" ? rate.adultCount : undefined,
+            childCount:
+              typeof rate.childCount === "number" ? rate.childCount : undefined,
             refundable,
             cancellationPolicy: cancelInfo,
-            photos: photos.length > 0 ? photos : undefined,
-            amenities: amenities.length > 0 ? amenities : undefined,
+            photos: roomPhotos.length > 0 ? roomPhotos : undefined,
+            amenities: roomAmenities.length > 0 ? roomAmenities : undefined,
+            remarks: typeof rate.remarks === "string" && rate.remarks.length > 0 ? rate.remarks : undefined,
             pricePerNight: total / nights,
             totalPrice: total,
             currency,
@@ -308,10 +308,13 @@ export const getRoomRates = internalAction({
 });
 
 export const prebook = internalAction({
-  args: { rateId: v.string() },
+  // LiteAPI v3 prebook actually wants the room-level offerId + a
+  // usePaymentSdk flag; rateId-only requests come back with
+  // "required request field is missing or wrong input".
+  args: { offerId: v.string() },
   handler: async (
     _ctx,
-    { rateId },
+    { offerId },
   ): Promise<{
     ok: boolean;
     prebookId?: string;
@@ -329,13 +332,13 @@ export const prebook = internalAction({
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ rateId, voucherCode: undefined }),
+        body: JSON.stringify({ offerId, usePaymentSdk: false }),
       });
       if (!res.ok) {
         const txt = await res.text();
         console.warn("[liteapi] prebook not ok", {
           status: res.status,
-          rateId,
+          offerId,
           body: txt.slice(0, 400),
         });
         // Try to extract LiteAPI's own error message so the UI surfaces
@@ -421,12 +424,16 @@ export const book = internalAction({
   },
 });
 
+// Returns the cheapest bookable rate per hotel, applying the same
+// bookability filter as `getRoomRates` (skip package-only rates, require a
+// card-supported paymentTypes entry). Hotels with no bookable rate are
+// omitted from the result so callers can drop them from listings.
 async function fetchRates(
   apiKey: string,
   hotelIds: string[],
   checkin: string,
   checkout: string,
-): Promise<Record<string, { price?: number; currency?: string }>> {
+): Promise<Record<string, { price: number; currency: string }>> {
   try {
     const res = await fetch("https://api.liteapi.travel/v3.0/hotels/rates", {
       method: "POST",
@@ -449,18 +456,45 @@ async function fetchRates(
       return {};
     }
     const json = (await res.json()) as { data?: any[] };
-    const out: Record<string, { price?: number; currency?: string }> = {};
+    const out: Record<string, { price: number; currency: string }> = {};
     for (const row of json.data ?? []) {
       const id = String(row.hotelId ?? row.id ?? "");
       if (!id) continue;
-      const offer = row.roomTypes?.[0]?.rates?.[0] ?? row.rates?.[0];
-      const price = offer?.retailRate?.total?.[0]?.amount ?? offer?.minPrice ?? offer?.price;
-      const currency = offer?.retailRate?.total?.[0]?.currency ?? offer?.currency ?? "GBP";
-      if (price !== undefined) out[id] = { price, currency };
+
+      // Walk every rate in every room and keep only the cheapest one that
+      // would actually pass our prebook filter.
+      let cheapest: { price: number; currency: string } | null = null;
+      for (const room of row.roomTypes ?? []) {
+        for (const rate of room.rates ?? []) {
+          if (!isBookableRate(rate)) continue;
+          const price =
+            rate.retailRate?.total?.[0]?.amount ?? rate.minPrice ?? rate.price;
+          if (typeof price !== "number") continue;
+          const currency: string =
+            rate.retailRate?.total?.[0]?.currency ?? rate.currency ?? "GBP";
+          if (cheapest === null || price < cheapest.price) {
+            cheapest = { price, currency };
+          }
+        }
+      }
+      if (cheapest) out[id] = cheapest;
     }
     return out;
   } catch (err) {
     console.error("[liteapi] rates fetch failed", err);
     return {};
   }
+}
+
+// Same predicate the room-detail page uses, factored out so search and
+// detail stay in sync. A hotel that exposes no `isBookableRate` rates
+// won't be listed when dates are present.
+//
+// LiteAPI v3 rates we've inspected carry paymentTypes like ["NUITEE_PAY"] —
+// that's their own processor and is the standard path; not a credit-card
+// string. The only structural signal of "won't book" we've actually seen is
+// a missing rateId. Don't add filters against fields LiteAPI doesn't return.
+function isBookableRate(rate: any): boolean {
+  const rateId = String(rate?.rateId ?? rate?.id ?? "").trim();
+  return rateId.length > 0;
 }

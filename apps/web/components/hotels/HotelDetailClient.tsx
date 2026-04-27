@@ -23,15 +23,19 @@ type HotelDetail = {
 
 type Rate = {
   rateId: string;
+  offerId: string;
   roomName: string;
   roomDescription?: string;
   boardName?: string;
   bedTypes?: string[];
   maxOccupancy?: number;
+  adultCount?: number;
+  childCount?: number;
   refundable: boolean;
   cancellationPolicy?: string;
   photos?: string[];
   amenities?: string[];
+  remarks?: string;
   pricePerNight: number;
   totalPrice: number;
   currency: string;
@@ -43,6 +47,7 @@ export function HotelDetailClient({
   initialCheckout,
   initialAdults,
   eventId,
+  eventSlug,
   backHref,
 }: {
   apiRef: string;
@@ -50,6 +55,7 @@ export function HotelDetailClient({
   initialCheckout: string;
   initialAdults: number;
   eventId?: Id<"events">;
+  eventSlug?: string;
   backHref: string;
 }) {
   const router = useRouter();
@@ -112,7 +118,7 @@ export function HotelDetailClient({
     try {
       const { bookingId, finalPrice, currency } = await startBooking({
         apiRef,
-        rateId: rate.rateId,
+        offerId: rate.offerId,
         hotelName: detail.title,
         checkin,
         checkout,
@@ -293,10 +299,12 @@ export function HotelDetailClient({
                 : detail.imageUrl;
             const roomImage =
               r.photos && r.photos.length > 0 ? r.photos[0] : fallback;
+            const roomHref = `/hotels/${encodeURIComponent(apiRef)}/rooms/${encodeURIComponent(r.rateId)}?checkin=${checkin}&checkout=${checkout}&adults=${adults}${eventId ? `&eventId=${eventId}` : ""}${eventSlug ? `&eventSlug=${eventSlug}` : ""}`;
             return (
-            <div
+            <Link
               key={r.rateId}
-              className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:gap-4"
+              href={roomHref}
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5 sm:flex-row sm:gap-4"
             >
               {roomImage && (
                 <div
@@ -359,7 +367,11 @@ export function HotelDetailClient({
                   </div>
                   <button
                     type="button"
-                    onClick={() => reserve(r)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      reserve(r);
+                    }}
                     disabled={reserving !== null}
                     className={cn(
                       "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60",
@@ -369,7 +381,7 @@ export function HotelDetailClient({
                   </button>
                 </div>
               </div>
-            </div>
+            </Link>
             );
           })
         )}

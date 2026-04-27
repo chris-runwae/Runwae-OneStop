@@ -279,16 +279,16 @@ function HostRow({ host, fallbackName }: { host: Host | null; fallbackName: stri
 // ============================================================================
 function Description({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  // Event descriptions can ship as HTML (from a rich-text editor or CMS).
+  // Sanitize and render via the same prose styling we use for hotel
+  // descriptions so paragraph/list tags display rather than leaking as text.
+  const safeHtml = sanitizeRichHtml(text);
   return (
     <div>
-      <p
-        className={cn(
-          "text-[15px] leading-[1.55] text-foreground",
-          !open && "line-clamp-3",
-        )}
-      >
-        {text}
-      </p>
+      <div
+        className={cn("hotel-prose text-[15px]", !open && "line-clamp-3")}
+        dangerouslySetInnerHTML={{ __html: safeHtml }}
+      />
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -299,6 +299,28 @@ function Description({ text }: { text: string }) {
       </button>
     </div>
   );
+}
+
+// Same allow-list philosophy as the LiteAPI sanitizer in providers/liteapi.ts.
+// We can't import that one (different package boundary) so we keep a small
+// browser-side mirror — strip dangerous tags + all attributes, keep semantic
+// markup the prose styles know how to render.
+const ALLOWED_RICH_TAGS = new Set([
+  "p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li",
+  "h1", "h2", "h3", "h4", "h5", "h6", "blockquote",
+]);
+function sanitizeRichHtml(input: string): string {
+  if (!input) return "";
+  let out = input;
+  out = out.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, "");
+  out = out.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag: string) => {
+    const t = tag.toLowerCase();
+    if (!ALLOWED_RICH_TAGS.has(t)) return "";
+    if (match.startsWith("</")) return `</${t}>`;
+    const closing = match.endsWith("/>") ? " />" : ">";
+    return `<${t}${closing}`;
+  });
+  return out.trim();
 }
 
 // ============================================================================

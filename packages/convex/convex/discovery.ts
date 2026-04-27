@@ -51,7 +51,7 @@ export const searchByCategory = action({
       : "";
     // Bump CACHE_VERSION when changing item shape (e.g. URL rewrites) so
     // stale entries don't keep serving old data after a deploy.
-    const CACHE_VERSION = "v2";
+    const CACHE_VERSION = "v4";
     const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}|limit=${cap}|${CACHE_VERSION}`;
     const provider = providerFor(category);
 

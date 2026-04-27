@@ -72,7 +72,7 @@ export const getRates = action({
 export const startBooking = action({
   args: {
     apiRef: v.string(),
-    rateId: v.string(),
+    offerId: v.string(),
     hotelName: v.string(),
     checkin: v.string(),
     checkout: v.string(),
@@ -88,9 +88,12 @@ export const startBooking = action({
   }> => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
+    if (!args.offerId) {
+      throw new Error("This room is no longer available — try another.");
+    }
 
     const pre = await ctx.runAction(internal.providers.liteapi.prebook, {
-      rateId: args.rateId,
+      offerId: args.offerId,
     });
     if (!pre.ok || !pre.prebookId || pre.finalPrice === undefined || !pre.currency) {
       throw new Error(pre.reason ?? "This room is no longer available — try another.");

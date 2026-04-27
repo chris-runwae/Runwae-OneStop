@@ -116,3 +116,40 @@ export const rsvp = mutation({
     return attendeeId;
   },
 });
+
+export const listAttendees = query({
+  args: {
+    eventId: v.id("events"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 8;
+    const rows = await ctx.db
+      .query("event_attendees")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .collect();
+    const going = rows.filter((r) => r.status === "going").slice(0, limit);
+    const users = await Promise.all(
+      going.map(async (r) => {
+        const u = await ctx.db.get(r.userId);
+        if (!u) return null;
+        return { _id: u._id, name: u.name, image: u.image };
+      })
+    );
+    return users.filter((u): u is NonNullable<typeof u> => u !== null);
+  },
+});
+
+export const getViewerRsvp = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+    const row = await ctx.db
+      .query("event_attendees")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .first();
+    return row?.status ?? null;
+  },
+});

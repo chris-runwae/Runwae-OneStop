@@ -30,10 +30,15 @@ export const searchByCategory = action({
     limit: v.optional(v.number()),
     checkin: v.optional(v.string()),
     checkout: v.optional(v.string()),
+    originIata: v.optional(v.string()),
+    destinationIata: v.optional(v.string()),
+    // Pass true from the client to bypass the 24h cache after a no-result
+    // session, e.g. after a user has just set their home location.
+    forceRefresh: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
-    { category, term, lat, lng, limit, checkin, checkout },
+    { category, term, lat, lng, limit, checkin, checkout, originIata, destinationIata, forceRefresh },
   ): Promise<DiscoveryItem[]> => {
     const cap = limit ?? 12;
     const coordsKey =
@@ -41,13 +46,18 @@ export const searchByCategory = action({
         ? `@${lat.toFixed(3)},${lng.toFixed(3)}`
         : "";
     const dateKey = checkin && checkout ? `|${checkin}~${checkout}` : "";
-    const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}|limit=${cap}`;
+    const iataKey = originIata || destinationIata
+      ? `|iata=${originIata ?? ""}~${destinationIata ?? ""}`
+      : "";
+    const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}|limit=${cap}`;
     const provider = providerFor(category);
 
-    const cached = await ctx.runQuery(internal.discovery.getCached, {
-      provider, category, queryKey,
-    });
-    if (cached) return cached as DiscoveryItem[];
+    if (!forceRefresh) {
+      const cached = await ctx.runQuery(internal.discovery.getCached, {
+        provider, category, queryKey,
+      });
+      if (cached) return cached as DiscoveryItem[];
+    }
 
     let items: DiscoveryItem[] = [];
     try {
@@ -65,6 +75,7 @@ export const searchByCategory = action({
         case "duffel":
           items = await ctx.runAction(internal.providers.duffel.search, {
             category, term, lat, lng, limit: cap, checkin, checkout,
+            originIata, destinationIata,
           });
           break;
         case "rentalcars":

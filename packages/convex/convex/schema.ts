@@ -29,6 +29,10 @@ export default defineSchema({
     onboardingComplete: v.optional(v.boolean()),
     travellerTags: v.optional(v.array(v.string())),
     username: v.optional(v.string()),
+    homeCoords: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+    homeCity: v.optional(v.string()),
+    homeCountry: v.optional(v.string()),
+    homeIata: v.optional(v.string()),
     createdAt: v.optional(v.number()),
   })
     .index("email", ["email"])
@@ -264,7 +268,41 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_trip", ["tripId"])
-    .index("by_trip_type", ["tripId", "type"]),
+    .index("by_trip_type", ["tripId", "type"])
+    .index("by_added_by", ["addedByUserId"]),
+
+  // User-level "likes" — saves outside any specific trip. Used by the heart
+  // icon on Discover cards and the /saved page. Distinct from `saved_items`
+  // which is trip-scoped.
+  user_saves: defineTable({
+    userId: v.id("users"),
+    category: v.union(
+      v.literal("hotel"),
+      v.literal("flight"),
+      v.literal("tour"),
+      v.literal("activity"),
+      v.literal("restaurant"),
+      v.literal("event"),
+      v.literal("destination"),
+      v.literal("trip"),
+      v.literal("other")
+    ),
+    provider: v.string(),         // "viator" | "duffel" | "liteapi" | "static" | "internal" | …
+    apiRef: v.string(),           // provider-side ID (or internal record id stringified)
+    title: v.string(),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    price: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    locationName: v.optional(v.string()),
+    coords: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+    externalUrl: v.optional(v.string()),
+    rating: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_category", ["userId", "category"])
+    .index("by_user_ref", ["userId", "provider", "apiRef"]),
 
   // ── ITINERARY ──────────────────────────────────────────────
   itinerary_days: defineTable({

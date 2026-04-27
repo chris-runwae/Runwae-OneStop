@@ -9,6 +9,74 @@ async function resolveUserId(ctx: { auth: any; db: any }): Promise<Id<"users">> 
   return userId;
 }
 
+// Polls across every trip the viewer is an accepted member of, with the
+// viewer's vote, vote counts, and trip context. Used by the home rail.
+export const getOpenForUser = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const memberships = await ctx.db
+      .query("trip_members")
+      .withIndex("by_user", (q: any) => q.eq("userId", userId))
+      .collect();
+    const tripIds = memberships
+      .filter((m: any) => m.status === "accepted")
+      .map((m: any) => m.tripId as Id<"trips">);
+    if (tripIds.length === 0) return [];
+
+    const allPolls: Doc<"trip_polls">[] = [];
+    for (const tripId of tripIds) {
+      const polls = await ctx.db
+        .query("trip_polls")
+        .withIndex("by_trip", (q: any) => q.eq("tripId", tripId))
+        .collect();
+      for (const p of polls) if (p.status === "open") allPolls.push(p);
+    }
+    if (allPolls.length === 0) return [];
+
+    // Show closing-soonest first, then newest.
+    allPolls.sort((a, b) => {
+      const aClose = a.closesAt ?? Infinity;
+      const bClose = b.closesAt ?? Infinity;
+      if (aClose !== bClose) return aClose - bClose;
+      return b.createdAt - a.createdAt;
+    });
+    const cap = limit ?? 5;
+    const slice = allPolls.slice(0, cap);
+
+    return Promise.all(
+      slice.map(async (poll) => {
+        const trip = await ctx.db.get(poll.tripId);
+        const options = await ctx.db
+          .query("poll_options")
+          .withIndex("by_poll", (q: any) => q.eq("pollId", poll._id))
+          .collect();
+        const votes = await ctx.db
+          .query("poll_votes")
+          .withIndex("by_poll", (q: any) => q.eq("pollId", poll._id))
+          .collect();
+        const counts: Record<string, number> = {};
+        for (const v2 of votes) counts[v2.optionId] = (counts[v2.optionId] ?? 0) + 1;
+        const myVote = votes.find((v2) => v2.userId === userId);
+        return {
+          ...poll,
+          tripTitle: trip?.title ?? "Trip",
+          tripSlug: trip?.slug ?? null,
+          totalVotes: votes.length,
+          myOptionId: myVote?.optionId ?? null,
+          options: options.map((o) => ({
+            _id: o._id,
+            label: o.label,
+            voteCount: counts[o._id] ?? 0,
+          })),
+        };
+      })
+    );
+  },
+});
+
 export const getByTrip = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, { tripId }) => {

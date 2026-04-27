@@ -6,18 +6,28 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@/convex/_generated/api";
-import { Bell, Compass, Home, LogOut, Map, Plus, User } from "lucide-react";
+import { Bell, Compass, Heart, Home, LogOut, Map, Plus, User, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { CreateSheet } from "./CreateSheet";
 
 type NavItem = { href: string; label: string; Icon: typeof Home };
 
-const NAV: NavItem[] = [
+// Desktop sidebar nav (full set). Mobile bottom-nav uses a 5-slot subset.
+const SIDEBAR_NAV: NavItem[] = [
   { href: "/home",    label: "Home",    Icon: Home },
   { href: "/explore", label: "Explore", Icon: Compass },
   { href: "/trips",   label: "Trips",   Icon: Map },
+  { href: "/feed",    label: "Friends", Icon: Users },
+  { href: "/saved",   label: "Saved",   Icon: Heart },
   { href: "/profile", label: "Profile", Icon: User },
+];
+
+const MOBILE_NAV: NavItem[] = [
+  { href: "/home",    label: "Home",    Icon: Home },
+  { href: "/explore", label: "Explore", Icon: Compass },
+  { href: "/feed",    label: "Friends", Icon: Users },
+  { href: "/saved",   label: "Saved",   Icon: Heart },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -44,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link href="/home" className="font-display text-2xl font-bold text-primary">Runwae</Link>
         </div>
         <nav className="flex-1 space-y-1 px-3">
-          {NAV.map(({ href, label, Icon }) => {
+          {SIDEBAR_NAV.map(({ href, label, Icon }) => {
             const active = isActive(pathname, href);
             return (
               <Link
@@ -97,9 +107,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
           <Link href="/home" className="font-display text-xl font-bold text-primary">Runwae</Link>
           <div className="flex items-center gap-3">
-            <button aria-label="Notifications" className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted">
+            <Link
+              href="/notifications"
+              aria-label="Notifications"
+              className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted"
+            >
               <Bell className="h-5 w-5 text-foreground" />
-            </button>
+            </Link>
             <Link href="/profile" aria-label="Profile">
               <Avatar src={viewer?.image} name={viewer?.name ?? undefined} size="sm" />
             </Link>
@@ -110,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 items-center border-t border-border bg-card pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] lg:hidden">
-          {NAV.slice(0, 2).map(({ href, label, Icon }) => (
+          {MOBILE_NAV.slice(0, 2).map(({ href, label, Icon }) => (
             <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(pathname, href)} />
           ))}
           <div className="flex justify-center">
@@ -123,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Plus className="h-6 w-6" />
             </button>
           </div>
-          {NAV.slice(2).map(({ href, label, Icon }) => (
+          {MOBILE_NAV.slice(2).map(({ href, label, Icon }) => (
             <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(pathname, href)} />
           ))}
         </nav>

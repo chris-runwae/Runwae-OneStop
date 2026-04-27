@@ -191,22 +191,104 @@ export const getFriendActivity = query({
       }
     }
 
-    // saved_items are trip-scoped; filter to those added by friends.
-    const allSaved = await ctx.db.query("saved_items").collect();
-    for (const s of allSaved) {
-      if (!friendSet.has(s.addedByUserId)) continue;
-      const trip = await ctx.db.get(s.tripId);
-      if (!trip) continue;
-      if (trip.visibility === "private") continue;
-      events.push({
-        kind: "item_saved",
-        actorId: s.addedByUserId,
-        createdAt: s.createdAt,
-        savedItem: s,
-      });
+    void friendSet;
+    // saved_items by friend, using by_added_by index (no full-table scan).
+    for (const fid of friendIds) {
+      const saves = await ctx.db
+        .query("saved_items")
+        .withIndex("by_added_by", (q) => q.eq("addedByUserId", fid))
+        .collect();
+      for (const s of saves) {
+        const trip = await ctx.db.get(s.tripId);
+        if (!trip) continue;
+        if (trip.visibility === "private") continue;
+        events.push({
+          kind: "item_saved",
+          actorId: fid,
+          createdAt: s.createdAt,
+          savedItem: s,
+        });
+      }
     }
 
     events.sort((a, b) => b.createdAt - a.createdAt);
     return events.slice(0, 20);
+  },
+});
+
+// Friend activity hydrated with actor profile (avatar/name/username) and
+// optionally paginated. The home page and /feed both use this.
+export type HydratedActivity = ActivityEvent & {
+  actor: {
+    _id: Id<"users">;
+    name?: string | null;
+    image?: string | null;
+    username?: string | null;
+  };
+};
+
+export const getFriendActivityHydrated = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }): Promise<HydratedActivity[]> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const friendIds = await getFriendUserIds(ctx, userId);
+    if (friendIds.length === 0) return [];
+
+    const events: ActivityEvent[] = [];
+
+    for (const fid of friendIds) {
+      const trips = await ctx.db
+        .query("trips")
+        .withIndex("by_creator", (q) => q.eq("creatorId", fid))
+        .collect();
+      for (const t of trips) {
+        if (t.visibility === "private") continue;
+        events.push({ kind: "trip_created", actorId: fid, createdAt: t.createdAt, trip: t });
+      }
+
+      const attendees = await ctx.db
+        .query("event_attendees")
+        .withIndex("by_user", (q) => q.eq("userId", fid))
+        .collect();
+      for (const a of attendees) {
+        if (a.status !== "going") continue;
+        const ev = await ctx.db.get(a.eventId);
+        events.push({ kind: "event_going", actorId: fid, createdAt: a.createdAt, attendee: a, event: ev });
+      }
+
+      const saves = await ctx.db
+        .query("saved_items")
+        .withIndex("by_added_by", (q) => q.eq("addedByUserId", fid))
+        .collect();
+      for (const s of saves) {
+        const trip = await ctx.db.get(s.tripId);
+        if (!trip || trip.visibility === "private") continue;
+        events.push({ kind: "item_saved", actorId: fid, createdAt: s.createdAt, savedItem: s });
+      }
+    }
+
+    events.sort((a, b) => b.createdAt - a.createdAt);
+    const cap = limit ?? 20;
+    const top = events.slice(0, cap);
+
+    const actorIds = Array.from(new Set(top.map((e) => e.actorId)));
+    const actors = await Promise.all(actorIds.map((id) => ctx.db.get(id)));
+    const actorById = new Map<string, Doc<"users"> | null>();
+    actorIds.forEach((id, i) => actorById.set(id, actors[i] ?? null));
+
+    return top.map((e) => {
+      const u = actorById.get(e.actorId);
+      return {
+        ...e,
+        actor: {
+          _id: e.actorId,
+          name: u?.name ?? null,
+          image: u?.image ?? null,
+          username: u?.username ?? null,
+        },
+      };
+    });
   },
 });

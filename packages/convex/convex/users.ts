@@ -53,6 +53,25 @@ export const updateProfile = mutation({
   },
 });
 
+export const setHomeLocation = mutation({
+  args: {
+    coords: v.object({ lat: v.number(), lng: v.number() }),
+    city: v.optional(v.string()),
+    country: v.optional(v.string()),
+    iata: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const patch: Record<string, unknown> = { homeCoords: args.coords };
+    if (args.city !== undefined) patch.homeCity = args.city;
+    if (args.country !== undefined) patch.homeCountry = args.country;
+    if (args.iata !== undefined) patch.homeIata = args.iata?.toUpperCase();
+    await ctx.db.patch(userId, patch);
+    return await ctx.db.get(userId);
+  },
+});
+
 export const completeOnboarding = mutation({
   args: {},
   handler: async (ctx) => {

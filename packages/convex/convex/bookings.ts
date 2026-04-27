@@ -230,8 +230,8 @@ export const createTicketBooking = mutation({
 });
 
 // Called from flights.startBooking after a Duffel offer lookup. Stores the
-// offerId (apiRef) + passenger ids so finaliseFlightBooking can call Duffel
-// create-order once Stripe payment lands.
+// offerId (apiRef) + full passenger details so finaliseFlightBooking can call
+// Duffel create-order once Stripe payment lands.
 export const createPendingFlight = internalMutation({
   args: {
     userId: v.id("users"),
@@ -243,7 +243,18 @@ export const createPendingFlight = internalMutation({
     currency: v.string(),
     commissionAmount: v.number(),
     eventId: v.optional(v.id("events")),
-    passengerIds: v.array(v.string()),
+    passengers: v.array(
+      v.object({
+        duffelId: v.string(),
+        title: v.string(),
+        firstName: v.string(),
+        lastName: v.string(),
+        gender: v.string(),
+        bornOn: v.string(),
+        email: v.string(),
+        phoneE164: v.string(),
+      })
+    ),
   },
   handler: async (ctx, args): Promise<Id<"bookings">> => {
     return await ctx.db.insert("bookings", {
@@ -260,7 +271,7 @@ export const createPendingFlight = internalMutation({
       rawResponse: {
         carrier: args.carrier,
         summary: args.summary,
-        passengerIds: args.passengerIds,
+        passengers: args.passengers,
       },
     });
   },
@@ -281,6 +292,12 @@ export const finaliseFlightBooking = internalMutation({
         status: "cancelled",
         rawResponse: { ...(booking.rawResponse ?? {}), duffelOrderFailed: true },
       });
+      if (booking.stripePaymentIntentId) {
+        await ctx.scheduler.runAfter(0, internal.payments.refundStripePayment, {
+          paymentIntentId: booking.stripePaymentIntentId,
+          reason: "duffel_order_failed",
+        });
+      }
       return;
     }
     await ctx.db.patch(args.bookingId, {
@@ -477,6 +494,12 @@ export const finaliseHotelBooking = internalMutation({
         status: "cancelled",
         rawResponse: { ...(booking.rawResponse ?? {}), liteapiBookFailed: true },
       });
+      if (booking.stripePaymentIntentId) {
+        await ctx.scheduler.runAfter(0, internal.payments.refundStripePayment, {
+          paymentIntentId: booking.stripePaymentIntentId,
+          reason: "liteapi_book_failed",
+        });
+      }
       return;
     }
     await ctx.db.patch(args.bookingId, {

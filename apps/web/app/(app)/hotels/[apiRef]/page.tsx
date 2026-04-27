@@ -13,6 +13,7 @@ export default async function HotelDetailPage({
     checkout?: string;
     adults?: string;
     eventId?: string;
+    eventSlug?: string;
   }>;
 }) {
   const [{ apiRef }, sp] = await Promise.all([params, searchParams]);
@@ -23,7 +24,9 @@ export default async function HotelDetailPage({
   const checkout = sp.checkout ?? fmt(new Date(today.getTime() + 17 * 86_400_000));
   const adults = sp.adults ? Number(sp.adults) : 2;
   const eventId = sp.eventId as Id<"events"> | undefined;
-  const backHref = eventId ? `/events/${eventId}` : "/explore";
+  const backHref = sp.eventSlug
+    ? `/events/${sp.eventSlug}/hotels?checkin=${checkin}&checkout=${checkout}`
+    : "/explore";
 
   return (
     <HotelDetailClient

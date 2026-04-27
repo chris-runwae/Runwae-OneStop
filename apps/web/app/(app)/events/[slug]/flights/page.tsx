@@ -45,6 +45,7 @@ export default async function EventFlightsPage({
       initialReturn={ret}
       backHref={`/events/${slug}`}
       eventId={result.event._id}
+      eventSlug={slug}
     />
   );
 }

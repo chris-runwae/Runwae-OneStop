@@ -8,11 +8,11 @@ export default async function FlightDetailPage({
   searchParams,
 }: {
   params: Promise<{ apiRef: string }>;
-  searchParams: Promise<{ eventId?: string }>;
+  searchParams: Promise<{ eventId?: string; eventSlug?: string }>;
 }) {
   const [{ apiRef }, sp] = await Promise.all([params, searchParams]);
   const eventId = sp.eventId as Id<"events"> | undefined;
-  const backHref = eventId ? `/events/${eventId}/flights` : "/explore";
+  const backHref = sp.eventSlug ? `/events/${sp.eventSlug}/flights` : "/explore";
   return (
     <FlightDetailClient
       apiRef={decodeURIComponent(apiRef)}

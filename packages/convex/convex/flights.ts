@@ -57,9 +57,27 @@ export const getOffer = action({
   },
 });
 
+const PASSENGER = v.object({
+  duffelId: v.string(),
+  title: v.union(
+    v.literal("mr"),
+    v.literal("ms"),
+    v.literal("mrs"),
+    v.literal("miss"),
+    v.literal("dr")
+  ),
+  firstName: v.string(),
+  lastName: v.string(),
+  gender: v.union(v.literal("m"), v.literal("f")),
+  bornOn: v.string(), // YYYY-MM-DD
+  email: v.string(),
+  phoneE164: v.string(), // E.164 e.g. +447123456789
+});
+
 export const startBooking = action({
   args: {
     offerId: v.string(),
+    passengers: v.array(PASSENGER),
     eventId: v.optional(v.id("events")),
   },
   handler: async (
@@ -74,10 +92,26 @@ export const startBooking = action({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
+    // Re-fetch the offer right before checkout — Duffel offers expire and
+    // their price can change. We bind the booking to the latest snapshot.
     const offer = await ctx.runAction(internal.providers.duffel.getOfferDetail, {
       apiRef: args.offerId,
     });
-    if (!offer) throw new Error("Offer no longer available");
+    if (!offer) throw new Error("This flight is no longer available — search again.");
+
+    if (args.passengers.length !== offer.passengers.length) {
+      throw new Error(
+        `This offer needs ${offer.passengers.length} passenger detail(s); received ${args.passengers.length}.`,
+      );
+    }
+
+    // Map the form's passenger entries to Duffel's passenger ids in order.
+    // Duffel doesn't tag passengers by name, only by an opaque id.
+    const passengersWithIds = offer.passengers.map((p, i) => {
+      const form = args.passengers[i];
+      if (!form) throw new Error("Missing passenger details");
+      return { ...form, duffelId: p.id };
+    });
 
     const summary = offer.segments
       .map((s) => `${s.origin}→${s.destination}`)
@@ -97,7 +131,7 @@ export const startBooking = action({
         currency: offer.currency,
         commissionAmount: commission,
         eventId: args.eventId,
-        passengerIds: offer.passengers.map((p) => p.id),
+        passengers: passengersWithIds,
       },
     );
     return { bookingId, totalAmount: offer.totalAmount, currency: offer.currency, summary };
@@ -105,7 +139,19 @@ export const startBooking = action({
 });
 
 // Internal — scheduled by bookings.confirmByStripeSession after Stripe payment
-// is captured. Calls Duffel createOrder, writes the result back.
+// is captured. Reads the passenger details captured at startBooking time and
+// calls Duffel createOrder.
+type StoredPassenger = {
+  duffelId: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  bornOn: string;
+  email: string;
+  phoneE164: string;
+};
+
 export const finalisePaidBooking = internalAction({
   args: { bookingId: v.id("bookings") },
   handler: async (ctx, { bookingId }): Promise<void> => {
@@ -114,21 +160,25 @@ export const finalisePaidBooking = internalAction({
     });
     if (!booking) return;
     const offerId = booking.apiRef;
-    const passengerIds: string[] = booking.rawResponse?.passengerIds ?? [];
-    const holder = await ctx.runQuery(internal.bookings.getBookingHolder, {
-      userId: booking.userId,
-    });
+    const stored = (booking.rawResponse?.passengers ?? []) as StoredPassenger[];
+    if (stored.length === 0) {
+      await ctx.runMutation(internal.bookings.finaliseFlightBooking, {
+        bookingId,
+        success: false,
+      });
+      return;
+    }
     const order = await ctx.runAction(internal.providers.duffel.createOrder, {
       offerId,
-      passengers: passengerIds.map((id) => ({
-        id,
-        title: "mr",
-        firstName: holder.firstName,
-        lastName: holder.lastName,
-        gender: "m",
-        bornOn: "1990-01-01",
-        email: holder.email,
-        phoneE164: "+440000000000",
+      passengers: stored.map((p) => ({
+        id: p.duffelId,
+        title: p.title,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        gender: p.gender,
+        bornOn: p.bornOn,
+        email: p.email,
+        phoneE164: p.phoneE164,
       })),
       paymentAmount: booking.grossAmount,
       paymentCurrency: booking.currency,

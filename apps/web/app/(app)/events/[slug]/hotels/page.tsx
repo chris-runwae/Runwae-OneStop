@@ -33,6 +33,7 @@ export default async function EventHotelsPage({
       coords={result.event.locationCoords}
       backHref={`/events/${slug}`}
       eventId={result.event._id}
+      eventSlug={slug}
     />
   );
 }

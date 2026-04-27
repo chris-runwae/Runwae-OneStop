@@ -38,6 +38,7 @@ export function HotelsListClient({
   coords,
   backHref,
   eventId,
+  eventSlug,
 }: {
   initialCheckin: string;
   initialCheckout: string;
@@ -45,6 +46,7 @@ export function HotelsListClient({
   coords?: { lat: number; lng: number };
   backHref: string;
   eventId?: Id<"events">;
+  eventSlug?: string;
 }) {
   const search = useAction(api.hotels.search);
   const [checkin, setCheckin] = useState(initialCheckin);
@@ -84,7 +86,7 @@ export function HotelsListClient({
   }, [search, city, coords?.lat, coords?.lng, checkin, checkout, adults, sortBy]);
 
   const detailHref = (apiRef: string) =>
-    `/hotels/${encodeURIComponent(apiRef)}?checkin=${checkin}&checkout=${checkout}&adults=${adults}${eventId ? `&eventId=${eventId}` : ""}`;
+    `/hotels/${encodeURIComponent(apiRef)}?checkin=${checkin}&checkout=${checkout}&adults=${adults}${eventId ? `&eventId=${eventId}` : ""}${eventSlug ? `&eventSlug=${eventSlug}` : ""}`;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-5">

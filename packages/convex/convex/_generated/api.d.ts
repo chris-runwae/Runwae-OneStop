@@ -25,6 +25,7 @@ import type * as lib_coverImage from "../lib/coverImage.js";
 import type * as lib_username from "../lib/username.js";
 import type * as members from "../members.js";
 import type * as notifications from "../notifications.js";
+import type * as payments from "../payments.js";
 import type * as polls from "../polls.js";
 import type * as posts from "../posts.js";
 import type * as providers_duffel from "../providers/duffel.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "lib/username": typeof lib_username;
   members: typeof members;
   notifications: typeof notifications;
+  payments: typeof payments;
   polls: typeof polls;
   posts: typeof posts;
   "providers/duffel": typeof providers_duffel;

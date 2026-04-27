@@ -2,6 +2,37 @@ import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 import type { DiscoveryDetail, DiscoveryItem } from "./types";
 
+// Allow-list HTML sanitiser. LiteAPI returns descriptions as HTML with mixed
+// quality — we keep semantic tags + line breaks and strip everything else
+// (script/style/iframe/event handlers/javascript: URLs).
+const ALLOWED_TAGS = new Set([
+  "p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li",
+  "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "div", "span",
+]);
+
+function sanitizeHotelHtml(input: string): string {
+  if (!input) return "";
+  let out = input;
+  // Drop entire tag + content for dangerous blocks.
+  out = out.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, "");
+  // Strip any remaining tags whose name isn't on the allow-list.
+  out = out.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag: string) => {
+    return ALLOWED_TAGS.has(tag.toLowerCase()) ? stripAttrs(match, tag.toLowerCase()) : "";
+  });
+  // Strip lingering "javascript:" URLs that survived attr stripping.
+  out = out.replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, "");
+  return out.trim();
+}
+
+function stripAttrs(tagHtml: string, _tagName: string): string {
+  // Remove all attributes — we don't need any for the allow-listed tags.
+  if (tagHtml.startsWith("</")) return tagHtml.replace(/\s.*$/, ">");
+  const m = tagHtml.match(/^<([a-zA-Z][a-zA-Z0-9]*)/);
+  if (!m) return "";
+  const closing = tagHtml.endsWith("/>") ? "/>" : ">";
+  return `<${m[1]}${closing === "/>" ? " /" : ""}>`;
+}
+
 export const search = internalAction({
   args: {
     category: v.string(),
@@ -97,7 +128,7 @@ export const getDetail = internalAction({
         apiRef: String(h.id ?? apiRef),
         category: "stay",
         title: h.name ?? "Hotel",
-        description: h.description ?? h.hotelDescription,
+        description: sanitizeHotelHtml(h.description ?? h.hotelDescription ?? ""),
         imageUrl: h.main_photo ?? gallery?.[0],
         price: h.priceFrom,
         currency: h.currency ?? "USD",
@@ -120,9 +151,14 @@ export const getDetail = internalAction({
 export type LiteApiRate = {
   rateId: string;
   roomName: string;
+  roomDescription?: string;
   boardName?: string;
+  bedTypes?: string[];
+  maxOccupancy?: number;
   refundable: boolean;
-  cancellationPolicies?: string;
+  cancellationPolicy?: string;
+  photos?: string[];
+  amenities?: string[];
   pricePerNight: number;
   totalPrice: number;
   currency: string;
@@ -158,31 +194,105 @@ export const getRoomRates = internalAction({
           occupancies: [{ adults: adults ?? 2 }],
         }),
       });
-      if (!res.ok) return [];
+      if (!res.ok) {
+        const txt = await res.text();
+        console.warn("[liteapi] rates not ok", res.status, txt.slice(0, 200));
+        return [];
+      }
       const json = (await res.json()) as { data?: any[] };
       const hotel = json.data?.[0];
       if (!hotel) return [];
       const nights = Math.max(
         1,
-        Math.round(
-          (Date.parse(checkout) - Date.parse(checkin)) / 86_400_000,
-        ),
+        Math.round((Date.parse(checkout) - Date.parse(checkin)) / 86_400_000),
       );
+
       const out: LiteApiRate[] = [];
       for (const room of hotel.roomTypes ?? []) {
+        // LiteAPI puts room-level metadata at the roomType layer.
+        const photos: string[] = Array.isArray(room.photos)
+          ? room.photos
+              .map((p: any) => (typeof p === "string" ? p : p?.url))
+              .filter((u: any): u is string => !!u)
+              .slice(0, 6)
+          : [];
+        const amenities: string[] = Array.isArray(room.amenities)
+          ? room.amenities
+              .map((a: any) => (typeof a === "string" ? a : a?.name))
+              .filter((a: any): a is string => !!a)
+              .slice(0, 8)
+          : [];
+        const bedTypes: string[] = Array.isArray(room.bedTypes)
+          ? room.bedTypes
+              .map((b: any) =>
+                typeof b === "string"
+                  ? b
+                  : b?.quantity && b?.bedType
+                    ? `${b.quantity}× ${b.bedType}`
+                    : (b?.bedType ?? null),
+              )
+              .filter((b: any): b is string => !!b)
+          : [];
+        const maxOccupancy =
+          typeof room.maxOccupancy === "number"
+            ? room.maxOccupancy
+            : typeof room.adultCount === "number"
+              ? room.adultCount
+              : undefined;
+        const roomName = room.roomTypeName ?? room.name ?? "Room";
+        const roomDescription =
+          typeof room.description === "string" ? room.description : undefined;
+
         for (const rate of room.rates ?? []) {
+          // LiteAPI sometimes returns rates without a usable rateId — those
+          // will fail prebook every time; drop them up front.
+          const rateId = String(rate.rateId ?? rate.id ?? "").trim();
+          if (!rateId) continue;
+
+          // Package-only rates can't be booked standalone via /rates/prebook.
+          // They surface from /hotels/rates because LiteAPI returns the full
+          // catalogue, but trying to prebook them returns a 400.
+          if (rate.package_rate === true || rate.packageRate === true) continue;
+
+          // Drop rates whose payment options don't include a card. Some net
+          // rates settle differently and aren't bookable through this flow.
+          const paymentTypes: unknown[] = rate.paymentTypes ?? [];
+          if (
+            paymentTypes.length > 0 &&
+            !paymentTypes.some(
+              (p) =>
+                typeof p === "string" &&
+                (p.toUpperCase().includes("CREDIT_CARD") ||
+                  p.toUpperCase().includes("CARD")),
+            )
+          ) {
+            continue;
+          }
+
           const total =
             rate.retailRate?.total?.[0]?.amount ?? rate.minPrice ?? rate.price;
-          if (total === undefined) continue;
-          const currency =
+          if (typeof total !== "number") continue;
+          const currency: string =
             rate.retailRate?.total?.[0]?.currency ?? rate.currency ?? "GBP";
+
+          const refundable = !!(
+            rate.cancellationPolicies?.refundableTag === "RFN" ||
+            rate.refundable === true
+          );
+          const cancelInfo =
+            rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime;
+
           out.push({
-            rateId: String(rate.rateId ?? rate.id ?? ""),
-            roomName: room.roomTypeName ?? room.name ?? "Room",
+            rateId,
+            roomName,
+            roomDescription,
             boardName: rate.boardName ?? rate.boardType,
-            refundable: !!(rate.cancellationPolicies?.refundableTag === "RFN" || rate.refundable),
-            cancellationPolicies:
-              rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime,
+            bedTypes: bedTypes.length > 0 ? bedTypes : undefined,
+            maxOccupancy,
+            refundable,
+            cancellationPolicy: cancelInfo,
+            photos: photos.length > 0 ? photos : undefined,
+            amenities: amenities.length > 0 ? amenities : undefined,
             pricePerNight: total / nights,
             totalPrice: total,
             currency,
@@ -203,12 +313,14 @@ export const prebook = internalAction({
     _ctx,
     { rateId },
   ): Promise<{
-    prebookId: string;
-    finalPrice: number;
-    currency: string;
-  } | null> => {
+    ok: boolean;
+    prebookId?: string;
+    finalPrice?: number;
+    currency?: string;
+    reason?: string;
+  }> => {
     const apiKey = process.env.LITEAPI_KEY;
-    if (!apiKey) return null;
+    if (!apiKey) return { ok: false, reason: "Hotels API not configured" };
     try {
       const res = await fetch("https://api.liteapi.travel/v3.0/rates/prebook", {
         method: "POST",
@@ -219,18 +331,40 @@ export const prebook = internalAction({
         },
         body: JSON.stringify({ rateId, voucherCode: undefined }),
       });
-      if (!res.ok) return null;
-      const json = (await res.json()) as { data?: any };
+      if (!res.ok) {
+        const txt = await res.text();
+        console.warn("[liteapi] prebook not ok", {
+          status: res.status,
+          rateId,
+          body: txt.slice(0, 400),
+        });
+        // Try to extract LiteAPI's own error message so the UI surfaces
+        // something actionable rather than "rejected (400)".
+        let reason = `Hotel API rejected this rate (${res.status})`;
+        try {
+          const parsed = JSON.parse(txt) as { error?: { message?: string }; message?: string };
+          const apiMsg = parsed.error?.message ?? parsed.message;
+          if (apiMsg) reason = String(apiMsg);
+        } catch {
+          // Non-JSON response — keep the default reason.
+        }
+        return { ok: false, reason };
+      }
+      const json = (await res.json()) as { data?: any; error?: any };
       const data = json.data;
-      if (!data?.prebookId) return null;
+      if (!data?.prebookId) {
+        const msg = json.error?.message ?? "Rate no longer available";
+        return { ok: false, reason: String(msg) };
+      }
       return {
+        ok: true,
         prebookId: String(data.prebookId),
         finalPrice: Number(data.price ?? 0),
         currency: String(data.currency ?? "GBP"),
       };
     } catch (err) {
       console.error("[liteapi] prebook failed", err);
-      return null;
+      return { ok: false, reason: "Network error" };
     }
   },
 });

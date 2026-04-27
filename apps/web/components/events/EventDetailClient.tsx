@@ -52,8 +52,6 @@ type Props = {
   publicShell?: boolean;
 };
 
-type RsvpStatus = "going" | "interested" | "not_going";
-
 const ORIGIN_SUGGESTIONS = [
   { id: "lon", name: "London, United Kingdom",  sub: "LHR, LGW, STN", flag: "🇬🇧" },
   { id: "nyc", name: "New York, United States", sub: "JFK, EWR, LGA", flag: "🇺🇸" },
@@ -108,12 +106,7 @@ export function EventDetailClient({
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-5 pb-10 lg:gap-6 lg:px-7 lg:pt-6 lg:pb-12">
         <HostRow host={primaryHost} fallbackName={event.name} />
 
-        <AttendeeStrip
-          event={event}
-          viewer={viewer}
-          onToast={showToast}
-          onSignIn={() => router.push(`/sign-in?next=/e/${event.slug}`)}
-        />
+        <AttendeeStrip event={event} />
 
         <button
           type="button"
@@ -595,29 +588,13 @@ function RunwaeTickets({
 }
 
 // ============================================================================
-// ATTENDEE STRIP — inline avatars + count + Attending toggle
+// ATTENDEE STRIP — inline avatars + friendly count line
 // ============================================================================
-function AttendeeStrip({
-  event,
-  viewer,
-  onToast,
-  onSignIn,
-}: {
-  event: Event;
-  viewer: Doc<"users"> | null;
-  onToast: (msg: string) => void;
-  onSignIn: () => void;
-}) {
+function AttendeeStrip({ event }: { event: Event }) {
   const data = useQuery(api.events.listAttendees, {
     eventId: event._id,
     limit: 4,
   });
-  const myRsvp = useQuery(
-    api.events.getViewerRsvp,
-    viewer ? { eventId: event._id } : "skip",
-  );
-  const rsvpMut = useMutation(api.events.rsvp);
-  const [pending, setPending] = useState(false);
 
   const total = event.currentParticipants;
   const visible = data?.attendees ?? [];
@@ -625,28 +602,6 @@ function AttendeeStrip({
   const overflow = Math.max(0, total - visible.length);
   const others = Math.max(0, total - friendsGoing);
 
-  async function setRsvp(status: RsvpStatus) {
-    if (!viewer) {
-      onSignIn();
-      return;
-    }
-    setPending(true);
-    try {
-      await rsvpMut({ eventId: event._id, status });
-      onToast(
-        status === "going"
-          ? "You're attending"
-          : status === "interested"
-            ? "Marked maybe"
-            : "Attendance cleared",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  // Friendly count line: "3 friends + 120 others attending"
-  // or "1,284 attending" when no friends are going
   let countLine: React.ReactNode;
   if (friendsGoing > 0 && others > 0) {
     countLine = (
@@ -666,10 +621,10 @@ function AttendeeStrip({
         attending
       </>
     );
+  } else if (total === 0) {
+    countLine = <>Be the first to attend</>;
   } else {
-    countLine = total === 0 ? (
-      <>Be the first to attend</>
-    ) : (
+    countLine = (
       <>
         <b className="font-semibold text-foreground">{total.toLocaleString()}</b>{" "}
         attending
@@ -677,58 +632,28 @@ function AttendeeStrip({
     );
   }
 
-  const ATTEND_OPTIONS: { id: RsvpStatus; label: string }[] = [
-    { id: "going", label: "Attending" },
-    { id: "interested", label: "Maybe" },
-    { id: "not_going", label: "Not attending" },
-  ];
-
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        {visible.length > 0 && (
-          <div className="flex shrink-0 -space-x-2">
-            {visible.map((a) => (
-              <Avatar
-                key={a._id}
-                src={a.image}
-                name={a.name ?? "Attendee"}
-                size="sm"
-                className="ring-2 ring-background"
-              />
-            ))}
-            {overflow > 0 && (
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-[10.5px] font-semibold text-foreground ring-2 ring-background">
-                +{overflow > 999 ? "999" : overflow}
-              </span>
-            )}
-          </div>
-        )}
-        <div className="min-w-0 flex-1 text-[13px] text-muted-foreground">
-          {countLine}
+    <div className="flex items-center gap-3">
+      {visible.length > 0 && (
+        <div className="flex shrink-0 -space-x-2">
+          {visible.map((a) => (
+            <Avatar
+              key={a._id}
+              src={a.image}
+              name={a.name ?? "Attendee"}
+              size="sm"
+              className="ring-2 ring-background"
+            />
+          ))}
+          {overflow > 0 && (
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-[10.5px] font-semibold text-foreground ring-2 ring-background">
+              +{overflow > 999 ? "999" : overflow}
+            </span>
+          )}
         </div>
-      </div>
-      <div className="grid grid-cols-3 gap-1.5 rounded-full bg-muted p-1">
-        {ATTEND_OPTIONS.map((opt) => {
-          const on = myRsvp === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setRsvp(opt.id)}
-              disabled={pending}
-              className={cn(
-                "inline-flex h-9 items-center justify-center gap-1 rounded-full text-[12.5px] font-semibold transition-all",
-                on
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {on && opt.id !== "not_going" && <Check className="h-3.5 w-3.5" />}
-              {opt.label}
-            </button>
-          );
-        })}
+      )}
+      <div className="min-w-0 flex-1 text-[13px] text-muted-foreground">
+        {countLine}
       </div>
     </div>
   );
@@ -801,7 +726,7 @@ function HotelsRow({ event }: { event: Event }) {
           : (hotels ?? []).map((h) => (
               <Link
                 key={h.apiRef}
-                href={`/hotels/${encodeURIComponent(h.apiRef)}?checkin=${checkin}&checkout=${checkout}&eventId=${event._id}`}
+                href={`/hotels/${encodeURIComponent(h.apiRef)}?checkin=${checkin}&checkout=${checkout}&eventId=${event._id}&eventSlug=${event.slug}`}
                 className="block w-[220px] shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5"
               >
                 <div
@@ -942,7 +867,7 @@ function FlightsRow({
               : (flights ?? []).map((f) => (
                   <Link
                     key={f.apiRef}
-                    href={`/flights/${encodeURIComponent(f.apiRef)}${event._id ? `?eventId=${event._id}` : ""}`}
+                    href={`/flights/${encodeURIComponent(f.apiRef)}?eventId=${event._id}&eventSlug=${event.slug}`}
                     className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5"
                   >
                     {f.imageUrl && (

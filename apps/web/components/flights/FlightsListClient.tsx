@@ -31,6 +31,7 @@ export function FlightsListClient({
   initialReturn,
   backHref,
   eventId,
+  eventSlug,
 }: {
   initialOrigin: string;
   initialDest: string;
@@ -38,6 +39,7 @@ export function FlightsListClient({
   initialReturn?: string;
   backHref: string;
   eventId?: Id<"events">;
+  eventSlug?: string;
 }) {
   const search = useAction(api.flights.search);
   const [origin, setOrigin] = useState(initialOrigin);
@@ -179,7 +181,7 @@ export function FlightsListClient({
             : (results ?? []).map((f) => (
                 <Link
                   key={f.apiRef}
-                  href={`/flights/${encodeURIComponent(f.apiRef)}${eventId ? `?eventId=${eventId}` : ""}`}
+                  href={`/flights/${encodeURIComponent(f.apiRef)}${eventId ? `?eventId=${eventId}${eventSlug ? `&eventSlug=${eventSlug}` : ""}` : ""}`}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5"
                 >
                   {f.imageUrl && (

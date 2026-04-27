@@ -5,7 +5,8 @@ import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeKey ? new Stripe(stripeKey) : null;
 
 type TicketsBody = {
   type: "tickets";
@@ -35,6 +36,13 @@ type FlightBody = {
 type CheckoutBody = TicketsBody | HotelBody | FlightBody;
 
 export async function POST(request: NextRequest) {
+  if (!stripe) {
+    return NextResponse.json(
+      { error: "Payments aren't configured. Set STRIPE_SECRET_KEY and try again." },
+      { status: 503 },
+    );
+  }
+
   const token = await convexAuthNextjsToken();
   if (!token) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -44,18 +52,18 @@ export async function POST(request: NextRequest) {
   const origin = request.nextUrl.origin;
 
   if (body.type === "tickets") {
-    return handleTickets(body, origin, token);
+    return handleTickets(body, origin, token, stripe);
   }
   if (body.type === "hotel") {
-    return handleHotel(body, origin, token);
+    return handleHotel(body, origin, token, stripe);
   }
   if (body.type === "flight") {
-    return handleFlight(body, origin, token);
+    return handleFlight(body, origin, token, stripe);
   }
   return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 }
 
-async function handleTickets(body: TicketsBody, origin: string, token: string) {
+async function handleTickets(body: TicketsBody, origin: string, token: string, stripe: Stripe) {
   if (!body.eventId || !body.items?.length) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -95,7 +103,7 @@ async function handleTickets(body: TicketsBody, origin: string, token: string) {
   return NextResponse.json({ url: session.url, bookingId: result.bookingId });
 }
 
-async function handleFlight(body: FlightBody, origin: string, token: string) {
+async function handleFlight(body: FlightBody, origin: string, token: string, stripe: Stripe) {
   if (!body.bookingId || !body.totalAmount || !body.currency) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -127,7 +135,7 @@ async function handleFlight(body: FlightBody, origin: string, token: string) {
   return NextResponse.json({ url: session.url, bookingId: body.bookingId });
 }
 
-async function handleHotel(body: HotelBody, origin: string, token: string) {
+async function handleHotel(body: HotelBody, origin: string, token: string, stripe: Stripe) {
   if (!body.bookingId || !body.totalAmount || !body.currency) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

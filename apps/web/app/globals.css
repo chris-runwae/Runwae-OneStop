@@ -57,3 +57,24 @@
     @apply cursor-pointer disabled:pointer-events-none disabled:opacity-50;
   }
 }
+
+/* HTML descriptions returned by hotel providers (LiteAPI). Server-side
+   sanitizer keeps p/br/strong/em/lists/headings only; we just style them. */
+.hotel-prose {
+  @apply text-[14.5px] leading-relaxed text-foreground/90;
+}
+.hotel-prose p { @apply mb-3 last:mb-0; }
+.hotel-prose strong, .hotel-prose b { @apply font-semibold text-foreground; }
+.hotel-prose em, .hotel-prose i { @apply italic; }
+.hotel-prose ul { @apply mb-3 list-disc pl-5 space-y-1; }
+.hotel-prose ol { @apply mb-3 list-decimal pl-5 space-y-1; }
+.hotel-prose h1, .hotel-prose h2, .hotel-prose h3,
+.hotel-prose h4, .hotel-prose h5, .hotel-prose h6 {
+  @apply mb-2 mt-4 font-display font-bold tracking-tight text-foreground;
+}
+.hotel-prose h1 { @apply text-xl; }
+.hotel-prose h2 { @apply text-lg; }
+.hotel-prose h3 { @apply text-base; }
+.hotel-prose blockquote {
+  @apply mb-3 border-l-2 border-border pl-3 italic text-muted-foreground;
+}

@@ -92,7 +92,9 @@ export const startBooking = action({
     const pre = await ctx.runAction(internal.providers.liteapi.prebook, {
       rateId: args.rateId,
     });
-    if (!pre) throw new Error("Could not prebook this rate — try another.");
+    if (!pre.ok || !pre.prebookId || pre.finalPrice === undefined || !pre.currency) {
+      throw new Error(pre.reason ?? "This room is no longer available — try another.");
+    }
 
     // Commission: 10% of hotel revenue.
     const commission = Math.round(pre.finalPrice * 0.1);

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAction } from "convex/react";
-import { ArrowLeft, Check, MapPin, Star, Wifi } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Star, Users, Wifi } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -24,9 +24,14 @@ type HotelDetail = {
 type Rate = {
   rateId: string;
   roomName: string;
+  roomDescription?: string;
   boardName?: string;
+  bedTypes?: string[];
+  maxOccupancy?: number;
   refundable: boolean;
-  cancellationPolicies?: string;
+  cancellationPolicy?: string;
+  photos?: string[];
+  amenities?: string[];
   pricePerNight: number;
   totalPrice: number;
   currency: string;
@@ -61,6 +66,7 @@ export function HotelDetailClient({
   const [ratesLoading, setRatesLoading] = useState(false);
   const [reserving, setReserving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +103,7 @@ export function HotelDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [apiRef, checkin, checkout, adults, getRates]);
+  }, [apiRef, checkin, checkout, adults, getRates, refreshTick]);
 
   async function reserve(rate: Rate) {
     if (!detail) return;
@@ -131,7 +137,14 @@ export function HotelDetailClient({
       const { url } = (await res.json()) as { url: string };
       window.location.href = url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reservation failed");
+      const msg = err instanceof Error ? err.message : "Reservation failed";
+      setError(`${msg}. Refreshing rooms…`);
+      // Drop the failed rate immediately, then re-fetch the full list. LiteAPI
+      // rates expire within minutes and the same rateId will keep failing —
+      // refreshing gives the user fresh, bookable options.
+      const failedId = rate.rateId;
+      setRates((prev) => (prev ?? []).filter((r) => r.rateId !== failedId));
+      setRefreshTick((n) => n + 1);
     } finally {
       setReserving(null);
     }
@@ -197,9 +210,10 @@ export function HotelDetailClient({
       )}
 
       {detail.description && (
-        <p className="mb-5 text-[14.5px] leading-relaxed text-foreground/90">
-          {detail.description}
-        </p>
+        <div
+          className="mb-5 hotel-prose"
+          dangerouslySetInnerHTML={{ __html: detail.description }}
+        />
       )}
 
       {detail.amenities && detail.amenities.length > 0 && (
@@ -259,50 +273,105 @@ export function HotelDetailClient({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {ratesLoading && rates === null ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
+            <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted" />
           ))
         ) : (rates ?? []).length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-            No rooms available for these dates.
+            No bookable rooms for these dates.
           </div>
         ) : (
-          (rates ?? []).map((r) => (
+          (rates ?? []).map((r, idx) => {
+            // Per-room photos from /hotels/rates aren't always populated by
+            // LiteAPI; fall back to the hotel's gallery so cards never look
+            // empty. Cycling through the gallery gives variety across rooms.
+            const fallback =
+              detail.gallery && detail.gallery.length > 0
+                ? detail.gallery[idx % detail.gallery.length]
+                : detail.imageUrl;
+            const roomImage =
+              r.photos && r.photos.length > 0 ? r.photos[0] : fallback;
+            return (
             <div
               key={r.rateId}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:gap-4"
             >
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold leading-tight">{r.roomName}</div>
-                <div className="mt-0.5 flex items-center gap-2 text-[11.5px] text-muted-foreground">
-                  {r.boardName && <span>{r.boardName}</span>}
-                  {r.refundable && (
-                    <span className="inline-flex items-center gap-0.5 text-success">
-                      <Check className="h-3 w-3" /> Refundable
-                    </span>
+              {roomImage && (
+                <div
+                  className="aspect-[4/3] w-full shrink-0 rounded-xl bg-muted bg-cover bg-center sm:h-32 sm:w-44"
+                  style={{ backgroundImage: `url(${roomImage})` }}
+                />
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-snug">{r.roomName}</div>
+                  {r.roomDescription && (
+                    <div className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-muted-foreground">
+                      {r.roomDescription}
+                    </div>
                   )}
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="font-display text-base font-bold tracking-tight">
-                  {formatCurrency(r.totalPrice, r.currency)}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
+                  {r.maxOccupancy !== undefined && (
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-3 w-3" /> Sleeps {r.maxOccupancy}
+                    </span>
+                  )}
+                  {r.bedTypes && r.bedTypes.length > 0 && (
+                    <span>{r.bedTypes.join(", ")}</span>
+                  )}
+                  {r.boardName && <span>{r.boardName}</span>}
+                  {r.refundable ? (
+                    <span className="inline-flex items-center gap-0.5 text-success">
+                      <Check className="h-3 w-3" /> Refundable
+                      {r.cancellationPolicy && (
+                        <span className="ml-0.5 text-muted-foreground">
+                          · until {fmtCancelDate(r.cancellationPolicy)}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-foreground/50">Non-refundable</span>
+                  )}
                 </div>
-                <div className="text-[10.5px] text-muted-foreground">total</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => reserve(r)}
-                disabled={reserving !== null}
-                className={cn(
-                  "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60",
+                {r.amenities && r.amenities.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {r.amenities.slice(0, 4).map((a, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground"
+                      >
+                        {a}
+                      </span>
+                    ))}
+                  </div>
                 )}
-              >
-                {reserving === r.rateId ? "Reserving…" : "Reserve"}
-              </button>
+                <div className="mt-auto flex items-end justify-between gap-3 pt-1">
+                  <div>
+                    <div className="font-display text-lg font-bold tracking-tight">
+                      {formatCurrency(r.totalPrice, r.currency)}
+                    </div>
+                    <div className="text-[10.5px] text-muted-foreground">
+                      {formatCurrency(r.pricePerNight, r.currency)} per night · total
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => reserve(r)}
+                    disabled={reserving !== null}
+                    className={cn(
+                      "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60",
+                    )}
+                  >
+                    {reserving === r.rateId ? "Reserving…" : "Reserve"}
+                  </button>
+                </div>
+              </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </main>
@@ -318,4 +387,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
+}
+
+function fmtCancelDate(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
 }

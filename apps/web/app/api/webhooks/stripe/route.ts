@@ -3,9 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const stripe = stripeKey ? new Stripe(stripeKey) : null;
 
 export async function POST(request: NextRequest) {
+  if (!stripe || !webhookSecret) {
+    return NextResponse.json(
+      { error: "Stripe webhook not configured" },
+      { status: 503 },
+    );
+  }
+
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
 
@@ -15,11 +24,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }

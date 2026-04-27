@@ -1,5 +1,7 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
+import { fetchMutation } from "convex/nextjs";
+import { api } from "@/convex/_generated/api";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -24,11 +26,23 @@ export async function POST(request: NextRequest) {
 
   switch (event.type) {
     case "checkout.session.completed": {
-      // TODO: fetchMutation(api.bookings.confirmByStripeSession, { sessionId: event.data.object.id })
+      const session = event.data.object as Stripe.Checkout.Session;
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id;
+      if (!paymentIntentId) break;
+      await fetchMutation(api.bookings.confirmByStripeSession, {
+        sessionId: session.id,
+        paymentIntentId,
+      });
       break;
     }
     case "payment_intent.payment_failed": {
-      // TODO: fetchMutation(api.bookings.failByPaymentIntent, { paymentIntentId: event.data.object.id })
+      const intent = event.data.object as Stripe.PaymentIntent;
+      await fetchMutation(api.bookings.failByPaymentIntent, {
+        paymentIntentId: intent.id,
+      });
       break;
     }
   }

@@ -117,6 +117,176 @@ export const getDetail = internalAction({
   },
 });
 
+export type LiteApiRate = {
+  rateId: string;
+  roomName: string;
+  boardName?: string;
+  refundable: boolean;
+  cancellationPolicies?: string;
+  pricePerNight: number;
+  totalPrice: number;
+  currency: string;
+};
+
+export const getRoomRates = internalAction({
+  args: {
+    apiRef: v.string(),
+    checkin: v.string(),
+    checkout: v.string(),
+    adults: v.optional(v.number()),
+  },
+  handler: async (
+    _ctx,
+    { apiRef, checkin, checkout, adults },
+  ): Promise<LiteApiRate[]> => {
+    const apiKey = process.env.LITEAPI_KEY;
+    if (!apiKey) return [];
+    try {
+      const res = await fetch("https://api.liteapi.travel/v3.0/hotels/rates", {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hotelIds: [apiRef],
+          checkin,
+          checkout,
+          currency: "GBP",
+          guestNationality: "GB",
+          occupancies: [{ adults: adults ?? 2 }],
+        }),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { data?: any[] };
+      const hotel = json.data?.[0];
+      if (!hotel) return [];
+      const nights = Math.max(
+        1,
+        Math.round(
+          (Date.parse(checkout) - Date.parse(checkin)) / 86_400_000,
+        ),
+      );
+      const out: LiteApiRate[] = [];
+      for (const room of hotel.roomTypes ?? []) {
+        for (const rate of room.rates ?? []) {
+          const total =
+            rate.retailRate?.total?.[0]?.amount ?? rate.minPrice ?? rate.price;
+          if (total === undefined) continue;
+          const currency =
+            rate.retailRate?.total?.[0]?.currency ?? rate.currency ?? "GBP";
+          out.push({
+            rateId: String(rate.rateId ?? rate.id ?? ""),
+            roomName: room.roomTypeName ?? room.name ?? "Room",
+            boardName: rate.boardName ?? rate.boardType,
+            refundable: !!(rate.cancellationPolicies?.refundableTag === "RFN" || rate.refundable),
+            cancellationPolicies:
+              rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime,
+            pricePerNight: total / nights,
+            totalPrice: total,
+            currency,
+          });
+        }
+      }
+      return out;
+    } catch (err) {
+      console.error("[liteapi] getRoomRates failed", err);
+      return [];
+    }
+  },
+});
+
+export const prebook = internalAction({
+  args: { rateId: v.string() },
+  handler: async (
+    _ctx,
+    { rateId },
+  ): Promise<{
+    prebookId: string;
+    finalPrice: number;
+    currency: string;
+  } | null> => {
+    const apiKey = process.env.LITEAPI_KEY;
+    if (!apiKey) return null;
+    try {
+      const res = await fetch("https://api.liteapi.travel/v3.0/rates/prebook", {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ rateId, voucherCode: undefined }),
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as { data?: any };
+      const data = json.data;
+      if (!data?.prebookId) return null;
+      return {
+        prebookId: String(data.prebookId),
+        finalPrice: Number(data.price ?? 0),
+        currency: String(data.currency ?? "GBP"),
+      };
+    } catch (err) {
+      console.error("[liteapi] prebook failed", err);
+      return null;
+    }
+  },
+});
+
+export const book = internalAction({
+  args: {
+    prebookId: v.string(),
+    holderFirstName: v.string(),
+    holderLastName: v.string(),
+    holderEmail: v.string(),
+    paymentRef: v.string(),
+  },
+  handler: async (
+    _ctx,
+    args,
+  ): Promise<{ bookingId: string; status: string; confirmationCode?: string } | null> => {
+    const apiKey = process.env.LITEAPI_KEY;
+    if (!apiKey) return null;
+    try {
+      const res = await fetch("https://api.liteapi.travel/v3.0/rates/book", {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prebookId: args.prebookId,
+          holder: {
+            firstName: args.holderFirstName,
+            lastName: args.holderLastName,
+            email: args.holderEmail,
+          },
+          payment: { method: "ACC_CREDIT_CARD", transactionId: args.paymentRef },
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error("[liteapi] book failed", res.status, txt.slice(0, 300));
+        return null;
+      }
+      const json = (await res.json()) as { data?: any };
+      const data = json.data;
+      if (!data) return null;
+      return {
+        bookingId: String(data.bookingId ?? data.id ?? ""),
+        status: String(data.status ?? "confirmed"),
+        confirmationCode: data.confirmationCode ? String(data.confirmationCode) : undefined,
+      };
+    } catch (err) {
+      console.error("[liteapi] book error", err);
+      return null;
+    }
+  },
+});
+
 async function fetchRates(
   apiKey: string,
   hotelIds: string[],

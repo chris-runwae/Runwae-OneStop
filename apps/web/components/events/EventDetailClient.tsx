@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,7 +12,6 @@ import {
   ExternalLink,
   MapPin,
   Minus,
-  Plane,
   Plus,
   Search,
   Share2,
@@ -20,10 +19,26 @@ import {
   X,
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { Avatar } from "@/components/ui/avatar";
 import { cn, formatCurrency } from "@/lib/utils";
 import { formatDateRange } from "@/lib/format";
+import { DiscoverGrid } from "@/components/discover/DiscoverGrid";
+import { nearestIata } from "@/lib/iata";
+
+type DiscoveryItem = {
+  provider: string;
+  apiRef: string;
+  category: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  price?: number;
+  currency?: string;
+  rating?: number;
+  externalUrl?: string;
+  locationName?: string;
+};
 
 type Event = Doc<"events">;
 type Tier = Doc<"event_ticket_tiers">;
@@ -38,14 +53,6 @@ type Props = {
 };
 
 type RsvpStatus = "going" | "interested" | "not_going";
-
-const PLACEHOLDER_HOTELS = [
-  { id: "h1", name: "FORM Hotel d3",          rating: 4.6, distance: "0.4 km", price: 142, img: "https://picsum.photos/seed/runwae-hotel-1/600/450" },
-  { id: "h2", name: "Hyatt Centric Jumeirah", rating: 4.8, distance: "1.8 km", price: 218, img: "https://picsum.photos/seed/runwae-hotel-2/600/450" },
-  { id: "h3", name: "Renaissance Downtown",   rating: 4.7, distance: "2.4 km", price: 189, img: "https://picsum.photos/seed/runwae-hotel-3/600/450" },
-  { id: "h4", name: "JW Marriott Marquis",    rating: 4.5, distance: "3.6 km", price: 165, img: "https://picsum.photos/seed/runwae-hotel-4/600/450" },
-  { id: "h5", name: "Rove Downtown",          rating: 4.4, distance: "4.1 km", price:  98, img: "https://picsum.photos/seed/runwae-hotel-5/600/450" },
-];
 
 const ORIGIN_SUGGESTIONS = [
   { id: "lon", name: "London, United Kingdom",  sub: "LHR, LGW, STN", flag: "🇬🇧" },
@@ -101,6 +108,13 @@ export function EventDetailClient({
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pt-5 pb-10 lg:gap-6 lg:px-7 lg:pt-6 lg:pb-12">
         <HostRow host={primaryHost} fallbackName={event.name} />
 
+        <AttendeeStrip
+          event={event}
+          viewer={viewer}
+          onToast={showToast}
+          onSignIn={() => router.push(`/sign-in?next=/e/${event.slug}`)}
+        />
+
         <button
           type="button"
           onClick={() => setPlanOpen(true)}
@@ -120,11 +134,11 @@ export function EventDetailClient({
           onSignIn={() => router.push(`/sign-in?next=/e/${event.slug}`)}
         />
 
-        <Attendees event={event} viewer={viewer} onToast={showToast} />
+        <HotelsRow event={event} />
 
-        <HotelsRow />
+        <FlightsRow event={event} viewer={viewer} />
 
-        <GettingThere event={event} viewer={viewer} />
+        <EventDiscoverSection event={event} />
       </div>
 
       <PlanTripSheet
@@ -438,6 +452,7 @@ function RunwaeTickets({
     initial[t._id] = 0;
   });
   const [qty, setQty] = useState<Record<string, number>>(initial);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const totalQty = Object.values(qty).reduce((a, b) => a + b, 0);
   const total = tiers.reduce((s, t) => s + (qty[t._id] ?? 0) * t.price, 0);
@@ -451,12 +466,39 @@ function RunwaeTickets({
     }));
   }
 
-  function checkout() {
+  async function checkout() {
     if (!viewer) {
       onSignIn();
       return;
     }
-    onToast(`${totalQty} ticket${totalQty === 1 ? "" : "s"} added to cart`);
+    if (totalQty === 0) return;
+    setCheckingOut(true);
+    try {
+      const items = tiers
+        .filter((t) => (qty[t._id] ?? 0) > 0)
+        .map((t) => ({ tierId: t._id, qty: qty[t._id]! }));
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "tickets",
+          eventId: event._id,
+          eventSlug: event.slug,
+          items,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = (await res.json().catch(() => ({}))) as { error?: string };
+        onToast(error ?? "Could not start checkout");
+        return;
+      }
+      const { url } = (await res.json()) as { url: string };
+      window.location.href = url;
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Checkout failed");
+    } finally {
+      setCheckingOut(false);
+    }
   }
 
   if (tiers.length === 0) {
@@ -540,11 +582,11 @@ function RunwaeTickets({
           </div>
           <button
             type="button"
-            disabled={totalQty === 0}
+            disabled={totalQty === 0 || checkingOut}
             onClick={checkout}
             className="inline-flex h-[42px] items-center gap-1.5 rounded-full bg-primary px-5 text-[13.5px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.97] disabled:opacity-50"
           >
-            Get Tickets <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+            {checkingOut ? "Loading…" : <>Get Tickets <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.4} /></>}
           </button>
         </div>
       </div>
@@ -553,19 +595,20 @@ function RunwaeTickets({
 }
 
 // ============================================================================
-// ATTENDEES
+// ATTENDEE STRIP — inline avatars + count + Attending toggle
 // ============================================================================
-function Attendees({
+function AttendeeStrip({
   event,
   viewer,
   onToast,
+  onSignIn,
 }: {
   event: Event;
   viewer: Doc<"users"> | null;
   onToast: (msg: string) => void;
+  onSignIn: () => void;
 }) {
-  const router = useRouter();
-  const attendees = useQuery(api.events.listAttendees, {
+  const data = useQuery(api.events.listAttendees, {
     eventId: event._id,
     limit: 4,
   });
@@ -577,12 +620,14 @@ function Attendees({
   const [pending, setPending] = useState(false);
 
   const total = event.currentParticipants;
-  const visible = attendees ?? [];
+  const visible = data?.attendees ?? [];
+  const friendsGoing = data?.friendsGoingCount ?? 0;
   const overflow = Math.max(0, total - visible.length);
+  const others = Math.max(0, total - friendsGoing);
 
   async function setRsvp(status: RsvpStatus) {
     if (!viewer) {
-      router.push(`/sign-in?next=/e/${event.slug}`);
+      onSignIn();
       return;
     }
     setPending(true);
@@ -590,203 +635,364 @@ function Attendees({
       await rsvpMut({ eventId: event._id, status });
       onToast(
         status === "going"
-          ? "You're going!"
+          ? "You're attending"
           : status === "interested"
-            ? "Marked interested"
-            : "RSVP updated",
+            ? "Marked maybe"
+            : "Attendance cleared",
       );
     } finally {
       setPending(false);
     }
   }
 
+  // Friendly count line: "3 friends + 120 others attending"
+  // or "1,284 attending" when no friends are going
+  let countLine: React.ReactNode;
+  if (friendsGoing > 0 && others > 0) {
+    countLine = (
+      <>
+        <b className="font-semibold text-foreground">
+          {friendsGoing} friend{friendsGoing === 1 ? "" : "s"}
+        </b>{" "}
+        + {others.toLocaleString()} {others === 1 ? "other" : "others"} attending
+      </>
+    );
+  } else if (friendsGoing > 0) {
+    countLine = (
+      <>
+        <b className="font-semibold text-foreground">
+          {friendsGoing} friend{friendsGoing === 1 ? "" : "s"}
+        </b>{" "}
+        attending
+      </>
+    );
+  } else {
+    countLine = total === 0 ? (
+      <>Be the first to attend</>
+    ) : (
+      <>
+        <b className="font-semibold text-foreground">{total.toLocaleString()}</b>{" "}
+        attending
+      </>
+    );
+  }
+
+  const ATTEND_OPTIONS: { id: RsvpStatus; label: string }[] = [
+    { id: "going", label: "Attending" },
+    { id: "interested", label: "Maybe" },
+    { id: "not_going", label: "Not attending" },
+  ];
+
   return (
-    <section>
-      <SectionTitle title="Who's going" />
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="flex shrink-0 -space-x-2.5">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        {visible.length > 0 && (
+          <div className="flex shrink-0 -space-x-2">
             {visible.map((a) => (
               <Avatar
                 key={a._id}
                 src={a.image}
                 name={a.name ?? "Attendee"}
-                size="md"
-                className="ring-[2.5px] ring-card"
+                size="sm"
+                className="ring-2 ring-background"
               />
             ))}
             {overflow > 0 && (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-muted text-[11.5px] font-bold text-foreground ring-[2.5px] ring-card">
-                +{overflow}
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-[10.5px] font-semibold text-foreground ring-2 ring-background">
+                +{overflow > 999 ? "999" : overflow}
               </span>
             )}
           </div>
-          <div className="min-w-0 flex-1 text-sm leading-snug">
-            <div>
-              <b className="font-bold">{total.toLocaleString()} {total === 1 ? "person" : "people"}</b>{" "}
-              {total === 1 ? "is" : "are"} going
-            </div>
-            {visible.length > 0 && (
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                {visible
-                  .slice(0, 3)
-                  .map((a) => a.name?.split(" ")[0] ?? "Someone")
-                  .join(", ")}
-                {visible.length > 3 ? ` +${visible.length - 3}` : ""}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2 rounded-full bg-muted p-1">
-          {(
-            [
-              { id: "going" as const, label: "Going" },
-              { id: "interested" as const, label: "Interested" },
-              { id: "not_going" as const, label: "Not Going" },
-            ]
-          ).map((opt) => {
-            const on = myRsvp === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setRsvp(opt.id)}
-                disabled={pending}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center gap-1 rounded-full text-[13px] font-semibold transition-all",
-                  on
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {on && opt.id !== "not_going" && <Check className="h-3.5 w-3.5" />}
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// HOTELS
-// ============================================================================
-function HotelsRow() {
-  return (
-    <section>
-      <SectionTitle title="Hotels near this event" sub={`${PLACEHOLDER_HOTELS.length} options`} />
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 lg:-mx-7 lg:px-7">
-        {PLACEHOLDER_HOTELS.map((h) => (
-          <article
-            key={h.id}
-            className="w-[220px] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5"
-          >
-            <div
-              className="relative aspect-[4/3] w-full bg-muted bg-cover bg-center"
-              style={{ backgroundImage: `url(${h.img})` }}
-            >
-              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                <Star className="h-2.5 w-2.5 fill-white" /> {h.rating}
-              </span>
-              <span className="absolute bottom-2 left-2 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-                {h.distance}
-              </span>
-            </div>
-            <div className="px-3 pb-3 pt-2.5">
-              <div className="mb-0.5 truncate text-[13.5px] font-semibold leading-snug">{h.name}</div>
-              <div className="text-[11.5px] text-muted-foreground">
-                <b className="mr-0.5 font-display text-[14.5px] font-bold tracking-tight text-foreground">£{h.price}</b>
-                /night
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// GETTING THERE
-// ============================================================================
-function GettingThere({ event, viewer }: { event: Event; viewer: Doc<"users"> | null }) {
-  const homeCity = viewer?.homeCity ?? "London";
-  const homeIata = viewer?.homeIata ?? "LHR";
-  const origin = `${homeCity} (${homeIata})`;
-
-  const destPart = event.locationName.split(",")[0]?.trim() ?? event.locationName;
-  const dest = destPart;
-
-  const start = new Date(event.startDateUtc);
-  const dep = new Date(start.getTime() - 86_400_000);
-  const ret = new Date((event.endDateUtc ?? event.startDateUtc) + 86_400_000);
-  const fmtMD = (d: Date) =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      timeZone: event.timezone,
-    }).format(d);
-
-  return (
-    <section>
-      <SectionTitle title="Getting there" sub="Pre-filled for this event" />
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-col gap-2.5">
-          <FlightRow>
-            <FlightField label="From" value={origin} />
-            <FlightField label="To" value={dest} />
-          </FlightRow>
-          <FlightRow>
-            <FlightField label="Depart" value={fmtMD(dep)} />
-            <FlightField label="Return" value={fmtMD(ret)} />
-          </FlightRow>
-          <FlightRow>
-            <FlightField label="Travelers" value="1 adult" />
-            <FlightField label="Class" value="Economy" dim />
-          </FlightRow>
-          <button
-            type="button"
-            className="mt-1 inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
-          >
-            <Plane className="h-[15px] w-[15px] fill-primary-foreground" strokeWidth={1} />
-            Search flights from {homeCity}
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FlightRow({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-2.5">{children}</div>;
-}
-
-function FlightField({
-  label,
-  value,
-  dim,
-}: {
-  label: string;
-  value: string;
-  dim?: boolean;
-}) {
-  return (
-    <div className="flex cursor-pointer flex-col gap-1 rounded-xl border border-border bg-muted px-3 py-2.5 transition-colors hover:border-foreground/20">
-      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <span
-        className={cn(
-          "text-sm font-semibold leading-tight",
-          dim ? "text-muted-foreground" : "text-foreground",
         )}
-      >
-        {value}
-      </span>
+        <div className="min-w-0 flex-1 text-[13px] text-muted-foreground">
+          {countLine}
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 rounded-full bg-muted p-1">
+        {ATTEND_OPTIONS.map((opt) => {
+          const on = myRsvp === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setRsvp(opt.id)}
+              disabled={pending}
+              className={cn(
+                "inline-flex h-9 items-center justify-center gap-1 rounded-full text-[12.5px] font-semibold transition-all",
+                on
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {on && opt.id !== "not_going" && <Check className="h-3.5 w-3.5" />}
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+// ============================================================================
+// HOTELS — real LiteAPI results + "See all" → full search page
+// ============================================================================
+function HotelsRow({ event }: { event: Event }) {
+  const search = useAction(api.discovery.searchByCategory);
+  const [hotels, setHotels] = useState<DiscoveryItem[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Default search dates: arrive day before event, leave day after.
+  const checkin = useMemo(() => isoDate(event.startDateUtc - 86_400_000), [event.startDateUtc]);
+  const checkout = useMemo(
+    () => isoDate((event.endDateUtc ?? event.startDateUtc) + 86_400_000),
+    [event.endDateUtc, event.startDateUtc],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    search({
+      category: "stay",
+      term: event.locationName.split(",")[0]?.trim() ?? event.locationName,
+      lat: event.locationCoords?.lat,
+      lng: event.locationCoords?.lng,
+      limit: 6,
+      checkin,
+      checkout,
+    })
+      .then((items) => {
+        if (!cancelled) setHotels(items as DiscoveryItem[]);
+      })
+      .catch(() => {
+        if (!cancelled) setHotels([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, event.locationName, event.locationCoords?.lat, event.locationCoords?.lng, checkin, checkout]);
+
+  const seeAllHref = `/events/${event.slug}/hotels?checkin=${checkin}&checkout=${checkout}`;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+          Hotels near this event
+        </h2>
+        <Link
+          href={seeAllHref}
+          className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-primary"
+        >
+          See all <ArrowRight className="h-3 w-3" strokeWidth={2.4} />
+        </Link>
+      </div>
+      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1.5 lg:-mx-7 lg:px-7">
+        {loading && hotels === null
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[4/3] w-[220px] shrink-0 animate-pulse rounded-2xl bg-muted"
+              />
+            ))
+          : (hotels ?? []).map((h) => (
+              <Link
+                key={h.apiRef}
+                href={`/hotels/${encodeURIComponent(h.apiRef)}?checkin=${checkin}&checkout=${checkout}&eventId=${event._id}`}
+                className="block w-[220px] shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform hover:-translate-y-0.5"
+              >
+                <div
+                  className="relative aspect-[4/3] w-full bg-muted bg-cover bg-center"
+                  style={h.imageUrl ? { backgroundImage: `url(${h.imageUrl})` } : undefined}
+                >
+                  {h.rating !== undefined && (
+                    <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                      <Star className="h-2.5 w-2.5 fill-white" /> {h.rating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+                <div className="px-3 pb-3 pt-2.5">
+                  <div className="mb-0.5 truncate text-[13.5px] font-semibold leading-snug">
+                    {h.title}
+                  </div>
+                  {h.price !== undefined && h.currency && (
+                    <div className="text-[11.5px] text-muted-foreground">
+                      <b className="mr-0.5 font-display text-[14.5px] font-bold tracking-tight text-foreground">
+                        {formatCurrency(h.price, h.currency)}
+                      </b>
+                      /night
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+      </div>
+    </section>
+  );
+}
+
+function isoDate(epochMs: number): string {
+  const d = new Date(epochMs);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+// ============================================================================
+// FLIGHTS — pre-fetched 3 cards + "See all" → full search page
+// ============================================================================
+function FlightsRow({
+  event,
+  viewer,
+}: {
+  event: Event;
+  viewer: Doc<"users"> | null;
+}) {
+  const search = useAction(api.flights.search);
+  const [flights, setFlights] = useState<DiscoveryItem[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [missingOrigin, setMissingOrigin] = useState(false);
+
+  const originIata = viewer?.homeIata;
+  const destIata = useMemo(() => {
+    if (!event.locationCoords) return null;
+    return nearestIata(event.locationCoords, event.locationName);
+  }, [event.locationCoords, event.locationName]);
+
+  const depart = useMemo(
+    () => isoDate(event.startDateUtc - 86_400_000),
+    [event.startDateUtc],
+  );
+  const ret = useMemo(
+    () => isoDate((event.endDateUtc ?? event.startDateUtc) + 86_400_000),
+    [event.endDateUtc, event.startDateUtc],
+  );
+
+  useEffect(() => {
+    if (!originIata || !destIata) {
+      setMissingOrigin(!originIata);
+      setFlights([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    search({
+      originIata,
+      destinationIata: destIata,
+      depart,
+      returnDate: ret,
+      adults: 1,
+      limit: 3,
+      sortBy: "price_asc",
+    })
+      .then((items) => {
+        if (!cancelled) setFlights(items as DiscoveryItem[]);
+      })
+      .catch(() => {
+        if (!cancelled) setFlights([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, originIata, destIata, depart, ret]);
+
+  const seeAllHref = originIata && destIata
+    ? `/events/${event.slug}/flights?origin=${originIata}&dest=${destIata}&depart=${depart}&return=${ret}`
+    : `/profile`;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+          Flights
+        </h2>
+        <Link
+          href={seeAllHref}
+          className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-primary"
+        >
+          See all <ArrowRight className="h-3 w-3" strokeWidth={2.4} />
+        </Link>
+      </div>
+      {missingOrigin ? (
+        <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-[13px] text-muted-foreground">
+          Set your home airport in your profile to see flight options.
+          <Link
+            href="/profile"
+            className="ml-2 font-semibold text-primary"
+          >
+            Set home →
+          </Link>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {loading && flights === null
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
+              ))
+            : (flights ?? []).length === 0
+              ? (
+                <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-center text-[13px] text-muted-foreground">
+                  No flights returned for these dates.
+                </div>
+              )
+              : (flights ?? []).map((f) => (
+                  <Link
+                    key={f.apiRef}
+                    href={`/flights/${encodeURIComponent(f.apiRef)}${event._id ? `?eventId=${event._id}` : ""}`}
+                    className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5"
+                  >
+                    {f.imageUrl && (
+                      <img
+                        src={f.imageUrl}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-md object-contain"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold leading-tight">
+                        {f.title}
+                      </div>
+                      {f.description && (
+                        <div className="mt-0.5 line-clamp-1 text-[11.5px] text-muted-foreground">
+                          {f.description}
+                        </div>
+                      )}
+                    </div>
+                    {f.price !== undefined && f.currency && (
+                      <div className="text-right">
+                        <div className="font-display text-base font-bold tracking-tight">
+                          {formatCurrency(f.price, f.currency)}
+                        </div>
+                        <div className="text-[10.5px] text-muted-foreground">total</div>
+                      </div>
+                    )}
+                  </Link>
+                ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+// ============================================================================
+// DISCOVER SECTION — reuses shared DiscoverGrid (excluding flights)
+// ============================================================================
+function EventDiscoverSection({ event }: { event: Event }) {
+  return (
+    <section>
+      <SectionTitle title="Discover near the event" />
+      <DiscoverGrid
+        city={event.locationName.split(",")[0]?.trim() ?? event.locationName}
+        coords={event.locationCoords}
+        showHeading={false}
+        excludeCategories={["fly", "stay"]}
+      />
+    </section>
   );
 }
 

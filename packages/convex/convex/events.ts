@@ -124,19 +124,58 @@ export const listAttendees = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 8;
+    const viewerId = await getAuthUserId(ctx);
+
     const rows = await ctx.db
       .query("event_attendees")
       .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
       .collect();
-    const going = rows.filter((r) => r.status === "going").slice(0, limit);
+    const going = rows.filter((r) => r.status === "going");
+
+    // Resolve friend ids of the viewer (if any) so we can prioritise them.
+    let friendIds = new Set<string>();
+    if (viewerId !== null) {
+      const outgoing = await ctx.db
+        .query("friendships")
+        .withIndex("by_requester", (q) => q.eq("requesterId", viewerId))
+        .collect();
+      const incoming = await ctx.db
+        .query("friendships")
+        .withIndex("by_addressee", (q) => q.eq("addresseeId", viewerId))
+        .collect();
+      for (const f of outgoing) if (f.status === "accepted") friendIds.add(f.addresseeId);
+      for (const f of incoming) if (f.status === "accepted") friendIds.add(f.requesterId);
+    }
+
+    // Friends first, then everyone else, capped at `limit`.
+    going.sort((a, b) => {
+      const af = friendIds.has(a.userId) ? 0 : 1;
+      const bf = friendIds.has(b.userId) ? 0 : 1;
+      return af - bf;
+    });
+
+    const friendsGoingCount = going.reduce(
+      (n, r) => n + (friendIds.has(r.userId) ? 1 : 0),
+      0,
+    );
+
+    const sliced = going.slice(0, limit);
     const users = await Promise.all(
-      going.map(async (r) => {
+      sliced.map(async (r) => {
         const u = await ctx.db.get(r.userId);
         if (!u) return null;
-        return { _id: u._id, name: u.name, image: u.image };
+        return {
+          _id: u._id,
+          name: u.name,
+          image: u.image,
+          isFriend: friendIds.has(r.userId),
+        };
       })
     );
-    return users.filter((u): u is NonNullable<typeof u> => u !== null);
+    return {
+      attendees: users.filter((u): u is NonNullable<typeof u> => u !== null),
+      friendsGoingCount,
+    };
   },
 });
 

@@ -17,6 +17,8 @@ import type * as currency from "../currency.js";
 import type * as destinations from "../destinations.js";
 import type * as discovery from "../discovery.js";
 import type * as events from "../events.js";
+import type * as flights from "../flights.js";
+import type * as hotels from "../hotels.js";
 import type * as http from "../http.js";
 import type * as itinerary from "../itinerary.js";
 import type * as lib_coverImage from "../lib/coverImage.js";
@@ -56,6 +58,8 @@ declare const fullApi: ApiFromModules<{
   destinations: typeof destinations;
   discovery: typeof discovery;
   events: typeof events;
+  flights: typeof flights;
+  hotels: typeof hotels;
   http: typeof http;
   itinerary: typeof itinerary;
   "lib/coverImage": typeof lib_coverImage;

@@ -169,6 +169,7 @@ export function DiscoverGrid({
   presetTripId,
   showHeading = true,
   initialCategory = "all",
+  excludeCategories,
   className,
 }: {
   city: string;
@@ -179,8 +180,12 @@ export function DiscoverGrid({
   presetTripId?: Id<"trips">;
   showHeading?: boolean;
   initialCategory?: string;
+  excludeCategories?: readonly string[];
   className?: string;
 }) {
+  const visibleCategories = excludeCategories
+    ? DISCOVER_CATEGORIES.filter((c) => !excludeCategories.includes(c.k))
+    : DISCOVER_CATEGORIES;
   const search = useAction(api.discovery.searchByCategory);
   const savedKeys = useQuery(api.user_saves.listKeys, {});
   const addSave = useMutation(api.user_saves.add);
@@ -300,7 +305,7 @@ export function DiscoverGrid({
         </div>
       )}
       <div className="flex gap-2 overflow-x-auto pb-1.5 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {DISCOVER_CATEGORIES.map((c) => {
+        {visibleCategories.map((c) => {
           const on = active === c.k;
           return (
             <button

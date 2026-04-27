@@ -75,18 +75,25 @@ export function AddToTripModal({
   open,
   onClose,
   item,
+  presetTripId,
 }: {
   open: boolean;
   onClose: () => void;
   item: DiscoverPayload | null;
+  // When set, skips the "pick a trip" step and uses this trip directly.
+  // Used by the trip-detail Discover tab where the trip is already known.
+  presetTripId?: Id<"trips">;
 }) {
   const [step, setStep] = useState<Step>("choose");
   const [mode, setMode] = useState<Mode>("save");
-  const [tripId, setTripId] = useState<Id<"trips"> | null>(null);
+  const [tripId, setTripId] = useState<Id<"trips"> | null>(presetTripId ?? null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const trips = useQuery(api.trips.getMyTrips, open ? {} : "skip");
+  const trips = useQuery(
+    api.trips.getMyTrips,
+    open && !presetTripId ? {} : "skip"
+  );
   const itinerary = useQuery(
     api.itinerary.getItinerary,
     open && step === "pick-day" && tripId ? { tripId } : "skip"
@@ -97,7 +104,7 @@ export function AddToTripModal({
   function reset() {
     setStep("choose");
     setMode("save");
-    setTripId(null);
+    setTripId(presetTripId ?? null);
     setPending(false);
     setError(null);
   }
@@ -175,9 +182,27 @@ export function AddToTripModal({
         </div>
       )}
 
-      {step === "choose" && item && <ChooseStep item={item} onPick={(m) => { setMode(m); setStep("pick-trip"); }} />}
+      {step === "choose" && item && (
+        <ChooseStep
+          item={item}
+          onPick={(m) => {
+            setMode(m);
+            // When the trip is already known (trip-detail page), skip the
+            // picker and act on it directly.
+            if (presetTripId) {
+              if (m === "save") {
+                handleSaveToTrip(presetTripId);
+              } else {
+                setStep("pick-day");
+              }
+            } else {
+              setStep("pick-trip");
+            }
+          }}
+        />
+      )}
 
-      {step === "pick-trip" && (
+      {step === "pick-trip" && !presetTripId && (
         <PickTrip
           trips={trips}
           mode={mode}

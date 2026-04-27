@@ -40,14 +40,13 @@ export const search = internalAction({
     lng: v.optional(v.number()),
     limit: v.number(),
   },
-  // Coords ignored — this fallback returns curated samples keyed only by category.
-  handler: async (_ctx, { category, term, limit }) => {
+  // Coords ignored — this fallback returns curated samples keyed only by
+  // category. We previously string-matched on `term`, but chip terms like
+  // "sightseeing tours in London" never match canned titles, so the
+  // fallback came back empty defeating its whole purpose.
+  handler: async (_ctx, { category, term: _term, limit }) => {
     const arr = SAMPLES[category] ?? [];
-    const needle = term.trim().toLowerCase();
-    const filtered = needle
-      ? arr.filter(i => i.title.toLowerCase().includes(needle) || (i.description ?? "").toLowerCase().includes(needle))
-      : arr;
-    return filtered.slice(0, limit);
+    return arr.slice(0, limit);
   },
 });
 

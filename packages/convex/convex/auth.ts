@@ -3,6 +3,11 @@ import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { buildCandidate } from "./lib/username";
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_REDIRECT_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Google,
@@ -16,6 +21,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     }),
   ],
   callbacks: {
+    async redirect({ redirectTo }) {
+      const url = new URL(redirectTo);
+      const origin = `${url.protocol}//${url.host}`;
+      if (ALLOWED_ORIGINS.includes(origin)) return redirectTo;
+      throw new Error(`Redirect to ${redirectTo} not allowed`);
+    },
     async createOrUpdateUser(ctx, args) {
       if (args.existingUserId) {
         return args.existingUserId;

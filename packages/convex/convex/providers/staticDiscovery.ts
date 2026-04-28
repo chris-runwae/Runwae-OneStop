@@ -30,6 +30,10 @@ const SAMPLES: Record<string, DiscoveryItem[]> = {
     { provider: "static", apiRef: "ride-1", category: "ride", title: "Compact car rental, 3 days", description: "Auto, AC, unlimited miles.", imageUrl: "https://picsum.photos/seed/ride-1/600/450", price: 110, currency: "GBP", rating: 4.4 },
     { provider: "static", apiRef: "ride-2", category: "ride", title: "Airport transfer (sedan)", description: "Door-to-door, fixed price.", imageUrl: "https://picsum.photos/seed/ride-2/600/450", price: 45, currency: "GBP", rating: 4.6 },
   ],
+  // Note: no `fly` samples on purpose — Duffel handles flight discovery,
+  // including the home Fly chip which fans out from the user's home airport
+  // to a curated set of popular destinations. We'd rather show "no results"
+  // than fake offers if Duffel ever returns nothing.
 };
 
 export const search = internalAction({

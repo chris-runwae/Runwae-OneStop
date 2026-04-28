@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 
 export const listPublished = query({
   args: {
@@ -190,5 +190,129 @@ export const getViewerRsvp = query({
       .filter((q) => q.eq(q.field("userId"), userId))
       .first();
     return row?.status ?? null;
+  },
+});
+
+// Dev-only seed. Inserts a handful of published events so the home Events row
+// renders. Skips inserts whose slug already exists, so it's safe to re-run.
+//   npx convex run events:devSeed
+export const devSeed = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const host = await ctx.db.query("users").first();
+    if (!host) throw new Error("Need at least one user to host seeded events");
+
+    const day = 86_400_000;
+    const now = Date.now();
+
+    const samples = [
+      {
+        slug: "london-jazz-rooftop",
+        name: "Rooftop Jazz Sessions — London",
+        description: "Live jazz quartet on the Shoreditch rooftop. BYO bring a friend.",
+        locationName: "Shoreditch, London",
+        locationCoords: { lat: 51.5256, lng: -0.0784 },
+        timezone: "Europe/London",
+        startOffsetDays: 5,
+        durationHours: 4,
+        category: "music",
+        imageUrl: "https://picsum.photos/seed/event-jazz/800/600",
+      },
+      {
+        slug: "leeds-street-food-festival",
+        name: "Leeds Street Food Festival",
+        description: "30+ vendors across Briggate. Family-friendly all day.",
+        locationName: "Briggate, Leeds",
+        locationCoords: { lat: 53.7997, lng: -1.5436 },
+        timezone: "Europe/London",
+        startOffsetDays: 9,
+        durationHours: 8,
+        category: "food",
+        imageUrl: "https://picsum.photos/seed/event-streetfood/800/600",
+      },
+      {
+        slug: "lisbon-sunset-fado",
+        name: "Sunset Fado at Miradouro",
+        description: "Intimate Fado performance with port wine tasting at sunset.",
+        locationName: "Miradouro de Santa Catarina, Lisbon",
+        locationCoords: { lat: 38.7099, lng: -9.1462 },
+        timezone: "Europe/Lisbon",
+        startOffsetDays: 14,
+        durationHours: 3,
+        category: "culture",
+        imageUrl: "https://picsum.photos/seed/event-fado/800/600",
+      },
+      {
+        slug: "barcelona-tapas-crawl",
+        name: "El Born Tapas Crawl",
+        description: "5 stops, 10 plates, 1 unforgettable evening through the Gothic Quarter.",
+        locationName: "El Born, Barcelona",
+        locationCoords: { lat: 41.3851, lng: 2.1828 },
+        timezone: "Europe/Madrid",
+        startOffsetDays: 20,
+        durationHours: 4,
+        category: "food",
+        imageUrl: "https://picsum.photos/seed/event-tapas/800/600",
+      },
+      {
+        slug: "amsterdam-canal-cinema",
+        name: "Canal-side Open Air Cinema",
+        description: "Pop-up screening on Prinsengracht — bring a blanket.",
+        locationName: "Prinsengracht, Amsterdam",
+        locationCoords: { lat: 52.3676, lng: 4.8852 },
+        timezone: "Europe/Amsterdam",
+        startOffsetDays: 27,
+        durationHours: 3,
+        category: "film",
+        imageUrl: "https://picsum.photos/seed/event-cinema/800/600",
+      },
+      {
+        slug: "marrakech-rooftop-night",
+        name: "Marrakech Rooftop Night Market",
+        description: "Mint tea, live oud, lanterns — overlooking the medina.",
+        locationName: "Medina, Marrakech",
+        locationCoords: { lat: 31.6295, lng: -7.9811 },
+        timezone: "Africa/Casablanca",
+        startOffsetDays: 33,
+        durationHours: 5,
+        category: "culture",
+        imageUrl: "https://picsum.photos/seed/event-marrakech/800/600",
+      },
+    ];
+
+    let inserted = 0;
+    for (const s of samples) {
+      const existing = await ctx.db
+        .query("events")
+        .withIndex("by_slug", (q) => q.eq("slug", s.slug))
+        .unique();
+      if (existing) continue;
+
+      const startDateUtc = now + s.startOffsetDays * day;
+      await ctx.db.insert("events", {
+        name: s.name,
+        description: s.description,
+        hostUserId: host._id,
+        locationName: s.locationName,
+        locationCoords: s.locationCoords,
+        timezone: s.timezone,
+        startDateUtc,
+        endDateUtc: startDateUtc + s.durationHours * 60 * 60 * 1000,
+        category: s.category,
+        imageUrl: s.imageUrl,
+        imageUrls: [s.imageUrl],
+        slug: s.slug,
+        status: "published",
+        ticketingMode: "free",
+        commissionSplitPct: 0,
+        currentParticipants: 0,
+        viewCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+      inserted += 1;
+    }
+
+    return { inserted, total: samples.length };
   },
 });

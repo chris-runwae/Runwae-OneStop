@@ -4,15 +4,92 @@ import type { DiscoveryDetail, DiscoveryItem } from "./types";
 
 // Duffel — flights API. Commission via Duffel partner programme.
 // Flight discovery is offer-based: we issue an offer_request, then read offers.
-// We surface the cheapest one-way "explore" offer per destination as a card.
+//
+// Two modes:
+//   1. Single-route (trip detail): caller passes destinationIata. We return up
+//      to `limit` offers for that one origin→destination route, cheapest first.
+//   2. Exploration (home Discover): caller passes only originIata. We fan out
+//      to a curated set of popular destinations and return the cheapest offer
+//      per destination so the user sees varied route ideas, not 6 prices for
+//      the same flight.
 const BASE = "https://api.duffel.com";
 const VERSION = "v2";
 
-function originFor(_term: string): string | null {
-  // Without explicit user origin we can't issue a real Duffel offer_request.
-  // Caller passes origin via term ("LON"|"LHR"|...) once we wire it from trip context.
-  // Duffel needs IATA codes, so for the MVP we treat term as IATA when it's a 3-char upper string.
-  return null;
+// Curated mix of close European, transatlantic, Middle East and African
+// destinations so the home Fly chip surfaces a varied set of route ideas.
+// Order is preserved when filtering — earlier entries appear first if `limit`
+// clips the list.
+const POPULAR_DESTINATIONS: ReadonlyArray<{ iata: string; city: string }> = [
+  { iata: "LIS", city: "Lisbon" },
+  { iata: "BCN", city: "Barcelona" },
+  { iata: "AMS", city: "Amsterdam" },
+  { iata: "CDG", city: "Paris" },
+  { iata: "JFK", city: "New York" },
+  { iata: "DXB", city: "Dubai" },
+  { iata: "LOS", city: "Lagos" },
+  { iata: "LAX", city: "Los Angeles" },
+];
+
+async function fetchOffersForRoute(
+  apiKey: string,
+  origin: string,
+  destination: string,
+  checkin: string,
+  checkout?: string,
+): Promise<any[]> {
+  const body = {
+    data: {
+      slices: [
+        { origin, destination, departure_date: checkin },
+        ...(checkout
+          ? [{ origin: destination, destination: origin, departure_date: checkout }]
+          : []),
+      ],
+      passengers: [{ type: "adult" }],
+      cabin_class: "economy",
+    },
+  };
+  const res = await fetch(`${BASE}/air/offer_requests?return_offers=true`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "Duffel-Version": VERSION,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    console.warn("[duffel] offer_request not ok", {
+      status: res.status, origin, destination,
+    });
+    return [];
+  }
+  const json = (await res.json()) as { data?: any };
+  const offers: any[] = json.data?.offers ?? [];
+  return offers.sort((a, b) => Number(a.total_amount) - Number(b.total_amount));
+}
+
+function offerToItem(
+  offer: any,
+  origin: string,
+  destination: string,
+  destinationCity: string | undefined,
+  checkin: string,
+): DiscoveryItem {
+  const cityLabel = destinationCity ?? destination;
+  return {
+    provider: "duffel" as const,
+    apiRef: String(offer.id ?? ""),
+    category: "fly" as const,
+    title: `${cityLabel} (${destination})`,
+    description: `${origin} → ${destination} · ${offer.owner?.name ?? "Flight"} · departs ${checkin}.`,
+    imageUrl: offer.owner?.logo_symbol_url,
+    price: Number(offer.total_amount),
+    currency: offer.total_currency,
+    locationName: cityLabel,
+    rating: undefined,
+  };
 }
 
 export const search = internalAction({
@@ -33,51 +110,55 @@ export const search = internalAction({
   ): Promise<DiscoveryItem[]> => {
     const apiKey = process.env.DUFFEL_KEY;
     if (!apiKey) return [];
-    const origin = originIata ?? originFor(term);
-    const dest = destinationIata ?? (term && term.length === 3 ? term.toUpperCase() : null);
-    if (!origin || !dest || !checkin) {
-      // Without an origin/destination IATA + departure date, Duffel can't price.
+    const origin = originIata?.toUpperCase() ?? null;
+    const explicitDest =
+      destinationIata?.toUpperCase() ??
+      (term && term.length === 3 ? term.toUpperCase() : null);
+    if (!origin || !checkin) {
+      // Need at least the user's origin airport + a departure date to price.
       return [];
     }
+
     try {
-      const body = {
-        data: {
-          slices: [
-            { origin, destination: dest, departure_date: checkin },
-            ...(checkout ? [{ origin: dest, destination: origin, departure_date: checkout }] : []),
-          ],
-          passengers: [{ type: "adult" }],
-          cabin_class: "economy",
-        },
-      };
-      const res = await fetch(`${BASE}/air/offer_requests?return_offers=true`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "Duffel-Version": VERSION,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        console.warn("[duffel] offer_request not ok", res.status);
-        return [];
+      // Mode 1 — Single-route. Caller knows the destination (trip-detail
+      // Discover tab). Return up to `limit` cheapest offers for that route.
+      if (explicitDest) {
+        const offers = await fetchOffersForRoute(
+          apiKey, origin, explicitDest, checkin, checkout,
+        );
+        return offers
+          .slice(0, limit)
+          .map((o) => offerToItem(o, origin, explicitDest, undefined, checkin));
       }
-      const json = (await res.json()) as { data?: any };
-      const offers: any[] = json.data?.offers ?? [];
-      const sorted = offers.sort((a, b) => Number(a.total_amount) - Number(b.total_amount));
-      return sorted.slice(0, limit).map((o: any) => ({
-        provider: "duffel" as const,
-        apiRef: String(o.id ?? ""),
-        category: "fly" as const,
-        title: `${o.owner?.name ?? "Flight"} ${origin} → ${dest}`,
-        description: `Total ${o.slices?.length ?? 1} segment(s). Departs ${checkin}.`,
-        imageUrl: o.owner?.logo_symbol_url,
-        price: Number(o.total_amount),
-        currency: o.total_currency,
-        rating: undefined,
-      }));
+
+      // Mode 2 — Exploration. No destination supplied (home Discover). Fan
+      // out to popular destinations from the user's origin and surface the
+      // cheapest offer per destination.
+      const targets = POPULAR_DESTINATIONS
+        .filter((d) => d.iata !== origin)
+        .slice(0, limit);
+      const settled = await Promise.allSettled(
+        targets.map((d) =>
+          fetchOffersForRoute(apiKey, origin, d.iata, checkin, checkout),
+        ),
+      );
+      const items: DiscoveryItem[] = [];
+      for (let i = 0; i < settled.length; i += 1) {
+        const r = settled[i];
+        const target = targets[i];
+        if (r.status !== "fulfilled") {
+          console.warn("[duffel] fan-out leg rejected", {
+            origin, destination: target.iata, reason: String(r.reason),
+          });
+          continue;
+        }
+        const cheapest = r.value[0];
+        if (!cheapest) continue;
+        items.push(
+          offerToItem(cheapest, origin, target.iata, target.city, checkin),
+        );
+      }
+      return items.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     } catch (err) {
       console.error("[duffel] fetch failed", err);
       return [];

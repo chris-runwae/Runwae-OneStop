@@ -98,6 +98,10 @@ type DiscoverItem = {
   rating?: number;
   externalUrl?: string;
   category: string;
+  // Set by providers whose card represents a different city than the search
+  // city (e.g. Duffel exploration cards from LBA → LIS, BCN, …). Falls back
+  // to the grid's `city` prop when missing.
+  locationName?: string;
 };
 
 // Default search dates ~14d → 21d out so providers needing a window work.
@@ -412,7 +416,7 @@ export function DiscoverGrid({
               imageUrl: r.imageUrl,
               price: r.price,
               currency: r.currency,
-              locationName: city,
+              locationName: r.locationName ?? city,
               externalUrl: r.externalUrl,
             };
             return (

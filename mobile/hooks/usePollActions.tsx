@@ -71,7 +71,7 @@ export type CreatePollOptionInput = {
 
 const usePollActions = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   // const [error, setError] = useState<string | null>(null);
 
   const createPoll = async (
@@ -142,23 +142,63 @@ const usePollActions = () => {
     optionId: string,
     userId: string
   ): Promise<PollVote> => {
-    const { data, error } = await supabase
-      .from('poll_votes')
-      .insert({ poll_id: pollId, option_id: optionId, user_id: userId })
-      .select()
-      .single();
-    if (error) throw error;
+    const tempId = Math.random().toString(36).substring(7);
+    const tempVote: PollVote = {
+      id: tempId,
+      poll_id: pollId,
+      option_id: optionId,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+    };
 
     // Optimistic update
     setPolls((prev) =>
       prev.map((poll) =>
         poll.id === pollId
-          ? { ...poll, poll_votes: [...poll.poll_votes, data as PollVote] }
+          ? { ...poll, poll_votes: [...poll.poll_votes, tempVote] }
           : poll
       )
     );
 
-    return data as PollVote;
+    try {
+      const { data, error } = await supabase
+        .from('poll_votes')
+        .insert({ poll_id: pollId, option_id: optionId, user_id: userId })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update with real data from server
+      setPolls((prev) =>
+        prev.map((poll) =>
+          poll.id === pollId
+            ? {
+                ...poll,
+                poll_votes: poll.poll_votes.map((v) =>
+                  v.id === tempId ? (data as PollVote) : v
+                ),
+              }
+            : poll
+        )
+      );
+
+      return data as PollVote;
+    } catch (error) {
+      console.error('Failed to cast vote:', error);
+      // Rollback
+      setPolls((prev) =>
+        prev.map((poll) =>
+          poll.id === pollId
+            ? {
+                ...poll,
+                poll_votes: poll.poll_votes.filter((v) => v.id !== tempId),
+              }
+            : poll
+        )
+      );
+      throw error;
+    }
   };
 
   const removeVote = async (
@@ -166,27 +206,43 @@ const usePollActions = () => {
     optionId: string,
     userId: string
   ): Promise<void> => {
-    const { error } = await supabase
-      .from('poll_votes')
-      .delete()
-      .eq('poll_id', pollId)
-      .eq('option_id', optionId)
-      .eq('user_id', userId);
-    if (error) throw error;
+    let previousVotes: PollVote[] = [];
 
     // Optimistic update
     setPolls((prev) =>
-      prev.map((poll) =>
-        poll.id === pollId
-          ? {
-              ...poll,
-              poll_votes: poll.poll_votes.filter(
-                (v) => !(v.option_id === optionId && v.user_id === userId)
-              ),
-            }
-          : poll
-      )
+      prev.map((poll) => {
+        if (poll.id === pollId) {
+          previousVotes = [...poll.poll_votes];
+          return {
+            ...poll,
+            poll_votes: poll.poll_votes.filter(
+              (v) => !(v.option_id === optionId && v.user_id === userId)
+            ),
+          };
+        }
+        return poll;
+      })
     );
+
+    try {
+      const { error } = await supabase
+        .from('poll_votes')
+        .delete()
+        .eq('poll_id', pollId)
+        .eq('option_id', optionId)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to remove vote:', error);
+      // Rollback
+      setPolls((prev) =>
+        prev.map((poll) =>
+          poll.id === pollId ? { ...poll, poll_votes: previousVotes } : poll
+        )
+      );
+      throw error;
+    }
   };
 
   const swapVote = async (
@@ -195,38 +251,63 @@ const usePollActions = () => {
     newOptionId: string,
     userId: string
   ): Promise<void> => {
-    // Run as sequential ops — remove old then insert new
-    const { error: deleteError } = await supabase
-      .from('poll_votes')
-      .delete()
-      .eq('poll_id', pollId)
-      .eq('option_id', oldOptionId)
-      .eq('user_id', userId);
-    if (deleteError) throw deleteError;
-
-    const { data, error: insertError } = await supabase
-      .from('poll_votes')
-      .insert({ poll_id: pollId, option_id: newOptionId, user_id: userId })
-      .select()
-      .single();
-    if (insertError) throw insertError;
+    let previousVotes: PollVote[] = [];
 
     // Optimistic update
     setPolls((prev) =>
-      prev.map((poll) =>
-        poll.id === pollId
-          ? {
-              ...poll,
-              poll_votes: [
-                ...poll.poll_votes.filter(
-                  (v) => !(v.option_id === oldOptionId && v.user_id === userId)
-                ),
-                data as PollVote,
-              ],
-            }
-          : poll
-      )
+      prev.map((poll) => {
+        if (poll.id === pollId) {
+          previousVotes = [...poll.poll_votes];
+          const newVote: PollVote = {
+            id: Math.random().toString(36).substring(7),
+            poll_id: pollId,
+            option_id: newOptionId,
+            user_id: userId,
+            created_at: new Date().toISOString(),
+          };
+          return {
+            ...poll,
+            poll_votes: [
+              ...poll.poll_votes.filter(
+                (v) => !(v.option_id === oldOptionId && v.user_id === userId)
+              ),
+              newVote,
+            ],
+          };
+        }
+        return poll;
+      })
     );
+
+    try {
+      // Run as sequential ops — remove old then insert new
+      const { error: deleteError } = await supabase
+        .from('poll_votes')
+        .delete()
+        .eq('poll_id', pollId)
+        .eq('option_id', oldOptionId)
+        .eq('user_id', userId);
+      if (deleteError) throw deleteError;
+
+      const { data, error: insertError } = await supabase
+        .from('poll_votes')
+        .insert({ poll_id: pollId, option_id: newOptionId, user_id: userId })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      // Update with real data if needed, or just let it be since it's already updated
+      // Usually, another fetch or the current state is fine for simple indicators
+    } catch (error) {
+      console.error('Failed to swap vote:', error);
+      // Rollback
+      setPolls((prev) =>
+        prev.map((poll) =>
+          poll.id === pollId ? { ...poll, poll_votes: previousVotes } : poll
+        )
+      );
+      throw error;
+    }
   };
 
   const fetchPollById = async (pollId: string): Promise<Poll> => {
@@ -300,6 +381,7 @@ const usePollActions = () => {
   };
 
   const fetchPolls = async (groupId: string): Promise<Poll[]> => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('polls')
@@ -313,6 +395,8 @@ const usePollActions = () => {
     } catch (error) {
       console.error('Failed to fetch polls:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 

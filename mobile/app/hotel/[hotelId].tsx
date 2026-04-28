@@ -19,8 +19,10 @@ import {
   ScrollView,
   StyleSheet,
   useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import RenderHTML from 'react-native-render-html';
 import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -99,6 +101,7 @@ export default function HotelDetailScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
 
   const [hotel, setHotel] = useState<HotelDetail | null>(null);
   const [rates, setRates] = useState<HotelRate[]>([]);
@@ -110,44 +113,49 @@ export default function HotelDetailScreen() {
     setLoading(true);
     setError(null);
     try {
-      const [detailsRes, ratesRes] = await Promise.all([
-        getHotelDetails(hotelId),
-        canFetchRates
-          ? searchRates({
-              hotelIds: [hotelId],
-              checkin: checkin!,
-              checkout: checkout!,
-              occupancies: [{ adults }],
-              currency: 'USD',
-              guestNationality: 'US',
-              includeHotelData: false,
-            })
-          : Promise.resolve(null),
-      ]);
-
+      // 1. Fetch Details (Required)
+      const detailsRes = await getHotelDetails(hotelId);
       const mapped = mapDetails(detailsRes.data);
       setHotel(mapped);
 
-      const hotelRates: HotelRate[] = [];
-      const hotelRateData = ratesRes?.data.find((h) => h.hotelId === hotelId);
-      if (hotelRateData) {
-        for (const roomType of hotelRateData.roomTypes) {
-          for (const rate of roomType.rates) {
-            const total = rate.retailRate.total[0];
-            hotelRates.push({
-              offerId: rate.offerId,
-              roomName: rate.name ?? 'Standard Room',
-              boardName: rate.boardName ?? 'Room Only',
-              price: total?.amount ?? 0,
-              currency: total?.currency ?? 'USD',
-              refundable: rate.cancellationPolicies?.refundableTag === 'RFN',
-              cancelDeadline:
-                rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime,
-            });
+      // 2. Fetch Rates (Optional - don't crash if no availability)
+      if (canFetchRates) {
+        try {
+          const ratesRes = await searchRates({
+            hotelIds: [hotelId],
+            checkin: checkin!,
+            checkout: checkout!,
+            occupancies: [{ adults }],
+            currency: 'USD',
+            guestNationality: 'US',
+            includeHotelData: false,
+          });
+
+          const hotelRates: HotelRate[] = [];
+          const hotelRateData = ratesRes?.data.find((h) => h.hotelId === hotelId);
+          if (hotelRateData) {
+            for (const roomType of hotelRateData.roomTypes) {
+              for (const rate of roomType.rates) {
+                const total = rate.retailRate.total[0];
+                hotelRates.push({
+                  offerId: rate.offerId,
+                  roomName: rate.name ?? 'Standard Room',
+                  boardName: rate.boardName ?? 'Room Only',
+                  price: total?.amount ?? 0,
+                  currency: total?.currency ?? 'USD',
+                  refundable: rate.cancellationPolicies?.refundableTag === 'RFN',
+                  cancelDeadline:
+                    rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime,
+                });
+              }
+            }
           }
+          setRates(hotelRates.filter((r) => r.offerId != null));
+        } catch (rateErr) {
+          console.warn('[LiteAPI] Could not fetch rates for this hotel:', (rateErr as Error).message);
+          setRates([]); // No rates found, but page stays alive
         }
       }
-      setRates(hotelRates.filter((r) => r.offerId != null));
     } catch (err) {
       setError((err as Error).message || 'Failed to load hotel details');
     } finally {
@@ -317,13 +325,15 @@ export default function HotelDetailScreen() {
             <>
               <Text style={styles.sectionLabel}>About</Text>
               <Spacer size={8} vertical />
-              <Text
-                style={[
-                  styles.description,
-                  { color: colors.textColors.subtle },
-                ]}>
-                {hotel.description}
-              </Text>
+              <RenderHTML
+                contentWidth={width - 32}
+                source={{ html: hotel.description }}
+                baseStyle={{
+                  color: colors.textColors.subtle,
+                  ...textStyles.textBody14,
+                  lineHeight: 22,
+                } as any}
+              />
               <Spacer size={16} vertical />
             </>
           ) : null}

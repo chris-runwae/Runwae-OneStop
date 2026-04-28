@@ -2,20 +2,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase/client'; // adjust to your supabase client path
 
-export type Destination = {
-  id: string;
-  title: string;
-  location: string;
-  country: string | null;
-  image: string | null;
-  rating: number | null;
-  review_count: number;
-  description: string | null;
-  featured: boolean;
-  tags: string[] | null;
-  created_at: string;
-  updated_at: string;
-};
+import { Destination } from '@/types/content.types';
+
+function mapRow(row: any): Destination {
+  return {
+    id: row.id,
+    title: row.title,
+    location: row.location,
+    country: row.country,
+    image: row.image,
+    rating: row.rating ? Number(row.rating) : undefined,
+    reviewCount: row.review_count,
+    description: row.description,
+    featured: row.featured,
+    tags: row.tags,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 type UseDestinationsOptions = {
   featuredOnly?: boolean;
@@ -63,7 +67,7 @@ export function useDestinations(
 
       if (supabaseError) throw supabaseError;
 
-      setDestinations(data ?? []);
+      setDestinations((data ?? []).map(mapRow));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Something went wrong';
@@ -112,7 +116,7 @@ export function useDestinationById(
 
       if (supabaseError) throw supabaseError;
 
-      setDestination(data);
+      setDestination(data ? mapRow(data) : null);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Something went wrong';

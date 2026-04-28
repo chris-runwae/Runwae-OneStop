@@ -22,11 +22,18 @@ type PostItemProps = {
   post: Post;
   groupId: string;
   onDeletePost: (postId: string) => Promise<void>;
+  isMember: boolean;
 };
 
-const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
+const PostItem = ({
+  post,
+  groupId,
+  onDeletePost,
+  isMember,
+}: PostItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { user } = useAuth();
   const isCreator = post.created_by === user?.id;
   const createdAt = formatDistanceToNow(new Date(post.created_at));
@@ -47,6 +54,7 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
   };
 
   const handleEllipsisPress = () => {
+    if (!isMember) return;
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -72,9 +80,16 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
     <View
       style={{
         backgroundColor: colors.backgroundColors.subtle,
-        paddingHorizontal: 8,
-        paddingVertical: 16,
-        borderRadius: 16,
+        padding: 20,
+        borderRadius: 24,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.borderColors.subtle,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
       }}>
       <View
         style={{
@@ -87,54 +102,60 @@ const PostItem = ({ post, groupId, onDeletePost }: PostItemProps) => {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: 10,
             flex: 1,
           }}>
           <ProfileAvatar
             name={post.creator.full_name}
             imageUrl={post.creator.avatar_url}
+            size={40}
           />
           <View>
-            <Text style={textStyles.textHeading16}>
+            <Text style={{ ...textStyles.textHeading16, color: colors.textColors.default }}>
               {post.creator.full_name}
             </Text>
             <Text
               style={{
                 ...textStyles.textBody12,
                 color: colors.textColors.subtle,
+                marginTop: 2,
               }}>
               {createdAt} ago
             </Text>
           </View>
         </View>
 
-        {isCreator && (
+        {isMember && isCreator && (
           <Pressable
             onPress={handleEllipsisPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               alignItems: 'center',
               justifyContent: 'center',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 16,
             }}>
-            <MoreVertical size={20} color={colors.textColors.subtle} />
+            <MoreVertical size={18} color={colors.textColors.subtle} />
           </Pressable>
         )}
       </View>
 
-      <Spacer size={12} vertical />
+      <Spacer size={16} vertical />
 
       <Text
         style={{
-          fontSize: 15,
-          lineHeight: 22,
+          fontSize: 16,
+          lineHeight: 24,
           color: colors.textColors.default,
+          fontWeight: '400',
         }}>
         {post.content}
       </Text>
 
-      <Spacer size={16} vertical />
+      {/* Placeholder for future media support */}
+      {/* <Spacer size={12} vertical /> */}
     </View>
   );
 };

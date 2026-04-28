@@ -40,8 +40,26 @@ const SignUpScreen = () => {
   });
 
   const handleInputChange = (field: keyof SignUpFormData, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    let filteredValue = value;
+    if (field === "fullName") {
+      filteredValue = value.replace(/[^a-zA-Z\s]/g, "");
+    }
+    setFormData({ ...formData, [field]: filteredValue });
     setErrors({ ...errors, [field]: "" });
+  };
+
+  const handleBlur = (field: keyof SignUpFormData) => {
+    const result = signUpSchema.safeParse(formData);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path[0] === field);
+      if (issue) {
+        setErrors((prev) => ({ ...prev, [field]: issue.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -67,8 +85,12 @@ const SignUpScreen = () => {
           autoHide: true,
         });
       } else {
-        // Navigate to boarding step after successful sign-up
-        router.replace("/boarding/step-1");
+        // Navigate to verification sent screen instead of boarding
+        // to encourage email verification first.
+        router.push({
+          pathname: "/(auth)/verification-sent",
+          params: { email: formData.email },
+        } as any);
       }
     } catch (error: any) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -129,6 +151,7 @@ const SignUpScreen = () => {
             placeholder="John Doe"
             value={formData.fullName}
             onChangeText={(value) => handleInputChange("fullName", value)}
+            onBlur={() => handleBlur("fullName")}
             error={errors.fullName}
           />
 
@@ -140,6 +163,7 @@ const SignUpScreen = () => {
             placeholder="example@email.com"
             value={formData.email}
             onChangeText={(value) => handleInputChange("email", value)}
+            onBlur={() => handleBlur("email")}
             error={errors.email}
           />
 
@@ -150,6 +174,7 @@ const SignUpScreen = () => {
             isPassword
             value={formData.password}
             onChangeText={(value) => handleInputChange("password", value)}
+            onBlur={() => handleBlur("password")}
             error={errors.password}
           />
 

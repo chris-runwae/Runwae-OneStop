@@ -52,6 +52,7 @@ type Props = {
   canMoveDown: boolean;
   onPress?: () => void;
   onUpdateNotes?: (notes: string) => void;
+  isMember?: boolean;
 };
 
 const ItineraryItemCard = ({
@@ -67,6 +68,7 @@ const ItineraryItemCard = ({
   canMoveDown,
   onPress,
   onUpdateNotes,
+  isMember = true,
 }: Props) => {
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';
@@ -91,14 +93,13 @@ const ItineraryItemCard = ({
   };
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
-  
-  const displayImageUrl = item.image_url || 
-    null;
-    
+
+  const displayImageUrl = item.image_url || null;
+
   const hasImage = !!displayImageUrl;
 
   const handleOptionsPress = (event: any) => {
-    if (!isCreator) return;
+    if (!isCreator || !isMember) return;
     const { pageY } = event.nativeEvent;
     setMenuAnchor({ top: pageY + 10, right: 24 });
     setMenuVisible(true);
@@ -122,8 +123,9 @@ const ItineraryItemCard = ({
     <View>
       <Pressable
         onPress={!isReordering ? onPress : undefined}
-        style={({ pressed }) => [{ opacity: pressed && !isReordering && onPress ? 0.75 : 1 }]}
-      >
+        style={({ pressed }) => [
+          { opacity: pressed && !isReordering && onPress ? 0.75 : 1 },
+        ]}>
         <View
           style={[
             styles.card,
@@ -132,73 +134,134 @@ const ItineraryItemCard = ({
               borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
             },
           ]}>
-        {hasImage ? (
-          <Image
-            source={{ uri: displayImageUrl! }}
-            style={styles.thumbnail}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[styles.thumbnailPlaceholder, { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5' }]}>
-            <ImageIcon size={20} color={dark ? '#4B5563' : '#D0D0D0'} />
-          </View>
-        )}
-
-        <View style={styles.content}>
-          <View style={[styles.typeBadge, { borderColor: dark ? '#374151' : '#E9ECEF' }]}>
-            <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
-            <Text style={[styles.typeBadgeLabel, { color: colors.textColors.default }]}>{config.label}</Text>
-          </View>
-
-          <Text
-            style={[styles.title, { color: colors.textColors.default }]}
-            numberOfLines={1}>
-            {item.title}
-          </Text>
-
-          {item.location ? (
-            <Text
-              style={[styles.locationText, { color: colors.textColors.subtle }]}
-              numberOfLines={1}>
-              {item.location}
-            </Text>
-          ) : null}
-        </View>
-
-        <View style={styles.right}>
-          {isReordering ? (
-            <View style={styles.reorderButtons}>
-              <Pressable
-                onPress={onMoveUp}
-                disabled={!canMoveUp}
-                style={[styles.arrowBtn, !canMoveUp && styles.arrowDisabled]}>
-                <ChevronUp size={20} color={canMoveUp ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')} />
-              </Pressable>
-              <Pressable
-                onPress={onMoveDown}
-                disabled={!canMoveDown}
-                style={[styles.arrowBtn, !canMoveDown && styles.arrowDisabled]}>
-                <ChevronDown
-                  size={18}
-                  strokeWidth={1.5}
-                  color={canMoveDown ? (dark ? '#ADB5BD' : '#000') : (dark ? '#4B5563' : '#D0D0D0')}
-                />
-              </Pressable>
-            </View>
+          {hasImage ? (
+            <Image
+              source={{ uri: displayImageUrl! }}
+              style={styles.thumbnail}
+              contentFit="cover"
+            />
           ) : (
-            <Pressable hitSlop={12} onPress={handleOptionsPress}>
-              <Ellipsis size={18} strokeWidth={1.5} color={colors.textColors.subtle} />
-            </Pressable>
+            <View
+              style={[
+                styles.thumbnailPlaceholder,
+                { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5' },
+              ]}>
+              <ImageIcon size={20} color={dark ? '#4B5563' : '#D0D0D0'} />
+            </View>
           )}
-        </View>
+
+          <View style={styles.content}>
+            <View
+              style={[
+                styles.typeBadge,
+                { borderColor: dark ? '#374151' : '#E9ECEF' },
+              ]}>
+              <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
+              <Text
+                style={[
+                  styles.typeBadgeLabel,
+                  { color: colors.textColors.default },
+                ]}>
+                {config.label}
+              </Text>
+            </View>
+
+            <Text
+              style={[styles.title, { color: colors.textColors.default }]}
+              numberOfLines={1}>
+              {item.title}
+            </Text>
+
+            {item.location ? (
+              <Text
+                style={[
+                  styles.locationText,
+                  { color: colors.textColors.subtle },
+                ]}
+                numberOfLines={1}>
+                {item.location}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={styles.right}>
+            {isMember ? (
+              isReordering ? (
+                <View style={styles.reorderButtons}>
+                  <Pressable
+                    onPress={onMoveUp}
+                    disabled={!canMoveUp}
+                    style={[
+                      styles.arrowBtn,
+                      !canMoveUp && styles.arrowDisabled,
+                    ]}>
+                    <ChevronUp
+                      size={20}
+                      color={
+                        canMoveUp
+                          ? dark
+                            ? '#ADB5BD'
+                            : '#000'
+                          : dark
+                            ? '#4B5563'
+                            : '#D0D0D0'
+                      }
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={onMoveDown}
+                    disabled={!canMoveDown}
+                    style={[
+                      styles.arrowBtn,
+                      !canMoveDown && styles.arrowDisabled,
+                    ]}>
+                    <ChevronDown
+                      size={18}
+                      strokeWidth={1.5}
+                      color={
+                        canMoveDown
+                          ? dark
+                            ? '#ADB5BD'
+                            : '#000'
+                          : dark
+                            ? '#4B5563'
+                            : '#D0D0D0'
+                      }
+                    />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable hitSlop={12} onPress={handleOptionsPress}>
+                  <Ellipsis
+                    size={18}
+                    strokeWidth={1.5}
+                    color={colors.textColors.subtle}
+                  />
+                </Pressable>
+              )
+            ) : null}
+          </View>
         </View>
       </Pressable>
 
       <Pressable
         onPress={openNotesModal}
-        style={[styles.notesContainer, { backgroundColor: dark ? '#1A1A1A' : '#F9F9F9', borderColor: dark ? '#333' : '#F0F0F0' }]}>
+        style={[
+          styles.notesContainer,
+          {
+            backgroundColor: dark ? '#1A1A1A' : '#F9F9F9',
+            borderColor: dark ? '#333' : '#F0F0F0',
+          },
+        ]}>
         <Text
-          style={[styles.notesText, { color: dark ? '#9BA1A6' : '#666' }, !item.notes && [styles.notesPlaceholder, { color: colors.textColors.subtle }]]}>
+          style={[
+            styles.notesText,
+            { color: dark ? '#9BA1A6' : '#666' },
+            !item.notes && [
+              styles.notesPlaceholder,
+              { color: colors.textColors.subtle },
+            ],
+          ]}>
           {item.notes || 'Add notes, links, etc here.'}
         </Text>
       </Pressable>
@@ -218,12 +281,31 @@ const ItineraryItemCard = ({
         <KeyboardAvoidingView
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setNotesModalVisible(false)} />
-          <View style={[styles.modalSheet, { backgroundColor: dark ? '#1C1C1E' : '#fff' }]}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setNotesModalVisible(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: dark ? '#1C1C1E' : '#fff' },
+            ]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.textColors.default }]}>Notes</Text>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: colors.textColors.default },
+                ]}>
+                Notes
+              </Text>
               <TouchableOpacity onPress={() => setNotesModalVisible(false)}>
-                <Text style={[styles.modalCancel, { color: colors.textColors.subtle }]}>Cancel</Text>
+                <Text
+                  style={[
+                    styles.modalCancel,
+                    { color: colors.textColors.subtle },
+                  ]}>
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
             <TextInput
@@ -242,9 +324,7 @@ const ItineraryItemCard = ({
               ]}
               autoFocus
             />
-            <TouchableOpacity
-              onPress={handleSaveNotes}
-              style={styles.saveBtn}>
+            <TouchableOpacity onPress={handleSaveNotes} style={styles.saveBtn}>
               <Text style={styles.saveBtnText}>Save</Text>
             </TouchableOpacity>
           </View>
@@ -337,8 +417,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.inter.regular,
     lineHeight: 16,
   },
-  notesPlaceholder: {
-  },
+  notesPlaceholder: {},
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

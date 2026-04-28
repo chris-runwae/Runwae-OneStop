@@ -17,17 +17,22 @@ export type Post = {
 
 const usePostActions = () => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchPosts = async (groupId: string): Promise<Post[]> => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*, creator:profiles!created_by (id, full_name, avatar_url)')
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    setPosts(data as Post[]);
-    return data as Post[];
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, creator:profiles!created_by (id, full_name, avatar_url)')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setPosts(data as Post[]);
+      return data as Post[];
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchPostById = async (postId: string): Promise<Post> => {

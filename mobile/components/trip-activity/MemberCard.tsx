@@ -52,7 +52,7 @@ const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps
     );
 
   return (
-    <View style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#F9FAFB', borderColor: dark ? '#2c2c2e' : '#E5E7EB' }]}>
+    <View style={[styles.card, { backgroundColor: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: dark ? '#2c2c2e' : '#E5E7EB' }]}>
       <View style={[styles.avatar, { backgroundColor: avatarColor(member.user_id) }]}>
         {member.profiles?.avatar_url ? (
           <Image source={{ uri: member.profiles.avatar_url }} style={styles.avatarImg} contentFit="cover" />
@@ -66,20 +66,23 @@ const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps
             {member.profiles?.full_name ?? 'Unknown'}
           </Text>
           {isMe && (
-            <View style={[styles.youBadge, { backgroundColor: dark ? '#374151' : '#F3F4F6' }]}>
-              <Text style={[styles.youText, { color: dark ? '#9CA3AF' : '#6b7280' }]}>You</Text>
+            <View style={[styles.youBadge, { backgroundColor: '#FF1F8C' }]}>
+              <Text style={[styles.youText, { color: '#fff' }]}>You</Text>
             </View>
           )}
         </View>
-        <View style={[styles.rolePill, { backgroundColor: isOwner ? 'rgba(255,31,140,0.12)' : (dark ? '#2c2c2e' : '#F3F4F6') }]}>
+        <View style={[styles.rolePill, { backgroundColor: isOwner ? 'rgba(255,31,140,0.12)' : (dark ? 'rgba(255,255,255,0.08)' : '#F3F4F6') }]}>
           <Text style={[styles.roleText, { color: isOwner ? '#FF1F8C' : (dark ? '#9CA3AF' : '#6b7280') }]}>
             {ROLE_LABELS[member.role] ?? member.role}
           </Text>
         </View>
       </View>
       {canDelete && !isOwner && !isMe && (
-        <TouchableOpacity onPress={confirmDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Trash2 size={16} color="#EF4444" strokeWidth={1.5} />
+        <TouchableOpacity 
+          onPress={confirmDelete} 
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.deleteButton}>
+          <Trash2 size={16} color="#EF4444" strokeWidth={2} />
         </TouchableOpacity>
       )}
     </View>
@@ -87,17 +90,41 @@ const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps
 };
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  card: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    borderWidth: 1, 
+    borderRadius: 16, 
+    padding: 12, 
+    marginBottom: 10 
+  },
+  avatar: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    overflow: 'hidden', 
+    flexShrink: 0 
+  },
   avatarImg: { width: '100%', height: '100%' },
-  avatarText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  avatarText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   info: { flex: 1, gap: 4 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 14, fontWeight: '500', flexShrink: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { fontSize: 15, fontWeight: '600', flexShrink: 1 },
   youBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  youText: { fontSize: 11, fontWeight: '600' },
+  youText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
   rolePill: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  roleText: { fontSize: 11, fontWeight: '600' },
+  roleText: { fontSize: 11, fontWeight: '700' },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 16,
+  }
 });
 
 export default MemberCard;

@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Destination } from '@/hooks/useDestinations';
+import { Destination } from '@/types/content.types';
 
 interface DestinationCardProps {
   item: Destination;

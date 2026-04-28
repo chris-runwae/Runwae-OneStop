@@ -14,6 +14,8 @@ interface AddOnsForYouProps {
   loading?: boolean;
   showSubtitle?: boolean;
   showBorder?: boolean;
+  itemPathPrefix?: string;
+  headerPath?: string;
 }
 
 const AddOnsForYou = ({
@@ -22,6 +24,8 @@ const AddOnsForYou = ({
   loading = false,
   showSubtitle = true,
   showBorder = true,
+  itemPathPrefix,
+  headerPath = '/experience',
 }: AddOnsForYouProps) => {
   const displayData = loading ? (Array(5).fill({}) as Experience[]) : data;
   const router = useRouter();
@@ -30,7 +34,7 @@ const AddOnsForYou = ({
   const handleHeaderPress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate('/experience');
+    router.navigate(headerPath);
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);
@@ -59,7 +63,11 @@ const AddOnsForYou = ({
           loading ? (
             <AddOnCardSkeleton />
           ) : (
-            <AddOnCard item={item} index={index} />
+            <AddOnCard
+              item={item}
+              index={index}
+              pathPrefix={itemPathPrefix}
+            />
           )
         }
         ListEmptyComponent={

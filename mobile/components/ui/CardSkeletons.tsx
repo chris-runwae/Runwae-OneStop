@@ -178,3 +178,113 @@ export const EventCardSkeleton = ({
     </View>
   );
 };
+
+export const SectionHeaderSkeleton = ({
+  showSubtitle = true,
+}: {
+  showSubtitle?: boolean;
+}) => (
+  <View className="flex-row items-center justify-between px-[20px]">
+    <View className="flex-1">
+      <SkeletonBox width={150} height={20} borderRadius={4} />
+      {showSubtitle && (
+        <View className="mt-2">
+          <SkeletonBox width={200} height={14} borderRadius={4} />
+        </View>
+      )}
+    </View>
+    <SkeletonBox width={32} height={32} borderRadius={16} />
+  </View>
+);
+
+export const ExploreCategoriesSkeleton = () => (
+  <View className="mb-2 mt-4">
+    <View className="flex-row items-center px-[20px]">
+      {[1, 2, 3, 4, 5].map((_, i) => (
+        <View key={i} className="mr-3">
+          <SkeletonBox width={80} height={36} borderRadius={18} />
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
+export const ActivityPollSkeleton = () => (
+  <View className="mb-4 rounded-[24px] bg-white p-5 dark:bg-dark-seconndary/50">
+    <View className="flex-row items-center justify-between">
+      <View className="flex-row items-center gap-x-2.5">
+        <SkeletonBox width={32} height={32} borderRadius={16} />
+        <View className="gap-y-1.5">
+          <SkeletonBox width={100} height={14} borderRadius={4} />
+          <SkeletonBox width={60} height={10} borderRadius={4} />
+        </View>
+      </View>
+      <SkeletonBox width={24} height={24} borderRadius={12} />
+    </View>
+    <View className="mt-4 gap-y-3">
+      <SkeletonBox width="100%" height={18} borderRadius={4} />
+      <SkeletonBox width="80%" height={18} borderRadius={4} />
+    </View>
+    <View className="mt-5 gap-y-3">
+      {[1, 2, 3].map((i) => (
+        <SkeletonBox key={i} width="100%" height={56} borderRadius={16} />
+      ))}
+    </View>
+  </View>
+);
+
+export const ActivityExpenseSkeleton = () => (
+  <View className="mb-4 rounded-[24px] bg-white p-5 dark:bg-dark-seconndary/50">
+    <View className="flex-row items-center justify-between">
+      <SkeletonBox width={80} height={24} borderRadius={12} />
+      <SkeletonBox width={60} height={24} borderRadius={4} />
+    </View>
+    <View className="mt-4 gap-y-2">
+      <SkeletonBox width="60%" height={20} borderRadius={4} />
+      <SkeletonBox width="100%" height={14} borderRadius={4} />
+    </View>
+    <View className="mt-6">
+      <SkeletonBox width="100%" height={36} borderRadius={18} />
+    </View>
+    <View className="mt-4 gap-y-3">
+      {[1, 2].map((i) => (
+        <View key={i} className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-x-2">
+            <SkeletonBox width={32} height={32} borderRadius={16} />
+            <SkeletonBox width={80} height={14} borderRadius={4} />
+          </View>
+          <SkeletonBox width={50} height={14} borderRadius={4} />
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
+export const ActivityPostSkeleton = () => (
+  <View className="mb-4 rounded-[24px] bg-white p-5 dark:bg-dark-seconndary/50">
+    <View className="flex-row items-center gap-x-2.5">
+      <SkeletonBox width={40} height={40} borderRadius={20} />
+      <View className="gap-y-1.5">
+        <SkeletonBox width={120} height={14} borderRadius={4} />
+        <SkeletonBox width={60} height={10} borderRadius={4} />
+      </View>
+    </View>
+    <View className="mt-4 gap-y-2">
+      <SkeletonBox width="100%" height={14} borderRadius={4} />
+      <SkeletonBox width="100%" height={14} borderRadius={4} />
+      <SkeletonBox width="40%" height={14} borderRadius={4} />
+    </View>
+  </View>
+);
+
+export const ActivityMemberSkeleton = () => (
+  <View className="mb-2.5 flex-row items-center gap-x-3 rounded-[16px] border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-dark-seconndary/50">
+    <SkeletonBox width={44} height={44} borderRadius={22} />
+    <View className="flex-1 gap-y-1.5">
+      <SkeletonBox width={120} height={15} borderRadius={4} />
+      <SkeletonBox width={60} height={11} borderRadius={4} />
+    </View>
+    <SkeletonBox width={24} height={24} borderRadius={12} />
+  </View>
+);
+

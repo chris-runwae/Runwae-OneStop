@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
   Platform,
   ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   UIManager,
   useColorScheme,
+  View,
   ViewStyle,
 } from 'react-native';
 
@@ -21,13 +21,14 @@ import * as Haptics from 'expo-haptics';
 // import ChecklistsList from './checklists/ChecklistsList';
 // import AnnouncementsList from './announcements/AnnouncementsList';
 
-import { Colors, textStyles } from '@/constants';
 import ExpensesContainer from '@/components/trip-activity/ExpensesContainer';
 import MemberCard from '@/components/trip-activity/MemberCard';
 import PollsContainer from '@/components/trip-activity/PollsContainer';
 import PostsContainer from '@/components/trip-activity/PostsContainer';
-import Spacer from '@/components/utils/Spacer';
+import { ActivityMemberSkeleton } from '@/components/ui/CardSkeletons';
 import Text from '@/components/ui/Text';
+import Spacer from '@/components/utils/Spacer';
+import { Colors, textStyles } from '@/constants';
 import { TripWithEverything } from '@/hooks/useTripActions';
 
 type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';
@@ -50,9 +51,14 @@ const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
 interface ActivityTabProps {
   tripId: string;
   trip?: TripWithEverything;
+  isMember: boolean;
 }
 
-export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
+export default function ActivityTab({
+  tripId,
+  trip,
+  isMember,
+}: ActivityTabProps) {
   const [activeSection, setActiveSection] = useState<ActivitySection>('polls');
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -68,31 +74,31 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
 
   const dynamicStyles = {
     segment: (isActive: boolean) => ({
-      borderRadius: 100,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
       alignItems: 'center',
-      alignSelf: 'center',
       justifyContent: 'center',
       flexDirection: 'row',
-      gap: 6,
-      zIndex: 1,
-      ...(!isActive && {
-        backgroundColor: colors.backgroundColors.subtle,
-        borderColor: colors.borderColors.subtle,
-        borderWidth: 0.5,
-      }),
-      ...(isActive && {
-        backgroundColor: colors.primaryColors.default,
-      }),
+      gap: 8,
+      backgroundColor: isActive
+        ? colors.primaryColors.default
+        : colors.backgroundColors.subtle,
+      borderWidth: 1,
+      borderColor: isActive
+        ? colors.primaryColors.default
+        : colors.borderColors.subtle,
+      shadowColor: isActive ? colors.primaryColors.default : 'transparent',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isActive ? 0.2 : 0,
+      shadowRadius: 4,
+      elevation: isActive ? 2 : 0,
     }),
-    segmentLabel: {
-      color: colors.textColors.subtle,
-      ...textStyles.textBody12,
-    },
-    segmentLabelActive: {
-      color: colors.white,
-    },
+    segmentLabel: (isActive: boolean) => ({
+      color: isActive ? colors.white : colors.textColors.subtle,
+      fontWeight: isActive ? '700' : ('600' as any),
+      fontSize: 13,
+    }),
   };
 
   const handleSegmentPress = (section: ActivitySection) => {
@@ -103,14 +109,26 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
   const renderContent = () => {
     switch (activeSection) {
       case 'polls':
-        return <PollsContainer groupId={tripId} />;
+        return <PollsContainer groupId={tripId} isMember={isMember} />;
       case 'expenses':
-        return <ExpensesContainer groupId={tripId} />;
+        return <ExpensesContainer groupId={tripId} isMember={isMember} />;
       case 'posts':
-        return <PostsContainer groupId={tripId} />;
+        return <PostsContainer groupId={tripId} isMember={isMember} />;
       case 'members':
+        if (!trip || (members.length === 0 && !trip)) {
+          return (
+            <View style={styles.membersList}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <ActivityMemberSkeleton key={i} />
+              ))}
+            </View>
+          );
+        }
+
         return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.membersList}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.membersList}>
             {members.map((member) => (
               <MemberCard
                 key={member.id}
@@ -122,7 +140,12 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
               />
             ))}
             {members.length === 0 && (
-              <Text style={{ color: dark ? '#9CA3AF' : '#6b7280', textAlign: 'center', marginTop: 24 }}>
+              <Text
+                style={{
+                  color: dark ? '#9CA3AF' : '#6b7280',
+                  textAlign: 'center',
+                  marginTop: 24,
+                }}>
                 No members found.
               </Text>
             )}
@@ -136,10 +159,7 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
   return (
     <View style={styles.container}>
       {/* Segment Control */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.segmentControl}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.segmentWrapper}>
           {/* Segments */}
           {SEGMENTS.map((segment, index) => {
@@ -155,12 +175,7 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
                   handleSegmentPress(segment.key as ActivitySection)
                 }
                 activeOpacity={0.7}>
-                <Text
-                  style={[
-                    styles.segmentLabel,
-                    dynamicStyles.segmentLabel,
-                    isActive && dynamicStyles.segmentLabelActive,
-                  ]}>
+                <Text style={dynamicStyles.segmentLabel(isActive)}>
                   {segment.icon} {segment.label}
                 </Text>
               </TouchableOpacity>
@@ -170,7 +185,7 @@ export default function ActivityTab({ tripId, trip }: ActivityTabProps) {
       </ScrollView>
 
       {/* Content Area */}
-      <Spacer size={32} vertical />
+      <Spacer size={15} vertical />
       <View style={styles.content}>{renderContent()}</View>
     </View>
   );
@@ -181,13 +196,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  segmentControl: {},
   segmentWrapper: {
-    position: 'relative',
-    borderRadius: 12,
-    gap: 4,
+    // paddingHorizontal: 16,
+    gap: 8,
     flexDirection: 'row',
-    width: '100%',
   },
   segment: {
     paddingVertical: 8,

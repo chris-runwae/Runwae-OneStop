@@ -10,7 +10,15 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_REDIRECT_ORIGINS ?? "")
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Google,
+    Google({
+      authorization: {
+        params: {
+          // Force Google account chooser instead of silently reusing
+          // an existing Google session in the browser.
+          prompt: "select_account",
+        },
+      },
+    }),
     Password({
       profile(params) {
         return {

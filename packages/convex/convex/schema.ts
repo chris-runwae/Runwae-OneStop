@@ -33,6 +33,10 @@ export default defineSchema({
     homeCity: v.optional(v.string()),
     homeCountry: v.optional(v.string()),
     homeIata: v.optional(v.string()),
+    // AI plan-trip-from-event quota tracking. Capped at 10 in dev / 3 in
+    // prod (until the user upgrades to Pro). Counter is bumped from
+    // ai.generateTripFromEvent on success.
+    aiTripsUsed: v.optional(v.number()),
     createdAt: v.optional(v.number()),
   })
     .index("email", ["email"])
@@ -207,13 +211,18 @@ export default defineSchema({
     clonedFromId: v.optional(v.id("trips")),
     sourceTemplateId: v.optional(v.id("itinerary_templates")),
     eventId: v.optional(v.id("events")),
+    // Used by ai.generateTripFromEvent to dedupe double-fires from the
+    // client modal — same key returns the same trip instead of creating
+    // a fresh one (and burning another quota slot).
+    aiIdempotencyKey: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_creator", ["creatorId"])
     .index("by_slug", ["slug"])
     .index("by_join_code", ["joinCode"])
-    .index("by_event", ["eventId"]),
+    .index("by_event", ["eventId"])
+    .index("by_ai_key", ["aiIdempotencyKey"]),
 
   trip_members: defineTable({
     tripId: v.id("trips"),

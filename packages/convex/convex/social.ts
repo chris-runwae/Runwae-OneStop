@@ -100,6 +100,118 @@ export const sendFriendRequest = mutation({
   },
 });
 
+// "Most-recently-interacted" friends, scored by a few signals:
+//   - Co-membership on a shared trip (5 points)
+//   - Co-attendance of an event (3 points)
+//   - Recent friend_accepted timestamp (1 point per week of recency)
+// Returns up to `limit` accepted friends sorted by score desc. The trip
+// creation invite step uses this to pre-populate quick-pick avatars.
+export const recentFriends = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    { limit }
+  ): Promise<
+    Array<{
+      _id: Id<"users">;
+      name?: string | null;
+      username?: string | null;
+      image?: string | null;
+      score: number;
+    }>
+  > => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const friendIds = await getFriendUserIds(ctx, userId);
+    if (friendIds.length === 0) return [];
+    const friendSet = new Set(friendIds);
+
+    // Friend → score map.
+    const score = new Map<Id<"users">, number>();
+    for (const id of friendIds) score.set(id, 0);
+
+    // 1. Co-trip membership (any trip the viewer is on, count overlaps).
+    const myMemberships = await ctx.db
+      .query("trip_members")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const m of myMemberships) {
+      const others = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", m.tripId))
+        .collect();
+      for (const o of others) {
+        if (o.userId === userId) continue;
+        if (!friendSet.has(o.userId)) continue;
+        score.set(o.userId, (score.get(o.userId) ?? 0) + 5);
+      }
+    }
+
+    // 2. Co-event attendance (events the viewer RSVP'd "going").
+    const myAttendees = await ctx.db
+      .query("event_attendees")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const a of myAttendees) {
+      if (a.status !== "going") continue;
+      const others = await ctx.db
+        .query("event_attendees")
+        .withIndex("by_event", (q) => q.eq("eventId", a.eventId))
+        .collect();
+      for (const o of others) {
+        if (o.userId === userId) continue;
+        if (o.status !== "going") continue;
+        if (!friendSet.has(o.userId)) continue;
+        score.set(o.userId, (score.get(o.userId) ?? 0) + 3);
+      }
+    }
+
+    // 3. Friendship recency — accepted within the last ~6 months gets a
+    //    bonus that decays linearly. Older accepted friends get 0 here.
+    const now = Date.now();
+    const SIX_MONTHS = 6 * 30 * 24 * 60 * 60 * 1000;
+    const friendships = [
+      ...(await ctx.db
+        .query("friendships")
+        .withIndex("by_requester", (q) => q.eq("requesterId", userId))
+        .collect()),
+      ...(await ctx.db
+        .query("friendships")
+        .withIndex("by_addressee", (q) => q.eq("addresseeId", userId))
+        .collect()),
+    ];
+    for (const f of friendships) {
+      if (f.status !== "accepted") continue;
+      const otherId = f.requesterId === userId ? f.addresseeId : f.requesterId;
+      if (!friendSet.has(otherId)) continue;
+      const ageMs = now - (f.updatedAt ?? f.createdAt);
+      if (ageMs < SIX_MONTHS) {
+        const weeksRecent = Math.max(0, (SIX_MONTHS - ageMs) / (7 * 24 * 60 * 60 * 1000));
+        score.set(otherId, (score.get(otherId) ?? 0) + weeksRecent);
+      }
+    }
+
+    const ranked = Array.from(score.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit ?? 5);
+
+    const enriched = await Promise.all(
+      ranked.map(async ([id, s]) => {
+        const u = await ctx.db.get(id);
+        return {
+          _id: id,
+          name: u?.name ?? null,
+          username: u?.username ?? null,
+          image: u?.image ?? null,
+          score: Math.round(s * 10) / 10,
+        };
+      })
+    );
+    return enriched;
+  },
+});
+
 // Pending incoming friend requests, hydrated with the requester's profile so
 // the /feed page can render accept/decline prompt cards inline.
 export const listPendingFriendRequests = query({

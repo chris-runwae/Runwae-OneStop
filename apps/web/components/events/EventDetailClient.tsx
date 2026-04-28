@@ -25,6 +25,8 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { formatDateRange } from "@/lib/format";
 import { DiscoverGrid } from "@/components/discover/DiscoverGrid";
 import { nearestIata } from "@/lib/iata";
+import { PlanMyTripModal, PaywallModal } from "./PlanMyTripModal";
+import { AddToTripModal, type DiscoverPayload } from "@/components/discover/AddToTripModal";
 
 type DiscoveryItem = {
   provider: string;
@@ -69,8 +71,36 @@ export function EventDetailClient({
 }: Props) {
   const router = useRouter();
   const [planOpen, setPlanOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [addToTripOpen, setAddToTripOpen] = useState(false);
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Quota guard: if the user has already used all their AI plans, swap the
+  // plan modal for the paywall before they fill in any state.
+  const aiQuota = useQuery(api.ai.getQuota, {});
+  function handlePlanClick() {
+    if (aiQuota && aiQuota.remaining <= 0) {
+      setPaywallOpen(true);
+    } else {
+      setPlanOpen(true);
+    }
+  }
+
+  // Payload used by AddToTripModal — saving the event itself as a saved item
+  // (or itinerary slot). apiSource="internal" keeps it deduped against any
+  // future Eventbrite/Tiqets reuse of the same event id.
+  const addToTripPayload: DiscoverPayload = {
+    provider: "internal",
+    apiRef: event._id,
+    category: "event",
+    title: event.name,
+    description: event.description ?? undefined,
+    imageUrl: event.imageUrl ?? event.imageUrls?.[0],
+    locationName: event.locationName,
+    coords: event.locationCoords,
+    externalUrl: event.externalTicketUrl,
+  };
 
   const visibleTiers = tiers
     .filter((t) => t.isVisible)
@@ -108,13 +138,23 @@ export function EventDetailClient({
 
         <AttendeeStrip event={event} />
 
-        <button
-          type="button"
-          onClick={() => setPlanOpen(true)}
-          className="flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-primary font-display text-[15.5px] font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-transform hover:bg-primary/90 active:scale-[0.98]"
-        >
-          ✈️ Plan my trip to this event
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handlePlanClick}
+            className="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-full bg-primary font-display text-[15.5px] font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-transform hover:bg-primary/90 active:scale-[0.98]"
+          >
+            ✈️ Plan my trip to this event
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddToTripOpen(true)}
+            className="flex h-[54px] items-center justify-center gap-2 rounded-full border border-border bg-card px-5 text-[14.5px] font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Add to trip
+          </button>
+        </div>
 
         {event.description && <Description text={event.description} />}
 
@@ -134,15 +174,28 @@ export function EventDetailClient({
         <EventDiscoverSection event={event} />
       </div>
 
-      <PlanTripSheet
+      <PlanMyTripModal
         open={planOpen}
         onClose={() => setPlanOpen(false)}
         event={event}
-        viewer={viewer}
+        onPaywall={() => setPaywallOpen(true)}
         onSuccess={() => {
           setPlanOpen(false);
           showToast("Opening your new trip…");
         }}
+      />
+
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        used={aiQuota?.used ?? 0}
+        limit={aiQuota?.limit ?? 0}
+      />
+
+      <AddToTripModal
+        open={addToTripOpen}
+        onClose={() => setAddToTripOpen(false)}
+        item={addToTripPayload}
       />
 
       <div

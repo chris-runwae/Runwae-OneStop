@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { CalendarPlus, Plus } from "lucide-react";
 import { ItineraryCard } from "../ItineraryCard";
 import { TravelConnector } from "../TravelConnector";
-import { AddItemSheet } from "../AddItemSheet";
+import { AddItemModal } from "../AddItemModal";
 
 type DayWeather = {
   date: string;
@@ -241,9 +241,9 @@ export function ItineraryTab({ trip }: Props) {
           onDropOn={handleDropOn}
         />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {days.map((d) => (
-            <DayView
+            <CollapsibleDayView
               key={d._id}
               day={d}
               onAdd={() => setAddDayId(d._id)}
@@ -257,7 +257,7 @@ export function ItineraryTab({ trip }: Props) {
       )}
 
       {addDayId && (
-        <AddItemSheet
+        <AddItemModal
           open
           onClose={() => setAddDayId(null)}
           target={{ kind: "itinerary", tripId: trip._id, dayId: addDayId }}
@@ -267,14 +267,9 @@ export function ItineraryTab({ trip }: Props) {
   );
 }
 
-function DayView({
-  day,
-  onAdd,
-  draggingId,
-  onDragStart,
-  onDragEnd,
-  onDropOn,
-}: {
+// Collapsible variant used in "All days" view — keeps the page short and
+// makes drag-and-drop ergonomic. Single-day view uses DayView directly.
+function CollapsibleDayView(props: {
   day: ItineraryDay;
   onAdd: () => void;
   draggingId: Id<"itinerary_items"> | null;
@@ -285,6 +280,66 @@ function DayView({
     siblings: Doc<"itinerary_items">[]
   ) => void;
 }) {
+  const { day } = props;
+  // Default open for the first 2 days; collapsed after that to reduce noise.
+  const [open, setOpen] = useState(day.dayNumber <= 2);
+  const itemCount = day.items?.length ?? 0;
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+      >
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-base font-bold text-foreground">
+            Day {day.dayNumber}
+            {day.title ? ` — ${day.title}` : ""}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            {day.date} · {itemCount} item{itemCount === 1 ? "" : "s"}
+          </span>
+        </div>
+        <span
+          className={cn(
+            "grid h-7 w-7 place-items-center rounded-full bg-foreground/5 text-foreground/60 transition-transform",
+            open && "rotate-180"
+          )}
+          aria-hidden
+        >
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <DayView {...props} hideHeader />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DayView({
+  day,
+  onAdd,
+  draggingId,
+  onDragStart,
+  onDragEnd,
+  onDropOn,
+  hideHeader = false,
+}: {
+  day: ItineraryDay;
+  onAdd: () => void;
+  draggingId: Id<"itinerary_items"> | null;
+  onDragStart: (id: Id<"itinerary_items">) => void;
+  onDragEnd: () => void;
+  onDropOn: (
+    target: Doc<"itinerary_items">,
+    siblings: Doc<"itinerary_items">[]
+  ) => void;
+  hideHeader?: boolean;
+}) {
   const detail = useQuery(api.itinerary.getDayWithTravelTimes, {
     dayId: day._id,
   });
@@ -292,14 +347,16 @@ function DayView({
   const legs = detail?.legs ?? [];
 
   return (
-    <section className="mt-4">
-      <header className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-bold">
-          Day {day.dayNumber}
-          {day.title ? ` — ${day.title}` : ""}
-        </h2>
-        <span className="text-xs text-foreground/60">{day.date}</span>
-      </header>
+    <section className={hideHeader ? "" : "mt-4"}>
+      {!hideHeader && (
+        <header className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-display text-xl font-bold">
+            Day {day.dayNumber}
+            {day.title ? ` — ${day.title}` : ""}
+          </h2>
+          <span className="text-xs text-foreground/60">{day.date}</span>
+        </header>
+      )}
       <div className="space-y-3">
         {items.map((it, i) => (
           <div

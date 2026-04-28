@@ -25,7 +25,6 @@ import { CreateSheet } from "./CreateSheet";
 
 type NavItem = { href: string; label: string; Icon: typeof Home };
 
-// Desktop sidebar nav (full set). Mobile bottom-nav uses a 5-slot subset.
 const SIDEBAR_NAV: NavItem[] = [
   { href: "/home",    label: "Home",    Icon: Home },
   { href: "/explore", label: "Explore", Icon: Compass },
@@ -42,6 +41,8 @@ const MOBILE_NAV: NavItem[] = [
   { href: "/saved",   label: "Saved",   Icon: Heart },
 ];
 
+const COLLAPSED_KEY = "runwae:sidebar:collapsed";
+
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
@@ -54,7 +55,30 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Close drawer on route change.
+  // Desktop collapse — persisted across navigations. Hydrated from
+  // localStorage after mount to avoid SSR mismatch (React renders the
+  // expanded form first frame, then collapses if needed).
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSED_KEY) === "1");
+    } catch {
+      /* localStorage might be blocked — accept the default */
+    }
+    setHydrated(true);
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0");
+      } catch { /* swallow */ }
+      return next;
+    });
+  }
+
+  // Close mobile drawer on route change.
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
@@ -86,11 +110,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background lg:flex">
-      {/* === Desktop sidebar (lg+) — sticky, non-scrollable === */}
-      <aside className="hidden w-60 shrink-0 overflow-hidden border-r border-border bg-card lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+      {/* === Desktop sidebar (lg+) — collapsible to a 64px R-rail === */}
+      <aside
+        className={cn(
+          "hidden shrink-0 overflow-hidden border-r border-border bg-card transition-[width] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col",
+          hydrated && collapsed ? "w-[68px]" : "w-60"
+        )}
+      >
         <SidebarContent
           pathname={pathname}
           viewer={viewer ?? null}
+          collapsed={hydrated && collapsed}
+          onToggleCollapsed={toggleCollapsed}
           onCreate={() => setCreateOpen(true)}
           onSignOut={handleSignOut}
         />
@@ -187,87 +218,147 @@ type ViewerLike = {
 function SidebarContent({
   pathname,
   viewer,
+  collapsed = false,
+  onToggleCollapsed,
   onCreate,
   onSignOut,
 }: {
   pathname: string;
   viewer: ViewerLike;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   onCreate: () => void;
   onSignOut: () => void;
 }) {
   return (
     <>
-      {/* Brand + decorative top — non-scrollable */}
-      <div className="px-6 py-6">
-        <Link
-          href="/home"
-          className="font-display text-2xl font-bold text-primary"
-        >
-          Runwae
-        </Link>
-      </div>
-
-      {/* Spacer pushes the nav + profile to the bottom. */}
-      <div className="flex-1" aria-hidden />
-
-      {/* Bottom-pinned block: nav, create, profile, sign-out. */}
-      <div className="px-3 pb-4">
-        <nav className="space-y-1">
-          {SIDEBAR_NAV.map(({ href, label, Icon }) => {
-            const active = isActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                <Icon className="h-5 w-5" /> {label}
-              </Link>
-            );
-          })}
+      {/* Brand row — clickable to expand when collapsed, with X to collapse
+          when expanded. Always pinned to the top; the rest of the sidebar
+          uses space-between. */}
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-5",
+          collapsed && "justify-center px-0"
+        )}
+      >
+        {collapsed ? (
           <button
             type="button"
-            onClick={onCreate}
-            className="flex w-full items-center gap-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            onClick={onToggleCollapsed}
+            aria-label="Expand sidebar"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 font-display text-2xl font-bold text-primary transition-transform hover:scale-105 active:scale-95"
           >
-            <Plus className="h-5 w-5" /> Create
+            R
           </button>
-        </nav>
+        ) : (
+          <>
+            <Link
+              href="/home"
+              className="font-display text-2xl font-bold text-primary"
+            >
+              Runwae
+            </Link>
+            {onToggleCollapsed && (
+              <button
+                type="button"
+                onClick={onToggleCollapsed}
+                aria-label="Collapse sidebar"
+                className="ml-auto grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
+      {/* Nav block — top, scrollable if needed (it shouldn't be at 6 items). */}
+      <nav
+        className={cn(
+          "space-y-1 overflow-hidden",
+          collapsed ? "px-2" : "px-3"
+        )}
+      >
+        {SIDEBAR_NAV.map(({ href, label, Icon }) => {
+          const active = isActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={collapsed ? label : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                collapsed && "justify-center px-2",
+                active
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-muted"
+              )}
+            >
+              <Icon className="h-5 w-5" /> {!collapsed && label}
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onCreate}
+          title={collapsed ? "Create" : undefined}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <Plus className="h-5 w-5" /> {!collapsed && "Create"}
+        </button>
+      </nav>
+
+      {/* Spacer pushes the profile block to the bottom (space-between). */}
+      <div className="flex-1" aria-hidden />
+
+      {/* Profile block — bottom-pinned. */}
+      <div className={cn("pb-4", collapsed ? "px-2" : "px-3")}>
         <div className="mt-3 border-t border-border pt-3">
-          <div className="flex items-center gap-2">
+          {collapsed ? (
             <Link
               href="/profile"
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted"
+              title={viewer?.name ?? "Profile"}
+              className="flex justify-center"
             >
               <Avatar
                 src={viewer?.image ?? undefined}
                 name={viewer?.name ?? undefined}
                 size="md"
               />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-foreground">
-                  {viewer?.name ?? "Profile"}
-                </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {viewer?.email ?? ""}
-                </div>
-              </div>
             </Link>
-            <button
-              type="button"
-              onClick={onSignOut}
-              aria-label="Sign out"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted"
+              >
+                <Avatar
+                  src={viewer?.image ?? undefined}
+                  name={viewer?.name ?? undefined}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-foreground">
+                    {viewer?.name ?? "Profile"}
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {viewer?.email ?? ""}
+                  </div>
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={onSignOut}
+                aria-label="Sign out"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </>

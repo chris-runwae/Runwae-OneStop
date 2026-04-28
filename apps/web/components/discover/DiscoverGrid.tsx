@@ -165,7 +165,12 @@ function discoverCategoryToSave(
 export function DiscoverGrid({
   city,
   coords,
+  // `iata` (single value) was the legacy prop — prefer the explicit
+  // origin/destination split below. We accept both so callers can migrate
+  // gradually; when only `iata` is supplied we treat it as the origin.
   iata,
+  originIata,
+  destinationIata,
   checkin,
   checkout,
   presetTripId,
@@ -177,6 +182,8 @@ export function DiscoverGrid({
   city: string;
   coords?: { lat: number; lng: number };
   iata?: string | null;
+  originIata?: string | null;
+  destinationIata?: string | null;
   checkin?: string;
   checkout?: string;
   presetTripId?: Id<"trips">;
@@ -185,6 +192,8 @@ export function DiscoverGrid({
   excludeCategories?: readonly string[];
   className?: string;
 }) {
+  const resolvedOrigin = originIata ?? iata ?? null;
+  const resolvedDestination = destinationIata ?? null;
   const visibleCategories = excludeCategories
     ? DISCOVER_CATEGORIES.filter((c) => !excludeCategories.includes(c.k))
     : DISCOVER_CATEGORIES;
@@ -255,16 +264,17 @@ export function DiscoverGrid({
     };
 
     if (cfg.providerCategory === "fly") {
-      if (!iata) {
+      if (!resolvedOrigin) {
         setLoading(false);
         setResults([]);
         setError("Set your home airport to see flight deals.");
         return;
       }
-      args.originIata = iata;
-      // For trip context we'd want a real destination IATA; placeholder
-      // until we wire trip.destinationCoords → IATA on the trip side.
-      args.destinationIata = "DXB";
+      args.originIata = resolvedOrigin;
+      // Destination IATA is derived server-side from trip.destinationCoords
+      // (DiscoverTab) or viewer.homeCoords (HomePageClient) — never hardcoded.
+      // If we still don't have one, omit it and let Duffel pick by city.
+      if (resolvedDestination) args.destinationIata = resolvedDestination;
     }
 
     search(args)
@@ -284,7 +294,18 @@ export function DiscoverGrid({
     return () => {
       cancelled = true;
     };
-  }, [active, city, coords?.lat, coords?.lng, iata, checkin, checkout, refreshTick, search]);
+  }, [
+    active,
+    city,
+    coords?.lat,
+    coords?.lng,
+    resolvedOrigin,
+    resolvedDestination,
+    checkin,
+    checkout,
+    refreshTick,
+    search,
+  ]);
 
   return (
     <div className={className}>

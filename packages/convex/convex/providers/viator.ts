@@ -78,6 +78,24 @@ async function loadDestinations(ctx: any, apiKey: string): Promise<ViatorDest[]>
 // real product detail page lives on `www.viator.com` at the same path.
 // We rewrite the host while preserving the affiliate tracking params
 // (mcid/pid/medium/api_version) so commission still attributes correctly.
+// Pick the highest-resolution image URL from a Viator product's `images`
+// payload. Each image has variants sorted small→large; we want the largest
+// available so the cover doesn't render as a 100×100 thumbnail.
+function pickBestViatorImage(images: any[] | undefined): string | undefined {
+  if (!Array.isArray(images) || images.length === 0) return undefined;
+  // Prefer an image flagged as cover; else the first.
+  const primary = images.find((i) => i?.isCover) ?? images[0];
+  const variants = primary?.variants;
+  if (Array.isArray(variants) && variants.length > 0) {
+    // Sort by width desc and take the widest with a usable url.
+    const widest = [...variants]
+      .filter((v) => v?.url)
+      .sort((a, b) => (b?.width ?? 0) - (a?.width ?? 0))[0];
+    if (widest?.url) return widest.url;
+  }
+  return primary?.url ?? variants?.[variants.length - 1]?.url;
+}
+
 function rewriteViatorUrl(url: string | undefined): string | undefined {
   if (!url) return url;
   try {
@@ -198,7 +216,11 @@ export const search = internalAction({
         category: category as DiscoveryItem["category"],
         title: p.title ?? "Untitled",
         description: p.shortDescription,
-        imageUrl: p.images?.[0]?.url ?? p.images?.[0]?.variants?.[0]?.url,
+        // Viator returns `images[0]` ~100×100 thumbnail. The `variants` array
+        // is sorted small→large, so the *last* variant is the highest-res
+        // (typically 1920×1280). Use it whenever present; otherwise fall
+        // back to the parent url, then any variant we can find.
+        imageUrl: pickBestViatorImage(p.images),
         price: p.pricing?.summary?.fromPrice,
         currency: p.pricing?.currency,
         externalUrl: rewriteViatorUrl(p.productUrl),
@@ -237,8 +259,19 @@ export const getDetail = internalAction({
         return null;
       }
       const p = await res.json() as any;
+      // Build a gallery of largest variants per image for the detail page.
       const gallery = Array.isArray(p.images)
-        ? p.images.flatMap((img: any) => [img.url, ...(img.variants?.map((v2: any) => v2.url) ?? [])]).filter(Boolean).slice(0, 12)
+        ? p.images
+            .map((img: any) => {
+              const variants = Array.isArray(img?.variants)
+                ? [...img.variants].sort(
+                    (a: any, b: any) => (b?.width ?? 0) - (a?.width ?? 0)
+                  )
+                : [];
+              return variants[0]?.url ?? img?.url;
+            })
+            .filter(Boolean)
+            .slice(0, 12)
         : undefined;
       return {
         provider: "viator",
@@ -246,7 +279,7 @@ export const getDetail = internalAction({
         category: "tour",
         title: p.title ?? "Tour",
         description: p.description ?? p.shortDescription,
-        imageUrl: p.images?.[0]?.url ?? gallery?.[0],
+        imageUrl: pickBestViatorImage(p.images) ?? gallery?.[0],
         price: p.pricing?.summary?.fromPrice,
         currency: p.pricing?.currency,
         externalUrl: rewriteViatorUrl(p.productUrl),

@@ -3,24 +3,27 @@ import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
 import ItineraryForYou from '@/components/home/IteneryForYou';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
+import PublicTripsSection from '@/components/home/PublicTripsSection';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import CustomModal from '@/components/ui/CustomModal';
+import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
 import MainTabHeader from '@/components/ui/MainTabHeader';
 import SearchInput from '@/components/ui/SearchInput';
-import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
 import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
+import { useAuth } from '@/context/AuthContext';
+import { useExploreData } from '@/hooks/useExploreData';
+import { fetchPublicTrips, TripWithEverything } from '@/hooks/useTripActions';
+import { useViator } from '@/hooks/useViator';
+import type { ViatorProduct } from '@/types/viator.types';
+import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToExperience';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Destination,
-  Event,
-  Experience,
-  ItineraryTemplate,
-} from '@/types/content.types';
-import { getDestinations } from '@/utils/supabase/destinations.service';
-import { getEvents } from '@/utils/supabase/events.service';
-import { getExperiences } from '@/utils/supabase/experiences.service';
-import { getItineraryTemplates } from '@/utils/supabase/itinerary-templates.service';
-import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -28,36 +31,30 @@ const ExploreScreen = () => {
   const [selectedTopCategory, setSelectedTopCategory] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('$50 - $200');
   const [searchQuery, setSearchQuery] = useState('');
-  const [itineraries, setItineraries] = useState<ItineraryTemplate[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, refreshing, refresh } = useExploreData();
+  const { itineraries, events, experiences, destinations } = data;
+  const { products: viatorProducts, loading: viatorLoading } = useViator();
+  const { user } = useAuth();
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [itineraryData, eventData, experienceData, destinationData] =
-          await Promise.all([
-            getItineraryTemplates(),
-            getEvents(),
-            getExperiences(),
-            getDestinations(),
-          ]);
-        setItineraries(itineraryData);
-        setEvents(eventData);
-        setExperiences(experienceData);
-        setDestinations(destinationData);
-      } catch (err) {
-        console.error('ExploreScreen: Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Public trips from other users
+  const [publicTrips, setPublicTrips] = useState<TripWithEverything[]>([]);
+  const [publicTripsLoading, setPublicTripsLoading] = useState(true);
 
-    fetchData();
-  }, []);
+  const loadPublicTrips = useCallback(async () => {
+    if (!user?.id) return;
+    setPublicTripsLoading(true);
+    const { data: trips } = await fetchPublicTrips(user.id);
+    setPublicTrips(trips ?? []);
+    setPublicTripsLoading(false);
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadPublicTrips();
+  }, [loadPublicTrips]);
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refresh(), loadPublicTrips()]);
+  }, [refresh, loadPublicTrips]);
 
   const handleApplyFilters = () => {
     console.log('Applying filters:', { selectedTopCategory, selectedPrice });
@@ -96,16 +93,15 @@ const ExploreScreen = () => {
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, events]);
 
+  const getPriceBounds = (range: string) => {
+    if (range === '$500+') return [500, Infinity] as const;
+    const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
+    return [numbers[0], numbers[1] ?? Infinity] as const;
+  };
+
   const filteredExperiences = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
       return [];
-
-    // Parse price range from string e.g., "$50 - $200"
-    const getPriceBounds = (range: string) => {
-      if (range === '$500+') return [500, Infinity];
-      const numbers = range.match(/\d+/g)?.map(Number) || [0, Infinity];
-      return [numbers[0], numbers[1] || Infinity];
-    };
 
     const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
 
@@ -124,6 +120,25 @@ const ExploreScreen = () => {
     experiences,
   ]);
 
+  /** Viator tours: same top-level and price/search filters as in-app experiences; sub-categories are not mapped to Viator tags yet. */
+  const filteredViatorProducts = useMemo(() => {
+    if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
+      return [];
+
+    const [minPrice, maxPrice] = getPriceBounds(selectedPrice);
+    const list = viatorProducts as ViatorProduct[];
+
+    return list.filter((p) => {
+      const text = `${p.title} ${p.description ?? ''}`;
+      const price = p.pricing?.summary?.fromPrice ?? 0;
+      return (
+        matchesSearch(text, searchQuery) &&
+        price >= minPrice &&
+        price <= maxPrice
+      );
+    });
+  }, [searchQuery, selectedTopCategory, selectedPrice, viatorProducts]);
+
   const filteredDestinations = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
@@ -132,11 +147,27 @@ const ExploreScreen = () => {
     );
   }, [searchQuery, selectedTopCategory, destinations]);
 
+  const filteredPublicTrips = useMemo(() => {
+    if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
+      return [];
+    return publicTrips.filter((item) =>
+      matchesSearch(item.name + (item.destination_label ?? ''), searchQuery)
+    );
+  }, [searchQuery, selectedTopCategory, publicTrips]);
+
+  const mappedViatorExperiences = useMemo(() => {
+    return filteredViatorProducts.map(mapViatorProductToExperience);
+  }, [filteredViatorProducts]);
+
   return (
     <AppSafeAreaView edges={['top']}>
       <MainTabHeader title="Explore" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }>
         <View className="mt-4 px-[20px]">
           <SearchInput
             placeholder="Search trips, hotels, experiences..."
@@ -177,6 +208,13 @@ const ExploreScreen = () => {
               />
             )}
 
+            {filteredPublicTrips.length > 0 && (
+              <PublicTripsSection
+                data={filteredPublicTrips}
+                loading={publicTripsLoading}
+              />
+            )}
+
             {filteredEvents.length > 0 && (
               <UpcomingEvents data={filteredEvents} loading={loading} />
             )}
@@ -187,6 +225,17 @@ const ExploreScreen = () => {
                 title="Experience Highlights"
                 subtitle="Top picks for you"
                 loading={loading}
+              />
+            )}
+
+            {mappedViatorExperiences.length > 0 && (
+              <AddOnsForYou
+                data={mappedViatorExperiences}
+                title="Tours & Activities"
+                subtitle="powered by viator"
+                loading={viatorLoading}
+                itemPathPrefix="/viator"
+                headerPath="/viator"
               />
             )}
 
@@ -223,7 +272,6 @@ const ExploreScreen = () => {
           </>
         )}
       </ScrollView>
-
 
       <CustomModal
         isVisible={isFilterModalVisible}

@@ -30,6 +30,10 @@ interface IdeaCardProps {
   checkin?: string | null;
   checkout?: string | null;
   adults?: number | null;
+  price?: number | null;
+  currency?: string | null;
+  viatorProductCode?: string;
+  isMember?: boolean;
 }
 
 export default function IdeaCard({
@@ -44,12 +48,38 @@ export default function IdeaCard({
   checkin,
   checkout,
   adults,
+  price,
+  currency,
+  viatorProductCode,
+  isMember = true,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const moreBtnRef = useRef<View>(null);
 
+  function currencySymbol(code: string | null | undefined): string {
+    if (!code) return '$';
+    const map: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      AUD: 'A$',
+      CAD: 'C$',
+    };
+    return map[code.toUpperCase()] ?? code;
+  }
+
   const handleNavigateToDetails = () => {
+    const pCode = viatorProductCode || (item?.type === 'activity' ? item.external_id : null);
+    
+    if (pCode) {
+      router.push({
+        pathname: '/viator/[productCode]',
+        params: { productCode: pCode },
+      } as any);
+      return;
+    }
+
     if (item?.type === 'hotel') {
       router.push({
         pathname: '/hotels/[hotelId]',
@@ -65,7 +95,9 @@ export default function IdeaCard({
   };
 
   return (
-    <Pressable style={styles.card} onPress={handleNavigateToDetails}>
+    <Pressable
+      style={styles.card}
+      onPress={onViewDetails ?? handleNavigateToDetails}>
       <View
         style={[
           styles.imageContainer,
@@ -79,7 +111,7 @@ export default function IdeaCard({
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{categoryLabel}</Text>
         </View>
-        {onOptionsPress && (
+        {isMember && onOptionsPress && (
           <TouchableOpacity
             ref={moreBtnRef}
             style={styles.moreButton}
@@ -122,17 +154,19 @@ export default function IdeaCard({
           numberOfLines={4}>
           {description}
         </Text>
-        {onAdd && (
+        {isMember && onAdd && (
           <View style={styles.footer}>
-            <TouchableOpacity onPress={onViewDetails} hitSlop={10}>
+            {price != null && price > 0 ? (
               <Text
                 style={[
-                  styles.viewDetails,
-                  { color: colors.primaryColors.default },
+                  styles.priceLabel,
+                  { color: colors.textColors.subtle },
                 ]}>
-                View Details
+                {`From ${currencySymbol(currency)}${Math.round(price)}`}
               </Text>
-            </TouchableOpacity>
+            ) : (
+              <View />
+            )}
             <TouchableOpacity
               style={[
                 styles.addButton,
@@ -214,10 +248,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  viewDetails: {
+  priceLabel: {
     fontSize: 11,
     fontFamily: AppFonts.inter.medium,
-    textDecorationLine: 'underline',
   },
   addButton: {
     flexDirection: 'row',

@@ -49,34 +49,63 @@ const ActionMenu = ({
             style={[
               styles.menuContainer,
               {
-                backgroundColor: dark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.85)',
-                borderColor: dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.7)',
+                backgroundColor: dark
+                  ? 'rgba(40, 40, 40, 0.95)'
+                  : 'rgba(255, 255, 255, 0.85)',
+                borderColor: dark
+                  ? 'rgba(255, 255, 255, 0.15)'
+                  : 'rgba(255, 255, 255, 0.7)',
               },
               anchorPosition
-                ? { 
-                    top: anchorPosition.top, 
-                    ...(anchorPosition.left !== undefined ? { left: anchorPosition.left } : {}),
-                    ...(anchorPosition.right !== undefined ? { right: anchorPosition.right } : {}),
+                ? {
+                    top: anchorPosition.top,
+                    ...(anchorPosition.left !== undefined
+                      ? { left: anchorPosition.left }
+                      : {}),
+                    ...(anchorPosition.right !== undefined
+                      ? { right: anchorPosition.right }
+                      : {}),
                   }
                 : { top: insets.top + 100, right: 24 },
             ]}>
-            <BlurView intensity={90} tint={dark ? 'dark' : 'light'} style={styles.blurContainer}>
-              <ScrollView 
-                style={{ maxHeight: 240 }} 
+            <View style={styles.blurContainer}>
+              <BlurView
+                intensity={90}
+                tint={dark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              <ScrollView
+                style={{ maxHeight: 240 }}
                 showsVerticalScrollIndicator={false}
-                bounces={options.length > 5}
-              >
+                bounces={options.length > 5}>
                 {options.map((option, index) => (
                   <View key={index}>
                     {option.hasSeparator && (
-                      <View style={[styles.separator, { backgroundColor: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)' }]} />
+                      <View
+                        style={[
+                          styles.separator,
+                          {
+                            backgroundColor: dark
+                              ? 'rgba(255, 255, 255, 0.1)'
+                              : 'rgba(0, 0, 0, 0.06)',
+                          },
+                        ]}
+                      />
                     )}
                     <TouchableOpacity
                       onPress={() => {
                         onClose();
                         option.onPress();
                       }}
-                      style={[styles.option, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                      style={[
+                        styles.option,
+                        {
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        },
+                      ]}>
                       <Text
                         style={[
                           styles.optionText,
@@ -93,7 +122,7 @@ const ActionMenu = ({
                   </View>
                 ))}
               </ScrollView>
-            </BlurView>
+            </View>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -122,6 +151,7 @@ const styles = StyleSheet.create({
   blurContainer: {
     paddingVertical: 8,
     overflow: 'hidden',
+    position: 'relative',
   },
   option: {
     paddingHorizontal: 16,

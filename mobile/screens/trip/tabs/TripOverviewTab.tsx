@@ -17,8 +17,7 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddToItinerarySheet from '@/components/trip-activity/AddToItinerarySheet';
 import IdeaCard from '@/components/trip-activity/IdeaCard';
 import SearchIdeasSheet, {
-  MOCK_CATEGORIES,
-  MOCK_IDEAS,
+  SEARCH_CATEGORIES,
 } from '@/components/trip-activity/SearchIdeasSheet';
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
@@ -27,6 +26,7 @@ import { TripWithEverything } from '@/hooks/useTripActions';
 
 interface Props {
   trip: TripWithEverything;
+  isMember?: boolean;
 }
 
 const getCategoryWithEmoji = (category: string | null) => {
@@ -40,10 +40,12 @@ const getCategoryWithEmoji = (category: string | null) => {
   return `💡 ${category}`;
 };
 
-export default function TripOverviewTab({ trip }: Props) {
+export default function TripOverviewTab({ trip, isMember = false }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
+
+  const tripDetails = trip?.trip_details;
   const [searchVisible, setSearchVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
@@ -90,31 +92,48 @@ export default function TripOverviewTab({ trip }: Props) {
     {
       label: 'View Details',
       onPress: () => {
-        if (selectedIdea?.external_id) {
+        if (!selectedIdea?.external_id) return;
+
+        if (selectedIdea.type === 'hotel') {
           router.push({
-            pathname: '/experience/[id]',
-            params: { id: selectedIdea.external_id },
-          });
+            pathname: '/hotels/[hotelId]',
+            params: {
+              hotelId: selectedIdea.external_id,
+              hotelData: JSON.stringify(selectedIdea.all_data),
+              checkin: trip?.trip_details?.start_date,
+              checkout: trip?.trip_details?.end_date,
+              adults: trip?.group_members?.length ?? 1,
+            },
+          } as any);
+        } else {
+          router.push({
+            pathname: '/viator/[productCode]',
+            params: { productCode: selectedIdea.external_id },
+          } as any);
         }
       },
     },
-    {
-      label: 'Add to Itinerary',
-      onPress: () => {
-        if (selectedIdea) handleAddToItinerary(selectedIdea);
-      },
-    },
-    {
-      label: 'Remove',
-      isDestructive: true,
-      hasSeparator: true,
-      onPress: () => {
-        if (selectedIdea) handleDeleteIdea(selectedIdea.id);
-      },
-    },
+    ...(isMember
+      ? [
+          {
+            label: 'Add to Itinerary',
+            onPress: () => {
+              if (selectedIdea) handleAddToItinerary(selectedIdea);
+            },
+          },
+          {
+            label: 'Remove',
+            isDestructive: true,
+            hasSeparator: true,
+            onPress: () => {
+              if (selectedIdea) handleDeleteIdea(selectedIdea.id);
+            },
+          },
+        ]
+      : []),
   ];
 
-  const filterOptions: ActionOption[] = MOCK_CATEGORIES.map((cat) => ({
+  const filterOptions: ActionOption[] = SEARCH_CATEGORIES.map((cat) => ({
     label: cat.label,
     isBold: activeFilter === cat.id,
     onPress: () => {
@@ -146,16 +165,20 @@ export default function TripOverviewTab({ trip }: Props) {
           </Text>
           <Text
             style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
-            Looking for what to do? Add them to Ideas now.
+            {isMember
+              ? 'Looking for what to do? Add them to Ideas now.'
+              : "This trip doesn't have any ideas saved yet. Check back later!"}
           </Text>
 
-          <TouchableOpacity
-            style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
-            activeOpacity={0.8}
-            onPress={() => setSearchVisible(true)}>
-            <Plus size={14} color="#ffffff" strokeWidth={2.5} />
-            <Text style={styles.searchButtonText}>Start Searching</Text>
-          </TouchableOpacity>
+          {isMember && (
+            <TouchableOpacity
+              style={[styles.searchButton, { backgroundColor: '#FF2E92' }]}
+              activeOpacity={0.8}
+              onPress={() => setSearchVisible(true)}>
+              <Plus size={14} color="#ffffff" strokeWidth={2.5} />
+              <Text style={styles.searchButtonText}>Start Searching</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <SearchIdeasSheet
@@ -199,7 +222,7 @@ export default function TripOverviewTab({ trip }: Props) {
             style={[styles.filterText, { color: colors.textColors.subtle }]}>
             {activeFilter === 'All'
               ? 'All'
-              : MOCK_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
+              : SEARCH_CATEGORIES.find((c) => c.id === activeFilter)?.label ||
                 'All'}
           </Text>
           <ChevronDown
@@ -209,49 +232,59 @@ export default function TripOverviewTab({ trip }: Props) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setSearchVisible(true)}
-          style={[
-            styles.addPillBtn,
-            {
-              backgroundColor: dark ? '#1F1F1F' : '#fff',
-              borderColor: dark ? '#374151' : '#EFEFEF',
-            },
-          ]}>
-          <Text
-            style={[styles.addPillText, { color: colors.textColors.default }]}>
-            + Add
-          </Text>
-        </TouchableOpacity>
+        {isMember && (
+          <TouchableOpacity
+            onPress={() => setSearchVisible(true)}
+            style={[
+              styles.addPillBtn,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#fff',
+                borderColor: dark ? '#374151' : '#EFEFEF',
+              },
+            ]}>
+            <Text
+              style={[styles.addPillText, { color: colors.textColors.default }]}>
+              + Add
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.ideaGridContent}>
-        {filteredIdeas.map((item) => (
-          <IdeaCard
-            key={item.id}
-            item={item}
-            imageUri={
-              item.cover_image ||
-              MOCK_IDEAS.find((m) => m.id === item.external_id)?.imageUri ||
-              'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
-            }
-            categoryLabel={getCategoryWithEmoji(item.location)}
-            title={item.name}
-            description={item.notes || ''}
-            onOptionsPress={(position: {
-              top: number;
-              right?: number;
-              left?: number;
-            }) => {
-              setSelectedIdea(item);
-              setMenuAnchor(position);
-              setMenuVisible(true);
-            }}
-            checkin={trip.trip_details?.start_date}
-            checkout={trip.trip_details?.end_date}
-            adults={trip.group_members?.length ?? 1}
-          />
-        ))}
+        {filteredIdeas.map((item) => {
+          const price = item.all_data?.price || item.all_data?.representativePrice?.amount;
+          const currency = item.all_data?.currency || item.all_data?.representativePrice?.currency;
+
+          return (
+            <IdeaCard
+              key={item.id}
+              item={item}
+              imageUri={
+                item.cover_image ||
+                item.image_url || // check both
+                'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
+              }
+              categoryLabel={getCategoryWithEmoji(item.location)}
+              title={item.name}
+              description={item.notes || ''}
+              onOptionsPress={
+                isMember
+                  ? (position: any) => {
+                      setSelectedIdea(item);
+                      setMenuAnchor(position);
+                      setMenuVisible(true);
+                    }
+                  : undefined
+              }
+              checkin={tripDetails?.start_date}
+              checkout={tripDetails?.end_date}
+              adults={trip.group_members?.length ?? 1}
+              price={price}
+              currency={currency}
+              isMember={isMember}
+            />
+          );
+        })}
       </View>
 
       <SearchIdeasSheet
@@ -276,7 +309,7 @@ export default function TripOverviewTab({ trip }: Props) {
             type: selectedIdea.type as any, // Cast to ItemType
             location: selectedIdea.location,
             external_id: selectedIdea.external_id,
-            image_url: selectedIdea.image_url,
+            image_url: selectedIdea.cover_image,
             start_time: startTime,
             end_time: endTime,
           });

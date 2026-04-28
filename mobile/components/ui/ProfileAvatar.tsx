@@ -1,11 +1,11 @@
-import { StyleSheet, View, useColorScheme } from 'react-native';
-import React from 'react';
 import { Image } from 'expo-image';
+import React from 'react';
+import { StyleSheet, View, useColorScheme } from 'react-native';
 
 import Text from '@/components/ui/Text';
 import { COLORS, Colors, textStyles } from '@/constants';
-import { getRandomGradient } from '../containers/AvatarGroup';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getRandomGradient } from '../containers/AvatarGroup';
 
 type UserAvatarProps = {
   size?: number;
@@ -28,9 +28,9 @@ const UserAvatar = ({ size = 40, imageUrl, name }: UserAvatarProps) => {
       backgroundColor: colors.borderColors.subtle,
     },
     image: {
-      // width: size,
-      // aspectRatio: 1,
-      // borderRadius: 99,
+      width: size,
+      height: size,
+      borderRadius: size / 2,
     },
     textStyle: {
       ...textStyles.textHeading16,

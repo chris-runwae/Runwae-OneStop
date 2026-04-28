@@ -170,9 +170,7 @@ export default function EditTripScreen() {
       ]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerButton}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Text
             style={[
               styles.headerButtonLabel,
@@ -184,10 +182,7 @@ export default function EditTripScreen() {
         <Text style={[styles.headerTitle, { color: dark ? '#fff' : '#000' }]}>
           Edit Trip
         </Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={isSaving}
-          style={styles.headerButton}>
+        <TouchableOpacity onPress={handleSave} disabled={isSaving}>
           {isSaving ? (
             <ActivityIndicator size="small" color="#FF1F8C" />
           ) : (
@@ -358,9 +353,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.3,
-  },
-  headerButton: {
-    minWidth: 60,
   },
   headerButtonLabel: {
     fontSize: 16,

@@ -32,11 +32,17 @@ interface ItineraryHeaderProps {
   imageUri: string;
   title: string;
   isOwner?: boolean;
+  isMember?: boolean;
   onEdit?: () => void;
   showMoreOptions?: boolean;
   onMorePress?: () => void;
   hideFavorite?: boolean;
+  /** When set, heart tap runs this instead of toggling local favorite state. */
+  onFavoritePress?: () => void;
+  /** Heart fill when `onFavoritePress` is used (parent-controlled). */
+  favoriteFilled?: boolean;
   dropdownOptions?: DropdownOption[];
+  joinCode?: string | null;
 }
 
 const ItineraryHeader = ({
@@ -44,11 +50,15 @@ const ItineraryHeader = ({
   imageUri,
   title,
   isOwner,
+  isMember,
   onEdit,
   showMoreOptions,
   onMorePress,
   hideFavorite,
+  onFavoritePress,
+  favoriteFilled,
   dropdownOptions,
+  joinCode,
 }: ItineraryHeaderProps) => {
   const router = useRouter();
   const segments = useSegments();
@@ -132,34 +142,48 @@ const ItineraryHeader = ({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            onPress={() => setIsShareModalVisible(true)}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-            <Upload
-              size={17}
-              strokeWidth={1.5}
-              color={dark ? '#fff' : '#000'}
-            />
-          </TouchableOpacity>
+{/* <TouchableOpacity
+  onPress={() => setIsShareModalVisible(true)}
+  className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
+  <Upload
+    size={17}
+    strokeWidth={1.5}
+    color={dark ? '#fff' : '#000'}
+  />
+</TouchableOpacity>
 
-          {!showMoreOptions && (
-            <>
-              {!hideFavorite && (
-                <TouchableOpacity
-                  onPress={() => setIsFavorite(!isFavorite)}
-                  className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-                  <Heart
-                    size={17}
-                    strokeWidth={1.5}
-                    color={isFavorite ? '#FF2E92' : dark ? '#fff' : '#000'}
-                    fill={isFavorite ? '#FF2E92' : 'transparent'}
-                  />
-                </TouchableOpacity>
-              )}
-            </>
-          )}
+{!showMoreOptions && (
+  <>
+    {!hideFavorite && (
+      <TouchableOpacity
+        onPress={() =>
+          onFavoritePress
+            ? onFavoritePress()
+            : setIsFavorite(!isFavorite)
+        }
+        className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
+        <Heart
+          size={17}
+          strokeWidth={1.5}
+          color={
+            (onFavoritePress ? favoriteFilled : isFavorite)
+              ? '#FF2E92'
+              : dark
+                ? '#fff'
+                : '#000'
+          }
+          fill={
+            (onFavoritePress ? favoriteFilled : isFavorite)
+              ? '#FF2E92'
+              : 'transparent'
+          }
+        />
+      </TouchableOpacity>
+    )}
+  </>
+)} */}
 
-          {dropdownOptions && (
+          {(isMember || isOwner) && dropdownOptions && (
             <TouchableOpacity
               onPress={() => setIsMenuOpen(true)}
               className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
@@ -173,7 +197,7 @@ const ItineraryHeader = ({
         </View>
       </View>
 
-      {dropdownOptions && (
+      {(isMember || isOwner) && dropdownOptions && (
         <ActionMenu
           visible={isMenuOpen}
           onClose={() => setIsMenuOpen(false)}
@@ -188,6 +212,7 @@ const ItineraryHeader = ({
         title={title}
         showImage={!isExperienceOrDestination}
         imageUri={imageUri}
+        joinCode={joinCode}
       />
     </>
   );

@@ -4,20 +4,40 @@ import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const BoardingStep3 = () => {
   const router = useRouter();
-  const { setCurrentBoardingStep, completeBoarding } = useAuth();
-  const [selectedCompanion, setSelectedCompanion] = useState<string>("");
+  const { setCurrentBoardingStep } = useAuth();
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
-  const companionOptions = [
-    "🙋🏽 Just Me (Solo)",
-    "👯 Friends",
-    "❤️ Partner",
-    "👨‍👩‍👧 Family",
-    "🌍 Community/Groups",
+  const interestOptions = [
+    " 🎵 Music Festivals",
+    " 🎨 Arts & Culture",
+    " 🌃 Nightlife",
+    " 📚 Conferences",
+    " 🖼️ Exhibitions",
+    " 📖 Book Fairs",
+    "🧵 Craft Fairs",
+    "🎤 Open Mic Nights",
+    "🧘 Wellness Retreats",
+    "🌳 Parks",
+    "🍔 Food Festivals",
+    "🎪 Carnivals",
+    "🏛️ Historical Tours",
+    "🎭 Themed Parties",
+    "🧗 Adventures",
+    "🌠 Stargazing Events",
+    "🎵 Music",
   ];
+
+  const toggleInterest = (interest: string) => {
+    setSelectedInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest],
+    );
+  };
 
   const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -25,15 +45,19 @@ const BoardingStep3 = () => {
     router.push("/boarding/step-4");
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCurrentBoardingStep(2);
+    await setCurrentBoardingStep(2);
     router.replace("/boarding/step-2");
   };
 
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
-      <BoardingHeader currentStep={3} totalSteps={4} onBack={handleBack} />
+      <BoardingHeader
+        currentStep={3}
+        totalSteps={5}
+        onBack={handleBack}
+      />
 
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">
@@ -41,50 +65,47 @@ const BoardingStep3 = () => {
             className="text-black dark:text-white text-2xl font-bold"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
-            Who do you usually go with?
+            What type of events are you most interested in?
           </Text>
           <Text className="text-gray-400 text-sm">
-            Select your typical companions for activities
+            Pick your scene so we can show you the best of the {"\n"}best only.
           </Text>
         </View>
 
-        <View className="gap-y-3">
-          {companionOptions.map((option) => (
-            <TouchableOpacity
-              key={option}
-              className={`p-4 flex flex-row items-center gap-x-5 border ${
-                selectedCompanion === option
-                  ? "bg-primary/20 border-primary"
-                  : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
-              }`}
-              onPress={() => setSelectedCompanion(option)}
-            >
-              <View
-                className={`h-[20px] w-[20px] rounded-full flex items-center justify-center border ${
-                  selectedCompanion === option
-                    ? "border-primary"
-                    : "border-gray-300 dark:border-dark-seconndary"
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="flex-row flex-wrap gap-2">
+            {interestOptions.map((interest) => (
+              <TouchableOpacity
+                key={interest}
+                className={`px-3 py-2 rounded-full border ${
+                  selectedInterests.includes(interest)
+                    ? "bg-primary/10 border-primary"
+                    : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
                 }`}
+                onPress={() => toggleInterest(interest)}
               >
-                {selectedCompanion === option && (
-                  <View className="h-[15px] w-[15px] rounded-full bg-primary" />
-                )}
-              </View>
-              <Text
-                className={`text-base font-medium ${
-                  selectedCompanion === option
-                    ? "text-primary"
-                    : "text-black dark:text-white"
-                }`}
-              >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text
+                  className={`text-xs ${
+                    selectedInterests.includes(interest)
+                      ? "text-primary"
+                      : "text-black dark:text-white"
+                  }`}
+                >
+                  {interest}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
       </View>
 
       <View className="flex-row items-center gap-x-2">
+        <TouchableOpacity
+          className="bg-primary/10 border border-primary/20 dark:bg-primary/20 h-[45px] px-[40px] rounded-full items-center justify-center"
+          onPress={handleBack}
+        >
+          <Text className="text-primary font-medium text-base">Back</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           className="bg-primary h-[45px] rounded-full flex-1 w-full items-center justify-center"
           onPress={handleNext}

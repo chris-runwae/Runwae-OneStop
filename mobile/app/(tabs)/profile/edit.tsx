@@ -92,6 +92,12 @@ const ProfileEditScreen = () => {
       return;
     }
 
+    const nameRegex = /^[a-zA-Z\s]*$/;
+    if (!nameRegex.test(fullName)) {
+      setError("Full name can only contain letters and spaces");
+      return;
+    }
+
     if (!user?.id) return;
 
     setIsUpdating(true);
@@ -178,7 +184,8 @@ const ProfileEditScreen = () => {
                 <TextInput
                   value={fullName}
                   onChangeText={(text) => {
-                    setFullName(text);
+                    const filteredText = text.replace(/[^a-zA-Z\s]/g, "");
+                    setFullName(filteredText);
                     setError(null);
                   }}
                   placeholder="Enter your full name"

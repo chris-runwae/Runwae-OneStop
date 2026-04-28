@@ -1,7 +1,8 @@
-import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, CreditCard, Lock } from "lucide-react-native";
-import React, { useState } from "react";
+import { useStripeSafe } from "@/utils/stripe-safe";
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,17 +14,18 @@ import {
   TextInput,
   useColorScheme,
   View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Spacer, Text } from "@/components";
-import { Colors, textStyles } from "@/constants";
-import { useAuth } from "@/context/AuthContext";
-import { logHotelBooking } from "@/utils/supabase/hotel-bookings.service";
-import { bookHotel } from "@/utils/supabase/liteapi.service";
+import { Spacer, Text } from '@/components';
+import { Colors, textStyles } from '@/constants';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/utils/supabase/client';
+import { logHotelBooking } from '@/utils/supabase/hotel-bookings.service';
+import { bookHotel } from '@/utils/supabase/liteapi.service';
 
 const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
+  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
 
 export default function PaymentScreen() {
   const {
@@ -41,6 +43,7 @@ export default function PaymentScreen() {
     guests: guestsStr,
     bookingType,
     tripId,
+    eventId,
   } = useLocalSearchParams<{
     hotelId: string;
     hotelName: string;
@@ -56,74 +59,174 @@ export default function PaymentScreen() {
     guests: string;
     bookingType: string;
     tripId: string;
+    eventId?: string;
   }>();
 
-  const colorScheme = useColorScheme() ?? "light";
+  const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState(user?.email ?? "");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState(user?.email ?? '');
   const [loading, setLoading] = useState(false);
+  const [paymentReady, setPaymentReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
-  const price = parseFloat(priceStr ?? "0");
-  const commission = parseFloat(commissionStr ?? "0");
-  const guests = parseInt(guestsStr ?? "1", 10);
+  const price = parseFloat(priceStr ?? '0');
+  const commission = parseFloat(commissionStr ?? '0');
+  const guests = parseInt(guestsStr ?? '1', 10);
+
+  useEffect(() => {
+    if (!price || !prebookId) return;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token ?? ''}`,
+              apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
+            },
+            body: JSON.stringify({ amount: price, currency }),
+          }
+        );
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+
+        const { error: initErr } = await initPaymentSheet({
+          merchantDisplayName: 'Runwae',
+          paymentIntentClientSecret: json.clientSecret,
+          applePay: { 
+            merchantCountryCode: 'GB',
+            merchantIdentifier: 'merchant.io.runwae.app', // Explicitly provide even if in provider
+          },
+          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
+          returnURL: 'runwae://stripe-redirect', // Required for some payment methods/redirects
+          style: 'automatic',
+        });
+        if (initErr) throw new Error(initErr.message);
+        setPaymentReady(true);
+      } catch (e) {
+        const msg =
+          e instanceof Error
+            ? e.message
+            : 'Could not load payment. Please try again.';
+        console.error('[Stripe] init failed:', e);
+        setInitError(msg);
+      }
+    })();
+  }, [price, prebookId]);
+
+  const [bookingStatus, setBookingStatus] = useState<string | null>(null);
 
   const handlePay = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      Alert.alert("Missing info", "Please fill in your name and email.");
+      Alert.alert('Missing info', 'Please fill in your name and email.');
       return;
     }
     setLoading(true);
+    setBookingStatus('Confirming payment...');
+    
     try {
-      const bookRes = await bookHotel({
-        prebookId,
-        holder: { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() },
-        payment: { method: "TRANSACTION_ID", transactionId },
-        guests: [
-          {
-            occupancyNumber: 1,
+      // 1. Present Stripe Payment Sheet
+      const { error: paymentError } = await presentPaymentSheet();
+      
+      if (paymentError) {
+        if (paymentError.code !== 'Canceled') {
+          console.error('[Stripe] Payment presented error:', paymentError);
+          Alert.alert(
+            'Payment failed',
+            paymentError.message || 'The payment could not be processed. Please check your card details.'
+          );
+        }
+        setBookingStatus(null);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Stripe confirmed — finalize the booking with LiteAPI.
+      setBookingStatus('Finalizing your booking...');
+      
+      let bookRes;
+      try {
+        bookRes = await bookHotel({
+          prebookId,
+          holder: {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             email: email.trim(),
           },
-        ],
-      });
-
-      // Log booking in Supabase
-      if (user?.id) {
-        await logHotelBooking({
-          tripId: tripId ?? null,
-          userId: user.id,
-          vendorId: null,
-          hotelId,
-          hotelName,
-          bookingRef: bookRes.data.bookingId,
-          confirmationCode: bookRes.data.hotelConfirmationCode ?? null,
-          prebookId,
-          transactionId,
-          checkin,
-          checkout,
-          guests,
-          roomCount: bookingType === "group" ? guests : 1,
-          currency: bookRes.data.currency,
-          totalAmount: bookRes.data.price,
-          commissionAmount: commission,
-          bookingType: (bookingType as "individual" | "group") ?? "individual",
-          rawResponse: bookRes as unknown as object,
+          payment: { method: 'TRANSACTION_ID', transactionId },
+          guests: [
+            {
+              occupancyNumber: 1,
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              email: email.trim(),
+            },
+          ],
         });
+      } catch (bookErr: any) {
+        console.error('[LiteAPI] Booking finalization failed:', bookErr);
+        // CRITICAL: The payment was already processed by Stripe.
+        Alert.alert(
+          'Booking Confirmation Pending',
+          'Your payment was successful, but we encountered an error while confirming your room with the hotel. \n\nIMPORTANT: Please do not try to book again. Contact support@runwae.io with your email and we will manually confirm your booking.',
+          [{ text: 'OK' }]
+        );
+        throw bookErr;
       }
 
+      // 3. Log to Supabase for itinerary tracking
+      setBookingStatus('Updating your itinerary...');
+      if (user?.id) {
+        try {
+          await logHotelBooking({
+            tripId: tripId ?? null,
+            userId: user.id,
+            vendorId: null,
+            eventId: eventId ?? null,
+            hotelId,
+            hotelName,
+            bookingRef: bookRes.data.bookingId,
+            confirmationCode: bookRes.data.hotelConfirmationCode ?? null,
+            prebookId,
+            transactionId,
+            checkin,
+            checkout,
+            guests,
+            roomCount: bookingType === 'group' ? guests : 1,
+            currency: bookRes.data.currency,
+            totalAmount: bookRes.data.price,
+            commissionAmount: commission,
+            bookingType:
+              bookingType === 'individual' || bookingType === 'group'
+                ? bookingType
+                : 'individual',
+            rawResponse: bookRes as unknown as object,
+          });
+        } catch (logErr) {
+          console.warn('[DB] Failed to log booking to history, but booking is confirmed:', logErr);
+          // We don't throw here so the user still gets to the confirmation screen.
+        }
+      }
+
+      // 4. Success!
       router.replace({
-        pathname: "/hotel/confirmation",
+        pathname: '/hotel/confirmation',
         params: {
           hotelName,
           hotelThumb,
           bookingRef: bookRes.data.bookingId,
-          confirmationCode: bookRes.data.hotelConfirmationCode ?? "",
+          confirmationCode: bookRes.data.hotelConfirmationCode ?? '',
           checkin,
           checkout,
           hotelId,
@@ -131,17 +234,19 @@ export default function PaymentScreen() {
         },
       });
     } catch (err) {
-      Alert.alert("Payment failed", (err as Error).message || "Please try again.");
+      console.error('[PaymentFlow] Error:', err);
+      // Main error handler for everything else
     } finally {
       setLoading(false);
+      setBookingStatus(null);
     }
   };
 
   const inputStyle = [
     styles.input,
     {
-      borderColor: colorScheme === "dark" ? "#374151" : "#E9ECEF",
-      backgroundColor: colorScheme === "dark" ? "#1c1c1e" : "#F9FAFB",
+      borderColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF',
+      backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#F9FAFB',
       color: colors.textColors.default,
     },
   ];
@@ -149,7 +254,7 @@ export default function PaymentScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
@@ -165,7 +270,7 @@ export default function PaymentScreen() {
           <View
             style={[
               styles.summaryCard,
-              { borderColor: colorScheme === "dark" ? "#374151" : "#E9ECEF" },
+              { borderColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF' },
             ]}>
             <Image
               source={{ uri: hotelThumb || FALLBACK_IMAGE }}
@@ -176,7 +281,11 @@ export default function PaymentScreen() {
               <Text style={styles.summaryName} numberOfLines={2}>
                 {hotelName}
               </Text>
-              <Text style={[styles.summaryDates, { color: colors.textColors.subtle }]}>
+              <Text
+                style={[
+                  styles.summaryDates,
+                  { color: colors.textColors.subtle },
+                ]}>
                 {checkin} → {checkout}
               </Text>
               <Text style={styles.summaryPrice}>
@@ -193,7 +302,11 @@ export default function PaymentScreen() {
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.textColors.subtle }]}>
+              <Text
+                style={[
+                  styles.fieldLabel,
+                  { color: colors.textColors.subtle },
+                ]}>
                 First Name
               </Text>
               <TextInput
@@ -206,7 +319,11 @@ export default function PaymentScreen() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.textColors.subtle }]}>
+              <Text
+                style={[
+                  styles.fieldLabel,
+                  { color: colors.textColors.subtle },
+                ]}>
                 Last Name
               </Text>
               <TextInput
@@ -220,7 +337,8 @@ export default function PaymentScreen() {
             </View>
           </View>
           <Spacer size={10} vertical />
-          <Text style={[styles.fieldLabel, { color: colors.textColors.subtle }]}>
+          <Text
+            style={[styles.fieldLabel, { color: colors.textColors.subtle }]}>
             Email
           </Text>
           <TextInput
@@ -239,8 +357,12 @@ export default function PaymentScreen() {
           {/* Payment method note */}
           <View style={styles.paymentNote}>
             <CreditCard size={16} color="#FF1F8C" />
-            <Text style={[styles.paymentNoteText, { color: colors.textColors.subtle }]}>
-              Payment is processed securely via LiteAPI. Card details are not stored.
+            <Text
+              style={[
+                styles.paymentNoteText,
+                { color: colors.textColors.subtle },
+              ]}>
+              Payments secured by Stripe. Supports Apple Pay & Google Pay.
             </Text>
           </View>
 
@@ -255,25 +377,43 @@ export default function PaymentScreen() {
           {
             paddingBottom: insets.bottom + 16,
             backgroundColor: colors.backgroundColors.default,
-            borderTopColor: colorScheme === "dark" ? "#374151" : "#E9ECEF",
+            borderTopColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF',
           },
         ]}>
         <View style={styles.secureRow}>
           <Lock size={12} color="#22C55E" />
           <Text style={styles.secureText}>Secured & encrypted</Text>
         </View>
-        <Pressable
-          style={[styles.payBtn, loading && { opacity: 0.7 }]}
-          onPress={handlePay}
-          disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.payBtnText}>
-              Pay {currency} {price.toFixed(0)}
-            </Text>
-          )}
-        </Pressable>
+        {initError ? (
+          <Text style={[styles.payBtnText, { color: '#EF4444', fontSize: 13 }]}>
+            {initError}
+          </Text>
+        ) : (
+          <Pressable
+            style={[
+              styles.payBtn,
+              (!paymentReady || loading) && { opacity: 0.7 },
+            ]}
+            onPress={handlePay}
+            disabled={!paymentReady || loading}>
+            {loading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" />
+                {bookingStatus && (
+                  <Text style={[styles.payBtnText, { marginLeft: 10 }]}>
+                    {bookingStatus}
+                  </Text>
+                )}
+              </View>
+            ) : !paymentReady ? (
+              <Text style={styles.payBtnText}>Loading payment...</Text>
+            ) : (
+              <Text style={styles.payBtnText}>
+                Pay {currency} {price.toFixed(0)}
+              </Text>
+            )}
+          </Pressable>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -281,8 +421,8 @@ export default function PaymentScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
@@ -290,18 +430,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     ...textStyles.bold_20,
     fontSize: 16,
     flex: 1,
-    textAlign: "center",
+    textAlign: 'center',
   },
   content: { paddingHorizontal: 16 },
   summaryCard: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
     borderWidth: 1,
     borderRadius: 12,
@@ -312,12 +452,12 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 8,
   },
-  summaryInfo: { flex: 1, justifyContent: "center", gap: 4 },
+  summaryInfo: { flex: 1, justifyContent: 'center', gap: 4 },
   summaryName: { ...textStyles.bold_20, fontSize: 14 },
   summaryDates: { fontSize: 12 },
-  summaryPrice: { ...textStyles.bold_20, fontSize: 15, color: "#FF1F8C" },
+  summaryPrice: { ...textStyles.bold_20, fontSize: 15, color: '#FF1F8C' },
   sectionLabel: { ...textStyles.bold_20, fontSize: 14 },
-  row: { flexDirection: "row", gap: 10 },
+  row: { flexDirection: 'row', gap: 10 },
   fieldLabel: { fontSize: 12, marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -327,10 +467,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   paymentNote: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
-    alignItems: "flex-start",
-    backgroundColor: "#FF1F8C08",
+    alignItems: 'flex-start',
+    backgroundColor: '#FF1F8C08',
     borderRadius: 10,
     padding: 12,
   },
@@ -341,13 +481,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 8,
   },
-  secureRow: { flexDirection: "row", alignItems: "center", gap: 5, justifyContent: "center" },
-  secureText: { fontSize: 11, color: "#22C55E" },
+  secureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    justifyContent: 'center',
+  },
+  secureText: { fontSize: 11, color: '#22C55E' },
   payBtn: {
-    backgroundColor: "#FF1F8C",
+    backgroundColor: '#FF1F8C',
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  payBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  payBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

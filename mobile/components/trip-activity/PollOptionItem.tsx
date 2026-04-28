@@ -1,4 +1,4 @@
-// components/PollOptionItem.tsx
+import { CheckCircle2, Circle } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
@@ -23,7 +23,7 @@ type PollOptionItemProps = {
   selectedOptionId?: string; // current user's voted option (single choice)
 };
 
-const PILL_HEIGHT = 52;
+const PILL_HEIGHT = 56;
 
 const PollOptionItem = ({
   optionId,
@@ -50,8 +50,8 @@ const PollOptionItem = ({
     Animated.spring(animatedWidth, {
       toValue: percentage,
       useNativeDriver: false,
-      tension: 60,
-      friction: 10,
+      tension: 40,
+      friction: 8,
     }).start();
   }, [percentage, animatedWidth]);
 
@@ -65,9 +65,7 @@ const PollOptionItem = ({
     }
   };
 
-  const fillColor = isSelected ? '#FF1F8C' : isDark ? '#2c2c2e' : '#f0f0f0';
-
-  const fillOpacity = isSelected ? 0.18 : 1;
+  const primaryColor = '#FF1F8C';
 
   return (
     <TouchableOpacity
@@ -76,8 +74,8 @@ const PollOptionItem = ({
       style={[
         styles.pill,
         {
-          borderColor: colors.borderColors.subtle,
-          backgroundColor: colors.backgroundColors.subtle,
+          borderColor: isSelected ? primaryColor : colors.borderColors.subtle,
+          backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
         },
       ]}>
       {/* Animated fill */}
@@ -85,8 +83,8 @@ const PollOptionItem = ({
         style={[
           styles.fill,
           {
-            backgroundColor: fillColor,
-            opacity: fillOpacity,
+            backgroundColor: isSelected ? primaryColor : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'),
+            opacity: isSelected ? 0.12 : 1,
             width: animatedWidth.interpolate({
               inputRange: [0, 100],
               outputRange: ['0%', '100%'],
@@ -98,21 +96,30 @@ const PollOptionItem = ({
 
       {/* Content row */}
       <View style={styles.content}>
-        <Text
-          style={[
-            styles.label,
-            { color: isSelected ? '#FF1F8C' : isDark ? '#ffffff' : '#111827' },
-          ]}
-          numberOfLines={1}>
-          {label}
-        </Text>
-        <Text
-          style={[
-            styles.percentage,
-            { color: isSelected ? '#FF1F8C' : isDark ? '#9ca3af' : '#6b7280' },
-          ]}>
-          {percentage}%
-        </Text>
+        <View style={styles.leftContent}>
+          {isSelected ? (
+            <CheckCircle2 size={20} color={primaryColor} strokeWidth={2.5} />
+          ) : (
+            <Circle size={20} color={isDark ? '#4b5563' : '#d1d5db'} strokeWidth={2} />
+          )}
+          <Text
+            style={[
+              styles.label,
+              { color: isDark ? '#ffffff' : '#111827' },
+            ]}
+            numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+        <View style={styles.rightContent}>
+          <Text
+            style={[
+              styles.percentage,
+              { color: isSelected ? primaryColor : (isDark ? '#9ca3af' : '#6b7280') },
+            ]}>
+            {percentage}%
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -123,7 +130,7 @@ export default PollOptionItem;
 const styles = StyleSheet.create({
   pill: {
     height: PILL_HEIGHT,
-    borderRadius: PILL_HEIGHT / 2,
+    borderRadius: 16,
     borderWidth: 1.5,
     overflow: 'hidden',
     marginVertical: 6,
@@ -134,28 +141,32 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    borderRadius: PILL_HEIGHT / 2,
   },
   content: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+    paddingHorizontal: 16,
+    zIndex: 1,
+  },
+  leftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  rightContent: {
+    alignItems: 'flex-end',
+    marginLeft: 12,
   },
   label: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
-    marginRight: 12,
   },
   percentage: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

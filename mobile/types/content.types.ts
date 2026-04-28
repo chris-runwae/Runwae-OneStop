@@ -17,10 +17,14 @@ export interface Destination {
   title: string;
   location: string;
   image: string;
+  country?: string | null;
   rating?: number;
   reviewCount?: number;
   description?: string;
   featured?: boolean;
+  tags?: string[] | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ─── Experience / Add-On ────────────────────────────────────────────────────

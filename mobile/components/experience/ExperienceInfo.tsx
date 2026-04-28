@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import RenderHTML from 'react-native-render-html';
 
 interface ExperienceInfoProps {
   title: string;
@@ -23,7 +24,8 @@ const ExperienceInfo = ({
   cost?: number;
   currency?: string;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { width } = useWindowDimensions();
+  const strippedDescription = description.replace(/<[^>]*>?/gm, '');
 
   return (
     <View className="px-5 pt-6">
@@ -65,12 +67,24 @@ const ExperienceInfo = ({
       </View>
 
       <View>
-        <Text
-          className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
-          numberOfLines={isExpanded ? undefined : 3}
-        >
-          {description}
-        </Text>
+        {isExpanded ? (
+          <RenderHTML
+            contentWidth={width - 40}
+            source={{ html: description }}
+            baseStyle={{
+              color: '#6B7280', // text-gray-500
+              fontSize: 14,
+              lineHeight: 24,
+            }}
+          />
+        ) : (
+          <Text
+            className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
+            numberOfLines={3}
+          >
+            {strippedDescription}
+          </Text>
+        )}
         {!isExpanded && (
           <TouchableOpacity onPress={() => setIsExpanded(true)}>
             <Text className="text-primary font-semibold mt-1">More</Text>

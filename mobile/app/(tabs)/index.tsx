@@ -28,7 +28,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const { myTrips, joinedTrips } = useTrips();
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>([]);
+  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>(
+    []
+  );
 
   function isActive(trip: TripWithEverything): boolean {
     const endDate = trip.trip_details?.end_date;
@@ -36,10 +38,26 @@ export default function HomeScreen() {
     return new Date(endDate) >= new Date(new Date().toDateString());
   }
 
-  const allTrips = useMemo(
-    () => [...myTrips, ...joinedTrips],
-    [myTrips, joinedTrips]
-  );
+  const allTrips = useMemo(() => {
+    const combined = [...myTrips, ...joinedTrips];
+    if (!user?.id) return combined;
+
+    return combined.sort((a, b) => {
+      const getInteractionDate = (trip: TripWithEverything) => {
+        if (trip.created_by === user.id) {
+          return new Date(trip.created_at).getTime();
+        }
+        const membership = trip.group_members?.find(
+          (m) => m.user_id === user.id
+        );
+        return membership
+          ? new Date(membership.joined_at).getTime()
+          : new Date(trip.created_at).getTime();
+      };
+
+      return getInteractionDate(b) - getInteractionDate(a);
+    });
+  }, [myTrips, joinedTrips, user?.id]);
 
   const upcomingTrips = useMemo(
     () => allTrips.filter((t) => isActive(t as TripWithEverything)),

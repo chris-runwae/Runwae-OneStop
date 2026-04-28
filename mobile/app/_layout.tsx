@@ -14,6 +14,8 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
+import { StripeProvider } from '@stripe/stripe-react-native';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -24,15 +26,24 @@ import 'react-native-reanimated';
 import ToastManager from 'toastify-react-native';
 
 import SplashScreen from '@/components/ui/splash-screen';
+import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
-import { useColorScheme } from 'nativewind';
 import { getThemePreference } from '@/utils/storage';
+import { useColorScheme } from 'nativewind';
 import '../global.css';
+
+const stripeMerchantIdentifier =
+  (
+    Constants.expoConfig?.extra as
+      | { stripeMerchantIdentifier?: string }
+      | undefined
+  )?.stripeMerchantIdentifier ?? 'merchant.io.runwae.app';
 
 function RouteGuard() {
   const segments = useSegments();
   const {
+    user,
     isLoading,
     hasSeenOnboarding,
     hasCompletedBoarding,
@@ -57,6 +68,9 @@ function RouteGuard() {
     'forgot-password',
     'check-email',
     'reset-password',
+    'verification-sent',
+    'reset-success',
+    'email-confirmation',
     'onboarding',
     'onboarding-steps',
   ]);
@@ -69,6 +83,7 @@ function RouteGuard() {
     'step-2',
     'step-3',
     'step-4',
+    'step-5',
   ]);
 
   const AUTHORIZED_ROOT_ROUTES = new Set([
@@ -77,10 +92,12 @@ function RouteGuard() {
     'modal',
     'itinerary',
     'experience',
+    'viator',
     'create-trip',
     'events',
     'search',
     'hotels',
+    'invite',
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -106,17 +123,23 @@ function RouteGuard() {
     'modal',
     'itinerary',
     'experience',
+    'viator',
     'destination',
     'create-trip',
     'events',
     'search',
     'hotel',
     'hotels',
+    'invite',
   ].includes(currentSegment as any);
 
   // Redirection Logic
   if (!isAuthenticated && !isInAuthFlow) {
     return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  if (isAuthenticated && !user?.email_verified && !isInAuthFlow) {
+    return <Redirect href={{ pathname: "/(auth)/verification-sent", params: { email: user?.email } } as any} />;
   }
 
   if (
@@ -137,14 +160,16 @@ function RouteGuard() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="create-trip" options={{ headerShown: false }} />
+      <Stack.Screen name="create-trip/index" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary" options={{ headerShown: false }} />
       <Stack.Screen name="experience" options={{ headerShown: false }} />
+      <Stack.Screen name="viator" options={{ headerShown: false }} />
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />
       <Stack.Screen name="hotels" options={{ headerShown: false }} />
+      <Stack.Screen name="invite" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
       <Stack.Screen
@@ -193,22 +218,26 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <KeyboardProvider>
-          <AuthProvider>
-            <TripsProvider>
-              <StatusBar style="auto" />
-              <ToastManager
-                showProgressBar={false}
-                style={{ borderRadius: 20, boxShadow: 'none' }}
-                theme={colorScheme === 'dark' ? 'dark' : 'light'}
-              />
-              <RouteGuard />
-            </TripsProvider>
-          </AuthProvider>
-        </KeyboardProvider>
-      </GestureHandlerRootView>
-    </ThemeProvider>
+    <StripeProviderSafe
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+      merchantIdentifier={stripeMerchantIdentifier}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <KeyboardProvider>
+            <AuthProvider>
+              <TripsProvider>
+                <StatusBar style="auto" />
+                <ToastManager
+                  showProgressBar={false}
+                  style={{ borderRadius: 20, boxShadow: 'none' }}
+                  theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                />
+                <RouteGuard />
+              </TripsProvider>
+            </AuthProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </ThemeProvider>
+    </StripeProviderSafe>
   );
 }

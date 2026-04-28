@@ -21,7 +21,8 @@ export const signUpSchema = z.object({
     .string()
     .min(1, "Full name is required")
     .min(2, "Full name must be at least 2 characters long")
-    .max(100, "Full name must be less than 100 characters"),
+    .max(100, "Full name must be less than 100 characters")
+    .regex(/^[a-zA-Z\s]*$/, "Full name can only contain letters and spaces"),
   email: z
     .string()
     .min(1, "Email is required")

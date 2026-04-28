@@ -1,5 +1,4 @@
 import { useTrips } from '@/context/TripsContext';
-import { usePlacesAutocomplete } from '@/hooks/usePlacesAutocomplete';
 import { useTheme } from '@react-navigation/native';
 import { Loader2, Search, SlidersHorizontal } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -26,6 +25,17 @@ import IdeaCard from './IdeaCard';
 import HotelsSection from '../trips/HotelsSection';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { ItemType } from '@/hooks/useItineraryActions';
+import {
+  loadCategoryProducts,
+  CATEGORY_LABELS,
+  type CategoryKey,
+  LEAF_CATEGORIES,
+} from '@/utils/viator/viatorCategoryCache';
+import {
+  useViatorCategory,
+  type MappedViatorIdea,
+} from '@/hooks/useViatorCategory';
+import { lookupViatorDestinationId } from '@/utils/viator/viatorDestinationLookup';
 
 interface Props {
   visible: boolean;
@@ -67,7 +77,7 @@ const SpinningLoader = ({
   );
 };
 
-export const MOCK_CATEGORIES = [
+export const SEARCH_CATEGORIES = [
   { id: 'All', label: 'All' },
   { id: 'Eat/Drink', label: '🍹 Eat/Drink' },
   { id: 'Stay', label: '🏨 Stay' },
@@ -75,89 +85,288 @@ export const MOCK_CATEGORIES = [
   { id: 'Shop', label: '🛍️ Shop' },
 ];
 
-export const MOCK_IDEAS = [
-  {
-    id: '1',
-    category: 'Eat/Drink',
-    categoryLabel: '🍹 Eat/Drink',
-    title: 'Sunset Cocktails',
-    description: 'Savor exotic flavors and stunning views at a beachside bar.',
-    imageUri:
-      'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.9,
-    isFree: false,
-    createdAt: '2024-01-01',
+interface ViatorCategorySectionProps {
+  category: CategoryKey;
+  localQuery: string;
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
+  onAdd: (idea: MappedViatorIdea) => void;
+  scrollEnabled?: boolean;
+  destinationId?: string | null;
+}
+
+function ViatorCategorySection({
+  category,
+  localQuery,
+  colors,
+  onAdd,
+  scrollEnabled = true,
+  destinationId,
+}: ViatorCategorySectionProps) {
+  const { products, loading, error, retry } = useViatorCategory(
+    category,
+    destinationId
+  );
+
+  const filtered = React.useMemo(() => {
+    if (!localQuery) return products;
+    const q = localQuery.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [products, localQuery]);
+
+  if (loading) {
+    return (
+      <View style={sectionStyles.center}>
+        <SpinningLoader size={28} color="#FF1F8C" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={sectionStyles.center}>
+        <Text
+          style={[
+            sectionStyles.errorText,
+            { color: colors.textColors.subtle },
+          ]}>
+          {error}
+        </Text>
+        <TouchableOpacity onPress={retry} style={sectionStyles.retryBtn}>
+          <Text style={sectionStyles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      scrollEnabled={scrollEnabled}
+      data={filtered}
+      keyExtractor={(item) => item.id}
+      numColumns={2}
+      columnWrapperStyle={styles.ideaGridRow}
+      contentContainerStyle={styles.ideaGridContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      ListEmptyComponent={() => (
+        <View style={styles.emptyState}>
+          <Text
+            style={[
+              styles.emptyStateTitle,
+              { color: colors.textColors.default },
+            ]}>
+            No ideas found
+          </Text>
+          <Text
+            style={[styles.emptyStateSub, { color: colors.textColors.subtle }]}>
+            Try searching for something else or changing the category.
+          </Text>
+        </View>
+      )}
+      renderItem={({ item }) => (
+        <IdeaCard
+          imageUri={item.imageUri}
+          categoryLabel={item.categoryLabel}
+          title={item.title}
+          description={item.description}
+          onAdd={() => onAdd(item)}
+          viatorProductCode={item.id}
+          price={item.price}
+          currency={item.currency}
+        />
+      )}
+    />
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
   },
-  {
-    id: '2',
-    category: 'Stay',
-    categoryLabel: '🏨 Stay',
-    title: 'Boutique Hotel',
-    description:
-      'Rejuvenate your body and mind with amazing room overlooking the serene ocean.',
-    imageUri:
-      'https://images.unsplash.com/photo-1542314831-c6a4d14b1b36?q=80&w=600&auto=format&fit=crop',
-    isMustSee: false,
-    rating: 4.7,
-    isFree: false,
-    isHiddenGem: true,
-    createdAt: '2024-02-01',
+  errorText: {
+    fontSize: 14,
+    fontFamily: AppFonts.inter.regular,
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  {
-    id: '3',
-    category: 'Do',
-    categoryLabel: '🎭 Do',
-    title: 'Local Artisans Market',
-    description:
-      'Discover handmade crafts and unique souvenirs from talented local artists.',
-    imageUri:
-      'https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?q=80&w=600&auto=format&fit=crop',
-    isMustSee: false,
-    rating: 4.5,
-    isFree: true,
-    createdAt: '2024-03-01',
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#FF2E92',
+    borderRadius: 99,
   },
-  {
-    id: '4',
-    category: 'Shop',
-    categoryLabel: '🛍️ Shop',
-    title: 'Food Tour',
-    description:
-      "Embark on a culinary adventure sampling dishes from the region's best eateries.",
-    imageUri:
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.8,
-    isFree: false,
-    createdAt: '2024-04-01',
+  retryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: AppFonts.inter.semiBold,
   },
-  {
-    id: '5',
-    category: 'Do',
-    categoryLabel: '🎭 Do',
-    title: 'Sunset Cruise',
-    description:
-      'Experience breathtaking sunsets while sailing on the serene waters of the bay.',
-    imageUri:
-      'https://images.unsplash.com/photo-1514886675239-6d654497e875?q=80&w=600&auto=format&fit=crop',
-    isMustSee: true,
-    rating: 4.9,
-    isFree: false,
-    createdAt: '2024-05-01',
+});
+
+interface SearchResultGroupProps {
+  category: Exclude<CategoryKey, 'All'>;
+  localQuery: string;
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
+  onAdd: (idea: MappedViatorIdea) => void;
+  destinationId?: string | null;
+}
+
+function SearchResultGroup({
+  category,
+  localQuery,
+  colors,
+  onAdd,
+  destinationId,
+}: SearchResultGroupProps) {
+  const { products } = useViatorCategory(category, destinationId);
+  const q = localQuery.toLowerCase();
+  const filtered = products.filter(
+    (p) =>
+      p.title.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) return null;
+
+  return (
+    <View>
+      <Text
+        style={[allStyles.sectionHeader, { color: colors.textColors.default }]}>
+        {CATEGORY_LABELS[category]} · {filtered.length} result
+        {filtered.length !== 1 ? 's' : ''}
+      </Text>
+      <FlatList
+        scrollEnabled={false}
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.ideaGridRow}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item }) => (
+          <IdeaCard
+            imageUri={item.imageUri}
+            categoryLabel={item.categoryLabel}
+            title={item.title}
+            description={item.description}
+            onAdd={() => onAdd(item)}
+            viatorProductCode={item.id}
+            price={item.price}
+            currency={item.currency}
+          />
+        )}
+      />
+    </View>
+  );
+}
+
+interface AllCategoryViewProps {
+  localQuery: string;
+  colors: {
+    textColors: { default: string; subtle: string };
+    [key: string]: any;
+  };
+  onAdd: (idea: MappedViatorIdea) => void;
+  destinationId?: string | null;
+}
+
+function AllCategoryView({
+  localQuery,
+  colors,
+  onAdd,
+  destinationId,
+}: AllCategoryViewProps) {
+  if (localQuery) {
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.ideaGridContent}>
+        {LEAF_CATEGORIES.map((cat) => (
+          <SearchResultGroup
+            key={cat}
+            category={cat}
+            localQuery={localQuery}
+            colors={colors}
+            onAdd={onAdd}
+            destinationId={destinationId}
+          />
+        ))}
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled">
+      {LEAF_CATEGORIES.map((cat) => (
+        <View key={cat} style={allStyles.section}>
+          <Text
+            style={[
+              allStyles.sectionHeader,
+              { color: colors.textColors.default },
+            ]}>
+            {CATEGORY_LABELS[cat]}
+          </Text>
+          <ViatorCategorySection
+            category={cat}
+            localQuery=""
+            colors={colors}
+            onAdd={onAdd}
+            scrollEnabled={false}
+            destinationId={destinationId}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+const allStyles = StyleSheet.create({
+  section: {
+    marginBottom: 8,
   },
-];
+  sectionHeader: {
+    fontSize: 15,
+    fontFamily: AppFonts.inter.semiBold,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+});
+
+interface HotelIdeaData {
+  name: string;
+  hotelId: string;
+  address: string;
+  roomTypes: unknown[];
+  thumbnail?: string | null;
+  all_data: unknown;
+}
 
 export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { addIdea } = useTrips();
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState<
+    'All' | 'Stay' | Exclude<CategoryKey, 'All'>
+  >('All');
   const [activeIdeaFilter, setActiveIdeaFilter] = useState<string | null>(null);
   const [localQuery, setLocalQuery] = useState('');
+  const [destinationId, setDestinationId] = useState<string | null>(null);
 
-  const { query, setQuery, results, loading, clearResults } =
-    usePlacesAutocomplete();
   const translateY = useRef(new Animated.Value(900)).current;
 
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
@@ -181,73 +390,54 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         friction: 11,
       }).start();
       setTimeout(() => inputRef.current?.focus(), 150);
+      lookupViatorDestinationId(trip.destination_label).then((id) => {
+        setDestinationId(id);
+        const filters = id ? { destination: id } : {};
+        Promise.all([
+          loadCategoryProducts('Eat/Drink', filters),
+          loadCategoryProducts('Do', filters),
+          loadCategoryProducts('Shop', filters),
+        ]).catch(() => {
+          /* swallow prefetch errors — hooks will retry on mount */
+        });
+      });
     } else {
       Animated.timing(translateY, {
         toValue: 600,
         duration: 250,
         useNativeDriver: true,
       }).start();
-      setQuery('');
       setLocalQuery('');
-      clearResults();
       setActiveCategory('All');
+      setDestinationId(null);
     }
   }, [visible]);
 
-  const filteredIdeas = React.useMemo(() => {
-    let result = MOCK_IDEAS.filter((idea) => {
-      const matchesCategory =
-        activeCategory === 'All' || idea.category === activeCategory;
-      const matchesQuery =
-        !localQuery ||
-        idea.title.toLowerCase().includes(localQuery.toLowerCase()) ||
-        idea.description.toLowerCase().includes(localQuery.toLowerCase()) ||
-        idea.category.toLowerCase().includes(localQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
-    });
-
-    if (activeIdeaFilter === 'Must See') {
-      result = result.filter((i) => (i as any).isMustSee);
-    } else if (activeIdeaFilter === 'Hidden Gems') {
-      result = result.filter((i) => (i as any).isHiddenGem);
-    } else if (activeIdeaFilter === 'Free Activities') {
-      result = result.filter((i) => (i as any).isFree);
-    } else if (activeIdeaFilter === 'High Rating') {
-      result = [...result].sort(
-        (a, b) => (b as any).rating - (a as any).rating
-      );
-    } else if (activeIdeaFilter === 'Recently Added') {
-      result = [...result].sort(
-        (a, b) =>
-          new Date((b as any).createdAt).getTime() -
-          new Date((a as any).createdAt).getTime()
-      );
-    }
-
-    return result;
-  }, [activeCategory, localQuery, activeIdeaFilter]);
-
-  const handleSaveIdea = async (idea: any) => {
+  const handleSaveIdea = async (idea: MappedViatorIdea | HotelIdeaData) => {
     let input;
 
     if (ideaType === 'hotel') {
-      const roomTypes = idea.roomTypes.length;
+      const hotel = idea as HotelIdeaData;
+      const roomTypes = hotel.roomTypes.length;
       input = {
-        name: idea.name,
+        name: hotel.name,
         type: ideaType,
         location: 'Stay',
-        external_id: idea.hotelId,
-        notes: `${idea.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
-        all_data: idea,
-        cover_image: idea.thumbnail || null,
+        external_id: hotel.hotelId,
+        notes: `${hotel.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
+        all_data: hotel,
+        cover_image: hotel.thumbnail || null,
       };
     } else {
+      const activity = idea as MappedViatorIdea;
       input = {
-        name: idea.title,
+        name: activity.title,
         type: ideaType,
-        location: idea.category,
-        external_id: idea.id,
-        notes: idea.description,
+        location: activity.category,
+        external_id: activity.id,
+        notes: activity.description,
+        cover_image: activity.imageUri,
+        all_data: activity,
       };
     }
     await addIdea(input);
@@ -338,27 +528,20 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
             <TextInput
               ref={inputRef}
               value={localQuery}
-              onChangeText={(txt) => {
-                setLocalQuery(txt);
-                setQuery(txt); // Still power the hook behind the scenes
-              }}
+              onChangeText={setLocalQuery}
               placeholder="Search trips, hotels, experiences..."
               placeholderTextColor={dark ? '#6B7280' : '#AEAEAE'}
               style={[styles.searchInput, { color: colors.textColors.default }]}
             />
-            {loading ? (
-              <SpinningLoader size={18} color="#FF1F8C" style={styles.loader} />
-            ) : (
-              <TouchableOpacity
-                ref={filterBtnRef}
-                onPress={handleFilterPress}
-                hitSlop={10}>
-                <SlidersHorizontal
-                  size={18}
-                  color={dark ? '#9CA3AF' : '#AEAEAE'}
-                />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              ref={filterBtnRef}
+              onPress={handleFilterPress}
+              hitSlop={10}>
+              <SlidersHorizontal
+                size={18}
+                color={dark ? '#9CA3AF' : '#AEAEAE'}
+              />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.categoriesWrapper}>
@@ -366,12 +549,16 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesContainer}>
-              {MOCK_CATEGORIES.map((cat) => {
+              {SEARCH_CATEGORIES.map((cat) => {
                 const isActive = activeCategory === cat.id;
                 return (
                   <Pressable
                     key={cat.id}
-                    onPress={() => setActiveCategory(cat.id)}
+                    onPress={() =>
+                      setActiveCategory(
+                        cat.id as 'All' | 'Stay' | Exclude<CategoryKey, 'All'>
+                      )
+                    }
                     style={[
                       styles.categoryPill,
                       {
@@ -408,42 +595,20 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
 
           {activeCategory === 'Stay' ? (
             <HotelsSection trip={trip} onAdd={handleSaveIdea} />
+          ) : activeCategory === 'All' ? (
+            <AllCategoryView
+              localQuery={localQuery}
+              colors={colors}
+              onAdd={handleSaveIdea}
+              destinationId={destinationId}
+            />
           ) : (
-            <FlatList
-              data={filteredIdeas}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.ideaGridRow}
-              contentContainerStyle={styles.ideaGridContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={() => (
-                <View style={styles.emptyState}>
-                  <Text
-                    style={[
-                      styles.emptyStateTitle,
-                      { color: colors.textColors.default },
-                    ]}>
-                    No ideas found
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptyStateSub,
-                      { color: colors.textColors.subtle },
-                    ]}>
-                    Try searching for something else or changing the category.
-                  </Text>
-                </View>
-              )}
-              renderItem={({ item }) => (
-                <IdeaCard
-                  imageUri={item.imageUri}
-                  categoryLabel={item.categoryLabel}
-                  title={item.title}
-                  description={item.description}
-                  onAdd={() => handleSaveIdea(item)}
-                />
-              )}
+            <ViatorCategorySection
+              category={activeCategory as Exclude<CategoryKey, 'All'>}
+              localQuery={localQuery}
+              colors={colors}
+              onAdd={handleSaveIdea}
+              destinationId={destinationId}
             />
           )}
 
@@ -500,7 +665,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: AppFonts.inter.regular,
   },
-  loader: {},
   categoriesWrapper: {
     marginHorizontal: -20, // Negative margin to allow ScrollView to stretch full width but item padding manages safety
   },
@@ -515,14 +679,10 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     borderWidth: 1,
   },
-  categoryPillActive: {},
   categoryPillText: {
     fontSize: 13,
     fontFamily: AppFonts.inter.medium,
     color: '#6B7280',
-  },
-  categoryPillTextActive: {
-    color: '#ffffff',
   },
   ideaGridContent: {
     paddingBottom: 40,

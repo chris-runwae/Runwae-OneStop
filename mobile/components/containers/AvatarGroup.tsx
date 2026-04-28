@@ -96,8 +96,11 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
     },
   });
 
+  const totalCount = visible.length + (remaining > 0 ? 1 : 0);
+  const containerWidth = totalCount > 0 ? (totalCount - 1) * (size - overlap) + size : 0;
+
   return (
-    <View style={[styles.container, { height: size }]}>
+    <View style={[styles.container, { height: size, width: containerWidth }]}>
       {visible.map((user, index) => {
         const initials = user.profiles?.full_name
           ? user.profiles?.full_name

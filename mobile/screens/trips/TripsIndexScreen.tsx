@@ -2,8 +2,9 @@ import TripCard from '@/components/home/TripCard';
 import EmptyTripsState from '@/components/trips/EmptyTripsState';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
-import NotificationBell from '@/components/ui/NotificationBell';
+// import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
+import { useAuth } from '@/hooks/useAuth';
 import { TripWithEverything } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
@@ -51,88 +52,6 @@ function isSaved(trip: TripWithEverything): boolean {
   return (trip.trip_details as any)?.is_saved === true;
 }
 
-// ================================================================
-// TripCard
-// ================================================================
-
-// interface TripCardProps {
-//   trip: TripWithDetails;
-//   dark: boolean;
-// }
-
-// function TripCard({ trip, dark }: TripCardProps) {
-//   const coverImage = trip.trip_details?.cover_image_url;
-//   const dateRange = formatDateRange(
-//     trip.trip_details?.start_date,
-//     trip.trip_details?.end_date
-//   );
-
-//   // console.log('trip', trip);
-
-//   return (
-//     <TouchableOpacity
-//       style={[styles.card, { backgroundColor: dark ? '#1c1c1e' : '#ffffff' }]}
-//       onPress={() => router.push(`/(tabs)/(trips)/${trip.id}` as any)}
-//       activeOpacity={0.85}>
-//       <View style={styles.cardImageContainer}>
-//         {coverImage ? (
-//           <Image
-//             source={{ uri: coverImage }}
-//             style={styles.cardImage}
-//             resizeMode="cover"
-//           />
-//         ) : (
-//           <View
-//             style={[
-//               styles.cardImagePlaceholder,
-//               { backgroundColor: dark ? '#2c2c2e' : '#f3f4f6' },
-//             ]}>
-//             <MapPin
-//               size={28}
-//               strokeWidth={1.5}
-//               color={dark ? '#6b7280' : '#9ca3af'}
-//             />
-//           </View>
-//         )}
-//       </View>
-
-//       <View style={styles.cardBody}>
-//         <Text
-//           style={[styles.cardTitle, { color: dark ? '#ffffff' : '#111827' }]}
-//           numberOfLines={1}>
-//           {trip.name}
-//         </Text>
-
-//         {trip.destination_label ? (
-//           <View style={styles.cardRow}>
-//             <MapPin
-//               size={13}
-//               strokeWidth={1.5}
-//               color={dark ? '#9ca3af' : '#6b7280'}
-//             />
-//             <Text
-//               style={[styles.cardMeta, { color: dark ? '#9ca3af' : '#6b7280' }]}
-//               numberOfLines={1}>
-//               {trip.destination_label}
-//             </Text>
-//           </View>
-//         ) : null}
-
-//         <View style={styles.cardFooter}>
-//           <Text
-//             style={[styles.cardDate, { color: dark ? '#6b7280' : '#9ca3af' }]}>
-//             {dateRange}
-//           </Text>
-//         </View>
-//       </View>
-//     </TouchableOpacity>
-//   );
-// }
-
-// ================================================================
-// TripsIndexScreen
-// ================================================================
-
 export default function TripsIndexScreen() {
   const {
     myTrips,
@@ -141,6 +60,8 @@ export default function TripsIndexScreen() {
     refreshMyTrips,
     refreshJoinedTrips,
   } = useTrips();
+  const { user } = useAuth();
+  const userId = user?.id;
   const { dark } = useTheme();
   const [activeSegment, setActiveSegment] = useState<Segment>('active');
   const [activeRoleFilter, setActiveRoleFilter] = useState('all');
@@ -148,10 +69,26 @@ export default function TripsIndexScreen() {
 
   const myTripIds = useMemo(() => new Set(myTrips.map((t) => t.id)), [myTrips]);
 
-  const allTrips = useMemo(
-    () => [...myTrips, ...joinedTrips],
-    [myTrips, joinedTrips]
-  );
+  const allTrips = useMemo(() => {
+    const combined = [...myTrips, ...joinedTrips];
+    if (!userId) return combined;
+
+    return combined.sort((a, b) => {
+      const getInteractionDate = (trip: TripWithEverything) => {
+        if (trip.created_by === userId) {
+          return new Date(trip.created_at).getTime();
+        }
+        const membership = trip.group_members?.find(
+          (m) => m.user_id === userId
+        );
+        return membership
+          ? new Date(membership.joined_at).getTime()
+          : new Date(trip.created_at).getTime();
+      };
+
+      return getInteractionDate(b) - getInteractionDate(a);
+    });
+  }, [myTrips, joinedTrips, userId]);
 
   const segmentedTrips = useMemo(() => {
     switch (activeSegment) {
@@ -268,7 +205,7 @@ export default function TripsIndexScreen() {
             ]}>
             Trips
           </Text>
-          <NotificationBell />
+          {/* <NotificationBell /> */}
         </View>
 
         <View style={styles.tabRow}>

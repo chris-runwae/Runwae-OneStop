@@ -57,7 +57,7 @@ const OnboardingScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center gap-2">
+        {/* <View className="flex-row items-center gap-2">
           <View className="flex-1 h-[1px] bg-gray-100 dark:bg-gray-800" />
           <View className="h-[30px] w-[30px] flex-row items-center justify-center">
             <Text className="text-gray-400">or</Text>
@@ -74,7 +74,7 @@ const OnboardingScreen = () => {
               {data.icon}
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
       </View>
 
       <Text className="text-center text-sm text-gray-400">

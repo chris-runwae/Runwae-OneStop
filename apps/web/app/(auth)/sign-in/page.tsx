@@ -54,6 +54,8 @@ export default function SignInPage() {
     }
   }
 
+  const justDeleted = params.get("deleted") === "1";
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center space-y-8 px-4 py-12">
       <div className="space-y-3 text-center">
@@ -63,6 +65,13 @@ export default function SignInPage() {
         <h1 className="font-display text-2xl font-bold text-foreground">Welcome back</h1>
         <p className="text-sm text-muted-foreground">Sign in to continue planning</p>
       </div>
+
+      {justDeleted && (
+        <div className="rounded-xl border border-border bg-muted/40 p-3 text-center text-xs text-muted-foreground">
+          Your account is scheduled for deletion. Sign back in within 30 days
+          to restore it.
+        </div>
+      )}
 
       <form onSubmit={handlePasswordSubmit} className="space-y-3">
         <input

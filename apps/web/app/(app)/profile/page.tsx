@@ -13,6 +13,7 @@ import {
   Mail,
   Pencil,
   Tag,
+  Trash2,
   X,
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
@@ -20,6 +21,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TimezonePicker } from "@/components/ui/timezone-picker";
+import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
 import { cn } from "@/lib/utils";
 
 const CURRENCIES = ["GBP", "USD", "EUR", "JPY", "AUD", "CAD", "MXN"] as const;
@@ -50,6 +52,7 @@ export default function ProfilePage() {
   const setAvatar = useMutation(api.users.setAvatar);
 
   const [signingOut, setSigningOut] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // ── username
   const [editingUsername, setEditingUsername] = useState(false);
@@ -556,6 +559,30 @@ export default function ProfilePage() {
             <LogOut className="h-4 w-4" />
             Sign out
           </Button>
+
+          <section className="mt-10 rounded-2xl border border-error/30 bg-error/5 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-error">
+              Danger zone
+            </div>
+            <p className="mt-1 text-sm text-foreground">
+              Delete your Runwae account. We&apos;ll lock it for 30 days so you
+              can change your mind. After that, your trips, posts, and personal
+              data are permanently removed.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-error/40 px-4 text-sm font-semibold text-error transition-colors hover:bg-error hover:text-white"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete account
+            </button>
+          </section>
+
+          <DeleteAccountDialog
+            open={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+          />
         </>
       )}
     </main>

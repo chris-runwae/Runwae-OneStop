@@ -10,7 +10,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  UserPlus,
+  X,
 } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LocationValue } from "@/components/ui/location-picker";
@@ -48,6 +51,10 @@ type Range = { start: Date | null; end: Date | null };
 interface CreateTripModalProps {
   open: boolean;
   onClose: () => void;
+  // Optional pre-selected destination (e.g. from the home Trending card).
+  // The modal still lets the user change it — this just skips the empty
+  // state on step 1.
+  seedDestination?: LocationValue;
 }
 
 // Quick-create modal opened from the sidebar "Create" button. Mirrors the
@@ -55,11 +62,16 @@ interface CreateTripModalProps {
 //   1. Destination — preset chips of seeded destinations + Nominatim search
 //   2. Dates — calendar with quick-pick weekend/week
 //   3. Details — title + Unsplash cover + invites + currency
+//   4. Success — confetti + View Trip / Share Trip CTAs
 //
 // /trips/new (the older multi-step wizard) is kept as the "deep link" form.
 // Any links pointing there still work; the sidebar just doesn't go through
 // it any more.
-export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
+export function CreateTripModal({
+  open,
+  onClose,
+  seedDestination,
+}: CreateTripModalProps) {
   const router = useRouter();
   const createTrip = useMutation(api.trips.createTrip);
   const inviteToTrip = useMutation(api.trips.inviteToTrip);
@@ -70,9 +82,9 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
   const recentFriends = useQuery(api.social.recentFriends, { limit: 5 });
 
   const [step, setStep] = useState(1);
-  const [destination, setDestination] = useState<LocationValue>({
-    destinationLabel: "",
-  });
+  const [destination, setDestination] = useState<LocationValue>(
+    seedDestination ?? { destinationLabel: "" }
+  );
   const [range, setRange] = useState<Range>({ start: null, end: null });
   const [quickPick, setQuickPick] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -82,13 +94,18 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Result of a successful submit — drives the confetti/success screen
+  // (step 4) where we also let the user share the freshly-created trip.
+  const [resultSlug, setResultSlug] = useState<string | null>(null);
+  const [resultTripId, setResultTripId] = useState<Id<"trips"> | null>(null);
+
   const submittedRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
         setStep(1);
-        setDestination({ destinationLabel: "" });
+        setDestination(seedDestination ?? { destinationLabel: "" });
         setRange({ start: null, end: null });
         setQuickPick(null);
         setTitle("");
@@ -97,10 +114,17 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
         setInviteIds([]);
         setSubmitting(false);
         setError(null);
+        setResultSlug(null);
+        setResultTripId(null);
         submittedRef.current = false;
       }, 250);
       return () => clearTimeout(t);
     }
+    // When opening with a fresh seed, prime the destination state.
+    if (seedDestination?.destinationLabel) {
+      setDestination(seedDestination);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const fmtShort = (d: Date | null) =>
@@ -151,8 +175,11 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
           )
         );
       }
-      onClose();
-      router.push(`/trips/${result.slug}`);
+      // Advance to the success/confetti step instead of closing+routing.
+      // The user picks where to go next from there.
+      setResultSlug(result.slug);
+      setResultTripId(result.tripId);
+      setStep(4);
     } catch (err) {
       submittedRef.current = false;
       setError(err instanceof Error ? err.message : "Couldn't create trip.");
@@ -161,12 +188,16 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
     }
   }
 
-  const stepLabel = `Step ${step} of 3`;
-  const progress = (step / 3) * 100;
+  // Step 4 is the post-create success screen — keep the progress bar full
+  // there so it doesn't read as "step 4 of 3".
+  const totalUserSteps = 3;
+  const stepLabel = step <= totalUserSteps ? `Step ${step} of ${totalUserSteps}` : "Done";
+  const progress = step <= totalUserSteps ? (step / totalUserSteps) * 100 : 100;
 
   // Pinned footer keeps the primary action visible even when the body
-  // (Unsplash grid on step 3) needs to scroll.
-  const footer = (
+  // (Unsplash grid on step 3) needs to scroll. Hidden on step 4 — the
+  // success screen has its own CTAs.
+  const footer = step <= totalUserSteps ? (
     <div className="flex items-center gap-2">
       {step > 1 && (
         <button
@@ -200,7 +231,7 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
         </button>
       )}
     </div>
-  );
+  ) : undefined;
 
   return (
     <Modal open={open} onClose={onClose} title="" footer={footer}>
@@ -280,6 +311,20 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
           }
           recentFriends={recentFriends}
           destinationLabel={destination.destinationLabel}
+        />
+      )}
+
+      {step === 4 && resultSlug && resultTripId && (
+        <SuccessStep
+          slug={resultSlug}
+          tripId={resultTripId}
+          destinationLabel={destination.destinationLabel}
+          onView={() => {
+            const slug = resultSlug;
+            onClose();
+            router.push(`/trips/${slug}`);
+          }}
+          onClose={onClose}
         />
       )}
 
@@ -711,5 +756,257 @@ function DetailsStep({
         </p>
       </div>
     </>
+  );
+}
+
+// Success/confetti step shown after a trip is created. Two CTAs:
+//   - View Trip → routes to /trips/[slug]
+//   - Share Trip → swaps the modal body for a username search that calls
+//     trips.inviteToTrip per pick. Same pattern as ShareClient so users
+//     get a familiar invite UI without leaving the create flow.
+function SuccessStep({
+  slug,
+  tripId,
+  destinationLabel,
+  onView,
+  onClose,
+}: {
+  slug: string;
+  tripId: Id<"users"> extends never ? never : Id<"trips">;
+  destinationLabel: string;
+  onView: () => void;
+  onClose: () => void;
+}) {
+  const [showShare, setShowShare] = useState(false);
+  const [search, setSearch] = useState("");
+  const [pendingId, setPendingId] = useState<Id<"users"> | null>(null);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const inviteToTrip = useMutation(api.trips.inviteToTrip);
+  const results = useQuery(
+    api.users.searchByUsername,
+    search.trim().length >= 2 ? { term: search.trim() } : "skip"
+  );
+
+  // Light confetti on mount — pure CSS, no extra dep. We render 12
+  // streamers that drift down and fade. Hidden when we swap to the share
+  // panel so they don't keep falling behind the search results.
+  const streamers = Array.from({ length: 12 }, (_, i) => i);
+
+  async function invite(userId: Id<"users">) {
+    setShareError(null);
+    setPendingId(userId);
+    try {
+      await inviteToTrip({ tripId, inviteeId: userId });
+      setInvitedIds((prev) => {
+        const next = new Set(prev);
+        next.add(userId);
+        return next;
+      });
+    } catch (e) {
+      setShareError(e instanceof Error ? e.message : "Couldn't send invite.");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function copyLink() {
+    if (typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/t/${slug}`);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      setShareError("Couldn't copy link.");
+    }
+  }
+
+  if (showShare) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowShare(false)}
+          aria-label="Back to summary"
+          className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3 w-3" /> Back
+        </button>
+        <h2 className="font-display text-[22px] font-bold leading-tight">
+          Share trip
+        </h2>
+        <p className="mb-3 mt-1 text-[13px] text-muted-foreground">
+          Search for friends by username, or copy the link.
+        </p>
+
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-background px-3">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value.toLowerCase())}
+            placeholder="Search any user by username"
+            spellCheck={false}
+            autoComplete="off"
+            className="h-10 flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
+
+        {shareError && (
+          <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            {shareError}
+          </div>
+        )}
+
+        {search.trim().length >= 2 && results !== undefined && (
+          <ul className="space-y-1.5">
+            {results.length === 0 ? (
+              <li className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                No matches.
+              </li>
+            ) : (
+              results.map((u) => {
+                const invited = invitedIds.has(u._id);
+                const busy = pendingId === u._id;
+                return (
+                  <li
+                    key={u._id}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-2.5"
+                  >
+                    <Avatar
+                      src={u.image ?? undefined}
+                      name={u.name ?? undefined}
+                      size="sm"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {u.name ?? "User"}
+                      </div>
+                      {u.username && (
+                        <div className="truncate text-xs text-muted-foreground">
+                          @{u.username}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => invite(u._id)}
+                      disabled={busy || invited}
+                      className={cn(
+                        "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-60",
+                        invited
+                          ? "bg-emerald-500/15 text-emerald-700"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      )}
+                    >
+                      {invited ? (
+                        <>
+                          <Check className="h-3 w-3" /> Invited
+                        </>
+                      ) : busy ? (
+                        "Sending…"
+                      ) : (
+                        <>
+                          <UserPlus className="h-3 w-3" /> Invite
+                        </>
+                      )}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          onClick={copyLink}
+          className="mt-4 inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 text-[12.5px] font-semibold text-foreground hover:bg-muted"
+        >
+          {linkCopied ? (
+            <>
+              <Check className="h-3.5 w-3.5" /> Link copied
+            </>
+          ) : (
+            <>
+              <Search className="h-3.5 w-3.5" /> Or copy public link
+            </>
+          )}
+        </button>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={onView}
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            View Trip <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex flex-col items-center px-2 py-3 text-center">
+      {/* CSS-only confetti — drift + fade, kicks off on mount. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 overflow-hidden"
+      >
+        {streamers.map((i) => {
+          const left = (i * 8.3) % 100;
+          const delay = (i % 4) * 0.18;
+          const colour = ["#FF3D7F", "#FFB800", "#7B61FF", "#3DD68C"][i % 4];
+          return (
+            <span
+              key={i}
+              style={{
+                left: `${left}%`,
+                background: colour,
+                animationDelay: `${delay}s`,
+              }}
+              className="absolute -top-4 h-3 w-1.5 rounded-full opacity-80 [animation:rw-pop-in_900ms_ease-out_forwards,rw-peek-float_2.4s_ease-in-out_infinite]"
+            />
+          );
+        })}
+      </div>
+
+      <div className="mb-5 grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40">
+        <Check className="h-8 w-8" strokeWidth={3} />
+      </div>
+      <div className="mb-1 font-display text-[22px] font-bold leading-tight">
+        Trip created!
+      </div>
+      <p className="mb-6 max-w-[320px] text-[13.5px] text-muted-foreground">
+        Your trip{destinationLabel ? ` to ${destinationLabel.split(",")[0]}` : ""}{" "}
+        is ready. View it now or send invites to your crew.
+      </p>
+
+      <div className="flex w-full max-w-[320px] flex-col gap-2">
+        <button
+          type="button"
+          onClick={onView}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90"
+        >
+          View Trip <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowShare(true)}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-card text-sm font-semibold text-foreground hover:bg-muted"
+        >
+          <UserPlus className="h-4 w-4" /> Share Trip
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
+        >
+          Close
+        </button>
+      </div>
+    </div>
   );
 }

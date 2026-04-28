@@ -957,14 +957,18 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Slide stage */}
+      {/* Slide stage. Each step is absolutely positioned for the slide
+          animation; we add `overflow-y-auto` + safe-area padding so tall
+          steps (Step 5 / Step 6 with grids and lists) are still scrollable
+          on small mobile viewports — otherwise the Continue button hides
+          below the fold. */}
       <div className="relative flex-1 overflow-hidden">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => i).map((i) => (
           <div
             key={i}
             aria-hidden={i !== step}
             className={cn(
-              "absolute inset-0 mx-auto flex w-full max-w-xl flex-col px-5 pb-6 pt-8 transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(.2,.9,.25,1)] md:px-7 md:pt-12",
+              "absolute inset-0 mx-auto flex w-full max-w-xl flex-col overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-8 transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(.2,.9,.25,1)] md:px-7 md:pt-12",
               i === step && "translate-x-0 opacity-100",
               i > step && "pointer-events-none translate-x-16 opacity-0",
               i < step && "pointer-events-none -translate-x-16 opacity-0",

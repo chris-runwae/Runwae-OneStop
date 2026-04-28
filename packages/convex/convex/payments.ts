@@ -85,6 +85,54 @@ export const createCheckoutSession = action({
   },
 });
 
+// Cancel an active Stripe subscription at the end of the current billing
+// period. We don't terminate immediately because the user has already paid
+// for the current period and is entitled to use it. Used by the
+// account-deletion flow.
+export const cancelStripeSubscription = internalAction({
+  args: {
+    stripeSubscriptionId: v.string(),
+  },
+  handler: async (
+    _ctx,
+    { stripeSubscriptionId },
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) return { ok: false, error: "Stripe not configured" };
+    try {
+      const body = new URLSearchParams({ cancel_at_period_end: "true" });
+      const res = await fetch(
+        `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(stripeSubscriptionId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body.toString(),
+        },
+      );
+      const json = (await res.json()) as {
+        id?: string;
+        error?: { message?: string };
+      };
+      if (!res.ok || !json.id) {
+        const err =
+          json.error?.message ?? `Subscription cancel failed (${res.status})`;
+        console.error("[stripe] subscription cancel failed", err);
+        return { ok: false, error: err };
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error("[stripe] subscription cancel error", err);
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Network error",
+      };
+    }
+  },
+});
+
 export const refundStripePayment = internalAction({
   args: {
     paymentIntentId: v.string(),

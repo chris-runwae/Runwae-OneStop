@@ -22,6 +22,7 @@ import { LocationPrompt } from "./LocationPrompt";
 import { FindFriendsSheet } from "@/components/social/FindFriendsSheet";
 import { DiscoverGrid } from "@/components/discover/DiscoverGrid";
 import { EventCard } from "@/components/events/EventCard";
+import { CreateTripModal } from "@/components/trips/CreateTripModal";
 
 type TripStatus =
   | "planning"
@@ -146,6 +147,12 @@ function Greeting({
 /* ────────────────────────────────────────────────────────── */
 
 function HeroFeatured() {
+  // The "Plan a trip" CTA used to route to /trips/new — we now open the
+  // unified CreateTripModal directly so users land in the modal flow that
+  // matches the AI plan path. The modal optionally pre-seeds the
+  // destination so step 1 already shows Lisbon selected.
+  const [createOpen, setCreateOpen] = useState(false);
+
   return (
     <div className="px-4 pt-1.5 pb-2 lg:px-0">
       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)]">
@@ -175,15 +182,25 @@ function HeroFeatured() {
               <HeroPill icon={<MapPin className="h-3 w-3" />}>Portugal</HeroPill>
             </div>
           </div>
-          <Link
-            href="/trips/new"
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(255,61,127,0.4)] transition-all hover:bg-primary/90 active:scale-[0.97]"
           >
             Plan a trip
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.4} />
-          </Link>
+          </button>
         </div>
       </div>
+
+      <CreateTripModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        seedDestination={{
+          destinationLabel: "Lisbon, Portugal",
+          coords: { lat: 38.7223, lng: -9.1393 },
+        }}
+      />
     </div>
   );
 }

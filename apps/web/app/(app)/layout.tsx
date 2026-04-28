@@ -6,6 +6,9 @@ import { AppShell } from "@/components/layout/AppShell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await fetchAuthedQuery(api.users.getCurrentUser, {});
+  if (viewer && viewer.deletedAt !== undefined) {
+    redirect("/restore");
+  }
   if (viewer && viewer.onboardingComplete !== true) {
     redirect("/sign-up");
   }

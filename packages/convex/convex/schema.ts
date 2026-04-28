@@ -38,10 +38,19 @@ export default defineSchema({
     // ai.generateTripFromEvent on success.
     aiTripsUsed: v.optional(v.number()),
     createdAt: v.optional(v.number()),
+    // Account-deletion soft-delete window. When `deletedAt` is set the user
+    // is in the 30-day recovery window; the daily cron promotes them to
+    // hard-cascade once `deletionScheduledFor` is in the past.
+    deletedAt: v.optional(v.number()),
+    deletionScheduledFor: v.optional(v.number()),
+    // The single sentinel "Deleted user" row that owns anonymized financial
+    // records (bookings, commissions, payouts) after a hard-cascade.
+    isSystemSentinel: v.optional(v.boolean()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
-    .index("by_username", ["username"]),
+    .index("by_username", ["username"])
+    .index("by_deletion_scheduled", ["deletionScheduledFor"]),
 
   friendships: defineTable({
     requesterId: v.id("users"),

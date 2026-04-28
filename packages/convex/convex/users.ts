@@ -159,6 +159,8 @@ export const searchByUsername = query({
       .take(10);
     return matches
       .filter((u) => u._id !== me)
+      .filter((u) => !u.isSystemSentinel)
+      .filter((u) => u.deletedAt === undefined)
       .slice(0, 5)
       .map((u) => ({
         _id: u._id,
@@ -172,10 +174,12 @@ export const searchByUsername = query({
 export const getUserByUsername = query({
   args: { username: v.string() },
   handler: async (ctx, { username }) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", username.trim().toLowerCase()))
       .first();
+    if (!user || user.isSystemSentinel) return null;
+    return user;
   },
 });
 
@@ -189,6 +193,7 @@ export const backfillUsernames = internalMutation({
     let assigned = 0;
     for (const user of all) {
       if (user.username) continue;
+      if (user.isSystemSentinel) continue;
       const base = user.name ?? user.email?.split("@")[0] ?? "user";
       let username: string | undefined;
       for (let attempt = 0; attempt < 6; attempt++) {

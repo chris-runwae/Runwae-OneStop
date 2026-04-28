@@ -1,8 +1,87 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
 import type { Id, Doc } from "./_generated/dataModel";
 import { pickDefaultCover } from "./lib/coverImage";
+
+// Shared cascade: deletes a trip and every dependent row across all child
+// tables. Called by the user-facing `deleteTrip` mutation AND by the
+// account-deletion cascade when a deleted user owned a solo trip. Skips
+// permission checks — callers are responsible for enforcing them.
+//
+// Sweeps deeper than just `by_trip`-indexed tables: also walks through
+// expenses → expense_splits, polls → options → votes, and checklists →
+// items so we don't leak orphaned rows.
+export async function cascadeDeleteTripInternal(
+  ctx: MutationCtx,
+  tripId: Id<"trips">
+): Promise<void> {
+  // Polls + their options + votes (deepest nested first).
+  const polls = await ctx.db
+    .query("trip_polls")
+    .withIndex("by_trip", (q) => q.eq("tripId", tripId))
+    .collect();
+  for (const poll of polls) {
+    const options = await ctx.db
+      .query("poll_options")
+      .withIndex("by_poll", (q) => q.eq("pollId", poll._id))
+      .collect();
+    for (const option of options) await ctx.db.delete(option._id);
+    const votes = await ctx.db
+      .query("poll_votes")
+      .withIndex("by_poll", (q) => q.eq("pollId", poll._id))
+      .collect();
+    for (const vote of votes) await ctx.db.delete(vote._id);
+    await ctx.db.delete(poll._id);
+  }
+
+  // Checklists + their items.
+  const checklists = await ctx.db
+    .query("trip_checklists")
+    .withIndex("by_trip", (q) => q.eq("tripId", tripId))
+    .collect();
+  for (const checklist of checklists) {
+    const items = await ctx.db
+      .query("checklist_items")
+      .withIndex("by_checklist", (q) => q.eq("checklistId", checklist._id))
+      .collect();
+    for (const item of items) await ctx.db.delete(item._id);
+    await ctx.db.delete(checklist._id);
+  }
+
+  // Expenses + their splits.
+  const expenses = await ctx.db
+    .query("expenses")
+    .withIndex("by_trip", (q) => q.eq("tripId", tripId))
+    .collect();
+  for (const expense of expenses) {
+    const splits = await ctx.db
+      .query("expense_splits")
+      .withIndex("by_expense", (q) => q.eq("expenseId", expense._id))
+      .collect();
+    for (const split of splits) await ctx.db.delete(split._id);
+    await ctx.db.delete(expense._id);
+  }
+
+  // Trip-scoped tables indexed directly by_trip.
+  const tripScopedTables = [
+    "itinerary_items",
+    "itinerary_days",
+    "saved_items",
+    "saved_item_comments",
+    "trip_posts",
+    "trip_members",
+  ] as const;
+  for (const table of tripScopedTables) {
+    const rows = await ctx.db
+      .query(table)
+      .withIndex("by_trip", (q: any) => q.eq("tripId", tripId))
+      .collect();
+    for (const row of rows) await ctx.db.delete(row._id);
+  }
+
+  await ctx.db.delete(tripId);
+}
 
 const SLUG_SUFFIX_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -274,10 +353,11 @@ export const updateTrip = mutation({
   },
 });
 
-// Owner-only hard delete. Sweeps every dependent table so we don't leak rows.
-// Convex limits per-mutation document writes, so for very large trips this
-// may need to chunk via `ctx.scheduler.runAfter` — current usage is small
-// enough to fit in one pass.
+// Owner-only hard delete. Sweeps every dependent table so we don't leak rows
+// — including deeply nested ones (poll options/votes, expense splits,
+// checklist items). Convex limits per-mutation document writes, so for very
+// large trips this may need to chunk via `ctx.scheduler.runAfter` — current
+// usage is small enough to fit in one pass.
 export const deleteTrip = mutation({
   args: { tripId: v.id("trips") },
   handler: async (ctx, args) => {
@@ -285,29 +365,18 @@ export const deleteTrip = mutation({
     if (role !== "owner") {
       throw new Error("Only the trip owner can delete this trip");
     }
-
-    const childTables = [
-      "itinerary_items",
-      "itinerary_days",
-      "saved_items",
-      "saved_item_comments",
-      "trip_posts",
-      "trip_polls",
-      "trip_checklists",
-      "trip_members",
-      "expenses",
-    ] as const;
-
-    for (const table of childTables) {
-      const rows = await ctx.db
-        .query(table)
-        .withIndex("by_trip", (q: any) => q.eq("tripId", args.tripId))
-        .collect();
-      for (const row of rows) await ctx.db.delete(row._id);
-    }
-
-    await ctx.db.delete(args.tripId);
+    await cascadeDeleteTripInternal(ctx, args.tripId);
     return { deleted: true };
+  },
+});
+
+// Internal entrypoint for callers that have already done their own auth
+// (e.g. account_deletion's hard cascade).
+export const cascadeDeleteTrip = internalMutation({
+  args: { tripId: v.id("trips") },
+  handler: async (ctx, args) => {
+    await cascadeDeleteTripInternal(ctx, args.tripId);
+    return null;
   },
 });
 

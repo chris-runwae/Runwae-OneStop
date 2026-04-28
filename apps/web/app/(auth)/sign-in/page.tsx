@@ -47,7 +47,7 @@ export default function SignInPage() {
     setError(null);
     setGoogleLoading(true);
     try {
-      await signIn("google");
+      await signIn("google", { redirectTo: `${window.location.origin}/home` });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign in failed.");
       setGoogleLoading(false);

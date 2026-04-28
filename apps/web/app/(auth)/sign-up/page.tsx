@@ -920,7 +920,7 @@ export default function SignUpPage() {
     clearError();
     setGoogleLoading(true);
     try {
-      await signIn("google");
+      await signIn("google", { redirectTo: `${window.location.origin}/home` });
     } catch (err) {
       console.error("[sign-up] Google signIn failed", err);
       setError(err instanceof Error ? err.message : "Google sign in failed.");

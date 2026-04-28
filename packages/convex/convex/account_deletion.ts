@@ -303,17 +303,12 @@ export const runScheduledDeletions = internalAction({
 
 // ── Hard cascade ───────────────────────────────────────────────────────────
 
-// Performs the full cleanup. Order matters: child rows before parents, and
-// trips are handled first so we can transfer ownership before any other
-// trip-scoped data goes away.
-export const hardDeleteUser = internalMutation({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) return { skipped: "user_missing" };
-    if (user.isSystemSentinel) return { skipped: "is_sentinel" };
-
-    const userId = args.userId;
+// Shared cascade body. Used by both the cron-driven `hardDeleteUser` and the
+// dev-only immediate delete mutation.
+async function hardDeleteUserInternal(ctx: MutationCtx, userId: Id<"users">) {
+    const user = await ctx.db.get(userId);
+    if (!user) return { skipped: "user_missing" } as const;
+    if (user.isSystemSentinel) return { skipped: "is_sentinel" } as const;
     let sentinelId: Id<"users"> | null = null;
     const getSentinel = async (): Promise<Id<"users">> => {
       if (sentinelId !== null) return sentinelId;
@@ -647,6 +642,27 @@ export const hardDeleteUser = internalMutation({
     // 12. Finally, the user row itself.
     await ctx.db.delete(userId);
 
-    return { ok: true };
+    return { ok: true } as const;
+}
+
+export const hardDeleteUser = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => hardDeleteUserInternal(ctx, args.userId),
+});
+
+// ── Dev-only immediate delete ──────────────────────────────────────────────
+
+// Skips the 30-day recovery window AND blocker checks (active bookings,
+// hosted upcoming events, active subscriptions). Intended for development
+// only — production should use `requestAccountDeletion`.
+export const deleteAccountImmediate = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+    if (user.isSystemSentinel) throw new Error("Cannot delete system user");
+    return await hardDeleteUserInternal(ctx, userId);
   },
 });

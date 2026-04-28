@@ -172,13 +172,13 @@ export function SplashClient() {
           <div className="flex w-full max-w-[340px] flex-col gap-2.5 lg:max-w-none lg:flex-row">
             <Link
               href="/sign-up"
-              className="inline-flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-white text-[15px] font-semibold text-[#FF3D7F] shadow-[0_6px_18px_rgba(0,0,0,0.15)] transition-[transform,box-shadow] hover:shadow-[0_10px_28px_rgba(0,0,0,0.22)] active:scale-[0.97]"
+              className="inline-flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#FF3D7F] shadow-[0_6px_18px_rgba(0,0,0,0.15)] transition-[transform,box-shadow] hover:shadow-[0_10px_28px_rgba(0,0,0,0.22)] active:scale-[0.97] lg:w-auto lg:flex-1"
             >
               Get started <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-white/55 bg-transparent text-[15px] font-semibold text-white transition-[background,transform] hover:bg-white/10 active:scale-[0.97]"
+              className="inline-flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-full border-[1.5px] border-white/55 bg-transparent px-6 text-[15px] font-semibold text-white transition-[background,transform] hover:bg-white/10 active:scale-[0.97] lg:w-auto lg:flex-1"
             >
               Sign in
             </Link>

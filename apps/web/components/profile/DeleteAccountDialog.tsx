@@ -25,6 +25,7 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
     open ? {} : "skip",
   );
   const requestDeletion = useMutation(api.account_deletion.requestAccountDeletion);
+  const deleteImmediate = useMutation(api.account_deletion.deleteAccountImmediate);
 
   const [step, setStep] = useState<Step>("blockers");
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
@@ -84,6 +85,26 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
           : "Couldn't schedule account deletion. Try again.",
       );
       setStep(hasActiveSub ? "subscription" : "confirm");
+    }
+  }
+
+  async function handleImmediateDelete() {
+    if (confirmText.trim().toUpperCase() !== "DELETE") return;
+    setStep("submitting");
+    setError(null);
+    try {
+      await deleteImmediate({});
+      try {
+        await signOut();
+      } catch {
+        // ignore — the user record is already gone
+      }
+      router.push("/sign-in?deleted=1");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn't delete account.",
+      );
+      setStep("confirm");
     }
   }
 
@@ -349,15 +370,25 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
     if (step === "confirm") {
       const ready = confirmText.trim().toUpperCase() === "DELETE";
       return (
-        <div className="flex gap-2">
-          {cancelButton}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            {cancelButton}
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!ready}
+              className="h-10 flex-1 rounded-full bg-error text-sm font-semibold text-white hover:bg-error/90 disabled:opacity-60"
+            >
+              Delete account
+            </button>
+          </div>
           <button
             type="button"
-            onClick={() => void handleSubmit()}
+            onClick={() => void handleImmediateDelete()}
             disabled={!ready}
-            className="h-10 flex-1 rounded-full bg-error text-sm font-semibold text-white hover:bg-error/90 disabled:opacity-60"
+            className="h-9 w-full rounded-full border border-dashed border-error/60 text-xs font-semibold text-error hover:bg-error/5 disabled:opacity-60"
           >
-            Delete account
+            Dev: delete immediately (skip blockers + grace period)
           </button>
         </div>
       );

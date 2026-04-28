@@ -80,12 +80,13 @@ export function ItineraryCard({
       )}
     >
       {item.imageUrl && (
-        <div className="relative aspect-[16/9] bg-foreground/5">
+        <div className="relative max-h-[280px] w-full overflow-hidden bg-foreground/5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.imageUrl}
             alt=""
-            className="h-full w-full object-cover"
+            className="block h-full max-h-[280px] w-full object-cover"
+            style={{ aspectRatio: "16/9" }}
           />
           <div className="absolute left-2.5 top-2.5">
             <CategoryBadge type={item.type} />

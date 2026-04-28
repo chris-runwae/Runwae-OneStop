@@ -15,11 +15,18 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { UnsplashPicker } from "@/components/trips/wizard/UnsplashPicker";
 
 const GROUP_OPTIONS = [
   { id: "solo" as const, emoji: "🧍", t: "Just me", d: "Solo trip — one ticket, one room" },
   { id: "small" as const, emoji: "👯", t: "Small group", d: "2–4 people — friends or partner" },
   { id: "large" as const, emoji: "🎉", t: "Large group", d: "5+ people — bachelor, birthday, crew" },
+];
+
+const VISIBILITIES = [
+  { id: "private" as const, t: "Private", d: "Only you and invited members" },
+  { id: "friends" as const, t: "Friends", d: "Visible to your accepted friends" },
+  { id: "public" as const, t: "Public", d: "Anyone with the link can view" },
 ];
 
 const MONTHS = [
@@ -49,6 +56,7 @@ const monthDays = (year: number, month: number): (Date | null)[] => {
 };
 
 type Range = { start: Date | null; end: Date | null };
+type Visibility = "private" | "friends" | "public";
 
 interface PlanMyTripModalProps {
   open: boolean;
@@ -58,19 +66,19 @@ interface PlanMyTripModalProps {
   onSuccess?: (slug: string) => void;
 }
 
-// 3-step modal: group size → dates → build/success.
+// 4-step modal: group size → dates → details (title/cover/visibility) →
+// build/success.
 //
-// Origin used to be a step but the trip's destination IS the event city —
-// asking users where they're flying from on a single screen they'll likely
-// skim is friction. We default origin to the viewer's home city (or fall
-// back to the event city) and surface it as editable later if needed.
+// Origin used to be a step but the trip's destination IS the event city.
+// We default origin to viewer.homeCity (or fall back to the event city).
 //
-// Bug-fix notes (vs. previous version):
-//   - All AI generation is gated behind a single useRef so React re-renders
-//     can't trigger a second `generate` call (the previous useEffect deps
-//     made it possible to fire 10× and burn 10 quota slots).
-//   - Each modal-open mints one idempotencyKey; the action returns the
-//     same trip for repeated calls with the same key.
+// Bug-fix history:
+//   - The previous version had a useEffect with a wide dep array that
+//     re-fired `generate` on every state tick (10× = 10 trips, 10 quota
+//     burned). The current version (a) gates with firedRef and (b) mints
+//     the idempotencyKey at submit-time so there's no race window where
+//     we'd send a request without a key. The action also accepts a
+//     server-mint fallback for older stale tabs.
 export function PlanMyTripModal({
   open,
   onClose,
@@ -98,17 +106,17 @@ export function PlanMyTripModal({
   );
   const [range, setRange] = useState<Range>({ start: null, end: null });
   const [quickPick, setQuickPick] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [visibility, setVisibility] = useState<Visibility>("private");
   const [buildIdx, setBuildIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultSlug, setResultSlug] = useState<string | null>(null);
 
-  // Hard gate — flips true the moment we hit step 3 with valid inputs and
-  // prevents any subsequent re-render from firing another generation.
+  // Hard gate — flips true the moment we kick off generation and prevents
+  // any subsequent re-render from firing another generation.
   const firedRef = useRef(false);
-  // Idempotency key for the current modal-open. Server returns the same
-  // trip if this key has already been processed (no quota burn on retry).
-  const idempotencyKeyRef = useRef<string>("");
 
   // Reset whenever the modal closes.
   useEffect(() => {
@@ -118,37 +126,37 @@ export function PlanMyTripModal({
         setGroupSize(null);
         setRange({ start: null, end: null });
         setQuickPick(null);
+        setTitle("");
+        setCoverImageUrl("");
+        setVisibility("private");
         setBuildIdx(0);
         setDone(false);
         setError(null);
         setResultSlug(null);
         firedRef.current = false;
-        idempotencyKeyRef.current = "";
       }, 250);
       return () => clearTimeout(t);
-    } else if (!idempotencyKeyRef.current) {
-      // Mint a fresh key on each open. crypto.randomUUID is available on
-      // every browser we care about; gate on existence for SSR safety.
-      idempotencyKeyRef.current =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `ai_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     }
   }, [open]);
 
-  // Origin — derived, not user-picked. Order of preference:
-  //   1. viewer.homeCity (set during onboarding)
-  //   2. event.locationName (so the AI still gets a real place to plan from)
-  //   3. fallback string
+  // Origin — derived, not user-picked.
   const originLabel = useMemo(() => {
     if (viewer?.homeCity) return viewer.homeCity;
     return event.locationName?.split(",")[0] ?? "Home";
   }, [viewer?.homeCity, event.locationName]);
 
-  // Fire the AI generation exactly once when we reach step 3 with valid
-  // inputs. The ref makes this idempotent across renders.
+  // Pre-fill the title once the event loads — just a sensible default the
+  // user can overwrite on the details step.
   useEffect(() => {
-    if (!open || step !== 3 || done || error) return;
+    if (open && !title) setTitle(`Trip to ${event.name}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, event.name]);
+
+  // Fire the AI generation exactly once when we reach step 4 with valid
+  // inputs. Idempotency key is minted INLINE at submit time — no useRef
+  // bookkeeping, no race window with the modal-open effect.
+  useEffect(() => {
+    if (!open || step !== 4 || done || error) return;
     if (!groupSize || !range.start || !range.end) return;
     if (firedRef.current) return;
 
@@ -167,7 +175,10 @@ export function PlanMyTripModal({
 
     const startIso = range.start.toISOString().slice(0, 10);
     const endIso = range.end.toISOString().slice(0, 10);
-    const idem = idempotencyKeyRef.current;
+    const idempotencyKey =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `ai_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     generate({
       eventId: event._id as Id<"events">,
@@ -175,7 +186,10 @@ export function PlanMyTripModal({
       groupSize,
       startDate: startIso,
       endDate: endIso,
-      idempotencyKey: idem,
+      idempotencyKey,
+      title: title.trim() || undefined,
+      coverImageUrl: coverImageUrl.trim() || undefined,
+      visibility,
     })
       .then((res) => {
         if (!res.ok) {
@@ -203,9 +217,6 @@ export function PlanMyTripModal({
       });
 
     return () => clearTimeout(animTimer);
-    // We deliberately depend only on the trigger (open + step) so this can't
-    // re-fire when other state changes. If the user backs out and forward
-    // again with a different group/dates, firedRef gets reset on close.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step]);
 
@@ -217,9 +228,11 @@ export function PlanMyTripModal({
   ];
 
   const canNext =
-    (step === 1 && !!groupSize) || (step === 2 && !!range.start && !!range.end);
+    (step === 1 && !!groupSize) ||
+    (step === 2 && !!range.start && !!range.end) ||
+    (step === 3 && !!title.trim());
   const next = () => {
-    if (step < 3) setStep((s) => s + 1);
+    if (step < 4) setStep((s) => s + 1);
   };
   const back = () => {
     if (step > 1) setStep((s) => s - 1);
@@ -241,13 +254,37 @@ export function PlanMyTripModal({
       ? Math.round((range.end.getTime() - range.start.getTime()) / 86400000)
       : 0;
 
-  const stepLabel = `Step ${Math.min(step, 3)} of 3`;
-  const progress = (Math.min(step, 3) / 3) * 100;
+  const stepLabel = `Step ${Math.min(step, 4)} of 4`;
+  const progress = (Math.min(step, 4) / 4) * 100;
+
+  // Footer is hidden on step 4 (build/success has its own CTA).
+  const footer = step < 4 ? (
+    <div className="flex items-center gap-2">
+      {step > 1 && (
+        <button
+          type="button"
+          onClick={back}
+          aria-label="Back"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.1]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        type="button"
+        disabled={!canNext}
+        onClick={next}
+        className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+      >
+        {step === 3 ? "Generate trip" : "Continue"} <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  ) : undefined;
 
   return (
-    <Modal open={open} onClose={onClose} title="">
-      <div className="-mx-5 -mt-2 mb-3">
-        <div className="flex items-center justify-between px-5 pb-2">
+    <Modal open={open} onClose={onClose} title="" footer={footer}>
+      <div className="-mx-6 -mt-2 mb-3">
+        <div className="flex items-center justify-between px-6 pb-2">
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
             {stepLabel}
           </span>
@@ -257,7 +294,7 @@ export function PlanMyTripModal({
             </span>
           )}
         </div>
-        <div className="mx-5 h-[3px] overflow-hidden rounded-full bg-foreground/[0.08]">
+        <div className="mx-6 h-[3px] overflow-hidden rounded-full bg-foreground/[0.08]">
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-300"
             style={{ width: `${progress}%` }}
@@ -346,8 +383,21 @@ export function PlanMyTripModal({
         />
       )}
 
-      {/* Step 3 — Build / Success */}
-      {step === 3 && !done && (
+      {/* Step 3 — Title + cover + visibility */}
+      {step === 3 && (
+        <DetailsStep
+          title={title}
+          onTitleChange={setTitle}
+          coverImageUrl={coverImageUrl}
+          onCoverChange={setCoverImageUrl}
+          visibility={visibility}
+          onVisibilityChange={setVisibility}
+          seedQuery={event.locationName ?? title}
+        />
+      )}
+
+      {/* Step 4 — Build / Success */}
+      {step === 4 && !done && (
         <div className="flex flex-col items-center px-2 py-6 text-center">
           <div className="mb-5 h-14 w-14 animate-spin rounded-full border-4 border-foreground/[0.08] border-t-primary" />
           <div className="mb-1 font-display text-[20px] font-bold">
@@ -388,7 +438,7 @@ export function PlanMyTripModal({
         </div>
       )}
 
-      {step === 3 && done && (
+      {step === 4 && done && (
         <div className="flex flex-col items-center px-2 py-6 text-center">
           <div className="mb-5 grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/40">
             <Check className="h-8 w-8" strokeWidth={3} />
@@ -415,30 +465,100 @@ export function PlanMyTripModal({
           </button>
         </div>
       )}
-
-      {step < 3 && (
-        <div className="mt-5 flex items-center gap-2 border-t border-border pt-4">
-          {step > 1 && (
-            <button
-              type="button"
-              onClick={back}
-              aria-label="Back"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.1]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-          )}
-          <button
-            type="button"
-            disabled={!canNext}
-            onClick={next}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-          >
-            Continue <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </Modal>
+  );
+}
+
+function DetailsStep({
+  title,
+  onTitleChange,
+  coverImageUrl,
+  onCoverChange,
+  visibility,
+  onVisibilityChange,
+  seedQuery,
+}: {
+  title: string;
+  onTitleChange: (v: string) => void;
+  coverImageUrl: string;
+  onCoverChange: (v: string) => void;
+  visibility: Visibility;
+  onVisibilityChange: (v: Visibility) => void;
+  seedQuery: string;
+}) {
+  const inputCls =
+    "h-11 w-full rounded-2xl border border-border bg-background px-4 text-[14.5px] focus:border-primary focus:outline-none";
+  return (
+    <>
+      <h2 className="font-display text-[22px] font-bold leading-tight">
+        Final touches
+      </h2>
+      <p className="mb-4 mt-1 text-[13px] text-muted-foreground">
+        Name your trip, pick a cover photo, choose who can see it.
+      </p>
+
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Trip name
+          </span>
+          <input
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Trip to …"
+            className={inputCls}
+          />
+        </label>
+
+        <div>
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Visibility
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {VISIBILITIES.map((v) => {
+              const on = visibility === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => onVisibilityChange(v.id)}
+                  className={cn(
+                    "rounded-xl border px-2 py-2 text-left transition-colors",
+                    on
+                      ? "border-primary bg-primary/[0.08]"
+                      : "border-border bg-card hover:bg-muted/40"
+                  )}
+                >
+                  <div className="text-[12.5px] font-semibold">{v.t}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[10.5px] text-muted-foreground">
+                    {v.d}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Cover image
+          </div>
+          {coverImageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverImageUrl}
+              alt="Cover preview"
+              className="mb-2 h-28 w-full rounded-2xl object-cover"
+            />
+          )}
+          <UnsplashPicker
+            seedQuery={seedQuery}
+            selectedUrl={coverImageUrl}
+            onSelect={onCoverChange}
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -583,7 +703,8 @@ function CalendarStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 px-1">
+      {/* Day-of-week header — gap-0 to line up with the grid below. */}
+      <div className="grid grid-cols-7 px-1">
         {DOW.map((d) => (
           <span
             key={d}
@@ -594,11 +715,15 @@ function CalendarStep({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 px-1">
+      {/*
+        Pill calendar — no gap between cells so the in-range stripe is
+        continuous. Start/end cells are circular caps; middle cells are
+        a flat strip; lone-day selections are full circles.
+      */}
+      <div className="grid grid-cols-7 px-1">
         {cells.map((d, i) => {
-          if (!d) return <span key={i} aria-hidden />;
+          if (!d) return <span key={i} aria-hidden className="aspect-square" />;
           const isPast = d < today;
-          const isToday = dEq(d, today);
           const isStart = !!range.start && dEq(d, range.start);
           const isEnd = !!range.end && dEq(d, range.end);
           const inRange =
@@ -606,32 +731,50 @@ function CalendarStep({
             !!range.end &&
             d > range.start &&
             d < range.end;
+          const hasRange =
+            !!range.start && !!range.end && !dEq(range.start, range.end);
           const isEvent =
             d >= eventStart && d <= eventEnd && !isStart && !isEnd && !inRange;
+
+          // Layered rendering: outer wrapper holds the connected fill (if
+          // any), inner pill shows the day digit. This is the standard
+          // trick for date-range pickers — keeps the strip seamless without
+          // forcing every cell to have a background.
+          let fillClass = "";
+          if (isStart && hasRange) fillClass = "bg-primary/15 rounded-l-full";
+          else if (isEnd && hasRange) fillClass = "bg-primary/15 rounded-r-full";
+          else if (inRange) fillClass = "bg-primary/15";
+
+          let innerClass = "rounded-full";
+          if (isStart || isEnd) innerClass += " bg-primary text-primary-foreground font-bold";
+          else if (!isPast)
+            innerClass += " hover:bg-foreground/[0.06] text-foreground";
+          else innerClass += " text-foreground/30";
+
           return (
-            <button
+            <div
               key={i}
-              type="button"
-              disabled={isPast}
-              onClick={() => handleClick(d)}
-              className={cn(
-                "relative grid aspect-square place-items-center text-[13px] font-medium transition-colors",
-                isPast && "cursor-default text-foreground/30",
-                !isPast && !isStart && !isEnd && !inRange && "rounded-full hover:bg-foreground/[0.06]",
-                isStart && "rounded-full bg-primary text-primary-foreground font-bold",
-                isEnd && "rounded-full bg-primary text-primary-foreground font-bold",
-                inRange && "bg-primary/20",
-                isToday && "font-bold"
-              )}
+              className={cn("relative aspect-square", fillClass)}
             >
-              {d.getDate()}
-              {isEvent && (
-                <span
-                  aria-hidden
-                  className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary"
-                />
-              )}
-            </button>
+              <button
+                type="button"
+                disabled={isPast}
+                onClick={() => handleClick(d)}
+                className={cn(
+                  "absolute inset-0 grid place-items-center text-[13px] font-medium transition-colors",
+                  innerClass,
+                  isPast && "cursor-default"
+                )}
+              >
+                {d.getDate()}
+                {isEvent && (
+                  <span
+                    aria-hidden
+                    className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary"
+                  />
+                )}
+              </button>
+            </div>
           );
         })}
       </div>

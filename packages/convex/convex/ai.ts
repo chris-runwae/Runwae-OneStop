@@ -8,7 +8,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 
 // ── Quota ────────────────────────────────────────────────────────────────
@@ -175,6 +175,15 @@ export const _materializeTripFromAi = internalMutation({
     eventId: v.id("events"),
     aiIdempotencyKey: v.optional(v.string()),
     title: v.string(),
+    coverImageUrl: v.optional(v.string()),
+    visibility: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("invite_only"),
+        v.literal("friends"),
+        v.literal("public")
+      )
+    ),
     startDate: v.string(),
     endDate: v.string(),
     originLabel: v.string(),
@@ -237,9 +246,10 @@ export const _materializeTripFromAi = internalMutation({
       creatorId: userId,
       startDate: args.startDate,
       endDate: args.endDate,
-      visibility: "private",
+      visibility: args.visibility ?? "private",
       status: "planning",
-      coverImageUrl: event.imageUrl ?? event.imageUrls?.[0],
+      coverImageUrl:
+        args.coverImageUrl ?? event.imageUrl ?? event.imageUrls?.[0],
       slug,
       joinCode: suffix,
       currency: "GBP",
@@ -310,10 +320,21 @@ export const _materializeTripFromAi = internalMutation({
   },
 });
 
-// Pre-fetches Viator tours + LiteAPI hotels for the destination so we can
-// hand Claude a real candidate set instead of having it invent generic
-// items. Wrapped as an internalAction (not inline in the public action) so
-// each provider failure can fail independently.
+// Pre-fetches Viator tours + LiteAPI hotels + Ticketmaster events for the
+// destination so we can hand Claude a real candidate set instead of having
+// it invent generic items. Wrapped as an internalAction (not inline in the
+// public action) so each provider failure can fail independently.
+type Candidate = {
+  apiRef: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  price?: number;
+  currency?: string;
+  rating?: number;
+  externalUrl?: string;
+};
+
 export const _fetchProviderCandidates = internalAction({
   args: {
     destinationName: v.string(),
@@ -325,51 +346,44 @@ export const _fetchProviderCandidates = internalAction({
     ctx,
     args
   ): Promise<{
-    tours: Array<{
-      apiRef: string;
-      title: string;
-      description?: string;
-      imageUrl?: string;
-      price?: number;
-      currency?: string;
-      rating?: number;
-      externalUrl?: string;
-    }>;
-    hotels: Array<{
-      apiRef: string;
-      title: string;
-      description?: string;
-      imageUrl?: string;
-      price?: number;
-      currency?: string;
-      rating?: number;
-      externalUrl?: string;
-    }>;
+    tours: Candidate[];
+    hotels: Candidate[];
+    tickets: Candidate[];
   }> => {
-    const tours = await ctx
-      .runAction(internal.providers.viator.search, {
-        category: "tour",
-        term: args.destinationName,
-        lat: args.coords?.lat,
-        lng: args.coords?.lng,
-        limit: 6,
-      })
-      .catch(() => []);
+    const [tours, hotels, tickets] = await Promise.all([
+      ctx
+        .runAction(internal.providers.viator.search, {
+          category: "tour",
+          term: args.destinationName,
+          lat: args.coords?.lat,
+          lng: args.coords?.lng,
+          limit: 6,
+        })
+        .catch(() => [] as Candidate[]),
+      ctx
+        .runAction(internal.providers.liteapi.search, {
+          category: "stay",
+          term: args.destinationName,
+          lat: args.coords?.lat,
+          lng: args.coords?.lng,
+          limit: 6,
+          checkin: args.checkin,
+          checkout: args.checkout,
+        })
+        .catch(() => [] as Candidate[]),
+      ctx
+        .runAction(internal.providers.ticketmaster.search, {
+          category: "event",
+          term: args.destinationName,
+          lat: args.coords?.lat,
+          lng: args.coords?.lng,
+          limit: 4,
+        })
+        .catch(() => [] as Candidate[]),
+    ]);
 
-    const hotels = await ctx
-      .runAction(internal.providers.liteapi.search, {
-        category: "stay",
-        term: args.destinationName,
-        lat: args.coords?.lat,
-        lng: args.coords?.lng,
-        limit: 6,
-        checkin: args.checkin,
-        checkout: args.checkout,
-      })
-      .catch(() => []);
-
-    return {
-      tours: (tours ?? []).map((t: any) => ({
+    const map = (items: any[]): Candidate[] =>
+      (items ?? []).map((t: any) => ({
         apiRef: t.apiRef,
         title: t.title,
         description: t.description,
@@ -378,18 +392,42 @@ export const _fetchProviderCandidates = internalAction({
         currency: t.currency,
         rating: t.rating,
         externalUrl: t.externalUrl,
-      })),
-      hotels: (hotels ?? []).map((h: any) => ({
-        apiRef: h.apiRef,
-        title: h.title,
-        description: h.description,
-        imageUrl: h.imageUrl,
-        price: h.price,
-        currency: h.currency,
-        rating: h.rating,
-        externalUrl: h.externalUrl,
-      })),
+      }));
+
+    return {
+      tours: map(tours as any[]),
+      hotels: map(hotels as any[]),
+      tickets: map(tickets as any[]),
     };
+  },
+});
+
+// Backfill Unsplash photos for AI items that don't have an imageUrl. Runs
+// AFTER Claude returns so we don't waste calls on items where Claude (or
+// the candidate catalogue) already supplied a real provider image.
+export const _unsplashBackfill = internalAction({
+  args: {
+    queries: v.array(v.string()),
+  },
+  handler: async (ctx, { queries }): Promise<Record<string, string>> => {
+    if (!process.env.UNSPLASH_ACCESS_KEY) return {};
+    const out: Record<string, string> = {};
+    // Sequential to keep per-hour Unsplash spend small (50 req/hr on demo
+    // mode). At a typical 5–8 items per trip this is well inside budget.
+    for (const q of queries) {
+      if (!q || out[q]) continue;
+      try {
+        const photos = await ctx.runAction(api.unsplash.searchPhotos, {
+          query: q,
+          perPage: 1,
+          orientation: "landscape",
+        });
+        if (photos && photos.length > 0) out[q] = photos[0].url;
+      } catch (err) {
+        console.warn("[ai] unsplash backfill failed for", q, err);
+      }
+    }
+    return out;
   },
 });
 
@@ -470,6 +508,7 @@ async function callClaudeForItinerary(args: {
   travellerTags: string[];
   candidateTours: Array<{ apiRef: string; title: string; price?: number; currency?: string; description?: string }>;
   candidateHotels: Array<{ apiRef: string; title: string; price?: number; currency?: string; description?: string }>;
+  candidateTickets: Array<{ apiRef: string; title: string; price?: number; currency?: string; description?: string }>;
 }): Promise<AiDay[] | null> {
   const groupCopy =
     args.groupSize === "solo"
@@ -498,6 +537,15 @@ async function callClaudeForItinerary(args: {
           .map(
             (h) =>
               `- [liteapi:${h.apiRef}] ${h.title}${h.price ? ` (${h.currency ?? "GBP"} ${h.price}/night)` : ""}`
+          )
+          .join("\n")}`
+      : "";
+  const ticketCatalog =
+    args.candidateTickets.length > 0
+      ? `\n\nAvailable Ticketmaster events nearby (use \`apiSource: "ticketmaster"\` + the \`apiRef\` if any of these complement the trip; \`type\` should stay "event"):\n${args.candidateTickets
+          .map(
+            (t) =>
+              `- [ticketmaster:${t.apiRef}] ${t.title}${t.price ? ` (${t.currency ?? "GBP"} ${t.price}+)` : ""}`
           )
           .join("\n")}`
       : "";
@@ -539,7 +587,8 @@ Day-shape rules:
 - Other days: 2–4 items mixing tour/restaurant/activity around the destination.
 - Final day: departure flight.
 - Pick exactly ONE hotel from the LiteAPI catalogue and reuse it across the stay (one hotel item per day for booking simplicity is fine; if you want to omit hotel items on filler days that's also fine).
-- Prefer Viator tours from the catalogue over invented activities; keep the rest as natural \`activity\` / \`restaurant\` items without apiSource.${tourCatalog}${hotelCatalog}`;
+- Prefer Viator tours from the catalogue over invented activities; keep the rest as natural \`activity\` / \`restaurant\` items without apiSource.
+- If a Ticketmaster show on the side complements the trip (e.g. a gig the night after the headline event), include it as one extra \`event\` item.${tourCatalog}${hotelCatalog}${ticketCatalog}`;
 
   try {
     const res = await fetch(ANTHROPIC_API, {
@@ -588,8 +637,22 @@ export const generateTripFromEvent = action({
     ),
     startDate: v.string(),
     endDate: v.string(),
-    // Required client-minted UUID for dedupe. Same key = same trip back.
-    idempotencyKey: v.string(),
+    // Optional client-minted UUID for dedupe. If omitted, we mint one
+    // server-side (idempotency only protects against client double-fires
+    // when the client supplies the key, but the server-mint keeps the
+    // schema satisfied for older clients without the field).
+    idempotencyKey: v.optional(v.string()),
+    // New step in the modal: user-chosen title, cover, visibility.
+    title: v.optional(v.string()),
+    coverImageUrl: v.optional(v.string()),
+    visibility: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("invite_only"),
+        v.literal("friends"),
+        v.literal("public")
+      )
+    ),
   },
   handler: async (
     ctx,
@@ -598,10 +661,17 @@ export const generateTripFromEvent = action({
     | { ok: true; tripId: Id<"trips">; slug: string; remaining: number; reused?: boolean }
     | { ok: false; reason: "not_authenticated" | "quota_exhausted" | "event_missing" | "ai_failed" }
   > => {
+    // Mint a server-side fallback key so older clients that don't yet pass
+    // one (mid-deploy stale tabs) don't fail validation. The client should
+    // still pass its own to get true cross-call dedupe.
+    const idempotencyKey =
+      args.idempotencyKey ??
+      `ai_srv_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
     // 0) Idempotency dedupe — return the existing trip if we've already
     //    processed this key for this user. No quota slot consumed.
     const existing = await ctx.runQuery(internal.ai._findExistingByIdempotency, {
-      aiIdempotencyKey: args.idempotencyKey,
+      aiIdempotencyKey: idempotencyKey,
     });
     if (existing) {
       const limit = quotaLimit();
@@ -662,6 +732,7 @@ export const generateTripFromEvent = action({
           travellerTags: ctxData.viewer?.travellerTags ?? [],
           candidateTours: candidates.tours,
           candidateHotels: candidates.hotels,
+          candidateTickets: candidates.tickets,
         });
       }
       if (!days || days.length === 0) {
@@ -682,6 +753,9 @@ export const generateTripFromEvent = action({
       const hotelByRef = new Map(
         candidates.hotels.map((h) => [h.apiRef, h])
       );
+      const ticketByRef = new Map(
+        candidates.tickets.map((t) => [t.apiRef, t])
+      );
       for (const d of days) {
         for (const it of d.items) {
           if (it.apiSource === "viator" && it.apiRef) {
@@ -698,6 +772,42 @@ export const generateTripFromEvent = action({
               it.price = it.price ?? h.price;
               it.currency = it.currency ?? h.currency;
             }
+          } else if (it.apiSource === "ticketmaster" && it.apiRef) {
+            const tk = ticketByRef.get(it.apiRef);
+            if (tk) {
+              it.imageUrl = it.imageUrl ?? tk.imageUrl;
+              it.price = it.price ?? tk.price;
+              it.currency = it.currency ?? tk.currency;
+            }
+          }
+        }
+      }
+
+      // 4b) Unsplash backfill for items still missing an image — usually
+      //     restaurant / generic activity items Claude invented. Pulls one
+      //     landscape photo per (deduped) query so cards aren't blank.
+      const itemsMissingImages: Array<{
+        item: AiDay["items"][number];
+        query: string;
+      }> = [];
+      const queries = new Set<string>();
+      for (const d of days) {
+        for (const it of d.items) {
+          if (it.imageUrl) continue;
+          const q =
+            it.locationName ?? it.title ?? ctxData.event.locationName;
+          if (!q) continue;
+          itemsMissingImages.push({ item: it, query: q });
+          queries.add(q);
+        }
+      }
+      if (queries.size > 0) {
+        const photoMap = await ctx.runAction(internal.ai._unsplashBackfill, {
+          queries: Array.from(queries),
+        });
+        for (const { item, query } of itemsMissingImages) {
+          if (!item.imageUrl && photoMap[query]) {
+            item.imageUrl = photoMap[query];
           }
         }
       }
@@ -705,8 +815,10 @@ export const generateTripFromEvent = action({
       // 5) Materialise trip.
       const result = await ctx.runMutation(internal.ai._materializeTripFromAi, {
         eventId: args.eventId,
-        aiIdempotencyKey: args.idempotencyKey,
-        title: `Trip to ${ctxData.event.name}`,
+        aiIdempotencyKey: idempotencyKey,
+        title: args.title?.trim() || `Trip to ${ctxData.event.name}`,
+        coverImageUrl: args.coverImageUrl,
+        visibility: args.visibility,
         startDate: args.startDate,
         endDate: args.endDate,
         originLabel: args.origin,

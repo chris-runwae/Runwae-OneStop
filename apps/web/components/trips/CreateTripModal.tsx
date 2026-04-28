@@ -164,15 +164,53 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
   const stepLabel = `Step ${step} of 3`;
   const progress = (step / 3) * 100;
 
+  // Pinned footer keeps the primary action visible even when the body
+  // (Unsplash grid on step 3) needs to scroll.
+  const footer = (
+    <div className="flex items-center gap-2">
+      {step > 1 && (
+        <button
+          type="button"
+          onClick={back}
+          disabled={submitting}
+          aria-label="Back"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.1] disabled:opacity-40"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+      )}
+      {step < 3 ? (
+        <button
+          type="button"
+          disabled={!canNext}
+          onClick={next}
+          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+        >
+          Continue <ArrowRight className="h-4 w-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={submitting || !canNext}
+          onClick={handleCreate}
+          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+        >
+          {submitting ? "Creating…" : "Create trip"}
+          {!submitting && <ArrowRight className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <Modal open={open} onClose={onClose} title="">
-      <div className="-mx-5 -mt-2 mb-3">
-        <div className="flex items-center justify-between px-5 pb-2">
+    <Modal open={open} onClose={onClose} title="" footer={footer}>
+      <div className="-mx-6 -mt-2 mb-3">
+        <div className="flex items-center justify-between px-6 pb-2">
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
             {stepLabel}
           </span>
         </div>
-        <div className="mx-5 h-[3px] overflow-hidden rounded-full bg-foreground/[0.08]">
+        <div className="mx-6 h-[3px] overflow-hidden rounded-full bg-foreground/[0.08]">
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-300"
             style={{ width: `${progress}%` }}
@@ -235,7 +273,7 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
           currency={currency}
           onCurrencyChange={setCurrency}
           inviteIds={inviteIds}
-          onInviteToggle={(id) =>
+          onInviteToggle={(id: Id<"users">) =>
             setInviteIds((prev) =>
               prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
             )
@@ -245,39 +283,6 @@ export function CreateTripModal({ open, onClose }: CreateTripModalProps) {
         />
       )}
 
-      <div className="mt-5 flex items-center gap-2 border-t border-border pt-4">
-        {step > 1 && (
-          <button
-            type="button"
-            onClick={back}
-            disabled={submitting}
-            aria-label="Back"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.1] disabled:opacity-40"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        )}
-        {step < 3 ? (
-          <button
-            type="button"
-            disabled={!canNext}
-            onClick={next}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-          >
-            Continue <ArrowRight className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={submitting || !canNext}
-            onClick={handleCreate}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-          >
-            {submitting ? "Creating…" : "Create trip"}
-            {!submitting && <ArrowRight className="h-4 w-4" />}
-          </button>
-        )}
-      </div>
     </Modal>
   );
 }
@@ -498,7 +503,7 @@ function CalendarStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 px-1">
+      <div className="grid grid-cols-7 px-1">
         {DOW.map((d) => (
           <span
             key={d}
@@ -509,9 +514,12 @@ function CalendarStep({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 px-1">
+      {/* Pill calendar — same approach as PlanMyTripModal: an outer
+          coloured strip on in-range cells, inner pill for the digit. No
+          gaps so the strip is continuous. */}
+      <div className="grid grid-cols-7 px-1">
         {cells.map((d, i) => {
-          if (!d) return <span key={i} aria-hidden />;
+          if (!d) return <span key={i} aria-hidden className="aspect-square" />;
           const isPast = d < today;
           const isStart = !!range.start && dEq(d, range.start);
           const isEnd = !!range.end && dEq(d, range.end);
@@ -520,23 +528,36 @@ function CalendarStep({
             !!range.end &&
             d > range.start &&
             d < range.end;
+          const hasRange =
+            !!range.start && !!range.end && !dEq(range.start, range.end);
+
+          let fillClass = "";
+          if (isStart && hasRange) fillClass = "bg-primary/15 rounded-l-full";
+          else if (isEnd && hasRange) fillClass = "bg-primary/15 rounded-r-full";
+          else if (inRange) fillClass = "bg-primary/15";
+
+          let innerClass = "rounded-full";
+          if (isStart || isEnd)
+            innerClass += " bg-primary text-primary-foreground font-bold";
+          else if (!isPast)
+            innerClass += " hover:bg-foreground/[0.06] text-foreground";
+          else innerClass += " text-foreground/30";
+
           return (
-            <button
-              key={i}
-              type="button"
-              disabled={isPast}
-              onClick={() => handleClick(d)}
-              className={cn(
-                "relative grid aspect-square place-items-center text-[13px] font-medium transition-colors",
-                isPast && "cursor-default text-foreground/30",
-                !isPast && !isStart && !isEnd && !inRange && "rounded-full hover:bg-foreground/[0.06]",
-                isStart && "rounded-full bg-primary text-primary-foreground font-bold",
-                isEnd && "rounded-full bg-primary text-primary-foreground font-bold",
-                inRange && "bg-primary/20"
-              )}
-            >
-              {d.getDate()}
-            </button>
+            <div key={i} className={cn("relative aspect-square", fillClass)}>
+              <button
+                type="button"
+                disabled={isPast}
+                onClick={() => handleClick(d)}
+                className={cn(
+                  "absolute inset-0 grid place-items-center text-[13px] font-medium transition-colors",
+                  innerClass,
+                  isPast && "cursor-default"
+                )}
+              >
+                {d.getDate()}
+              </button>
+            </div>
           );
         })}
       </div>

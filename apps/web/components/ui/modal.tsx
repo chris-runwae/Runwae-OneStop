@@ -11,6 +11,11 @@ interface ModalProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  // Optional sticky footer (e.g. Continue button on a multi-step form).
+  // When supplied, the body scrolls within max-h-[90vh] while the footer
+  // stays pinned — keeps the primary action reachable even when the
+  // body is long (e.g. an Unsplash photo grid).
+  footer?: ReactNode;
   // When true, the modal slides up from the bottom on mobile (sheet-like)
   // and centres on desktop. When false, it always centres.
   responsive?: boolean;
@@ -23,6 +28,7 @@ export function Modal({
   description,
   children,
   className,
+  footer,
   responsive = true,
 }: ModalProps) {
   const [mounted, setMounted] = useState(open);
@@ -77,11 +83,13 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          "relative w-full max-w-lg bg-card shadow-2xl transition-all duration-[220ms] ease-out",
+          "relative flex w-full max-w-lg flex-col overflow-hidden bg-card shadow-2xl transition-all duration-[220ms] ease-out",
+          // Cap height so long bodies (Unsplash grid, calendar + form) can
+          // scroll internally instead of pushing the footer off-screen.
+          "max-h-[92vh]",
           responsive
             ? "rounded-t-3xl sm:rounded-3xl"
             : "rounded-3xl",
-          // Animations
           "transform-gpu",
           visible
             ? "opacity-100 translate-y-0 sm:scale-100"
@@ -91,7 +99,7 @@ export function Modal({
       >
         {/* Mobile drag indicator */}
         <div className={cn(
-          "mx-auto h-1 w-10 rounded-full bg-border",
+          "mx-auto h-1 w-10 shrink-0 rounded-full bg-border",
           responsive ? "mb-2 mt-3 sm:hidden" : "hidden"
         )} />
 
@@ -99,12 +107,14 @@ export function Modal({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full bg-card/80 text-muted-foreground backdrop-blur transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="px-6 pb-6 pt-5">
+        {/* Scrollable body — flex-1 means it fills the modal up to the cap
+            and overflows internally instead of growing the dialog. */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5">
           {title && (
             <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
               {title}
@@ -115,6 +125,13 @@ export function Modal({
           )}
           <div className={cn(title || description ? "mt-4" : "")}>{children}</div>
         </div>
+
+        {/* Pinned footer — stays visible while the body scrolls. */}
+        {footer && (
+          <div className="shrink-0 border-t border-border bg-card px-6 pb-5 pt-4">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

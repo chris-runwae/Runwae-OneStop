@@ -1,11 +1,11 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { CalendarPlus, Plus } from "lucide-react";
 import { ItineraryCard } from "../ItineraryCard";
 import { TravelConnector } from "../TravelConnector";
 import { AddItemSheet } from "../AddItemSheet";
@@ -16,8 +16,10 @@ type ItineraryDay = Doc<"itinerary_days"> & { items: Doc<"itinerary_items">[] };
 
 export function ItineraryTab({ trip }: Props) {
   const data = useQuery(api.itinerary.getItinerary, { tripId: trip._id });
+  const appendDay = useMutation(api.itinerary.appendDay);
   const [mode, setMode] = useState<"day" | "all">("day");
   const [activeDayId, setActiveDayId] = useState<Id<"itinerary_days"> | null>(null);
+  const [addingDay, setAddingDay] = useState(false);
 
   const days: ItineraryDay[] = data?.days ?? [];
   const activeDay = useMemo(() => {
@@ -25,6 +27,15 @@ export function ItineraryTab({ trip }: Props) {
     return days.find(d => d._id === activeDayId) ?? days[0];
   }, [days, activeDayId]);
   const [addDayId, setAddDayId] = useState<Id<"itinerary_days"> | null>(null);
+
+  async function handleAddDay() {
+    setAddingDay(true);
+    try {
+      await appendDay({ tripId: trip._id });
+    } finally {
+      setAddingDay(false);
+    }
+  }
 
   if (data === undefined) {
     return (
@@ -39,7 +50,16 @@ export function ItineraryTab({ trip }: Props) {
   if (!days.length) {
     return (
       <div className="rounded-2xl border border-dashed border-foreground/15 px-6 py-10 text-center text-sm text-foreground/60">
-        No days yet — add the first one to get started.
+        <p>No days yet on this itinerary.</p>
+        <button
+          type="button"
+          onClick={handleAddDay}
+          disabled={addingDay}
+          className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground disabled:opacity-60"
+        >
+          <CalendarPlus className="h-4 w-4" />
+          {addingDay ? "Adding…" : "Add Day 1"}
+        </button>
       </div>
     );
   }
@@ -86,6 +106,16 @@ export function ItineraryTab({ trip }: Props) {
           {days.map(d => <DayView key={d._id} day={d} onAdd={() => setAddDayId(d._id)} />)}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={handleAddDay}
+        disabled={addingDay}
+        className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/20 text-sm font-semibold text-foreground/70 transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+      >
+        <CalendarPlus className="h-4 w-4" />
+        {addingDay ? "Adding day…" : `Add Day ${days.length + 1}`}
+      </button>
       {addDayId && (
         <AddItemSheet
           open

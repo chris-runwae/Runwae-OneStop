@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import { EventsListingClient } from "@/components/events/EventsListingClient";
 
-export const metadata: Metadata = { title: "Events" };
+export const metadata: Metadata = {
+  title: "Events",
+  description: "Festivals, gigs, gatherings and travel events on Runwae.",
+};
 
 export default function EventsPage() {
-  return (
-    <main className="px-4 py-6">
-      <h1 className="font-display text-2xl font-bold text-foreground">Events</h1>
-    </main>
-  );
+  return <EventsListingClient />;
 }

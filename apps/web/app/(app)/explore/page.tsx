@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import { ExploreClient } from "@/components/explore/ExploreClient";
 
-export const metadata: Metadata = { title: "Explore" };
+export const metadata: Metadata = {
+  title: "Explore",
+  description: "Discover featured destinations, experiences, and events on Runwae.",
+};
 
 export default function ExplorePage() {
-  return (
-    <main className="px-4 py-6">
-      <h1 className="font-display text-2xl font-bold text-foreground">Explore</h1>
-    </main>
-  );
+  return <ExploreClient />;
 }

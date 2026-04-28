@@ -126,6 +126,24 @@ export const createTrip = mutation({
       joinedAt: now,
     });
 
+    // Seed itinerary days from the trip date range so the itinerary tab
+    // is never empty on first open. One day per calendar day, inclusive.
+    // If the parsed range is degenerate, fall back to a single day.
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const span = Math.floor((endMs - startMs) / MS_PER_DAY) + 1;
+    const dayCount = Number.isFinite(span) && span > 0 ? span : 1;
+    for (let i = 0; i < dayCount; i++) {
+      const iso = new Date(startMs + i * MS_PER_DAY)
+        .toISOString()
+        .slice(0, 10);
+      await ctx.db.insert("itinerary_days", {
+        tripId,
+        date: iso,
+        dayNumber: i + 1,
+        createdAt: now,
+      });
+    }
+
     return { tripId, slug };
   },
 });
@@ -241,6 +259,142 @@ export const joinByCode = mutation({
     });
 
     return trip._id;
+  },
+});
+
+// Plan-a-trip from an itinerary_template. Spins up a brand-new private trip
+// owned by the caller, then materialises the template's days/items into the
+// real itinerary tables so the new trip detail page is immediately useful.
+//
+// `startDate` defaults to today (UTC). The trip's date range is derived from
+// the template's `durationDays` so the auto-generated days line up correctly.
+const ITEM_TYPES = new Set([
+  "flight",
+  "hotel",
+  "tour",
+  "car_rental",
+  "event",
+  "restaurant",
+  "activity",
+  "transport",
+  "other",
+]);
+type ItineraryItemType =
+  | "flight" | "hotel" | "tour" | "car_rental" | "event"
+  | "restaurant" | "activity" | "transport" | "other";
+
+function normalizeItemType(raw: string | undefined): ItineraryItemType {
+  if (raw && ITEM_TYPES.has(raw)) return raw as ItineraryItemType;
+  return "activity";
+}
+
+export const createFromTemplate = mutation({
+  args: {
+    templateId: v.id("itinerary_templates"),
+    title: v.optional(v.string()),
+    startDate: v.optional(v.string()), // YYYY-MM-DD; defaults to today UTC
+    visibility: v.optional(TRIP_VISIBILITY),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const template = await ctx.db.get(args.templateId);
+    if (!template) throw new Error("Itinerary template not found");
+
+    const destination = await ctx.db.get(template.destinationId);
+    if (!destination) throw new Error("Destination missing for template");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const startDate = args.startDate ?? today;
+    const startMs = Date.parse(startDate);
+    if (Number.isNaN(startMs)) throw new Error("Invalid startDate");
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const days = Math.max(1, template.durationDays);
+    const endMs = startMs + (days - 1) * MS_PER_DAY;
+    const endDate = new Date(endMs).toISOString().slice(0, 10);
+
+    const now = Date.now();
+    const finalTitle = args.title ?? `${template.title}`;
+    const slug = slugify(finalTitle);
+    const cover = template.coverImageUrl ?? destination.heroImageUrl;
+
+    const tripId = await ctx.db.insert("trips", {
+      title: finalTitle,
+      description: template.description,
+      destinationId: destination._id,
+      destinationLabel: `${destination.name}, ${destination.country}`,
+      destinationCoords: destination.coords,
+      creatorId: userId,
+      startDate,
+      endDate,
+      visibility: args.visibility ?? "private",
+      status: "planning",
+      coverImageUrl: cover,
+      slug,
+      joinCode: randomId(JOIN_CODE_ALPHABET, 8),
+      currency: template.currency,
+      sourceTemplateId: template._id,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("trip_members", {
+      tripId,
+      userId,
+      status: "accepted",
+      role: "owner",
+      joinedAt: now,
+    });
+
+    // Bump the template's copy count for popularity tracking.
+    await ctx.db.patch(template._id, {
+      timesCopied: (template.timesCopied ?? 0) + 1,
+    });
+
+    // Materialise template days/items.
+    for (let i = 0; i < days; i++) {
+      const tplDay = template.days[i];
+      const date = new Date(startMs + i * MS_PER_DAY)
+        .toISOString()
+        .slice(0, 10);
+
+      const dayId = await ctx.db.insert("itinerary_days", {
+        tripId,
+        date,
+        dayNumber: i + 1,
+        title: tplDay?.title,
+        createdAt: now,
+      });
+
+      const items = tplDay?.items ?? [];
+      for (let j = 0; j < items.length; j++) {
+        const it = items[j];
+        await ctx.db.insert("itinerary_items", {
+          tripId,
+          dayId,
+          addedByUserId: userId,
+          type: normalizeItemType(it.type),
+          apiSource: it.apiSource,
+          apiRef: it.apiRef,
+          title: it.title,
+          description: it.description,
+          startTime: it.time,
+          locationName: it.locationName,
+          coords: it.coords,
+          price: it.estimatedCost,
+          currency: it.currency ?? template.currency,
+          isCompleted: false,
+          sortOrder: j,
+          canBeEditedBy: "editors",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    return { tripId, slug };
   },
 });
 

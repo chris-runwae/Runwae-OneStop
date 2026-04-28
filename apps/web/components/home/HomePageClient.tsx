@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LocationPrompt } from "./LocationPrompt";
 import { FindFriendsSheet } from "@/components/social/FindFriendsSheet";
 import { DiscoverGrid } from "@/components/discover/DiscoverGrid";
+import { EventCard } from "@/components/events/EventCard";
 
 type TripStatus =
   | "planning"
@@ -428,76 +429,22 @@ function EventsRow({ events }: { events: EventDoc[] | undefined }) {
   return (
     <>
       <SectionHead title="Events near you" href="/events" />
-      <div className="flex gap-3 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none] lg:px-0 [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-3 overflow-x-auto px-4 pb-3 pt-3 [scrollbar-width:none] lg:px-0 [&::-webkit-scrollbar]:hidden">
         {events === undefined ? (
           <>
-            <Skeleton className="h-56 w-60 shrink-0 rounded-[14px]" />
-            <Skeleton className="h-56 w-60 shrink-0 rounded-[14px]" />
+            <Skeleton className="h-[145px] w-[128px] shrink-0 rounded-[15px]" />
+            <Skeleton className="h-[145px] w-[128px] shrink-0 rounded-[15px]" />
+            <Skeleton className="h-[145px] w-[128px] shrink-0 rounded-[15px]" />
           </>
         ) : events.length === 0 ? (
           <div className="w-full rounded-2xl border border-dashed border-border px-4 py-6 text-center text-[13px] text-muted-foreground">
             No events available right now. Check back soon.
           </div>
         ) : (
-          events.map((e) => <EventCard key={e._id} event={e} />)
+          events.map((e, i) => <EventCard key={e._id} event={e} index={i} />)
         )}
       </div>
     </>
-  );
-}
-
-function EventCard({ event }: { event: EventDoc }) {
-  const date = new Date(event.startDateUtc);
-  const month = date
-    .toLocaleString("en-US", { month: "short", timeZone: event.timezone })
-    .toUpperCase();
-  const day = date.toLocaleString("en-US", {
-    day: "2-digit",
-    timeZone: event.timezone,
-  });
-  const cover = event.imageUrl ?? event.imageUrls[0];
-
-  return (
-    <Link
-      href={`/e/${event.slug}`}
-      className="group block w-60 shrink-0 overflow-hidden rounded-[14px] border border-border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)] transition-transform hover:-translate-y-0.5 hover:scale-[1.02]"
-    >
-      <div className="relative aspect-[16/10] w-full bg-muted">
-        {cover && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover}
-            alt={event.name}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
-        <div className="absolute left-2.5 top-2.5 min-w-[42px] rounded-lg bg-white px-1.5 py-1 text-center leading-none shadow-[0_2px_6px_rgba(0,0,0,0.12)]">
-          <div className="text-[9px] font-bold uppercase tracking-[0.06em] text-primary">
-            {month}
-          </div>
-          <div className="mt-0.5 font-display text-base font-bold text-[#0F0F0F]">
-            {day}
-          </div>
-        </div>
-        <span className="absolute bottom-2 right-2 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
-          {event.currentParticipants} going
-        </span>
-      </div>
-      <div className="px-3 pb-3 pt-2.5">
-        <div className="mb-0.5 line-clamp-1 text-[13.5px] font-semibold leading-tight">
-          {event.name}
-        </div>
-        <div className="mb-2 inline-flex items-center gap-1 text-[11.5px] text-muted-foreground">
-          <MapPin className="h-2.5 w-2.5" />
-          {event.locationName}
-        </div>
-        <div className="flex items-center justify-end">
-          <span className="inline-flex h-7 items-center rounded-full bg-primary px-3 text-[11.5px] font-semibold text-primary-foreground">
-            RSVP
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
 

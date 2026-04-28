@@ -107,6 +107,45 @@ export const addDay = mutation({
   },
 });
 
+// Appends a day to the end of a trip's itinerary. The frontend shouldn't
+// need to know about dayNumber/date — we compute them by extending from the
+// last existing day, falling back to the trip's startDate for a fresh trip.
+export const appendDay = mutation({
+  args: {
+    tripId: v.id("trips"),
+    title: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await assertTripAccess(ctx, args.tripId, "write");
+    const trip = await ctx.db.get(args.tripId);
+    if (!trip) throw new Error("Trip not found");
+
+    const days = await ctx.db
+      .query("itinerary_days")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .collect();
+    days.sort((a, b) => a.dayNumber - b.dayNumber);
+    const last = days[days.length - 1];
+
+    const dayNumber = last ? last.dayNumber + 1 : 1;
+    const baseMs = last
+      ? Date.parse(last.date) + 24 * 60 * 60 * 1000
+      : Date.parse(trip.startDate);
+    const safeBase = Number.isFinite(baseMs) ? baseMs : Date.now();
+    const date = new Date(safeBase).toISOString().slice(0, 10);
+
+    return await ctx.db.insert("itinerary_days", {
+      tripId: args.tripId,
+      date,
+      dayNumber,
+      title: args.title,
+      notes: args.notes,
+      createdAt: Date.now(),
+    });
+  },
+});
+
 export const addItem = mutation({
   args: {
     tripId: v.id("trips"),

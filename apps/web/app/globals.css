@@ -58,6 +58,36 @@
   }
 }
 
+/* Splash screen animations. The splash component composes Tailwind utilities
+   with these keyframes for the R-mark intro, pulse ring, and content reveal. */
+@keyframes rw-logo-in {
+  0%   { transform: scale(0.2); opacity: 0; }
+  55%  { transform: scale(1.08); opacity: 1; }
+  75%  { transform: scale(0.96); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes rw-pulse-ring {
+  0%   { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes rw-word-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes rw-peek-float {
+  0%, 100% { transform: translateY(0) rotate(var(--rw-rot, 0deg)); }
+  50%      { transform: translateY(-4px) rotate(var(--rw-rot, 0deg)); }
+}
+@keyframes rw-pop-in {
+  from { transform: scale(0.2); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.rw-logo-intro      { animation: rw-logo-in 1.2s cubic-bezier(.2,.9,.25,1.2) both; }
+.rw-pulse-ring      { animation: rw-pulse-ring 2.4s ease-out infinite; }
+.rw-word-fade       { animation: rw-word-fade 800ms ease 600ms forwards; }
+.rw-peek-float      { animation: rw-peek-float 6s ease-in-out infinite; }
+.rw-pop-in          { animation: rw-pop-in 600ms cubic-bezier(.2,.9,.25,1.4) both; }
+
 /* HTML descriptions returned by hotel providers (LiteAPI). Server-side
    sanitizer keeps p/br/strong/em/lists/headings only; we just style them. */
 .hotel-prose {

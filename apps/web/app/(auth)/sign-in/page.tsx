@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
 
 export default function SignInPage() {
@@ -11,6 +12,16 @@ export default function SignInPage() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/home";
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+
+  // Once Convex Auth has confirmed we're signed in (e.g. after the Google
+  // OAuth code has been exchanged), bounce to the next destination instead
+  // of leaving the user staring at the sign-in form.
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace(next);
+    }
+  }, [authLoading, isAuthenticated, next, router]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +55,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center space-y-8 px-4 py-12">
       <div className="space-y-3 text-center">
         <Link href="/" className="inline-block">
           <span className="font-display text-3xl font-bold text-primary">Runwae</span>

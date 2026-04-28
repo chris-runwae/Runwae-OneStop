@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useEffect, useMemo, useState } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,16 @@ import { ItineraryCard } from "../ItineraryCard";
 import { TravelConnector } from "../TravelConnector";
 import { AddItemSheet } from "../AddItemSheet";
 
+type DayWeather = {
+  date: string;
+  tempMaxC: number | null;
+  tempMinC: number | null;
+  precipMm: number | null;
+  code: number | null;
+  label: string;
+  emoji: string;
+};
+
 type Props = { trip: Doc<"trips">; viewer: Doc<"users"> | null };
 
 type ItineraryDay = Doc<"itinerary_days"> & { items: Doc<"itinerary_items">[] };
@@ -17,14 +27,54 @@ type ItineraryDay = Doc<"itinerary_days"> & { items: Doc<"itinerary_items">[] };
 export function ItineraryTab({ trip }: Props) {
   const data = useQuery(api.itinerary.getItinerary, { tripId: trip._id });
   const appendDay = useMutation(api.itinerary.appendDay);
+  const reorderItem = useMutation(api.itinerary.reorderItem);
+  const fetchWeather = useAction(api.weather.getDailyForecast);
+  const [weatherByDate, setWeatherByDate] = useState<Record<string, DayWeather>>(
+    {}
+  );
   const [mode, setMode] = useState<"day" | "all">("day");
-  const [activeDayId, setActiveDayId] = useState<Id<"itinerary_days"> | null>(null);
+  const [activeDayId, setActiveDayId] = useState<Id<"itinerary_days"> | null>(
+    null
+  );
   const [addingDay, setAddingDay] = useState(false);
+  const [draggingId, setDraggingId] =
+    useState<Id<"itinerary_items"> | null>(null);
 
   const days: ItineraryDay[] = data?.days ?? [];
+
+  // One Open-Meteo round-trip per trip — returns a date→forecast lookup we
+  // splash onto the day pills. No-key, so it just works in dev.
+  useEffect(() => {
+    if (days.length === 0) return;
+    const coords = trip.destinationCoords;
+    if (!coords) return;
+    const dates = days.map((d) => d.date);
+    let cancelled = false;
+    fetchWeather({ lat: coords.lat, lng: coords.lng, dates })
+      .then((rows) => {
+        if (cancelled) return;
+        const map: Record<string, DayWeather> = {};
+        for (const r of rows) map[r.date] = r;
+        setWeatherByDate(map);
+      })
+      .catch(() => {
+        /* swallow — chip just won't render */
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Dates are derived from days; depending on `days` directly would refetch
+    // on every itinerary item edit, which we don't want.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    trip.destinationCoords?.lat,
+    trip.destinationCoords?.lng,
+    days.map((d) => d.date).join("|"),
+  ]);
+
   const activeDay = useMemo(() => {
     if (!days.length) return null;
-    return days.find(d => d._id === activeDayId) ?? days[0];
+    return days.find((d) => d._id === activeDayId) ?? days[0];
   }, [days, activeDayId]);
   const [addDayId, setAddDayId] = useState<Id<"itinerary_days"> | null>(null);
 
@@ -35,6 +85,32 @@ export function ItineraryTab({ trip }: Props) {
     } finally {
       setAddingDay(false);
     }
+  }
+
+  // Drop dragged item just below the targetItem (within the same day for now).
+  // Uses a fractional sortOrder so we don't have to renumber siblings.
+  async function handleDropOn(
+    targetItem: Doc<"itinerary_items">,
+    targetDayItems: Doc<"itinerary_items">[]
+  ) {
+    if (!draggingId || draggingId === targetItem._id) {
+      setDraggingId(null);
+      return;
+    }
+    const targetIndex = targetDayItems.findIndex(
+      (i) => i._id === targetItem._id
+    );
+    const next = targetDayItems[targetIndex + 1];
+    const newSortOrder = next
+      ? (targetItem.sortOrder + next.sortOrder) / 2
+      : targetItem.sortOrder + 1;
+
+    await reorderItem({
+      itemId: draggingId,
+      sortOrder: newSortOrder,
+      dayId: targetItem.dayId,
+    });
+    setDraggingId(null);
   }
 
   if (data === undefined) {
@@ -66,56 +142,120 @@ export function ItineraryTab({ trip }: Props) {
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2">
         <button
-          onClick={() => setMode(m => m === "all" ? "day" : "all")}
+          onClick={() => setMode((m) => (m === "all" ? "day" : "all"))}
           className={cn(
             "h-9 flex-shrink-0 rounded-full border px-4 text-xs font-semibold",
             mode === "all"
               ? "border-primary bg-primary/10 text-primary"
-              : "border-foreground/15 text-foreground",
+              : "border-foreground/15 text-foreground"
           )}
         >
           All days
         </button>
-        {days.map(d => {
+        {days.map((d) => {
           const date = new Date(d.date);
-          const dow = date.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }).toUpperCase();
+          const dow = date
+            .toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })
+            .toUpperCase();
           const num = date.getUTCDate();
-          const active = mode === "day" && (activeDay?._id === d._id);
+          const active = mode === "day" && activeDay?._id === d._id;
+          const weather = weatherByDate[d.date];
           return (
             <button
               key={d._id}
-              onClick={() => { setMode("day"); setActiveDayId(d._id); }}
+              onClick={() => {
+                setMode("day");
+                setActiveDayId(d._id);
+              }}
               className="flex flex-shrink-0 flex-col items-center gap-1 px-1"
+              title={
+                weather
+                  ? `${weather.label}${
+                      weather.tempMaxC !== null
+                        ? ` · ${Math.round(weather.tempMaxC)}°`
+                        : ""
+                    }`
+                  : undefined
+              }
             >
-              <span className={cn("text-[9.5px] font-semibold tracking-wider", active ? "text-primary" : "text-foreground/40")}>{dow}</span>
-              <span className={cn(
-                "grid h-9 w-9 place-items-center rounded-full text-sm font-semibold",
-                active ? "bg-primary text-primary-foreground" : "text-foreground",
-              )}>{num}</span>
+              <span
+                className={cn(
+                  "text-[9.5px] font-semibold tracking-wider",
+                  active ? "text-primary" : "text-foreground/40"
+                )}
+              >
+                {dow}
+              </span>
+              <span
+                className={cn(
+                  "grid h-9 w-9 place-items-center rounded-full text-sm font-semibold",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground"
+                )}
+              >
+                {num}
+              </span>
+              {weather && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-0.5 text-[10px] font-medium leading-none",
+                    active ? "text-primary" : "text-foreground/60"
+                  )}
+                >
+                  <span aria-hidden>{weather.emoji}</span>
+                  {weather.tempMaxC !== null && (
+                    <span>{Math.round(weather.tempMaxC)}°</span>
+                  )}
+                </span>
+              )}
             </button>
           );
         })}
+        {/* + day button — always visible, ends the day strip. */}
+        <button
+          type="button"
+          onClick={handleAddDay}
+          disabled={addingDay}
+          aria-label="Add a day"
+          className="ml-1 flex flex-shrink-0 flex-col items-center gap-1 px-1"
+        >
+          <span className="text-[9.5px] font-semibold tracking-wider text-foreground/40">
+            ADD
+          </span>
+          <span className="grid h-9 w-9 place-items-center rounded-full border border-dashed border-foreground/30 text-foreground/60 transition-colors hover:border-primary hover:text-primary disabled:opacity-60">
+            <Plus className="h-4 w-4" />
+          </span>
+        </button>
       </div>
 
       {mode === "day" && activeDay ? (
-        <DayView day={activeDay} onAdd={() => setAddDayId(activeDay._id)} />
+        <DayView
+          day={activeDay}
+          onAdd={() => setAddDayId(activeDay._id)}
+          draggingId={draggingId}
+          onDragStart={setDraggingId}
+          onDragEnd={() => setDraggingId(null)}
+          onDropOn={handleDropOn}
+        />
       ) : (
         <div className="space-y-6">
-          {days.map(d => <DayView key={d._id} day={d} onAdd={() => setAddDayId(d._id)} />)}
+          {days.map((d) => (
+            <DayView
+              key={d._id}
+              day={d}
+              onAdd={() => setAddDayId(d._id)}
+              draggingId={draggingId}
+              onDragStart={setDraggingId}
+              onDragEnd={() => setDraggingId(null)}
+              onDropOn={handleDropOn}
+            />
+          ))}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleAddDay}
-        disabled={addingDay}
-        className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/20 text-sm font-semibold text-foreground/70 transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
-      >
-        <CalendarPlus className="h-4 w-4" />
-        {addingDay ? "Adding day…" : `Add Day ${days.length + 1}`}
-      </button>
       {addDayId && (
         <AddItemSheet
           open
@@ -127,8 +267,27 @@ export function ItineraryTab({ trip }: Props) {
   );
 }
 
-function DayView({ day, onAdd }: { day: ItineraryDay; onAdd: () => void }) {
-  const detail = useQuery(api.itinerary.getDayWithTravelTimes, { dayId: day._id });
+function DayView({
+  day,
+  onAdd,
+  draggingId,
+  onDragStart,
+  onDragEnd,
+  onDropOn,
+}: {
+  day: ItineraryDay;
+  onAdd: () => void;
+  draggingId: Id<"itinerary_items"> | null;
+  onDragStart: (id: Id<"itinerary_items">) => void;
+  onDragEnd: () => void;
+  onDropOn: (
+    target: Doc<"itinerary_items">,
+    siblings: Doc<"itinerary_items">[]
+  ) => void;
+}) {
+  const detail = useQuery(api.itinerary.getDayWithTravelTimes, {
+    dayId: day._id,
+  });
   const items: Doc<"itinerary_items">[] = detail?.items ?? day.items ?? [];
   const legs = detail?.legs ?? [];
 
@@ -136,18 +295,38 @@ function DayView({ day, onAdd }: { day: ItineraryDay; onAdd: () => void }) {
     <section className="mt-4">
       <header className="mb-3 flex items-baseline justify-between">
         <h2 className="font-display text-xl font-bold">
-          Day {day.dayNumber}{day.title ? ` — ${day.title}` : ""}
+          Day {day.dayNumber}
+          {day.title ? ` — ${day.title}` : ""}
         </h2>
         <span className="text-xs text-foreground/60">{day.date}</span>
       </header>
       <div className="space-y-3">
         {items.map((it, i) => (
-          <div key={it._id}>
-            <ItineraryCard item={it} />
-            {i < items.length - 1 && <TravelConnector distanceKm={legs[i]?.distanceKm} durationMin={legs[i]?.durationMin} />}
+          <div
+            key={it._id}
+            onDrop={(e) => {
+              e.preventDefault();
+              onDropOn(it, items);
+            }}
+          >
+            <ItineraryCard
+              item={it}
+              isDragging={draggingId === it._id}
+              onDragStart={() => onDragStart(it._id)}
+              onDragEnd={onDragEnd}
+            />
+            {i < items.length - 1 && (
+              <TravelConnector
+                distanceKm={legs[i]?.distanceKm}
+                durationMin={legs[i]?.durationMin}
+              />
+            )}
           </div>
         ))}
-        <button onClick={onAdd} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary text-sm font-semibold text-primary">
+        <button
+          onClick={onAdd}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-primary text-sm font-semibold text-primary"
+        >
           <Plus className="h-4 w-4" /> Add to Day {day.dayNumber}
         </button>
       </div>

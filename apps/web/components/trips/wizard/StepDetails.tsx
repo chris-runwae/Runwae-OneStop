@@ -2,6 +2,7 @@
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { UnsplashPicker } from "./UnsplashPicker";
 
 const CURRENCIES = ["GBP", "USD", "EUR", "JPY", "AUD"] as const;
 type Currency = (typeof CURRENCIES)[number];
@@ -32,12 +33,16 @@ export function StepDetails({
   error,
   onNext,
   onBack,
+  seedQuery = "",
 }: {
   value: DetailsValue;
   onChange: (v: DetailsValue) => void;
   error: string | null;
   onNext: () => void;
   onBack: () => void;
+  // Used to seed the Unsplash search — typically the destination label
+  // from step 0 of the wizard.
+  seedQuery?: string;
 }) {
   function set<K extends keyof DetailsValue>(key: K, val: DetailsValue[K]) {
     onChange({ ...value, [key]: val });
@@ -79,26 +84,34 @@ export function StepDetails({
         />
       </div>
 
-      {/* Cover image */}
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-foreground">Cover image URL</label>
-        <input
-          type="url"
-          placeholder="https://..."
-          value={value.coverImageUrl}
-          onChange={(e) => set("coverImageUrl", e.target.value)}
-          className={inputCls}
-        />
-        {value.coverImageUrl.trim() ? (
+      {/* Cover image — Unsplash picker, with manual URL override. */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">Cover image</label>
+        {value.coverImageUrl.trim() && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={value.coverImageUrl.trim()}
             alt="Cover preview"
-            className="mt-2 h-28 w-full rounded-xl object-cover"
+            className="h-28 w-full rounded-xl object-cover"
           />
-        ) : (
-          <p className="text-xs text-muted-foreground">Leave blank to use a default cover.</p>
         )}
+        <UnsplashPicker
+          seedQuery={seedQuery}
+          selectedUrl={value.coverImageUrl}
+          onSelect={(url) => set("coverImageUrl", url)}
+        />
+        <details className="group">
+          <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground">
+            Or paste a URL
+          </summary>
+          <input
+            type="url"
+            placeholder="https://..."
+            value={value.coverImageUrl}
+            onChange={(e) => set("coverImageUrl", e.target.value)}
+            className={cn(inputCls, "mt-2")}
+          />
+        </details>
       </div>
 
       {/* Currency */}

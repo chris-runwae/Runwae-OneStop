@@ -287,8 +287,11 @@ export const reorderItem = mutation({
   },
 });
 
-// Mock travel times between consecutive items in a day.
-// Will be replaced by Google Maps Distance Matrix.
+// Travel times between consecutive items in a day. Uses haversine on the
+// items' actual coords with a walking-pace assumption — fast (no fetch) and
+// always renders. For accurate road distances, the client can additionally
+// call `routing.computeLegs` (which hits OpenRouteService when its key is
+// set, otherwise mirrors this estimate).
 export const getDayWithTravelTimes = query({
   args: { dayId: v.id("itinerary_days") },
   handler: async (ctx, args) => {
@@ -314,12 +317,35 @@ export const getDayWithTravelTimes = query({
       .collect();
     items.sort((a, b) => a.sortOrder - b.sortOrder);
 
-    const legs = items.slice(0, -1).map((from, i) => ({
-      fromItemId: from._id,
-      toItemId: items[i + 1]._id,
-      distanceKm: Math.round((2 + i * 1.5) * 10) / 10,
-      durationMin: 10 + i * 5,
-    }));
+    const legs = items.slice(0, -1).map((from, i) => {
+      const to = items[i + 1];
+      const fromC = from.coords;
+      const toC = to.coords;
+      let distanceKm: number;
+      if (fromC && toC) {
+        // Inline haversine to keep this query free of imports beyond Convex.
+        const R = 6371;
+        const dLat = ((toC.lat - fromC.lat) * Math.PI) / 180;
+        const dLng = ((toC.lng - fromC.lng) * Math.PI) / 180;
+        const lat1 = (fromC.lat * Math.PI) / 180;
+        const lat2 = (toC.lat * Math.PI) / 180;
+        const h =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        distanceKm = 2 * R * Math.asin(Math.sqrt(h));
+      } else {
+        // No coords on either side — fall back to the prior mock.
+        distanceKm = 2 + i * 1.5;
+      }
+      // 5 km/h walking pace as a baseline; ORS action can refine this.
+      const durationMin = Math.max(3, Math.round((distanceKm / 5) * 60));
+      return {
+        fromItemId: from._id,
+        toItemId: to._id,
+        distanceKm: Math.round(distanceKm * 10) / 10,
+        durationMin,
+      };
+    });
 
     return { day, items, legs };
   },

@@ -95,7 +95,6 @@ function ManualTab({ target, onDone }: { target: Target; onDone: () => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [price, setPrice] = useState("");
-  const [notes, setNotes] = useState("");
 
   return (
     <form
@@ -111,7 +110,6 @@ function ManualTab({ target, onDone }: { target: Target; onDone: () => void }) {
             title,
             startTime: time || undefined,
             price: priceNum,
-            notes: notes || undefined,
           });
         } else {
           await addSaved({
@@ -120,7 +118,6 @@ function ManualTab({ target, onDone }: { target: Target; onDone: () => void }) {
             title,
             date: date || undefined,
             price: priceNum,
-            notes: notes || undefined,
             isManual: true,
           });
         }
@@ -146,8 +143,6 @@ function ManualTab({ target, onDone }: { target: Target; onDone: () => void }) {
       )}
       <input type="number" inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} placeholder="Price"
              className="h-10 w-full rounded-xl bg-foreground/5 px-3 text-sm" />
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" rows={3}
-                className="w-full rounded-xl bg-foreground/5 p-3 text-sm" />
       <button type="submit" className="h-10 w-full rounded-full bg-primary text-sm font-semibold text-primary-foreground">
         Add
       </button>

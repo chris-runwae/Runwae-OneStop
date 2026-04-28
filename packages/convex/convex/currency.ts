@@ -36,8 +36,11 @@ export const writeRates = internalMutation({
 export const refreshRates = internalAction({
   args: { baseCurrency: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ base: string; fetchedAt: number }> => {
+    // Frankfurter — free, no key, ECB-backed daily reference rates. Recently
+    // moved from frankfurter.app → frankfurter.dev; the .app host still
+    // works as an alias but the .dev domain is canonical going forward.
     const base = args.baseCurrency ?? "GBP";
-    const url = `https://api.frankfurter.app/latest?from=${base}`;
+    const url = `https://api.frankfurter.dev/v1/latest?base=${base}`;
     const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Frankfurter returned ${res.status}`);

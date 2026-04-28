@@ -1,5 +1,14 @@
 export type DiscoveryItem = {
-  provider: "viator" | "liteapi" | "duffel" | "rentalcars" | "tiqets" | "yelp" | "static";
+  provider:
+    | "viator"
+    | "liteapi"
+    | "duffel"
+    | "rentalcars"
+    | "tiqets"
+    | "yelp"
+    | "ticketmaster"
+    | "geoapify"
+    | "static";
   apiRef: string;
   category: "stay" | "tour" | "adventure" | "event" | "eat" | "ride" | "fly" | "shop" | "other";
   title: string;

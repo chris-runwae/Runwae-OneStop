@@ -162,6 +162,9 @@ export const getBySlug = query({
     const userId = await getAuthUserId(ctx);
     if (userId === null) return null;
 
+    // Surface the trip for both accepted members AND pending invitees so the
+    // detail page can render the accept/decline banner. Non-invitees still
+    // see null.
     const membership = await ctx.db
       .query("trip_members")
       .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
@@ -169,6 +172,22 @@ export const getBySlug = query({
       .first();
 
     return membership ? trip : null;
+  },
+});
+
+// Lightweight viewer membership lookup for the trip detail page so it can
+// render an accept/decline banner when status === "pending".
+export const getViewerMembership = query({
+  args: { tripId: v.id("trips") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+    const membership = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .first();
+    return membership;
   },
 });
 
@@ -197,6 +216,9 @@ export const updateTrip = mutation({
     description: v.optional(v.string()),
     destinationId: v.optional(v.id("destinations")),
     destinationLabel: v.optional(v.string()),
+    destinationCoords: v.optional(
+      v.object({ lat: v.number(), lng: v.number() })
+    ),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     category: v.optional(TRIP_CATEGORY),
@@ -215,9 +237,31 @@ export const updateTrip = mutation({
     currency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { role } = await assertTripAccess(ctx, args.tripId);
+    const { role, trip } = await assertTripAccess(ctx, args.tripId);
     if (role !== "owner" && role !== "editor") {
       throw new Error("Not authorized to edit this trip");
+    }
+
+    // If location or dates changed, expire any cached discovery payloads
+    // keyed against the OLD term so the next Discover search refetches.
+    const locationChanged =
+      args.destinationLabel !== undefined &&
+      args.destinationLabel !== trip.destinationLabel;
+    const datesChanged =
+      (args.startDate !== undefined && args.startDate !== trip.startDate) ||
+      (args.endDate !== undefined && args.endDate !== trip.endDate);
+    if (locationChanged || datesChanged) {
+      const oldTerm = trip.destinationLabel?.split(",")[0]?.trim().toLowerCase();
+      if (oldTerm) {
+        // Bounded sweep — same provider/category/queryKey index covers all
+        // entries that start with this term (queryKey is `${term}…`).
+        const cached = await ctx.db.query("discovery_cache").take(500);
+        for (const row of cached) {
+          if (row.queryKey.toLowerCase().startsWith(oldTerm)) {
+            await ctx.db.delete(row._id);
+          }
+        }
+      }
     }
 
     const { tripId, ...patch } = args;
@@ -227,6 +271,133 @@ export const updateTrip = mutation({
     }
     await ctx.db.patch(tripId, update);
     return await ctx.db.get(tripId);
+  },
+});
+
+// Owner-only hard delete. Sweeps every dependent table so we don't leak rows.
+// Convex limits per-mutation document writes, so for very large trips this
+// may need to chunk via `ctx.scheduler.runAfter` — current usage is small
+// enough to fit in one pass.
+export const deleteTrip = mutation({
+  args: { tripId: v.id("trips") },
+  handler: async (ctx, args) => {
+    const { role } = await assertTripAccess(ctx, args.tripId);
+    if (role !== "owner") {
+      throw new Error("Only the trip owner can delete this trip");
+    }
+
+    const childTables = [
+      "itinerary_items",
+      "itinerary_days",
+      "saved_items",
+      "saved_item_comments",
+      "trip_posts",
+      "trip_polls",
+      "trip_checklists",
+      "trip_members",
+      "expenses",
+    ] as const;
+
+    for (const table of childTables) {
+      const rows = await ctx.db
+        .query(table)
+        .withIndex("by_trip", (q: any) => q.eq("tripId", args.tripId))
+        .collect();
+      for (const row of rows) await ctx.db.delete(row._id);
+    }
+
+    await ctx.db.delete(args.tripId);
+    return { deleted: true };
+  },
+});
+
+// Invite a user to the trip. Creates a pending trip_members row and a
+// notification so the recipient sees an actionable card.
+export const inviteToTrip = mutation({
+  args: {
+    tripId: v.id("trips"),
+    inviteeId: v.id("users"),
+    role: v.optional(v.union(v.literal("editor"), v.literal("viewer"))),
+  },
+  handler: async (ctx, args) => {
+    const { userId, trip, role } = await assertTripAccess(ctx, args.tripId);
+    if (role !== "owner" && role !== "editor") {
+      throw new Error("Only members with edit access can invite others");
+    }
+    if (args.inviteeId === userId) {
+      throw new Error("You're already on this trip");
+    }
+
+    const existing = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), args.inviteeId))
+      .first();
+    if (existing) {
+      if (existing.status === "accepted")
+        return { alreadyMember: true, memberId: existing._id };
+      // Re-invite a previously declined/pending row by bumping status.
+      await ctx.db.patch(existing._id, {
+        status: "pending",
+        invitedBy: userId,
+        joinedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("trip_members", {
+        tripId: args.tripId,
+        userId: args.inviteeId,
+        role: args.role ?? "viewer",
+        invitedBy: userId,
+        status: "pending",
+        joinedAt: Date.now(),
+      });
+    }
+
+    await ctx.db.insert("notifications", {
+      userId: args.inviteeId,
+      type: "trip_invite",
+      data: {
+        tripId: args.tripId,
+        tripTitle: trip.title,
+        tripSlug: trip.slug,
+        invitedById: userId,
+      },
+      isRead: false,
+      createdAt: Date.now(),
+    });
+
+    return { invited: true };
+  },
+});
+
+// Accept or decline a pending invite. Used both from the notifications card
+// and the share-link landing flow.
+export const respondToInvite = mutation({
+  args: {
+    tripId: v.id("trips"),
+    accept: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const member = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .first();
+    if (!member) throw new Error("No invite found");
+    if (member.status === "accepted") return { alreadyAccepted: true };
+
+    if (args.accept) {
+      await ctx.db.patch(member._id, {
+        status: "accepted",
+        joinedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.delete(member._id);
+    }
+    return { ok: true };
   },
 });
 

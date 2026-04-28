@@ -30,20 +30,25 @@ import type * as payments from "../payments.js";
 import type * as polls from "../polls.js";
 import type * as posts from "../posts.js";
 import type * as providers_duffel from "../providers/duffel.js";
+import type * as providers_geoapify from "../providers/geoapify.js";
 import type * as providers_liteapi from "../providers/liteapi.js";
 import type * as providers_rentalcars from "../providers/rentalcars.js";
 import type * as providers_staticDiscovery from "../providers/staticDiscovery.js";
+import type * as providers_ticketmaster from "../providers/ticketmaster.js";
 import type * as providers_tiqets from "../providers/tiqets.js";
 import type * as providers_types from "../providers/types.js";
 import type * as providers_viator from "../providers/viator.js";
 import type * as providers_yelp from "../providers/yelp.js";
+import type * as routing from "../routing.js";
 import type * as saved_items from "../saved_items.js";
 import type * as search from "../search.js";
 import type * as social from "../social.js";
 import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as trips from "../trips.js";
+import type * as unsplash from "../unsplash.js";
 import type * as user_saves from "../user_saves.js";
 import type * as users from "../users.js";
+import type * as weather from "../weather.js";
 
 import type {
   ApiFromModules,
@@ -74,20 +79,25 @@ declare const fullApi: ApiFromModules<{
   polls: typeof polls;
   posts: typeof posts;
   "providers/duffel": typeof providers_duffel;
+  "providers/geoapify": typeof providers_geoapify;
   "providers/liteapi": typeof providers_liteapi;
   "providers/rentalcars": typeof providers_rentalcars;
   "providers/staticDiscovery": typeof providers_staticDiscovery;
+  "providers/ticketmaster": typeof providers_ticketmaster;
   "providers/tiqets": typeof providers_tiqets;
   "providers/types": typeof providers_types;
   "providers/viator": typeof providers_viator;
   "providers/yelp": typeof providers_yelp;
+  routing: typeof routing;
   saved_items: typeof saved_items;
   search: typeof search;
   social: typeof social;
   stripeWebhook: typeof stripeWebhook;
   trips: typeof trips;
+  unsplash: typeof unsplash;
   user_saves: typeof user_saves;
   users: typeof users;
+  weather: typeof weather;
 }>;
 
 /**

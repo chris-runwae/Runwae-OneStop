@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
   Bell,
   CalendarPlus,
+  Check,
   CheckCheck,
   CreditCard,
   HeartHandshake,
@@ -12,6 +14,7 @@ import {
   TicketCheck,
   UserPlus2,
   Vote,
+  X,
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -61,6 +64,42 @@ export default function NotificationsPage() {
   const list = useQuery(api.notifications.list, { onlyUnread: filter === "unread" });
   const markRead = useMutation(api.notifications.markRead);
   const markAllRead = useMutation(api.notifications.markAllRead);
+  const respondToInvite = useMutation(api.trips.respondToInvite);
+  const respondToFriend = useMutation(api.social.respondToFriendRequest);
+  const [busyId, setBusyId] = useState<Id<"notifications"> | null>(null);
+
+  async function handleTripInvite(
+    n: Doc<"notifications">,
+    accept: boolean
+  ) {
+    const data = (n.data ?? {}) as { tripId?: Id<"trips"> };
+    if (!data.tripId) return;
+    setBusyId(n._id);
+    try {
+      await respondToInvite({ tripId: data.tripId, accept });
+      await markRead({ notificationId: n._id });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleFriendRequest(
+    n: Doc<"notifications">,
+    accept: boolean
+  ) {
+    const data = (n.data ?? {}) as { friendshipId?: Id<"friendships"> };
+    if (!data.friendshipId) return;
+    setBusyId(n._id);
+    try {
+      await respondToFriend({
+        friendshipId: data.friendshipId,
+        action: accept ? "accept" : "decline",
+      });
+      await markRead({ notificationId: n._id });
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-7">
@@ -118,24 +157,44 @@ export default function NotificationsPage() {
         <ul className="space-y-1">
           {list.map((n) => {
             const Icon = ICONS[n.type] ?? Bell;
+            const data = (n.data ?? {}) as Record<string, unknown>;
+            const tripTitle = data.tripTitle as string | undefined;
+            const tripSlug = data.tripSlug as string | undefined;
+            const requesterName = data.requesterName as string | undefined;
+            const requesterUsername = data.requesterUsername as
+              | string
+              | undefined;
+            const detailHref =
+              n.type === "trip_invite" && tripSlug
+                ? `/trips/${tripSlug}`
+                : undefined;
+            const subtitle =
+              n.type === "trip_invite" && tripTitle
+                ? `Invited to “${tripTitle}”`
+                : n.type === "friend_request" && requesterName
+                ? `${requesterName}${requesterUsername ? ` (@${requesterUsername})` : ""} wants to be friends`
+                : undefined;
+
+            const isInvite = n.type === "trip_invite";
+            const isFriendReq = n.type === "friend_request";
+            const busy = busyId === n._id;
+
             return (
               <li key={n._id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!n.isRead) markRead({ notificationId: n._id as Id<"notifications"> });
-                  }}
+                <div
                   className={cn(
-                    "flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
+                    "flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors",
                     n.isRead
-                      ? "border-border bg-card hover:bg-muted/40"
-                      : "border-primary/20 bg-primary/[0.04] hover:bg-primary/[0.07]"
+                      ? "border-border bg-card"
+                      : "border-primary/20 bg-primary/[0.04]"
                   )}
                 >
                   <span
                     className={cn(
                       "grid h-9 w-9 shrink-0 place-items-center rounded-full",
-                      n.isRead ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                      n.isRead
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-primary/10 text-primary"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -149,11 +208,63 @@ export default function NotificationsPage() {
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                       )}
                     </div>
+                    {subtitle && (
+                      <div className="mt-0.5 line-clamp-1 text-xs text-foreground/80">
+                        {subtitle}
+                      </div>
+                    )}
                     <div className="mt-0.5 text-xs text-muted-foreground">
                       {formatRelativeTime(n.createdAt)}
                     </div>
+
+                    {(isInvite || isFriendReq) && (
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            isInvite
+                              ? handleTripInvite(n, true)
+                              : handleFriendRequest(n, true)
+                          }
+                          className="inline-flex h-8 items-center gap-1 rounded-full bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-60"
+                        >
+                          <Check className="h-3 w-3" /> Accept
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            isInvite
+                              ? handleTripInvite(n, false)
+                              : handleFriendRequest(n, false)
+                          }
+                          className="inline-flex h-8 items-center gap-1 rounded-full bg-foreground/5 px-3 text-[12px] font-semibold text-foreground disabled:opacity-60"
+                        >
+                          <X className="h-3 w-3" /> Decline
+                        </button>
+                        {detailHref && (
+                          <Link
+                            href={detailHref}
+                            className="inline-flex h-8 items-center rounded-full px-3 text-[12px] font-semibold text-primary hover:underline"
+                          >
+                            View
+                          </Link>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </button>
+
+                  {!isInvite && !isFriendReq && !n.isRead && (
+                    <button
+                      type="button"
+                      onClick={() => markRead({ notificationId: n._id })}
+                      className="text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      Mark read
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}

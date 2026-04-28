@@ -22,6 +22,19 @@ type ActivityEvent =
       actorId: Id<"users">;
       createdAt: number;
       savedItem: Doc<"saved_items">;
+    }
+  | {
+      kind: "trip_post";
+      actorId: Id<"users">;
+      createdAt: number;
+      post: Doc<"trip_posts">;
+      trip: Doc<"trips"> | null;
+    }
+  | {
+      kind: "user_save";
+      actorId: Id<"users">;
+      createdAt: number;
+      save: Doc<"user_saves">;
     };
 
 async function findPair(
@@ -66,15 +79,72 @@ export const sendFriendRequest = mutation({
       updatedAt: now,
     });
 
+    // Snapshot the requester's display info so the notification card can
+    // render "X wants to be friends" without a follow-up join.
+    const me = await ctx.db.get(userId);
     await ctx.db.insert("notifications", {
       userId: args.addresseeId,
       type: "friend_request",
-      data: { friendshipId: id, requesterId: userId },
+      data: {
+        friendshipId: id,
+        requesterId: userId,
+        requesterName: me?.name ?? null,
+        requesterUsername: me?.username ?? null,
+        requesterImage: me?.image ?? null,
+      },
       isRead: false,
       createdAt: now,
     });
 
     return id;
+  },
+});
+
+// Pending incoming friend requests, hydrated with the requester's profile so
+// the /feed page can render accept/decline prompt cards inline.
+export const listPendingFriendRequests = query({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<
+    Array<{
+      friendshipId: Id<"friendships">;
+      createdAt: number;
+      requester: {
+        _id: Id<"users">;
+        name?: string | null;
+        username?: string | null;
+        image?: string | null;
+      };
+    }>
+  > => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const incoming = await ctx.db
+      .query("friendships")
+      .withIndex("by_addressee", (q) => q.eq("addresseeId", userId))
+      .collect();
+    const pending = incoming
+      .filter((f) => f.status === "pending")
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    const enriched = await Promise.all(
+      pending.map(async (fr) => {
+        const u = await ctx.db.get(fr.requesterId);
+        return {
+          friendshipId: fr._id,
+          createdAt: fr.createdAt,
+          requester: {
+            _id: fr.requesterId,
+            name: u?.name ?? null,
+            username: u?.username ?? null,
+            image: u?.image ?? null,
+          },
+        };
+      })
+    );
+    return enriched;
   },
 });
 
@@ -266,6 +336,38 @@ export const getFriendActivityHydrated = query({
         const trip = await ctx.db.get(s.tripId);
         if (!trip || trip.visibility === "private") continue;
         events.push({ kind: "item_saved", actorId: fid, createdAt: s.createdAt, savedItem: s });
+      }
+
+      // Trip posts authored by the friend on a non-private trip — visible
+      // social activity, equivalent to "X posted on their trip".
+      const posts = await ctx.db
+        .query("trip_posts")
+        .filter((q) => q.eq(q.field("createdByUserId"), fid))
+        .collect();
+      for (const p of posts) {
+        const trip = await ctx.db.get(p.tripId);
+        if (!trip || trip.visibility === "private") continue;
+        events.push({
+          kind: "trip_post",
+          actorId: fid,
+          createdAt: p.createdAt,
+          post: p,
+          trip,
+        });
+      }
+
+      // User-level saves (the "heart" on Discover cards) — public by nature.
+      const userSaves = await ctx.db
+        .query("user_saves")
+        .withIndex("by_user", (q) => q.eq("userId", fid))
+        .collect();
+      for (const s of userSaves) {
+        events.push({
+          kind: "user_save",
+          actorId: fid,
+          createdAt: s.createdAt,
+          save: s,
+        });
       }
     }
 

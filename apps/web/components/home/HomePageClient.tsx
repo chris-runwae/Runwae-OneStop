@@ -367,14 +367,54 @@ export function ActivityRow({
     );
   }
 
+  if (item.kind === "item_saved") {
+    return (
+      <div className={cn("flex min-h-[60px] items-center gap-3 py-2.5", borderClass)}>
+        <Avatar src={item.actor.image} name={actorName} size="md" />
+        <div className="min-w-0 flex-1 text-[13.5px] leading-snug">
+          <span className="font-semibold">{actorName}</span> saved{" "}
+          <span className="font-semibold text-primary">{item.savedItem.title}</span>
+          <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">{time}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.kind === "user_save") {
+    return (
+      <div className={cn("flex min-h-[60px] items-center gap-3 py-2.5", borderClass)}>
+        <Avatar src={item.actor.image} name={actorName} size="md" />
+        <div className="min-w-0 flex-1 text-[13.5px] leading-snug">
+          <span className="font-semibold">{actorName}</span> liked{" "}
+          <span className="font-semibold text-primary">{item.save.title}</span>
+          <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">{time}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // trip_post
   return (
     <div className={cn("flex min-h-[60px] items-center gap-3 py-2.5", borderClass)}>
       <Avatar src={item.actor.image} name={actorName} size="md" />
       <div className="min-w-0 flex-1 text-[13.5px] leading-snug">
-        <span className="font-semibold">{actorName}</span> saved{" "}
-        <span className="font-semibold text-primary">{item.savedItem.title}</span>
+        <span className="font-semibold">{actorName}</span> posted on{" "}
+        <span className="font-semibold text-primary">
+          {item.trip?.title ?? "their trip"}
+        </span>
+        <div className="mt-0.5 line-clamp-1 text-[11.5px] text-foreground/70">
+          {item.post.content}
+        </div>
         <div className="mt-0.5 text-[11.5px] text-muted-foreground/80">{time}</div>
       </div>
+      {item.trip && (
+        <Link
+          href={`/trips/${item.trip.slug}`}
+          className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-semibold text-primary"
+        >
+          Open <ArrowRight className="h-2.5 w-2.5" strokeWidth={2.4} />
+        </Link>
+      )}
     </div>
   );
 }

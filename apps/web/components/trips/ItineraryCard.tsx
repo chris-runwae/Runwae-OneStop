@@ -1,55 +1,165 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, MapPin } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
 import { useMutation } from "convex/react";
+import { ArrowRight, GripVertical, MapPin, Trash2 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { CategoryBadge } from "./CategoryBadge";
+import { cn } from "@/lib/utils";
 
-export function ItineraryCard({ item }: { item: Doc<"itinerary_items"> }) {
-  const updateItem = useMutation(api.itinerary.updateItem);
-  const [notes, setNotes] = useState(item.notes ?? "");
-  const lastSaved = useRef(item.notes ?? "");
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+// Resolve an itinerary item to its in-app detail page based on type + provider.
+// Hotels and flights use the booking flow; tours/activities use the unified
+// /discover detail; events use the event slug if we have an apiRef.
+function resolveDetailHref(item: Doc<"itinerary_items">): string | null {
+  const provider = item.apiSource;
+  const ref = item.apiRef;
 
-  useEffect(() => {
-    if (notes === lastSaved.current) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      void updateItem({ itemId: item._id, notes }).then(() => {
-        lastSaved.current = notes;
-      });
-    }, 600);
-    return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [notes, item._id, updateItem]);
+  if (item.type === "hotel" && ref) {
+    return `/hotels/${encodeURIComponent(ref)}`;
+  }
+  if (item.type === "flight" && ref) {
+    return `/flights/${encodeURIComponent(ref)}`;
+  }
+  if (item.type === "event" && ref) {
+    // Event apiRef stores the event slug (or fall back to /events listing).
+    return `/events/${encodeURIComponent(ref)}`;
+  }
+  if (provider && ref) {
+    return `/discover/${encodeURIComponent(provider)}/${encodeURIComponent(ref)}`;
+  }
+  return null;
+}
+
+interface ItineraryCardProps {
+  item: Doc<"itinerary_items">;
+  showDragHandle?: boolean;
+  // Drag handlers wired by the parent ItineraryTab so reorder lives in one
+  // place (sortOrder + dayId).
+  onDragStart?: () => void;
+  onDragOver?: () => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean;
+}
+
+export function ItineraryCard({
+  item,
+  showDragHandle = true,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  isDragging,
+}: ItineraryCardProps) {
+  const deleteItem = useMutation(api.itinerary.deleteItem);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const detailHref = resolveDetailHref(item);
+
+  async function handleDelete() {
+    setBusy(true);
+    try {
+      await deleteItem({ itemId: item._id });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-foreground/10 bg-background shadow-sm">
+    <article
+      draggable={showDragHandle}
+      onDragStart={onDragStart}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver?.();
+      }}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border border-foreground/10 bg-background shadow-sm transition-opacity",
+        isDragging && "opacity-50"
+      )}
+    >
       {item.imageUrl && (
         <div className="relative aspect-[16/9] bg-foreground/5">
-          <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
           <div className="absolute left-2.5 top-2.5">
             <CategoryBadge type={item.type} />
           </div>
         </div>
       )}
-      <div className="p-4">
-        <h3 className="text-base font-semibold leading-tight">{item.title}</h3>
-        {item.locationName && (
-          <p className="mt-1 flex items-center gap-1 text-xs text-foreground/60">
-            <MapPin className="h-3 w-3" /> {item.locationName}
-          </p>
+      <div className="flex items-start gap-2 p-4">
+        {showDragHandle && (
+          <span
+            className="mt-1 grid h-7 w-5 cursor-grab place-items-center text-foreground/30 active:cursor-grabbing"
+            aria-label="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </span>
         )}
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Add a note for the group…"
-            className="h-9 flex-1 rounded-full bg-foreground/5 px-3 text-xs text-foreground placeholder:text-foreground/40 focus:bg-foreground/10 focus:outline-none"
-          />
-          <button aria-label="Open" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground">
-            <ArrowRight className="h-4 w-4" />
-          </button>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold leading-tight">
+            {item.title}
+          </h3>
+          {item.locationName && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-foreground/60">
+              <MapPin className="h-3 w-3" /> {item.locationName}
+            </p>
+          )}
+          {item.startTime && (
+            <p className="mt-1 text-xs font-semibold text-foreground/70">
+              {item.startTime}
+              {item.endTime ? ` – ${item.endTime}` : ""}
+            </p>
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {confirmingDelete ? (
+            <>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={busy}
+                className="rounded-full bg-error px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-60"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={busy}
+                className="rounded-full bg-foreground/10 px-3 py-1.5 text-[11px] font-semibold text-foreground"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                aria-label="Remove from itinerary"
+                className="grid h-9 w-9 place-items-center rounded-full text-foreground/40 transition-colors hover:bg-error/10 hover:text-error"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+              {detailHref ? (
+                <Link
+                  href={detailHref}
+                  aria-label="Open detail"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground transition-transform hover:scale-105"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </article>

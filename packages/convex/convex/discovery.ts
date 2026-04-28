@@ -13,11 +13,31 @@ function providerFor(category: string): Provider {
     case "stay": return "liteapi";
     case "tour":
     case "adventure": return "viator";
-    case "event": return "tiqets";
+    // Live music / sport / theatre — Ticketmaster has the best coverage and
+    // an instant-key free tier. Falls back to tiqets→static below.
+    case "event":
+    case "attend": return "ticketmaster";
     case "eat": return "yelp";
     case "ride": return "rentalcars";
     case "fly": return "duffel";
     default: return "static";
+  }
+}
+
+// Secondary fallback when the primary provider returns nothing for a chip.
+// Tries to fill the gap with Geoapify POIs (free key, broad coverage) before
+// landing on the static seed.
+function fallbackProviderFor(category: string): Provider | null {
+  switch (category) {
+    case "tour":
+    case "adventure":
+    case "explore":
+      return "geoapify";
+    case "event":
+    case "attend":
+      return "tiqets";
+    default:
+      return null;
   }
 }
 
@@ -96,9 +116,42 @@ export const searchByCategory = action({
             category, term, lat, lng, limit: cap,
           });
           break;
+        case "ticketmaster":
+          items = await ctx.runAction(internal.providers.ticketmaster.search, {
+            category, term, lat, lng, limit: cap,
+          });
+          break;
+        case "geoapify":
+          items = await ctx.runAction(internal.providers.geoapify.search, {
+            category, term, lat, lng, limit: cap,
+          });
+          break;
       }
     } catch (err) {
       console.error("[discovery] provider call threw", { category, error: String(err) });
+    }
+
+    // Secondary provider (e.g. Geoapify when Viator is empty) before falling
+    // back to the static seed.
+    if (items.length === 0) {
+      const fb = fallbackProviderFor(category);
+      if (fb === "geoapify") {
+        try {
+          items = await ctx.runAction(internal.providers.geoapify.search, {
+            category, term, lat, lng, limit: cap,
+          });
+        } catch (err) {
+          console.error("[discovery] geoapify fallback threw", err);
+        }
+      } else if (fb === "tiqets") {
+        try {
+          items = await ctx.runAction(internal.providers.tiqets.search, {
+            category, term, lat, lng, limit: cap,
+          });
+        } catch (err) {
+          console.error("[discovery] tiqets fallback threw", err);
+        }
+      }
     }
 
     if (items.length === 0) {
@@ -438,6 +491,12 @@ export const getDetail = action({
           break;
         case "yelp":
           detail = await ctx.runAction(internal.providers.yelp.getDetail, { apiRef });
+          break;
+        case "ticketmaster":
+          detail = await ctx.runAction(internal.providers.ticketmaster.getDetail, { apiRef });
+          break;
+        case "geoapify":
+          detail = await ctx.runAction(internal.providers.geoapify.getDetail, { apiRef });
           break;
         case "static":
           detail = await ctx.runAction(internal.providers.staticDiscovery.getDetail, { apiRef });

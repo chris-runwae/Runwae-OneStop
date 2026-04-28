@@ -53,6 +53,32 @@ export const updateProfile = mutation({
   },
 });
 
+// Avatar upload uses Convex storage so we don't need a third-party provider.
+// Client flow: call generateAvatarUploadUrl → PUT the file to that URL →
+// receive { storageId } → call setAvatar({ storageId }).
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const setAvatar = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) throw new Error("Upload not found");
+    // Mirror to both `image` (used by @convex-dev/auth's row defaults) and
+    // `avatarUrl` (the app field) so existing readers don't have to change.
+    await ctx.db.patch(userId, { image: url, avatarUrl: url });
+    return url;
+  },
+});
+
 export const setHomeLocation = mutation({
   args: {
     coords: v.object({ lat: v.number(), lng: v.number() }),

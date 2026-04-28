@@ -149,6 +149,7 @@ export function CreateTripWizard() {
           error={error}
           onNext={handleStep2Next}
           onBack={handleBack}
+          seedQuery={destination.destinationLabel}
         />
       )}
 

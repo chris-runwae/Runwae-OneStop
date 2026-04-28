@@ -145,8 +145,9 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
           <div className="flex items-start gap-2 text-sm text-error">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Resolve these before continuing. Cancel each booking and either
-              cancel or transfer each upcoming event with attendees.
+              Resolve these before continuing. Cancel each active booking, and
+              cancel or hand over any event you&apos;re hosting that has
+              other attendees going.
             </span>
           </div>
         </div>
@@ -185,7 +186,7 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
         {blockers.hostedUpcomingEventsWithAttendees.length > 0 && (
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Hosted upcoming events with attendees (
+              Events you&apos;re hosting (
               {blockers.hostedUpcomingEventsWithAttendees.length})
             </h3>
             <ul className="space-y-2">
@@ -199,8 +200,7 @@ export function DeleteAccountDialog({ open, onClose }: DeleteAccountDialogProps)
                       {e.name}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(e.startDateUtc).toLocaleString()} ·{" "}
-                      {e.currentParticipants} attendees
+                      {new Date(e.startDateUtc).toLocaleString()}
                     </div>
                   </div>
                   <Link

@@ -70,10 +70,10 @@ export const getDeletionBlockers = query({
       (b) => b.status === "pending" || b.status === "confirmed",
     );
 
-    // Hosted events that haven't started yet AND have at least one OTHER
-    // attendee (not just the host themselves). The host is auto-recorded as
-    // "going" when they create an event so `currentParticipants` would
-    // always be ≥ 1, which would block every host trivially.
+    // Hosted upcoming events with at least one OTHER going attendee. The
+    // host themselves is auto-recorded as "going" on their own events so
+    // we exclude their userId from the count. Being an attendee on someone
+    // else's event is never a blocker.
     const hostedEvents = await ctx.db
       .query("events")
       .withIndex("by_host", (q) => q.eq("hostUserId", userId))
@@ -87,10 +87,10 @@ export const getDeletionBlockers = query({
         .query("event_attendees")
         .withIndex("by_event", (q) => q.eq("eventId", e._id))
         .collect();
-      const realAttendees = attendees.filter(
+      const others = attendees.filter(
         (a) => a.userId !== userId && a.status === "going",
       );
-      if (realAttendees.length > 0) hostedUpcomingWithAttendees.push(e);
+      if (others.length > 0) hostedUpcomingWithAttendees.push(e);
     }
 
     // Active subscription (single row per user expected; take the first).
@@ -116,7 +116,6 @@ export const getDeletionBlockers = query({
           name: e.name,
           slug: e.slug,
           startDateUtc: e.startDateUtc,
-          currentParticipants: e.currentParticipants,
         }),
       ),
       activeSubscription: subscription

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Heart, MapPin, Plus } from "lucide-react";
 import Image from "next/image";
@@ -8,6 +9,7 @@ import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddToTripModal, type DiscoverPayload } from "./AddToTripModal";
+import { bookingHrefFor } from "@/lib/bookingHref";
 import type { Id } from "@/convex/_generated/dataModel";
 
 // ───────────────────────────────────────────────────────────
@@ -400,6 +402,8 @@ export function DiscoverGrid({
                 catEmoji={cfg?.emoji ?? "✨"}
                 saveControls={saveControls}
                 onAddToTrip={setAddToTripItem}
+                checkin={checkin}
+                checkout={checkout}
               />
             );
           })}
@@ -432,6 +436,8 @@ export function DiscoverCard({
   imageOptimized,
   saveControls,
   onAddToTrip,
+  checkin,
+  checkout,
 }: {
   payload: DiscoverPayload;
   catLabel: string;
@@ -439,8 +445,12 @@ export function DiscoverCard({
   imageOptimized?: boolean;
   saveControls: SaveControls;
   onAddToTrip: (item: DiscoverPayload) => void;
+  checkin?: string;
+  checkout?: string;
 }) {
+  const router = useRouter();
   const isSaved = saveControls.isSaved(payload.provider, payload.apiRef);
+  const bookingHref = bookingHrefFor(payload, { checkin, checkout });
   const formattedPrice =
     payload.price !== undefined && payload.currency
       ? new Intl.NumberFormat("en-US", {
@@ -453,7 +463,14 @@ export function DiscoverCard({
   return (
     <div
       onClick={() => {
-        if (payload.externalUrl) window.open(payload.externalUrl, "_blank");
+        // Hotel and flight cards route to the in-app booking flow. Other
+        // categories (food, activities) fall back to the provider's own
+        // page when one is supplied.
+        if (bookingHref) {
+          router.push(bookingHref);
+        } else if (payload.externalUrl) {
+          window.open(payload.externalUrl, "_blank");
+        }
       }}
       className="group cursor-pointer overflow-hidden rounded-[14px] border border-border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)] transition-transform hover:-translate-y-0.5 hover:scale-[1.015]"
     >

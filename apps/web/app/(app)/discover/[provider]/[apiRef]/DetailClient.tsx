@@ -8,6 +8,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
+import { bookingHrefFor } from "@/lib/bookingHref";
 
 type Detail = {
   provider: string;
@@ -221,11 +222,27 @@ export function DetailClient({
               {savedOk ? "Saved" : "Add to Saved"}
             </Button>
           )}
-          {detail.externalUrl && (
-            <a href={detail.externalUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              Book now <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
+          {(() => {
+            const inAppHref = bookingHrefFor(detail);
+            if (inAppHref) {
+              return (
+                <Link
+                  href={inAppHref}
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Book now
+                </Link>
+              );
+            }
+            if (detail.externalUrl) {
+              return (
+                <a href={detail.externalUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  Book now <ExternalLink className="h-4 w-4" />
+                </a>
+              );
+            }
+            return null;
+          })()}
         </div>
       </div>
     </div>

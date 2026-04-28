@@ -39,6 +39,7 @@ import type * as providers_yelp from "../providers/yelp.js";
 import type * as saved_items from "../saved_items.js";
 import type * as search from "../search.js";
 import type * as social from "../social.js";
+import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as trips from "../trips.js";
 import type * as user_saves from "../user_saves.js";
 import type * as users from "../users.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   saved_items: typeof saved_items;
   search: typeof search;
   social: typeof social;
+  stripeWebhook: typeof stripeWebhook;
   trips: typeof trips;
   user_saves: typeof user_saves;
   users: typeof users;

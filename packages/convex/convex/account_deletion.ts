@@ -58,8 +58,6 @@ export const getDeletionBlockers = query({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
-    const now = Date.now();
-
     // Active bookings — anything not cancelled/completed counts. We don't
     // try to determine if travel has happened; the user is the better judge.
     const activeBookings = await ctx.db
@@ -69,29 +67,6 @@ export const getDeletionBlockers = query({
     const futureBookings = activeBookings.filter(
       (b) => b.status === "pending" || b.status === "confirmed",
     );
-
-    // Hosted upcoming events with at least one OTHER going attendee. The
-    // host themselves is auto-recorded as "going" on their own events so
-    // we exclude their userId from the count. Being an attendee on someone
-    // else's event is never a blocker.
-    const hostedEvents = await ctx.db
-      .query("events")
-      .withIndex("by_host", (q) => q.eq("hostUserId", userId))
-      .collect();
-    const upcomingHosted = hostedEvents.filter(
-      (e) => e.startDateUtc > now && e.status !== "cancelled",
-    );
-    const hostedUpcomingWithAttendees: typeof upcomingHosted = [];
-    for (const e of upcomingHosted) {
-      const attendees = await ctx.db
-        .query("event_attendees")
-        .withIndex("by_event", (q) => q.eq("eventId", e._id))
-        .collect();
-      const others = attendees.filter(
-        (a) => a.userId !== userId && a.status === "going",
-      );
-      if (others.length > 0) hostedUpcomingWithAttendees.push(e);
-    }
 
     // Active subscription (single row per user expected; take the first).
     const subscription = await ctx.db
@@ -110,14 +85,12 @@ export const getDeletionBlockers = query({
         status: b.status,
         bookedAt: b.bookedAt,
       })),
-      hostedUpcomingEventsWithAttendees: hostedUpcomingWithAttendees.map(
-        (e) => ({
-          _id: e._id,
-          name: e.name,
-          slug: e.slug,
-          startDateUtc: e.startDateUtc,
-        }),
-      ),
+      hostedUpcomingEventsWithAttendees: [] as Array<{
+        _id: Id<"events">;
+        name: string;
+        slug: string;
+        startDateUtc: number;
+      }>,
       activeSubscription: subscription
         ? {
             _id: subscription._id,
@@ -155,8 +128,6 @@ export const requestAccountDeletion = mutation({
     }
 
     // Re-validate blockers server-side.
-    const now = Date.now();
-
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -167,28 +138,6 @@ export const requestAccountDeletion = mutation({
     if (hasFutureBookings) {
       throw new Error(
         "Resolve your active bookings before deleting your account.",
-      );
-    }
-
-    const hostedEvents = await ctx.db
-      .query("events")
-      .withIndex("by_host", (q) => q.eq("hostUserId", userId))
-      .collect();
-    let hasHostedUpcoming = false;
-    for (const e of hostedEvents) {
-      if (e.startDateUtc <= now || e.status === "cancelled") continue;
-      const attendees = await ctx.db
-        .query("event_attendees")
-        .withIndex("by_event", (q) => q.eq("eventId", e._id))
-        .collect();
-      if (attendees.some((a) => a.userId !== userId && a.status === "going")) {
-        hasHostedUpcoming = true;
-        break;
-      }
-    }
-    if (hasHostedUpcoming) {
-      throw new Error(
-        "You're hosting upcoming events with attendees. Cancel or transfer them first.",
       );
     }
 
@@ -204,8 +153,8 @@ export const requestAccountDeletion = mutation({
     }
 
     // Soft-delete: set the recovery window and let the cron pick it up later.
-    const deletedAt = now;
-    const deletionScheduledFor = now + RECOVERY_WINDOW_MS;
+    const deletedAt = Date.now();
+    const deletionScheduledFor = deletedAt + RECOVERY_WINDOW_MS;
     await ctx.db.patch(userId, { deletedAt, deletionScheduledFor });
 
     // Schedule the Stripe cancel as a fire-and-forget action so the mutation

@@ -3,6 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { toPublicEventOrNull, type PublicEvent } from "./lib/event_sanitize";
+import { toPublicUserOther, type PublicUserOther } from "./lib/user_sanitize";
 
 type ActivityEvent =
   | {
@@ -318,13 +319,15 @@ async function getFriendUserIds(
 
 export const getFriends = query({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<PublicUserOther[]> => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) return [];
 
     const friendIds = await getFriendUserIds(ctx, userId);
     const users = await Promise.all(friendIds.map((id) => ctx.db.get(id)));
-    return users.filter((u): u is Doc<"users"> => u !== null);
+    return users
+      .filter((u): u is Doc<"users"> => u !== null)
+      .map(toPublicUserOther);
   },
 });
 

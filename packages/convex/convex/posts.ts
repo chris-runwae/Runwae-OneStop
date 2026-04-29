@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { toPublicUserOtherOrNull } from "./lib/user_sanitize";
 
 export const getByTrip = query({
   args: { tripId: v.id("trips") },
@@ -15,7 +16,7 @@ export const getByTrip = query({
     return Promise.all(
       posts.map(async p => ({
         ...p,
-        author: await ctx.db.get(p.createdByUserId),
+        author: toPublicUserOtherOrNull(await ctx.db.get(p.createdByUserId)),
       })),
     );
   },

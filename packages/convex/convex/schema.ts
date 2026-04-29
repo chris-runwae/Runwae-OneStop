@@ -56,6 +56,29 @@ export default defineSchema({
     .index("by_deletion_scheduled", ["deletionScheduledFor"])
     .index("by_admin", ["isAdmin"]),
 
+  // Admin console audit log. Records every privileged action (suspension,
+  // admin grant/revoke). No UI surfaces this yet — written for forensics
+  // ("who suspended this user?") and future viewer.
+  admin_audit_log: defineTable({
+    actorId: v.id("users"),
+    targetUserId: v.id("users"),
+    action: v.union(
+      v.literal("suspend"),
+      v.literal("unsuspend"),
+      v.literal("promote_admin"),
+      v.literal("demote_admin")
+    ),
+    // JSON-stringified previous and next values. Stored as strings to
+    // keep the validator simple — viewers parse client-side.
+    previousValue: v.optional(v.string()),
+    newValue: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    timestamp: v.number(),
+  })
+    .index("by_actor", ["actorId"])
+    .index("by_target", ["targetUserId"])
+    .index("by_timestamp", ["timestamp"]),
+
   friendships: defineTable({
     requesterId: v.id("users"),
     addresseeId: v.id("users"),

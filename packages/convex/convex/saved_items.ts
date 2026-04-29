@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { toPublicUserOtherOrNull } from "./lib/user_sanitize";
 
 const SAVED_ITEM_TYPE = v.union(
   v.literal("flight"),
@@ -174,7 +175,7 @@ export const getComments = query({
       .collect();
     return Promise.all(rows.map(async (r) => ({
       ...r,
-      author: await ctx.db.get(r.userId),
+      author: toPublicUserOtherOrNull(await ctx.db.get(r.userId)),
     })));
   },
 });

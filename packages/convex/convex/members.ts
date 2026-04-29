@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { toPublicUserOtherOrNull } from "./lib/user_sanitize";
 
 export const listByTrip = query({
   args: { tripId: v.id("trips") },
@@ -30,7 +31,7 @@ export const listByTrip = query({
         _id: m._id,
         role: m.role,
         joinedAt: m.joinedAt,
-        user: await ctx.db.get(m.userId),
+        user: toPublicUserOtherOrNull(await ctx.db.get(m.userId)),
       })),
     );
   },

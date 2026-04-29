@@ -9,3 +9,15 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   if (!user || !user.isAdmin) throw new ConvexError("Forbidden");
   return user;
 }
+
+// Counts users with isAdmin === true. Backed by the by_admin index so this
+// is cheap even at scale. Used by the last-admin demotion guard.
+export async function countAdmins(
+  ctx: QueryCtx | MutationCtx
+): Promise<number> {
+  const admins = await ctx.db
+    .query("users")
+    .withIndex("by_admin", (q) => q.eq("isAdmin", true))
+    .collect();
+  return admins.length;
+}

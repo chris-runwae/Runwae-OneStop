@@ -8,15 +8,21 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
+    // Soft-deleted records are excluded from public reads. Admin queries
+    // (admin/destinations.ts) include them so they can be restored.
     if (args.featuredOnly) {
       const rows = await ctx.db
         .query("destinations")
         .withIndex("by_featured", (q) => q.eq("isFeatured", true))
         .collect();
       rows.sort((a, b) => (a.featuredRank ?? 1e9) - (b.featuredRank ?? 1e9));
-      return rows.slice(0, limit);
+      return rows
+        .filter((r) => r.deletedAt === undefined)
+        .slice(0, limit);
     }
-    return (await ctx.db.query("destinations").collect()).slice(0, limit);
+    return (await ctx.db.query("destinations").collect())
+      .filter((r) => r.deletedAt === undefined)
+      .slice(0, limit);
   },
 });
 
@@ -27,7 +33,9 @@ export const getBySlug = query({
       .query("destinations")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .unique();
-    if (!destination) return null;
+    // Soft-deleted records are excluded from public reads. Admin queries
+    // (admin/destinations.ts) include them so they can be restored.
+    if (!destination || destination.deletedAt) return null;
 
     const experiences = await ctx.db
       .query("experiences")

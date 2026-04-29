@@ -46,15 +46,11 @@ export default defineSchema({
     // The single sentinel "Deleted user" row that owns anonymized financial
     // records (bookings, commissions, payouts) after a hard-cascade.
     isSystemSentinel: v.optional(v.boolean()),
-    // Admin console: account suspension. Set together; cleared together.
-    suspendedAt: v.optional(v.number()),
-    suspensionReason: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_username", ["username"])
-    .index("by_deletion_scheduled", ["deletionScheduledFor"])
-    .index("by_admin", ["isAdmin"]),
+    .index("by_deletion_scheduled", ["deletionScheduledFor"]),
 
   friendships: defineTable({
     requesterId: v.id("users"),
@@ -89,9 +85,6 @@ export default defineSchema({
     ratingCount: v.number(),
     slug: v.string(),
     createdAt: v.number(),
-    // Admin console: soft-delete marker. Public destinations queries must
-    // exclude rows where this is set.
-    deletedAt: v.optional(v.number()),
   })
     .index("by_featured", ["isFeatured"])
     .index("by_slug", ["slug"]),
@@ -181,7 +174,7 @@ export default defineSchema({
     rank: v.number(),
     createdByAdminId: v.id("users"),
     createdAt: v.number(),
-  }).index("by_entity_type", ["entityType"]),
+  }).index("by_entity_tyåpe", ["entityType"]),
 
   // ── TRIPS ──────────────────────────────────────────────────
   trips: defineTable({
@@ -520,19 +513,10 @@ export default defineSchema({
     ogImageStorageId: v.optional(v.id("_storage")),
     createdAt: v.number(),
     updatedAt: v.number(),
-    // Admin console: trending curation + private notes.
-    // `isTrending` is optional during widen-migrate-narrow rollout — the
-    // backfill mutation sets it to false on every existing event, after
-    // which it can be safely narrowed to v.boolean() in a follow-up if
-    // desired. The by_trending index handles undefined as missing-from-index.
-    isTrending: v.optional(v.boolean()),
-    trendingRank: v.optional(v.number()),
-    adminNotes: v.optional(v.string()),
   })
     .index("by_host", ["hostUserId"])
     .index("by_slug", ["slug"])
-    .index("by_destination", ["destinationId"])
-    .index("by_trending", ["isTrending", "trendingRank"]),
+    .index("by_destination", ["destinationId"]),
 
   event_ticket_tiers: defineTable({
     eventId: v.id("events"),

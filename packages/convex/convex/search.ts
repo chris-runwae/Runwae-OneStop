@@ -22,13 +22,16 @@ export const searchAll = query({
     const events = await ctx.db.query("events").collect();
 
     return {
+      // Soft-deleted records are excluded from public reads. Admin queries
+      // (admin/destinations.ts) include them so they can be restored.
       destinations: destinations
         .filter(
           (d) =>
-            matches(d.name, needle) ||
-            matches(d.country, needle) ||
-            matches(d.region, needle) ||
-            d.tags.some((t) => t.toLowerCase().includes(needle))
+            d.deletedAt === undefined &&
+            (matches(d.name, needle) ||
+              matches(d.country, needle) ||
+              matches(d.region, needle) ||
+              d.tags.some((t) => t.toLowerCase().includes(needle)))
         )
         .slice(0, limit),
       experiences: experiences

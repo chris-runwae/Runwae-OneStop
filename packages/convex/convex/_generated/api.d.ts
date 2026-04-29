@@ -9,6 +9,7 @@
  */
 
 import type * as account_deletion from "../account_deletion.js";
+import type * as admin_collections from "../admin/collections.js";
 import type * as admin_destinations from "../admin/destinations.js";
 import type * as admin_events from "../admin/events.js";
 import type * as admin_itinerary_templates from "../admin/itinerary_templates.js";
@@ -68,6 +69,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   account_deletion: typeof account_deletion;
+  "admin/collections": typeof admin_collections;
   "admin/destinations": typeof admin_destinations;
   "admin/events": typeof admin_events;
   "admin/itinerary_templates": typeof admin_itinerary_templates;

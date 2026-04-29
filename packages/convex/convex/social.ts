@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { toPublicEventOrNull, type PublicEvent } from "./lib/event_sanitize";
 
 type ActivityEvent =
   | {
@@ -15,7 +16,7 @@ type ActivityEvent =
       actorId: Id<"users">;
       createdAt: number;
       attendee: Doc<"event_attendees">;
-      event: Doc<"events"> | null;
+      event: PublicEvent | null;
     }
   | {
       kind: "item_saved";
@@ -368,7 +369,7 @@ export const getFriendActivity = query({
           actorId: fid,
           createdAt: a.createdAt,
           attendee: a,
-          event: ev,
+          event: toPublicEventOrNull(ev),
         });
       }
     }
@@ -437,7 +438,7 @@ export const getFriendActivityHydrated = query({
       for (const a of attendees) {
         if (a.status !== "going") continue;
         const ev = await ctx.db.get(a.eventId);
-        events.push({ kind: "event_going", actorId: fid, createdAt: a.createdAt, attendee: a, event: ev });
+        events.push({ kind: "event_going", actorId: fid, createdAt: a.createdAt, attendee: a, event: toPublicEventOrNull(ev) });
       }
 
       const saves = await ctx.db

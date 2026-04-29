@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { toPublicEvent } from "./lib/event_sanitize";
 
 function matches(haystack: string | undefined, needle: string): boolean {
   if (!haystack) return false;
@@ -47,7 +48,8 @@ export const searchAll = query({
               matches(e.description, needle) ||
               matches(e.locationName, needle))
         )
-        .slice(0, limit),
+        .slice(0, limit)
+        .map(toPublicEvent),
     };
   },
 });

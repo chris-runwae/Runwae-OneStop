@@ -10,6 +10,7 @@
 
 import type * as account_deletion from "../account_deletion.js";
 import type * as admin_destinations from "../admin/destinations.js";
+import type * as admin_events from "../admin/events.js";
 import type * as admin_itinerary_templates from "../admin/itinerary_templates.js";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
@@ -27,10 +28,13 @@ import type * as http from "../http.js";
 import type * as itinerary from "../itinerary.js";
 import type * as lib_admin from "../lib/admin.js";
 import type * as lib_coverImage from "../lib/coverImage.js";
+import type * as lib_email from "../lib/email.js";
+import type * as lib_event_sanitize from "../lib/event_sanitize.js";
 import type * as lib_slug from "../lib/slug.js";
 import type * as lib_username from "../lib/username.js";
 import type * as members from "../members.js";
 import type * as migrations_backfill_admin_fields from "../migrations/backfill_admin_fields.js";
+import type * as migrations_seed_dev_events from "../migrations/seed_dev_events.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
 import type * as polls from "../polls.js";
@@ -65,6 +69,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   account_deletion: typeof account_deletion;
   "admin/destinations": typeof admin_destinations;
+  "admin/events": typeof admin_events;
   "admin/itinerary_templates": typeof admin_itinerary_templates;
   ai: typeof ai;
   auth: typeof auth;
@@ -82,10 +87,13 @@ declare const fullApi: ApiFromModules<{
   itinerary: typeof itinerary;
   "lib/admin": typeof lib_admin;
   "lib/coverImage": typeof lib_coverImage;
+  "lib/email": typeof lib_email;
+  "lib/event_sanitize": typeof lib_event_sanitize;
   "lib/slug": typeof lib_slug;
   "lib/username": typeof lib_username;
   members: typeof members;
   "migrations/backfill_admin_fields": typeof migrations_backfill_admin_fields;
+  "migrations/seed_dev_events": typeof migrations_seed_dev_events;
   notifications: typeof notifications;
   payments: typeof payments;
   polls: typeof polls;

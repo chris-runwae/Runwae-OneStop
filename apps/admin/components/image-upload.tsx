@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 interface SingleImageUploadProps {
   value: string | null;
   onChange: (url: string | null) => void;
-  endpoint: "destinationHero" | "destinationGallery";
+  endpoint: "destinationHero" | "destinationGallery" | "templateItemImage";
   label?: string;
   className?: string;
 }

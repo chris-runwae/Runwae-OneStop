@@ -559,6 +559,10 @@ export const createFromTemplate = mutation({
     const finalTitle = args.title ?? `${template.title}`;
     const slug = slugify(finalTitle);
     const cover = template.coverImageUrl ?? destination.heroImageUrl;
+    // Trip currency is initialised from the template; held in a local so
+    // the item materialisation loop below can reference it as the final
+    // tier of the currency fallback chain without a re-read.
+    const tripCurrency = template.currency;
 
     const tripId = await ctx.db.insert("trips", {
       title: finalTitle,
@@ -574,7 +578,7 @@ export const createFromTemplate = mutation({
       coverImageUrl: cover,
       slug,
       joinCode: randomId(JOIN_CODE_ALPHABET, 8),
-      currency: template.currency,
+      currency: tripCurrency,
       sourceTemplateId: template._id,
       createdAt: now,
       updatedAt: now,
@@ -609,6 +613,21 @@ export const createFromTemplate = mutation({
       });
 
       const items = tplDay?.items ?? [];
+      // Field-mapping contract — template item → itinerary_items row:
+      //   it.time          → startTime
+      //   it.endTime       → endTime
+      //   it.estimatedCost → price
+      //   it.currency      → currency, falling back template.currency,
+      //                      then trip.currency (already template.currency
+      //                      today, but the chain is explicit so future
+      //                      callers can override trip currency safely)
+      //   it.imageUrl      → imageUrl       (preserve admin-curated cover)
+      //   it.externalUrl   → externalUrl    (preserve booking link)
+      //   it.type          → type, run through normalizeItemType because
+      //                      the template's narrower vocabulary
+      //                      (food/lodging/free) doesn't intersect 1:1
+      //                      with the itinerary_items enum
+      //   apiSource/apiRef pass through unchanged
       for (let j = 0; j < items.length; j++) {
         const it = items[j];
         await ctx.db.insert("itinerary_items", {
@@ -620,11 +639,14 @@ export const createFromTemplate = mutation({
           apiRef: it.apiRef,
           title: it.title,
           description: it.description,
+          imageUrl: it.imageUrl,
           startTime: it.time,
+          endTime: it.endTime,
           locationName: it.locationName,
           coords: it.coords,
+          externalUrl: it.externalUrl,
           price: it.estimatedCost,
-          currency: it.currency ?? template.currency,
+          currency: it.currency ?? template.currency ?? tripCurrency,
           isCompleted: false,
           sortOrder: j,
           canBeEditedBy: "editors",

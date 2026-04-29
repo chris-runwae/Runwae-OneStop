@@ -140,15 +140,18 @@ export default defineSchema({
         items: v.array(
           v.object({
             time: v.optional(v.string()),
+            endTime: v.optional(v.string()),
             title: v.string(),
             description: v.optional(v.string()),
             type: v.string(),
+            imageUrl: v.optional(v.string()),
             locationName: v.optional(v.string()),
             coords: v.optional(
               v.object({ lat: v.number(), lng: v.number() })
             ),
             estimatedCost: v.optional(v.number()),
             currency: v.optional(v.string()),
+            externalUrl: v.optional(v.string()),
             apiSource: v.optional(v.string()),
             apiRef: v.optional(v.string()),
           })
@@ -369,6 +372,7 @@ export default defineSchema({
     locationName: v.optional(v.string()),
     coords: v.optional(v.object({ lat: v.number(), lng: v.number() })),
     bookingReference: v.optional(v.string()),
+    externalUrl: v.optional(v.string()),
     notes: v.optional(v.string()),
     isCompleted: v.boolean(),
     sortOrder: v.number(),

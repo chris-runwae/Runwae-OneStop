@@ -6,34 +6,78 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { HostEventRow } from "@/lib/supabase/events";
 import { ChevronDownIcon } from "lucide-react";
+import { useState } from "react";
 
-export interface ChartBarData {
-  month: string;
-  value: number;
-  highlighted?: boolean;
-  faded?: boolean;
-}
+type EventFilter = "all" | "upcoming" | "past";
 
-const chartData: ChartBarData[] = [
-  { month: "Jan", value: 4700 },
-  { month: "Feb", value: 9100 },
-  { month: "Mar", value: 3500 },
-  { month: "Apr", value: 19400 },
-  { month: "May", value: 22800 },
-  { month: "Jun", value: 15600 },
-  { month: "Jul", value: 9500 },
-  { month: "Aug", value: 14400 },
-  { month: "Sep", value: 27000 },
-  { month: "Oct", value: 17700 },
-  { month: "Nov", value: 28500, highlighted: true },
-  { month: "Dec", value: 14400, faded: true },
+const EVENT_FILTER_OPTIONS: { value: EventFilter; label: string }[] = [
+  { value: "all", label: "All Events" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "past", label: "Past Events" },
 ];
 
-const MAX_VALUE = 30000;
-const Y_TICKS = [0, 5000, 10000, 15000, 20000, 25000, 30000];
+function filterEvents(events: HostEventRow[], filter: EventFilter): HostEventRow[] {
+  if (filter === "all") return events;
+  const now = new Date();
+  return events.filter((e) => {
+    if (!e.start_date) return filter === "all";
+    const d = new Date(e.start_date);
+    return filter === "upcoming" ? d >= now : d < now;
+  });
+}
 
-export function EventPerformanceChart() {
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+function buildChartData(events: HostEventRow[]) {
+  const year = new Date().getFullYear();
+  const currentMonth = new Date().getMonth(); // 0-indexed
+
+  const totals = Array(12).fill(0) as number[];
+  for (const e of events) {
+    if (!e.start_date) continue;
+    const d = new Date(e.start_date);
+    if (d.getFullYear() !== year) continue;
+    totals[d.getMonth()] += e.view_count ?? 0;
+  }
+
+  return MONTHS.map((month, i) => ({
+    month,
+    value: totals[i],
+    highlighted: i === currentMonth,
+    faded: i > currentMonth,
+  }));
+}
+
+function niceMax(max: number) {
+  if (max === 0) return 100;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+  return Math.ceil(max / magnitude) * magnitude;
+}
+
+function buildTicks(max: number, count = 6) {
+  const step = max / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(i * step));
+}
+
+interface EventPerformanceChartProps {
+  events: HostEventRow[];
+}
+
+export function EventPerformanceChart({ events }: EventPerformanceChartProps) {
+  const [filter, setFilter] = useState<EventFilter>("all");
+
+  const visibleEvents = filterEvents(events, filter);
+  const chartData = buildChartData(visibleEvents);
+  const maxValue = niceMax(Math.max(...chartData.map((d) => d.value)));
+  const yTicks = buildTicks(maxValue);
+
+  const activeLabel = EVENT_FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "Events";
+
   return (
     <div className="overflow-hidden rounded-xl bg-surface sm:rounded-2xl">
       {/* Header */}
@@ -53,20 +97,20 @@ export function EventPerformanceChart() {
               type="button"
               className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg bg-border-disabled px-3 py-2 text-base font-medium tracking-tight text-body transition-colors hover:bg-border-disabled/80 focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              Events
+              {activeLabel}
               <ChevronDownIcon width={16} height={16} aria-hidden />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[160px]">
-            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-              All Events
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-              Upcoming
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
-              Past Events
-            </DropdownMenuItem>
+            {EVENT_FILTER_OPTIONS.map((opt) => (
+              <DropdownMenuItem
+                key={opt.value}
+                onSelect={() => setFilter(opt.value)}
+                className="cursor-pointer"
+              >
+                {opt.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -75,7 +119,7 @@ export function EventPerformanceChart() {
       <div className="flex overflow-x-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
         {/* Y-axis */}
         <div className="flex w-14 shrink-0 flex-col-reverse justify-between pb-8 text-right text-sm font-medium text-black">
-          {Y_TICKS.map((tick) => (
+          {yTicks.map((tick) => (
             <span key={tick}>{tick.toLocaleString()}</span>
           ))}
         </div>
@@ -93,7 +137,8 @@ export function EventPerformanceChart() {
                     bar.highlighted ? "bg-primary" : "bg-border"
                   } ${bar.faded ? "opacity-40" : ""}`}
                   style={{
-                    height: `${(bar.value / MAX_VALUE) * 100}%`,
+                    height: `${maxValue > 0 ? (bar.value / maxValue) * 100 : 0}%`,
+                    minHeight: bar.value > 0 ? "4px" : "0px",
                   }}
                 />
               </div>

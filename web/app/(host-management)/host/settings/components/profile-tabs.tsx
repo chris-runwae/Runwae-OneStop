@@ -78,16 +78,21 @@ export default function ProfileTab() {
 
   // Populate form from auth user metadata and profile
   useEffect(() => {
-    if (user) {
-      const meta = user.user_metadata ?? {};
-      setFirstName(meta.first_name ?? "");
-      setLastName(meta.last_name ?? "");
-      setEmail(user.email ?? "");
-      setOrganisation(meta.organisation ?? "");
-      setPhone(meta.phone ?? "");
-    }
-    if (user) {
-      setAvatarUrl(user.user_metadata?.avatar_url ?? null);
+    if (!user) return;
+    const meta = user.user_metadata ?? {};
+    setFirstName(meta.first_name ?? "");
+    setLastName(meta.last_name ?? "");
+    setEmail(user.email ?? "");
+    setOrganisation(meta.organisation ?? "");
+    setPhone(meta.phone ?? "");
+    setAbout(meta.about ?? "");
+    setWebsite(meta.website ?? "");
+    setAvatarUrl(meta.avatar_url ?? null);
+    try {
+      const parsed = meta.social_links ? JSON.parse(meta.social_links) : [];
+      setSocialLinks(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setSocialLinks([]);
     }
   }, [user]);
 
@@ -112,6 +117,9 @@ export default function ProfileTab() {
       last_name: lastName,
       phone,
       organisation,
+      about,
+      website,
+      social_links: JSON.stringify(socialLinks),
     });
     setIsSaving(false);
     if (error) {

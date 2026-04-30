@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { adminGetAllHosts, type AdminUser } from "@/lib/supabase/admin/users";
+import { adminGetAllUsers, type AdminUser } from "@/lib/supabase/admin/users";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 8;
@@ -15,7 +15,7 @@ export function HostsTable() {
 
   const { data, isPending, isError } = useQuery({
     queryKey: ["admin-hosts"],
-    queryFn: adminGetAllHosts,
+    queryFn: adminGetAllUsers,
   });
 
   const hosts: AdminUser[] = data ?? [];

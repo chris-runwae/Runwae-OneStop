@@ -31,8 +31,9 @@ const navItems: NavItem[] = [
   { to: ROUTES.host.overview, label: "Overview", icon: HomeIcon },
   { to: ROUTES.host.events, label: "My Events", icon: Calendar1Icon },
   { to: ROUTES.host.bookings, label: "Bookings", icon: ClipboardListIcon },
-  { to: ROUTES.host.earnings, label: "Earnings", icon: BaggageClaimIcon },
-  { to: ROUTES.host.payouts, label: "Payouts", icon: CardSimIcon },
+  // TODO: Add these pages and icons
+  // { to: ROUTES.host.earnings, label: "Earnings", icon: BaggageClaimIcon },
+  // { to: ROUTES.host.payouts, label: "Payouts", icon: CardSimIcon },
   {
     to: ROUTES.host.attendeeInsights,
     label: "Attendee Insights",

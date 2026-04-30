@@ -1,44 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Booking } from "./booking-detail-panel";
+import { adminGetAllHotelBookings } from "@/lib/supabase/admin/hotel-bookings";
+import type { HotelBooking } from "@/lib/supabase/hotel-bookings";
 
-const BOOKING_TYPES: Booking["bookingType"][] = ["Hotel", "Flight", "Activity", "Hotel", "Flight", "Hotel", "Activity", "Flight", "Hotel", "Hotel", "Hotel", "Hotel"];
+const FILTERS = ["Status", "Date Range", "Amount range"] as const;
 
-export const MOCK_BOOKINGS: Booking[] = Array.from({ length: 24 }, (_, i) => ({
-  id: `#N${String(i + 40).padStart(4, "0")}45`,
-  bookingRef: `Run${2300 + i}`,
-  eventName: "Techfest",
-  hostName: "Tech cabal",
-  vendorName: "United Nigeria",
-  attendeeName: "Chris Jones",
-  bookingType: BOOKING_TYPES[i % BOOKING_TYPES.length],
-  bookingDate: "12-05-2025",
-  status: (["Confirmed", "Confirmed", "Pending", "Cancelled", "Confirmed"] as Booking["status"][])[i % 5],
-  dateTime: "2026-03-12 · 12:00PM",
-  totalRevenue: "$40,000.00",
-  platformCommission: "$4,000",
-  hostBreakdown: "$200",
-  vendorPayout: "$500.00",
-}));
+function toBooking(h: HotelBooking): Booking {
+  const status = (h.status ?? "Pending") as Booking["status"];
+  const bookingType = (
+    ["Hotel", "Flight", "Activity"].includes(h.booking_type ?? "")
+      ? h.booking_type
+      : "Hotel"
+  ) as Booking["bookingType"];
 
-const FILTERS = ["Event", "Status", "Date Range", "Amount range"] as const;
+  const amount =
+    h.total_amount != null
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: h.currency ?? "USD",
+        }).format(h.total_amount)
+      : "—";
+
+  return {
+    id: h.id,
+    bookingRef: h.booking_ref ?? h.confirmation_code ?? h.id,
+    eventName: h.hotel_name ?? "—",
+    hostName: "—",
+    vendorName: "—",
+    attendeeName: "—",
+    bookingType,
+    bookingDate: h.created_at ? h.created_at.slice(0, 10) : "—",
+    status,
+    dateTime: [h.checkin, h.checkout].filter(Boolean).join(" → ") || "—",
+    totalRevenue: amount,
+    platformCommission: "—",
+    hostBreakdown: "—",
+    vendorPayout: "—",
+  };
+}
 
 type Props = {
   onSelectBooking: (b: Booking) => void;
 };
 
 export function BookingsTable({ onSelectBooking }: Props) {
+  const [bookings, setBookings] = useState<HotelBooking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const filtered = MOCK_BOOKINGS.filter(
-    (b) =>
-      b.eventName.toLowerCase().includes(search.toLowerCase()) ||
-      b.id.toLowerCase().includes(search.toLowerCase()) ||
-      b.attendeeName.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    adminGetAllHotelBookings()
+      .then(setBookings)
+      .catch((err) => setError(err.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const filtered = bookings.filter((b) => {
+    const q = search.toLowerCase();
+    return (
+      (b.hotel_name ?? "").toLowerCase().includes(q) ||
+      (b.booking_ref ?? "").toLowerCase().includes(q) ||
+      (b.confirmation_code ?? "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface">
@@ -65,39 +94,87 @@ export function BookingsTable({ onSelectBooking }: Props) {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px]">
-          <thead>
-            <tr className="border-y border-border bg-muted/30">
-              {["Booking ID", "Event Name", "Host Name", "Vendor name", "Attendee Name", "Booking Type", "Booking Date"].map((h) => (
-                <th key={h} className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((b) => (
-              <tr
-                key={b.id}
-                className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                onClick={() => onSelectBooking(b)}
-              >
-                <td className="px-5 py-3 text-xs font-mono text-muted-foreground">{b.id}</td>
-                <td className="px-5 py-3 text-sm font-medium text-black">{b.eventName}</td>
-                <td className="px-5 py-3 text-sm text-body">{b.hostName}</td>
-                <td className="px-5 py-3 text-sm text-body">{b.vendorName}</td>
-                <td className="px-5 py-3 text-sm text-body">{b.attendeeName}</td>
-                <td className="px-5 py-3">
-                  <BookingTypeChip type={b.bookingType} />
-                </td>
-                <td className="px-5 py-3 text-sm text-body">{b.bookingDate}</td>
+      {isLoading && (
+        <p className="px-5 pb-5 text-sm text-muted-foreground">Loading…</p>
+      )}
+
+      {error && (
+        <p className="px-5 pb-5 text-sm text-destructive">
+          Failed to load bookings: {error}
+        </p>
+      )}
+
+      {!isLoading && !error && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead>
+              <tr className="border-y border-border bg-muted/30">
+                {[
+                  "Booking Ref",
+                  "Hotel Name",
+                  "Check-in",
+                  "Check-out",
+                  "Guests",
+                  "Booking Type",
+                  "Amount",
+                  "Status",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-5 py-3 text-left text-xs font-medium text-muted-foreground"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-5 py-10 text-center text-sm text-muted-foreground"
+                  >
+                    No bookings found.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((b) => (
+                  <tr
+                    key={b.id}
+                    className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors cursor-pointer"
+                    onClick={() => onSelectBooking(toBooking(b))}
+                  >
+                    <td className="px-5 py-3 text-xs font-mono text-muted-foreground">
+                      {b.booking_ref ?? b.confirmation_code ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-sm font-medium text-black">
+                      {b.hotel_name ?? "—"}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-body">{b.checkin ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-body">{b.checkout ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm text-body">{b.guests ?? "—"}</td>
+                    <td className="px-5 py-3">
+                      <BookingTypeChip type={(b.booking_type ?? "Hotel") as Booking["bookingType"]} />
+                    </td>
+                    <td className="px-5 py-3 text-sm text-body">
+                      {b.total_amount != null
+                        ? new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: b.currency ?? "USD",
+                          }).format(b.total_amount)
+                        : "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusChip status={b.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -111,6 +188,23 @@ function BookingTypeChip({ type }: { type: Booking["bookingType"] }) {
   return (
     <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", colors[type])}>
       {type}
+    </span>
+  );
+}
+
+function StatusChip({ status }: { status: string | null }) {
+  const normalized = status?.toLowerCase();
+  const styles =
+    normalized === "confirmed"
+      ? "bg-emerald-50 text-emerald-700"
+      : normalized === "cancelled"
+        ? "bg-rose-50 text-rose-600"
+        : normalized === "pending"
+          ? "bg-amber-50 text-amber-700"
+          : "bg-gray-100 text-gray-500";
+  return (
+    <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", styles)}>
+      {status ?? "—"}
     </span>
   );
 }

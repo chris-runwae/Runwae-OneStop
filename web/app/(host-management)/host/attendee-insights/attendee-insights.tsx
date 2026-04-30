@@ -6,130 +6,210 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import {
+  getAttendeeInsights,
+  type AttendeeInsights,
+  type HotelBookingItem,
+} from "@/lib/supabase/attendee-insights";
+import { getEvents, type Event } from "@/lib/supabase/events";
+import type { PeriodData } from "../overview/components/event-metrics";
 import type { ApexOptions } from "apexcharts";
 import { ChevronDownIcon } from "lucide-react";
 import dynamic from "next/dynamic";
+import {
+  computeChange,
+  filterByDateField,
+  filterByPrevDateField,
+  type Period,
+} from "@/lib/period-utils";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { EventMetrics } from "../overview/components/event-metrics";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-const kpiCards = [
-  {
-    label: "Top Attendees",
-    value: "15,760",
-    change: "+10.23% from last month",
-    trend: "up" as const,
-  },
-  {
-    label: "Trips Planed",
-    value: "456",
-    change: "+10.23% from last month",
-    trend: "up" as const,
-  },
-  {
-    label: "Bookings Made",
-    value: "321",
-    change: "+10.23% from last month",
-    trend: "up" as const,
-  },
-  {
-    label: "Conversion rate",
-    value: "$34,056",
-    change: "+10.23% from last month",
-    trend: "up" as const,
-  },
-];
+function NoData() {
+  return (
+    <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+      No sufficient data to curate this portion yet.
+    </div>
+  );
+}
 
-const topCountries = [
-  { name: "Nigeria", value: 92 },
-  { name: "Ghana", value: 78 },
-  { name: "Cameroon", value: 55 },
-  { name: "Kenya", value: 42 },
-  { name: "Uganda", value: 38 },
-  { name: "Tanzania", value: 28 },
-];
-
-const topItineraries = [
-  { label: "A sunny at the Pitakwa Beach", percent: 90 },
-  { label: "Other", percent: 10 },
-];
-
-const topCountriesChartOptions: ApexOptions = {
-  chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
-  plotOptions: {
-    bar: {
-      horizontal: true,
-      barHeight: "65%",
-      borderRadius: 4,
-      distributed: true,
+function buildTreemapOptions(): ApexOptions {
+  return {
+    chart: { type: "treemap", toolbar: { show: false }, fontFamily: "inherit" },
+    colors: [
+      "hsl(327, 70%, 45%)",
+      "hsl(327, 70%, 55%)",
+      "hsl(327, 70%, 65%)",
+      "hsl(327, 70%, 72%)",
+      "hsl(0, 0%, 70%)",
+      "hsl(0, 0%, 80%)",
+    ],
+    dataLabels: {
+      enabled: true,
+      style: { fontSize: "13px", fontWeight: "600" },
     },
-  },
-  colors: [
-    "hsl(327, 70%, 55%)",
-    "hsl(327, 70%, 55%)",
-    "hsl(0, 0%, 75%)",
-    "hsl(0, 0%, 75%)",
-    "hsl(0, 0%, 75%)",
-    "hsl(0, 0%, 75%)",
-  ],
-  dataLabels: { enabled: false },
-  xaxis: {
-    categories: topCountries.map((c) => c.name),
-    labels: { style: { colors: "hsl(var(--body))" } },
-    axisBorder: { show: false },
-    axisTicks: { show: false },
-  },
-  yaxis: {
-    labels: { style: { colors: "hsl(var(--body))" } },
-  },
-  grid: {
-    borderColor: "hsl(var(--border))",
-    xaxis: { lines: { show: false } },
-    yaxis: { lines: { show: true } },
-  },
-  legend: { show: false },
-  tooltip: { theme: "light" },
+    plotOptions: {
+      treemap: { distributed: true, enableShades: false },
+    },
+    legend: { show: false },
+    tooltip: { theme: "light" },
+  };
+}
+
+function buildBarOptions(categories: string[]): ApexOptions {
+  return {
+    chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
+    plotOptions: {
+      bar: { horizontal: true, barHeight: "65%", borderRadius: 4, distributed: true },
+    },
+    colors: categories.map((_, i) =>
+      i < 2 ? "hsl(327, 70%, 55%)" : "hsl(0, 0%, 75%)",
+    ),
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories,
+      labels: { style: { colors: "hsl(var(--body))" } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: "hsl(var(--body))" } } },
+    grid: {
+      borderColor: "hsl(var(--border))",
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+    },
+    legend: { show: false },
+    tooltip: { theme: "light" },
+  };
+}
+
+function buildDonutOptions(labels: string[]): ApexOptions {
+  return {
+    chart: { type: "donut", fontFamily: "inherit" },
+    labels,
+    colors: [
+      "hsl(327, 70%, 45%)",
+      "hsl(327, 70%, 60%)",
+      "hsl(327, 70%, 75%)",
+      "hsl(0, 0%, 75%)",
+      "hsl(0, 0%, 85%)",
+    ],
+    plotOptions: {
+      pie: { donut: { size: "65%" }, expandOnClick: false },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: (val: number) => `${Math.round(val)}%`,
+    },
+    legend: { show: false },
+    tooltip: { theme: "light" },
+  };
+}
+
+const EMPTY_INSIGHTS: AttendeeInsights = {
+  totalAttendees: 0,
+  tripsPlanned: 0,
+  bookingsMade: 0,
+  topItineraries: [],
+  topLocations: [],
+  eventRows: [],
+  itineraryRows: [],
+  hotelRows: [],
 };
 
-const topItinerariesChartOptions: ApexOptions = {
-  chart: { type: "donut", fontFamily: "inherit" },
-  labels: topItineraries.map((i) => i.label),
-  colors: ["hsl(327, 70%, 45%)", "hsl(0, 0%, 85%)"],
-  plotOptions: {
-    pie: {
-      donut: { size: "65%" },
-      expandOnClick: false,
-    },
-  },
-  dataLabels: {
-    enabled: true,
-    formatter: (val: number) => `${val}%`,
-  },
-  legend: { show: false },
-  tooltip: { theme: "light" },
-};
+function makeAttendeesData(
+  eventRows: { current_participants: number | null; start_date: string | null }[],
+) {
+  return (period: Period): PeriodData => {
+    const current = filterByDateField(eventRows, "start_date", period).reduce(
+      (sum, e) => sum + (e.current_participants ?? 0), 0,
+    );
+    const previous = filterByPrevDateField(eventRows, "start_date", period).reduce(
+      (sum, e) => sum + (e.current_participants ?? 0), 0,
+    );
+    const { change, trend } = computeChange(current, previous, period);
+    return { value: current.toLocaleString(), change, trend };
+  };
+}
 
-// Simple world map marker positions (approx lat/lng as % of container)
-const mapMarkers = [
-  { x: 22, y: 38 }, // North America
-  { x: 28, y: 52 }, // Europe
-  { x: 52, y: 42 }, // Asia
-  { x: 48, y: 62 }, // Russia
-  { x: 52, y: 28 }, // Middle East
-  { x: 50, y: 52 }, // Africa
-  { x: 32, y: 72 }, // South America
-  { x: 78, y: 68 }, // Australia
-];
+function makeTripsData(
+  itineraryRows: { id: string; created_at: string | null }[],
+) {
+  return (period: Period): PeriodData => {
+    const current = filterByDateField(itineraryRows, "created_at", period).length;
+    const previous = filterByPrevDateField(itineraryRows, "created_at", period).length;
+    const { change, trend } = computeChange(current, previous, period);
+    return { value: current.toLocaleString(), change, trend };
+  };
+}
 
-const eventOptions = [
-  { value: "event-1", label: "Pitakwa Beach Festival 2026" },
-  { value: "event-2", label: "Lagos Tech Summit" },
-  { value: "event-3", label: "Accra Music Week" },
-];
+function makeBookingsData(hotelRows: HotelBookingItem[]) {
+  return (period: Period): PeriodData => {
+    const current = filterByDateField(hotelRows, "created_at", period).reduce(
+      (sum, b) => sum + (b.guests ?? 0), 0,
+    );
+    const previous = filterByPrevDateField(hotelRows, "created_at", period).reduce(
+      (sum, b) => sum + (b.guests ?? 0), 0,
+    );
+    const { change, trend } = computeChange(current, previous, period);
+    return { value: current.toLocaleString(), change, trend };
+  };
+}
 
 export default function AttendeeInsights() {
+  const { user } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [insights, setInsights] = useState<AttendeeInsights>(EMPTY_INSIGHTS);
+
+  const selectedEvent = events.find((e) => e.id === selectedEventId) ?? null;
+
+  const loadInsights = useCallback(
+    (eventId?: string) => {
+      if (!user) return;
+      getAttendeeInsights(user.id, eventId)
+        .then(setInsights)
+        .catch((err: Error) => toast.error(err.message ?? "Failed to load insights"));
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    if (!user) return;
+    getEvents(user.id)
+      .then(setEvents)
+      .catch((err: Error) => toast.error(err.message ?? "Failed to load events"));
+  }, [user]);
+
+  useEffect(() => {
+    loadInsights(selectedEventId ?? undefined);
+  }, [loadInsights, selectedEventId]);
+
+  const attendeesData = makeAttendeesData(insights.eventRows);
+  const tripsData = makeTripsData(insights.itineraryRows);
+  const bookingsData = makeBookingsData(insights.hotelRows);
+
+  // Treemap — location names + attendee counts
+  const hasLocationData = insights.topLocations.length > 0;
+  const treemapSeries = [{
+    data: insights.topLocations.map((l) => ({ x: l.label, y: l.value })),
+  }];
+
+  // Top locations bar chart
+  const locationLabels = insights.topLocations.map((l) => l.label);
+  const locationSeries = [{ name: "Attendees", data: insights.topLocations.map((l) => l.value) }];
+
+  // Top itineraries donut
+  const hasItinData = insights.topItineraries.length > 0;
+  const itinLabels = insights.topItineraries.map((i) => i.label);
+  const itinSeries = insights.topItineraries.map((i) => i.count);
+
   return (
     <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8 xl:p-10">
       {/* Header */}
@@ -143,24 +223,31 @@ export default function AttendeeInsights() {
             their Trips.
           </p>
         </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               className="flex cursor-pointer items-center gap-1 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium tracking-tight text-body transition-colors hover:bg-badge focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              Select Event
+              {selectedEvent ? selectedEvent.name : "All Events"}
               <ChevronDownIcon className="size-4" aria-hidden />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[220px]">
-            {eventOptions.map((option) => (
+          <DropdownMenuContent align="end" className="min-w-[220px] max-w-[320px]">
+            <DropdownMenuItem
+              onSelect={() => setSelectedEventId(null)}
+              className={`cursor-pointer ${selectedEventId === null ? "font-medium text-primary" : ""}`}
+            >
+              All Events
+            </DropdownMenuItem>
+            {events.map((e) => (
               <DropdownMenuItem
-                key={option.value}
-                onSelect={() => {}}
-                className="cursor-pointer"
+                key={e.id}
+                onSelect={() => setSelectedEventId(e.id)}
+                className={`cursor-pointer ${selectedEventId === e.id ? "font-medium text-primary" : ""}`}
               >
-                {option.label}
+                {e.name}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -168,76 +255,57 @@ export default function AttendeeInsights() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-        {kpiCards.map((card) => (
-          <EventMetrics key={card.label} {...card} />
-        ))}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+        <EventMetrics label="Top Attendees" getData={attendeesData} />
+        <EventMetrics label="Trips Planned" getData={tripsData} />
+        <EventMetrics label="Bookings Made" getData={bookingsData} />
       </div>
 
-      {/* Attendee Location - Map */}
+      {/* Attendee Location — treemap of city/state names */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
         <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
           <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
             Attendee Location
           </h2>
         </div>
-        <div className="relative w-full overflow-hidden bg-muted/50 min-h-[220px] sm:min-h-[280px] lg:aspect-[2.2/1]">
-          <svg
-            viewBox="0 0 1000 500"
-            className="absolute inset-0 h-full w-full opacity-60"
-            preserveAspectRatio="xMidYMid meet"
-            aria-hidden
-          >
-            {/* Simplified continent shapes - grey fill */}
-            <path
-              fill="currentColor"
-              className="text-border"
-              d="M120 180h80v120h-80z M220 140h100v160h-100z M340 160h80v140h-80z M500 120h120v180h-120z M640 140h100v160h-100z M760 160h80v140h-80z M120 320h90v100h-90z M230 300h110v120h-110z M360 320h100v100h-100z M480 310h140v110h-140z M640 320h100v100h-100z M760 320h80v100h-80z"
+        <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+          {hasLocationData ? (
+            <ReactApexChart
+              key={`treemap-${selectedEventId}`}
+              type="treemap"
+              height={320}
+              options={buildTreemapOptions()}
+              series={treemapSeries}
             />
-          </svg>
-          <svg
-            viewBox="0 0 1000 500"
-            className="absolute inset-0 h-full w-full"
-            preserveAspectRatio="xMidYMid meet"
-            aria-hidden
-          >
-            {/* Pink markers */}
-            {mapMarkers.map((m, i) => (
-              <circle
-                key={i}
-                cx={m.x * 10}
-                cy={m.y * 5}
-                r="14"
-                fill="hsl(327, 70%, 55%)"
-                className="drop-shadow-sm"
-              />
-            ))}
-          </svg>
+          ) : (
+            <NoData />
+          )}
         </div>
       </div>
 
-      {/* Top Countries + Top Itineraries */}
+      {/* Top Locations + Top Itineraries */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
-        {/* Top Countries - horizontal bar chart */}
         <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
           <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
             <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
-              Top Countries
+              Top Locations
             </h2>
           </div>
           <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-            <ReactApexChart
-              type="bar"
-              height={260}
-              options={topCountriesChartOptions}
-              series={[
-                { name: "Attendees", data: topCountries.map((c) => c.value) },
-              ]}
-            />
+            {hasLocationData ? (
+              <ReactApexChart
+                key={`bar-${locationLabels.join(",")}`}
+                type="bar"
+                height={260}
+                options={buildBarOptions(locationLabels)}
+                series={locationSeries}
+              />
+            ) : (
+              <NoData />
+            )}
           </div>
         </div>
 
-        {/* Top Itineraries - donut chart */}
         <div className="overflow-hidden rounded-xl border border-border bg-surface sm:rounded-2xl">
           <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
             <h2 className="font-display text-lg font-semibold tracking-tight text-heading">
@@ -245,12 +313,17 @@ export default function AttendeeInsights() {
             </h2>
           </div>
           <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-            <ReactApexChart
-              type="donut"
-              height={280}
-              options={topItinerariesChartOptions}
-              series={topItineraries.map((i) => i.percent)}
-            />
+            {hasItinData ? (
+              <ReactApexChart
+                key={`donut-${itinLabels.join(",")}`}
+                type="donut"
+                height={280}
+                options={buildDonutOptions(itinLabels)}
+                series={itinSeries}
+              />
+            ) : (
+              <NoData />
+            )}
           </div>
         </div>
       </div>

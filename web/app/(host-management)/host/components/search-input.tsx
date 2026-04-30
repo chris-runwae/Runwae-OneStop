@@ -8,12 +8,16 @@ interface SearchInputProps {
   placeholder?: string;
   "aria-label"?: string;
   className?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function SearchInput({
   placeholder = "Search",
   "aria-label": ariaLabel = "Search",
   className,
+  value,
+  onChange,
 }: SearchInputProps) {
   return (
     <div className={cn("relative min-w-0 flex-1 max-w-xs sm:min-w-[180px]", className)}>
@@ -26,6 +30,8 @@ export function SearchInput({
         placeholder={placeholder}
         className="pl-9"
         aria-label={ariaLabel}
+        value={value}
+        onChange={onChange}
       />
     </div>
   );

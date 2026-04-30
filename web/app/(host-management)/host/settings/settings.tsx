@@ -4,22 +4,22 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo } from "react";
 import AccountSettingsTab from "./components/account-settings-tab";
-import ActivityTab from "./components/activity-tab";
-import NotificationsTab from "./components/notifications-tab";
+// import ActivityTab from "./components/activity-tab";
+// import NotificationsTab from "./components/notifications-tab";
 import PreferencesTab from "./components/preferences-tab";
-import PaymentSettingsTab from "./components/payment-settings-tab";
+// import PaymentSettingsTab from "./components/payment-settings-tab";
 import ProfileTab from "./components/profile-tabs";
-import SecuritySettingsTab from "./components/security-settings-tab";
+// import SecuritySettingsTab from "./components/security-settings-tab";
 import SettingsTabs from "./components/settings-tabs";
 
 const tabs = [
   { id: "profile", label: "Profile" },
-  { id: "preference", label: "Preference" },
-  { id: "payment", label: "Payment Settings" },
-  { id: "notifications", label: "Notifications" },
-  { id: "security", label: "Security Settings" },
   { id: "account", label: "Account Settings" },
-  { id: "activity", label: "Activity" },
+  { id: "preference", label: "Preference" },
+  // { id: "payment", label: "Payment Settings" },
+  // { id: "notifications", label: "Notifications" },
+  // { id: "security", label: "Security Settings" },
+  // { id: "activity", label: "Activity" },
 ];
 
 const TAB_IDS = new Set(tabs.map((t) => t.id));
@@ -75,7 +75,10 @@ export default function Settings() {
         <TabsContent value="preference" className="mt-0 outline-none">
           <PreferencesTab />
         </TabsContent>
-        <TabsContent value="payment" className="mt-0 outline-none">
+        <TabsContent value="account" className="mt-0 outline-none">
+          <AccountSettingsTab />
+        </TabsContent>
+        {/* <TabsContent value="payment" className="mt-0 outline-none">
           <PaymentSettingsTab />
         </TabsContent>
         <TabsContent value="notifications" className="mt-0 outline-none">
@@ -84,12 +87,9 @@ export default function Settings() {
         <TabsContent value="security" className="mt-0 outline-none">
           <SecuritySettingsTab />
         </TabsContent>
-        <TabsContent value="account" className="mt-0 outline-none">
-          <AccountSettingsTab />
-        </TabsContent>
         <TabsContent value="activity" className="mt-0 outline-none">
           <ActivityTab />
-        </TabsContent>
+        </TabsContent> */}
       </div>
     </Tabs>
   );

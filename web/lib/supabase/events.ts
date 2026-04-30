@@ -18,6 +18,8 @@ export type Event = {
   bookings: boolean | null;
   ticket_link?: string | null;
   user_id?: string;
+  view_count?: number | null;
+  current_participants?: number | null;
 };
 
 export type EventHostRow = {
@@ -68,7 +70,7 @@ export const getEvents = async (userId: string): Promise<Event[]> => {
   const { data, error } = await supabase
     .from("events")
     .select(
-      "id, name, start_date, start_time, end_date, end_time, location, image, status, description, category, slug, latitude, longitude, bookings, ticket_link",
+      "id, name, start_date, start_time, end_date, end_time, location, image, status, description, category, slug, latitude, longitude, bookings, ticket_link, view_count, current_participants",
     )
     .eq("user_id", userId)
     .order("start_date", { ascending: true });
@@ -200,23 +202,11 @@ export const insertEventSubEvent = async (
 };
 
 export const createEvent = async (event: CreateEventData): Promise<Event> => {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-  console.log("session:", session);
-  console.log("session error:", sessionError);
-  console.log("user id:", session?.user?.id);
-  console.log("event user_id being sent:", event.user_id);
-
   const { data, error } = await supabase
     .from("events")
     .insert({ ...event, status: event.status ?? "draft" })
     .select()
     .single();
-
-  console.log("data:", data);
-  console.log("error:", error);
 
   if (error) throw new Error(error.message);
   return data;
@@ -244,4 +234,60 @@ export const updateEvent = async (
 export const deleteEvent = async (id: string): Promise<void> => {
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw new Error(error.message);
+};
+
+export type HostEventRow = {
+  id: string;
+  name: string;
+  start_date: string | null;
+  view_count: number;
+  current_participants: number;
+};
+
+export type ItineraryItem = {
+  id: string;
+  created_at: string | null;
+};
+
+export type HostOverviewStats = {
+  totalViews: number;
+  totalBookings: number;
+  tripPlans: number;
+  events: HostEventRow[];
+  itineraryItems: ItineraryItem[];
+};
+
+export const getHostOverviewStats = async (
+  userId: string,
+): Promise<HostOverviewStats> => {
+  const [eventsRes, itinerariesRes] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id, name, start_date, view_count, current_participants")
+      .eq("user_id", userId),
+    supabase
+      .from("itinerary_items")
+      .select("id, created_at")
+      .eq("external_id", userId),
+  ]);
+
+  if (eventsRes.error) throw new Error(eventsRes.error.message);
+  if (itinerariesRes.error) throw new Error(itinerariesRes.error.message);
+
+  const rows = (eventsRes.data ?? []) as HostEventRow[];
+  const itineraryItems = (itinerariesRes.data ?? []) as ItineraryItem[];
+
+  const totalViews = rows.reduce((sum, r) => sum + (r.view_count ?? 0), 0);
+  const totalBookings = rows.reduce(
+    (sum, r) => sum + (r.current_participants ?? 0),
+    0,
+  );
+
+  return {
+    totalViews,
+    totalBookings,
+    tripPlans: itineraryItems.length,
+    events: rows,
+    itineraryItems,
+  };
 };

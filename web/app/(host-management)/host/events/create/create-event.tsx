@@ -213,7 +213,7 @@ export default function CreateEvent(props: CreateEventProps = {}) {
         latitude: coords.lat,
         longitude: coords.lng,
         image: imageUrl,
-        status: isDuplicateMode ? "draft" : "PUBLISHED",
+        status: "draft",
       });
 
       if (!event.slug) {

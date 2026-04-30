@@ -29,8 +29,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut, isLoading } = useAuth();
   const router = useRouter();
 
-  console.log(user, isLoading);
-
   // Single auth guard for all /host/* pages
   useEffect(() => {
     if (!isLoading && !user) {

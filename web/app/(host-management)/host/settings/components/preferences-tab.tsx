@@ -6,9 +6,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { updateUserMeta } from "@/api/onboarding";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const TIMEZONE_OPTIONS = [
   { value: "UTC", label: "UTC" },
@@ -83,11 +86,27 @@ function SelectField({
 }
 
 export default function PreferencesTab() {
+  const { user } = useAuth();
   const [timezone, setTimezone] = useState("");
   const [language, setLanguage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    // TODO: persist to API
+  useEffect(() => {
+    if (!user) return;
+    const meta = user.user_metadata ?? {};
+    setTimezone(meta.timezone ?? "");
+    setLanguage(meta.language ?? "");
+  }, [user]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await updateUserMeta({ timezone, language });
+    setIsSaving(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    toast.success("Preferences saved");
   };
 
   return (
@@ -122,9 +141,10 @@ export default function PreferencesTab() {
         <button
           type="button"
           onClick={handleSave}
-          className="rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          disabled={isSaving}
+          className="rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
         >
-          Save Changes
+          {isSaving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </div>

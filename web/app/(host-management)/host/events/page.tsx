@@ -233,7 +233,9 @@ export default function EventsPage() {
                         {status.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-body">—</td>
+                    <td className="px-6 py-4 text-sm text-body">
+                      {event.current_participants?.toLocaleString() ?? "0"}
+                    </td>
                     <td className="px-6 py-4 text-sm font-medium text-body">
                       —
                     </td>
@@ -338,14 +340,14 @@ export default function EventsPage() {
                           className="size-4 shrink-0 text-muted-foreground"
                           aria-hidden
                         />
-                        — views
+                        {event.view_count?.toLocaleString() ?? "0"} views
                       </span>
                       <span className="flex items-center gap-2">
                         <Calendar
                           className="size-4 shrink-0 text-muted-foreground"
                           aria-hidden
                         />
-                        — bookings
+                        {event.current_participants?.toLocaleString() ?? "0"} bookings
                       </span>
                       <span className="flex items-center gap-2">
                         <DollarSign

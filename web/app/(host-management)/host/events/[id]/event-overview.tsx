@@ -112,7 +112,9 @@ export default function EventOverview({ eventId }: { eventId: string }) {
 
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
   const [inviteMessage, setInviteMessage] = useState("");
-  const inviteLink = "invitemeworoldofheroes/invite.com";
+  const inviteLink = detail?.slug
+    ? `${window.location.origin}/events/${detail.slug}`
+    : "";
 
   const {
     data: detail,

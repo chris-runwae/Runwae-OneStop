@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  Store,
   CalendarDays,
   BookOpen,
   HeadphonesIcon,
@@ -19,7 +18,7 @@ import { useRouter } from "next/navigation";
 const NAV_ITEMS = [
   { label: "Overview", href: "/admin/overview", icon: LayoutDashboard },
   { label: "Hosts", href: "/admin/hosts", icon: Users },
-  { label: "Vendors", href: "/admin/vendor", icon: Store },
+  // { label: "Vendors", href: "/admin/vendor", icon: Store },
   { label: "Events", href: "/admin/events", icon: CalendarDays },
   { label: "Bookings", href: "/admin/bookings", icon: BookOpen },
   { label: "Support", href: "/admin/support", icon: HeadphonesIcon },

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { HostProfileHeader, type HostDetail } from "../components/host-profile-header";
 import { OverviewTab } from "../components/overview-tab";
@@ -11,17 +13,57 @@ import { BookingsTab } from "../components/bookings-tab";
 import { EarningsTab } from "../components/earnings-tab";
 import { SettingsTab } from "../components/settings-tab";
 import { SuspendModal } from "../components/suspend-modal";
-
-const MOCK_HOST: HostDetail = {
-  id: "HST-0001",
-  name: "Christopher Jones",
-  email: "christopher.jones@gmail.com",
-  phone: "+1 (23) 1000000",
-  status: "Active",
-};
+import { adminGetUserById } from "@/lib/supabase/admin/users";
+import { adminGetEventsByHostId } from "@/lib/supabase/admin/events";
+import { adminGetBookingsByEventIds } from "@/lib/supabase/admin/hotel-bookings";
+import { toast } from "sonner";
 
 export default function HostDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const [suspendOpen, setSuspendOpen] = useState(false);
+
+  const { data: hostProfile, isPending: hostLoading } = useQuery({
+    queryKey: ["admin-host", id],
+    queryFn: () => adminGetUserById(id),
+    enabled: !!id,
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["admin-host-events", id],
+    queryFn: () => adminGetEventsByHostId(id),
+    enabled: !!id,
+  });
+
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["admin-host-bookings", id],
+    queryFn: () => adminGetBookingsByEventIds(events.map((e) => e.id)),
+    enabled: events.length > 0,
+  });
+
+  if (hostLoading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-sm text-muted-foreground">
+        Loading host…
+      </div>
+    );
+  }
+
+  if (!hostProfile) {
+    return (
+      <div className="flex items-center justify-center py-32 text-sm text-rose-500">
+        Host not found.
+      </div>
+    );
+  }
+
+  const host: HostDetail = {
+    id: hostProfile.id,
+    name: hostProfile.full_name ?? hostProfile.email ?? "Unknown",
+    email: hostProfile.email ?? "—",
+    phone: "—",
+    status: "Active",
+    avatarUrl: hostProfile.avatar_url ?? undefined,
+  };
 
   return (
     <>
@@ -39,7 +81,7 @@ export default function HostDetailPage() {
           <p className="mt-1 text-sm text-muted-foreground">Manage Event Hosts and their activities.</p>
         </div>
 
-        <HostProfileHeader host={MOCK_HOST} onSuspend={() => setSuspendOpen(true)} />
+        <HostProfileHeader host={host} onSuspend={() => setSuspendOpen(true)} />
 
         <Tabs defaultValue="overview">
           <TabsList variant="line">
@@ -51,32 +93,35 @@ export default function HostDetailPage() {
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
-            <OverviewTab />
+            <OverviewTab host={hostProfile} events={events} bookings={bookings} />
           </TabsContent>
 
           <TabsContent value="events" className="mt-6">
-            <EventsTab />
+            <EventsTab events={events} />
           </TabsContent>
 
           <TabsContent value="bookings" className="mt-6">
-            <BookingsTab />
+            <BookingsTab bookings={bookings} events={events} />
           </TabsContent>
 
           <TabsContent value="earnings" className="mt-6">
-            <EarningsTab />
+            <EarningsTab bookings={bookings} />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-6">
-            <SettingsTab />
+            <SettingsTab events={events} />
           </TabsContent>
         </Tabs>
       </div>
 
       <SuspendModal
-        hostName={MOCK_HOST.name}
+        hostName={host.name}
         open={suspendOpen}
         onClose={() => setSuspendOpen(false)}
-        onConfirm={(reason) => console.log("Suspend reason:", reason)}
+        onConfirm={(reason) => {
+          toast.info(`Suspend action recorded: ${reason}`);
+          setSuspendOpen(false);
+        }}
       />
     </>
   );

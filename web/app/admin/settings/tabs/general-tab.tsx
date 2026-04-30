@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 import { SectionHeader, SettingsField, SettingsToggle } from "../components/settings-toggle";
 
 export function GeneralTab() {
+  const { admin } = useAdminAuth();
   const [platformName, setPlatformName] = useState("Runwae");
-  const [adminEmail, setAdminEmail] = useState("admin@runwae.com");
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [userRegistration, setUserRegistration] = useState(true);
   const [hostRegistration, setHostRegistration] = useState(true);
@@ -29,11 +30,10 @@ export function GeneralTab() {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-body">Platform Admin Email</label>
-            <input
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-              className="h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50"
-            />
+            <div className="flex h-10 items-center rounded-lg border border-border bg-muted/40 px-3 text-sm text-body select-all">
+              {admin?.email ?? "—"}
+            </div>
+            <p className="text-xs text-muted-foreground">Managed via admin account. Not editable here.</p>
           </div>
         </div>
       </div>

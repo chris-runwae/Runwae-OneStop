@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MOCK_TICKETS, type Ticket, type TicketStatus } from "./ticket-types";
+import { type Ticket, type TicketStatus } from "./ticket-types";
 
 const STATUS_TABS: (TicketStatus | "All")[] = ["All", "Open", "Pending", "Closed", "Resolved"];
 
@@ -36,10 +36,8 @@ type Props = {
 
 export function TicketsTable({ onOpenTicket, onAction }: Props) {
   const [activeTab, setActiveTab] = useState<TicketStatus | "All">("All");
-
-  const filtered = activeTab === "All"
-    ? MOCK_TICKETS
-    : MOCK_TICKETS.filter((t) => t.status === activeTab);
+  const tickets: Ticket[] = [];
+  const filtered = activeTab === "All" ? tickets : tickets.filter((t) => t.status === activeTab);
 
   return (
     <div className="flex flex-col gap-0 rounded-xl border border-border bg-surface overflow-hidden">
@@ -60,7 +58,7 @@ export function TicketsTable({ onOpenTicket, onAction }: Props) {
             {tab}
             {tab !== "All" && (
               <span className={cn("ml-1.5 rounded-full px-1.5 py-0.5 text-2.5", activeTab === tab ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-                {MOCK_TICKETS.filter((t) => t.status === tab).length}
+                0
               </span>
             )}
           </button>
@@ -78,7 +76,13 @@ export function TicketsTable({ onOpenTicket, onAction }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((ticket) => (
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-16 text-center text-sm text-muted-foreground">
+                  No support tickets yet.
+                </td>
+              </tr>
+            ) : filtered.map((ticket) => (
               <tr
                 key={ticket.id}
                 className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors"

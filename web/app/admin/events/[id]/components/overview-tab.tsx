@@ -1,36 +1,15 @@
-import { Calendar, MapPin, Ticket, DollarSign, Users, AlertTriangle } from "lucide-react";
+import { Calendar, MapPin, Ticket, Eye, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { GoogleMapPreview } from "@/components/shared/google-map-preview";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/lib/supabase/events";
+import type { HotelBooking } from "@/lib/supabase/hotel-bookings";
 
-type ComplaintRow = {
-  userId: string;
-  email: string;
-  date: string;
-  issue: string;
-  status: "Opened" | "Closed";
-};
+type Props = { event: Event; bookings: HotelBooking[] };
 
-const COMPLAINTS: ComplaintRow[] = [
-  { userId: "RUN-930", email: "cm@gmail.com", date: "12-03-2024", issue: "Refund Issue", status: "Opened" },
-  { userId: "RUN-930", email: "cm@gmail.com", date: "12-04-2024", issue: "Refund Issue", status: "Closed" },
-  { userId: "RUN-930", email: "cm@gmail.com", date: "12-05-2024", issue: "Refund Issue", status: "Opened" },
-  { userId: "RUN-930", email: "cm@gmail.com", date: "12-07-2024", issue: "Refund Issue", status: "Closed" },
-  { userId: "RUN-930", email: "cm@gmail.com", date: "12-09-2024", issue: "Refund Issue", status: "Opened" },
-];
-
-const overviewStats = [
-  { label: "Tickets sold", value: "1,067", icon: Ticket, iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
-  { label: "Revenue generated", value: "$199,382", icon: DollarSign, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-  { label: "Users Checked in", value: "1001", icon: Users, iconBg: "bg-sky-100", iconColor: "text-sky-600" },
-  { label: "Complaint", value: "04", icon: AlertTriangle, iconBg: "bg-rose-100", iconColor: "text-rose-500" },
-];
-
-type Props = { event: Event };
-
-export function EventOverviewTab({ event }: Props) {
+export function EventOverviewTab({ event, bookings }: Props) {
   const router = useRouter();
+
   const startDate = event.start_date
     ? new Date(event.start_date).toLocaleDateString("en-US", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -38,6 +17,32 @@ export function EventOverviewTab({ event }: Props) {
     : "—";
 
   const timeRange = [event.start_time, event.end_time].filter(Boolean).join(" – ") || null;
+
+  const totalRevenue = bookings.reduce((s, b) => s + (b.total_amount ?? 0), 0);
+
+  const overviewStats = [
+    {
+      label: "Participants",
+      value: (event.current_participants ?? 0).toLocaleString(),
+      icon: Ticket,
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+    },
+    {
+      label: "Booking Revenue",
+      value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : "—",
+      icon: Users,
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600",
+    },
+    {
+      label: "Views",
+      value: (event.view_count ?? 0).toLocaleString(),
+      icon: Eye,
+      iconBg: "bg-sky-100",
+      iconColor: "text-sky-600",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,11 +52,7 @@ export function EventOverviewTab({ event }: Props) {
         <div className="relative h-64 overflow-hidden rounded-xl bg-muted">
           {event.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={event.image}
-              alt={event.name}
-              className="h-full w-full object-cover"
-            />
+            <img src={event.image} alt={event.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               No image uploaded
@@ -92,17 +93,12 @@ export function EventOverviewTab({ event }: Props) {
             </div>
           </div>
 
-          {/* Real Google Map */}
-          <GoogleMapPreview
-            latitude={event.latitude}
-            longitude={event.longitude}
-            className="h-32 mt-1"
-          />
+          <GoogleMapPreview latitude={event.latitude} longitude={event.longitude} className="h-32 mt-1" />
         </div>
       </div>
 
-      {/* Stats — icon left, value + label right */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {overviewStats.map((s) => (
           <div key={s.label} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-5">
             <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl", s.iconBg)}>
@@ -114,55 +110,6 @@ export function EventOverviewTab({ event }: Props) {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Attendee Complaints */}
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface">
-        <div className="flex flex-wrap items-center gap-3 px-5 pt-5">
-          <h3 className="font-semibold text-black mr-auto">Attendee Complaint</h3>
-          <div className="relative">
-            <input
-              type="search"
-              placeholder="Search"
-              className="h-9 w-44 rounded-lg border border-border bg-background px-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50"
-            />
-          </div>
-          {["Location", "Status", "Type", "Date Range"].map((f) => (
-            <button key={f} type="button" className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-body hover:bg-muted/40 transition-colors">
-              {f} ×
-            </button>
-          ))}
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-145">
-            <thead>
-              <tr className="border-y border-border bg-muted/30">
-                {["User ID", "Email Address", "Date", "Issue", "Status", "Action"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {COMPLAINTS.map((c, idx) => (
-                <tr key={idx} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-5 py-4 text-xs font-mono text-muted-foreground">{c.userId}</td>
-                  <td className="px-5 py-4 text-sm text-body">{c.email}</td>
-                  <td className="px-5 py-4 text-sm text-body">{c.date}</td>
-                  <td className="px-5 py-4 text-sm text-body">{c.issue}</td>
-                  <td className="px-5 py-4">
-                    <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", c.status === "Opened" ? "bg-amber-50 text-amber-700" : "bg-gray-100 text-gray-500")}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <button type="button" className="text-muted-foreground hover:text-black">···</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

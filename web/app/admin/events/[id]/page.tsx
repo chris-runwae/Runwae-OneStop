@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EventOverviewTab } from "./components/overview-tab";
 import { AttendeesTab } from "./components/attendees-tab";
 import { adminGetEvent } from "@/lib/supabase/admin/events";
+import { adminGetBookingsByEventId } from "@/lib/supabase/admin/hotel-bookings";
 
 const EVENT_ACTIONS = [
   "Add Admin Note",
@@ -30,6 +31,12 @@ export default function AdminEventDetailPage() {
   const { data: event, isPending, isError } = useQuery({
     queryKey: ["admin-event", id],
     queryFn: () => adminGetEvent(id),
+    enabled: !!id,
+  });
+
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["admin-event-bookings", id],
+    queryFn: () => adminGetBookingsByEventId(id),
     enabled: !!id,
   });
 
@@ -103,11 +110,11 @@ export default function AdminEventDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <EventOverviewTab event={event} />
+          <EventOverviewTab event={event} bookings={bookings} />
         </TabsContent>
 
         <TabsContent value="attendees" className="mt-6">
-          <AttendeesTab />
+          <AttendeesTab eventId={id} />
         </TabsContent>
       </Tabs>
     </div>

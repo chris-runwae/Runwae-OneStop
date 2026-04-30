@@ -1,21 +1,18 @@
 import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Event } from "@/lib/supabase/events";
 
 const approvalItems = [
-  { label: "Basic Info Form", value: "Christopher Jones", done: true },
-  { label: "License / Docs", value: "Submitted", done: true },
-  { label: "Host Application", value: "Approved", done: true },
-  { label: "Identity Verification", value: "Verified", done: true },
-  { label: "Event Approval", value: "Pending Review", done: false },
+  { label: "Basic Info Form", value: "—", done: false },
+  { label: "License / Docs", value: "—", done: false },
+  { label: "Host Application", value: "—", done: false },
+  { label: "Identity Verification", value: "—", done: false },
+  { label: "Event Approval", value: "—", done: false },
 ];
 
-const commissionRows = [
-  { event: "TechBurst", hostStatus: "Active", hostApplication: "Approved", identityVerification: "Verified" },
-  { event: "AfroFest", hostStatus: "Active", hostApplication: "Approved", identityVerification: "Verified" },
-  { event: "Night Market", hostStatus: "Pending", hostApplication: "Under Review", identityVerification: "Pending" },
-];
+type Props = { events: Event[] };
 
-export function SettingsTab() {
+export function SettingsTab({ events }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* Host Approval & Identity */}
@@ -35,14 +32,7 @@ export function SettingsTab() {
                 />
                 <span className="text-sm font-medium text-black">{item.label}</span>
               </div>
-              <span
-                className={cn(
-                  "text-xs font-medium",
-                  item.done ? "text-emerald-600" : "text-amber-600",
-                )}
-              >
-                {item.value}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{item.value}</span>
             </div>
           ))}
         </div>
@@ -57,29 +47,37 @@ export function SettingsTab() {
           <table className="w-full min-w-125">
             <thead>
               <tr className="border-y border-border bg-muted/30">
-                {["Event from Name", "Host Status", "Host Application", "Identity Verification"].map((h) => (
+                {["Event Name", "Event Status", "Host Application", "Identity Verification"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {commissionRows.map((row) => (
-                <tr key={row.event} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-black">{row.event}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-medium",
-                        row.hostStatus === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
-                      )}
-                    >
-                      {row.hostStatus}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-body">{row.hostApplication}</td>
-                  <td className="px-4 py-3 text-sm text-body">{row.identityVerification}</td>
+              {events.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-10 text-center text-sm text-muted-foreground">No events yet.</td>
                 </tr>
-              ))}
+              ) : events.map((ev) => {
+                const status = (ev.status ?? "draft").toLowerCase();
+                const isActive = status === "published";
+                return (
+                  <tr key={ev.id} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-black">{ev.name}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+                          isActive ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
+                        )}
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-body">—</td>
+                    <td className="px-4 py-3 text-sm text-body">—</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

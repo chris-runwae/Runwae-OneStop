@@ -2,7 +2,7 @@ import { supabase } from "../client";
 import type { Event } from "../events";
 
 const EVENT_COLS =
-  "id, user_id, name, start_date, start_time, end_date, end_time, location, image, status, description, category, slug, latitude, longitude, bookings, ticket_link";
+  "id, user_id, name, start_date, start_time, end_date, end_time, location, image, status, description, category, slug, latitude, longitude, bookings, ticket_link, view_count, current_participants";
 
 /** All events across every host — no user_id filter. */
 export const adminGetAllEvents = async (): Promise<Event[]> => {
@@ -90,6 +90,18 @@ export type AdminEventFilters = {
   status?: string;
   search?: string;
   location?: string;
+};
+
+/** All events for a specific host. */
+export const adminGetEventsByHostId = async (hostId: string): Promise<Event[]> => {
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_COLS)
+    .eq("user_id", hostId)
+    .order("start_date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Event[];
 };
 
 export const adminGetFilteredEvents = async (

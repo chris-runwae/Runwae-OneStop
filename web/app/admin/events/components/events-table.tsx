@@ -26,8 +26,8 @@ const STATUS_PILL: Record<string, string> = {
 const PAGE_SIZE = 9;
 const FILTERS = ["Location", "Status", "Type", "Date Range"];
 const HEADERS = [
-  "Event ID", "Event Name", "Organization", "Date(s)", "Location",
-  "Status", "Partnership count", "Booking count", "GMV", "Views", "Join Date", "Action",
+  "Event ID", "Event Name", "Category", "Date", "Location",
+  "Status", "Participants", "Views", "Action",
 ];
 
 export function EventsTable() {
@@ -88,7 +88,7 @@ export function EventsTable() {
 
       {!isPending && !isError && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-275">
+          <table className="w-full min-w-200">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 <th className="w-10 px-5 py-5">
@@ -164,18 +164,10 @@ export function EventsTable() {
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </span>
                     </td>
-                    {/* Partnership count — placeholder */}
-                    <td className="px-5 py-5 text-sm text-body text-center">{20 + (i % 10)}</td>
-                    {/* Booking count — placeholder */}
-                    <td className="px-5 py-5 text-sm text-body text-center">{100 + (i * 40) % 900}</td>
-                    {/* GMV — placeholder */}
-                    <td className="px-5 py-5 text-sm text-body whitespace-nowrap">
-                      ${(1_000_000 + i * 50_000).toLocaleString()}.00
-                    </td>
-                    {/* Views — placeholder */}
-                    <td className="px-5 py-5 text-sm text-body text-center">{1000 + (i * 350) % 8000}</td>
-                    {/* Join Date */}
-                    <td className="px-5 py-5 text-sm text-body whitespace-nowrap">{joinDate}</td>
+                    {/* Participants */}
+                    <td className="px-5 py-5 text-sm text-body text-center">{ev.current_participants ?? 0}</td>
+                    {/* Views */}
+                    <td className="px-5 py-5 text-sm text-body text-center">{ev.view_count ?? 0}</td>
                     {/* Action */}
                     <td className="px-5 py-5" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>

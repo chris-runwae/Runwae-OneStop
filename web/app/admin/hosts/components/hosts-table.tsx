@@ -61,7 +61,7 @@ export function HostsTable() {
       {/* Table */}
       {!isPending && !isError && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-175">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 {["Host ID", "Name", "Email", "Joined", "Role"].map((h) => (

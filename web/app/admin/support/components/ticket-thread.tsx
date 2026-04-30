@@ -33,7 +33,7 @@ export function TicketThread({ ticket, onClose }: Props) {
             <p className="font-mono text-xs text-muted-foreground">{ticket.id}</p>
             <h2 className="mt-0.5 font-display text-base font-bold text-black">{ticket.subject}</h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <span className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-semibold", STATUS_STYLES[ticket.status])}>
+              <span className={cn("rounded-full px-2.5 py-0.5 text-2.5 font-semibold", STATUS_STYLES[ticket.status])}>
                 {ticket.status}
               </span>
               <span className="text-xs text-muted-foreground">{ticket.category}</span>
@@ -62,7 +62,7 @@ export function TicketThread({ ticket, onClose }: Props) {
               <div className="flex items-center gap-2">
                 <div
                   className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-2.5 font-bold",
                     msg.sender === "admin"
                       ? "bg-primary/10 text-primary"
                       : "bg-muted text-muted-foreground",
@@ -83,7 +83,7 @@ export function TicketThread({ ticket, onClose }: Props) {
               >
                 {msg.body}
               </div>
-              <span className="text-[10px] text-muted-foreground">{msg.timestamp}</span>
+              <span className="text-2.5 text-muted-foreground">{msg.timestamp}</span>
             </div>
           ))}
         </div>

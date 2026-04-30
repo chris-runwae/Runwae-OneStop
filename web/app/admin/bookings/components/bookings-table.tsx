@@ -106,7 +106,7 @@ export function BookingsTable({ onSelectBooking }: Props) {
 
       {!isLoading && !error && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-200">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 {[

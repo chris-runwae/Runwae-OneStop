@@ -30,7 +30,7 @@ export function FilterDropdown({
   value,
   onSelect,
   align = "start",
-  minWidth = "min-w-[160px]",
+  minWidth = "min-w-40",
   icon: Icon,
   triggerClassName,
 }: FilterDropdownProps) {

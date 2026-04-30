@@ -68,7 +68,7 @@ const Setup = () => {
               name="role"
               className={cn(
                 "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
-                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-0.75",
                 "md:text-sm",
               )}
             >
@@ -87,7 +87,7 @@ const Setup = () => {
               name="organisationType"
               className={cn(
                 "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
-                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-0.75",
                 "md:text-sm",
               )}
             >
@@ -134,7 +134,7 @@ const Setup = () => {
                     name={`socialPlatform-${index}`}
                     className={cn(
                       "h-11 w-full appearance-none rounded-lg border border-input bg-transparent pl-3 pr-10 text-base text-foreground shadow-xs outline-none transition-[color,box-shadow]",
-                      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                      "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-0.75",
                       "md:text-sm",
                     )}
                   >

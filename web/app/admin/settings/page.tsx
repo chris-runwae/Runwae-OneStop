@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Tab content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-100">
         {activeTab === "general" && <GeneralTab />}
         {activeTab === "commission" && <CommissionTab />}
         {activeTab === "subscription" && <SubscriptionTab />}

@@ -51,7 +51,7 @@ export function TeamTab() {
         </div>
 
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
-          <table className="w-full min-w-[560px]">
+          <table className="w-full min-w-140">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 {["Admin", "Role", "Status", "Actions"].map((h) => (

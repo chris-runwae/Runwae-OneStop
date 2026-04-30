@@ -59,7 +59,7 @@ export function TicketsTable({ onOpenTicket, onAction }: Props) {
           >
             {tab}
             {tab !== "All" && (
-              <span className={cn("ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]", activeTab === tab ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+              <span className={cn("ml-1.5 rounded-full px-1.5 py-0.5 text-2.5", activeTab === tab ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
                 {MOCK_TICKETS.filter((t) => t.status === tab).length}
               </span>
             )}
@@ -69,7 +69,7 @@ export function TicketsTable({ onOpenTicket, onAction }: Props) {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px]">
+        <table className="w-full min-w-180">
           <thead>
             <tr className="border-b border-border bg-muted/30">
               {["Ticket ID", "User", "Subject", "Category", "Priority", "Status", "Last Updated", "Actions"].map((h) => (

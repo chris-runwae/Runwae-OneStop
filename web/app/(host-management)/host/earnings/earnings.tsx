@@ -107,7 +107,7 @@ export default function Earnings() {
             </div>
           </div>
           <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-            <table className="w-full min-w-[500px] text-left text-sm">
+            <table className="w-full min-w-125 text-left text-sm">
               <thead>
                 <tr className="border-b border-border bg-badge/50">
                   <th className={tableHeader}>Date</th>

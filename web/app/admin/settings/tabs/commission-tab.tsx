@@ -55,7 +55,7 @@ export function CommissionTab() {
       <div className="rounded-xl border border-border bg-surface p-6">
         <SectionHeader title="Rate Summary" description="Effective breakdown of all commission rules." />
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[400px]">
+          <table className="w-full min-w-100">
             <thead>
               <tr className="border-b border-border">
                 {["Type", "Rate", "Applies To"].map((h) => (

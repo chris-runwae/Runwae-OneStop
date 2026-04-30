@@ -64,7 +64,7 @@ export default function Settings() {
       orientation="vertical"
     >
       {/* Left sidebar - white background */}
-      <aside className="w-full shrink-0 border-r border-border bg-surface lg:w-[280px]">
+      <aside className="w-full shrink-0 border-r border-border bg-surface lg:w-70">
         <SettingsTabs tabs={tabs} />
       </aside>
       {/* Right content - light grey background */}

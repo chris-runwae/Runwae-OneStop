@@ -78,7 +78,7 @@ export function AttendeesTab() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px]">
+          <table className="w-full min-w-130">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 {["Name", "Email", "Date", "Status"].map((h) => (
@@ -91,7 +91,7 @@ export function AttendeesTab() {
                 <tr key={idx} className="border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2.5 font-bold text-primary">
                         {a.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                       </div>
                       <span className="text-sm font-medium text-black">{a.name}</span>

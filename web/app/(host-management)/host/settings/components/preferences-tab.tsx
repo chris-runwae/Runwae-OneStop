@@ -69,7 +69,7 @@ function SelectField({
             <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[280px] max-h-[280px] overflow-y-auto">
+        <DropdownMenuContent align="start" className="min-w-70 max-h-70 overflow-y-auto">
           {options.map((opt) => (
             <DropdownMenuItem
               key={opt.value}

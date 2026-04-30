@@ -78,7 +78,7 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "flex w-[284px] shrink-0 flex-col border-r border-border-light bg-surface transition-transform duration-200 ease-out",
+          "flex w-71 shrink-0 flex-col border-r border-border-light bg-surface transition-transform duration-200 ease-out",
           "fixed inset-y-0 left-0 z-50 lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
@@ -110,13 +110,13 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
             alt="Runwae"
             width={140}
             height={35}
-            className="h-[35px] w-auto"
+            className="h-8.75 w-auto"
             priority
           />
         </div>
 
         {/* Navigation */}
-        <nav className="mt-4 flex flex-1 flex-col px-4 lg:mt-[46px] lg:px-6">
+        <nav className="mt-4 flex flex-1 flex-col px-4 lg:mt-11.5 lg:px-6">
           <ul className="flex flex-col gap-1 lg:gap-3">
             {navItems.map((item) => {
               const isActive =

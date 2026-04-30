@@ -77,7 +77,7 @@ export function EarningsTab() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[580px]">
+          <table className="w-full min-w-145">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 {["Date", "Reference", ...(activeSubTab === "earning" ? ["No. of Days"] : []), "Amount", "Status"].map((h) => (

@@ -51,7 +51,7 @@ export function SubscriptionTab() {
 
         {/* Plans grid */}
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full min-w-[520px]">
+          <table className="w-full min-w-130">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="px-6 py-4 text-left text-xs font-medium text-muted-foreground">Features</th>

@@ -104,7 +104,7 @@ export default function SecuritySettingsTab() {
                   <ChevronDownIcon className="size-4 shrink-0" aria-hidden />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuContent align="end" className="min-w-40">
                 {SESSION_OPTIONS.map((opt) => (
                   <DropdownMenuItem
                     key={opt.value}

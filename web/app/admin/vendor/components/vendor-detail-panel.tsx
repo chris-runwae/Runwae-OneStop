@@ -58,7 +58,7 @@ export function VendorDetailPanel({ vendor, onClose, onApprove, onReject }: Prop
               <span className="text-xs text-muted-foreground">{vendor.dateRange}</span>
               <span
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 text-[10px] font-semibold",
+                  "rounded-full px-2.5 py-0.5 text-2.5 font-semibold",
                   vendor.status === "Active"
                     ? "bg-emerald-50 text-emerald-700"
                     : vendor.status === "Pending"

@@ -73,7 +73,7 @@ export function EventsTab() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px]">
+        <table className="w-full min-w-160">
           <thead>
             <tr className="border-y border-border bg-muted/30">
               {["Event Name", "Date", "Location", "Show", "Bookings", "Earnings", "Status", "Actions"].map((h) => (

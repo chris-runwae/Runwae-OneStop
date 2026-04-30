@@ -91,7 +91,7 @@ function PayoutTypeCell({ type }: { type: PayoutType }) {
       {type === "Fiat" ? (
         <BanknoteIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       ) : (
-        <span className="flex size-5 items-center justify-center rounded bg-primary/10 text-[10px] font-bold text-primary">
+        <span className="flex size-5 items-center justify-center rounded bg-primary/10 text-2.5 font-bold text-primary">
           RWX
         </span>
       )}
@@ -104,7 +104,7 @@ function PayoutMethodCell({ method }: { method: PayoutMethod }) {
   return (
     <div className="flex items-center gap-2">
       {method === "Stripe" ? (
-        <span className="flex size-5 items-center justify-center rounded bg-muted text-[10px] font-semibold text-body">
+        <span className="flex size-5 items-center justify-center rounded bg-muted text-2.5 font-semibold text-body">
           $
         </span>
       ) : (
@@ -137,12 +137,12 @@ export default function Payouts() {
               <FilterDropdown
                 label="This month"
                 options={PERIOD_OPTIONS}
-                minWidth="min-w-[140px]"
+                minWidth="min-w-35"
                 triggerClassName="flex cursor-pointer items-center gap-1 rounded bg-badge px-2 py-1.5 text-xs font-medium tracking-tight text-body transition-colors hover:bg-badge/80 focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="px-4 py-4 sm:px-6 sm:py-5">
-              <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-[32px] sm:leading-10">
+              <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-8 sm:leading-10">
                 {card.value}
               </p>
               <p className="mt-1 text-sm font-medium tracking-tight text-muted-foreground">
@@ -192,7 +192,7 @@ export default function Payouts() {
           </div>
         </div>
         <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-          <table className="w-full min-w-[700px] text-left text-sm">
+          <table className="w-full min-w-175 text-left text-sm">
             <thead>
               <tr className="border-b border-border bg-badge/50">
                 <th className={tableHeader}>Payout ID</th>
@@ -235,7 +235,7 @@ export default function Payouts() {
                           <MoreHorizontalIcon className="size-4" aria-hidden />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[160px]">
+                      <DropdownMenuContent align="end" className="min-w-40">
                         <DropdownMenuItem onSelect={() => {}} className="cursor-pointer">
                           View details
                         </DropdownMenuItem>

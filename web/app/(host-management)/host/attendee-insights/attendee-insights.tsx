@@ -234,7 +234,7 @@ export default function AttendeeInsights() {
               <ChevronDownIcon className="size-4" aria-hidden />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[220px] max-w-[320px]">
+          <DropdownMenuContent align="end" className="min-w-55 max-w-80">
             <DropdownMenuItem
               onSelect={() => setSelectedEventId(null)}
               className={`cursor-pointer ${selectedEventId === null ? "font-medium text-primary" : ""}`}

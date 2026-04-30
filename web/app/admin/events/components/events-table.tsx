@@ -88,7 +88,7 @@ export function EventsTable() {
 
       {!isPending && !isError && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px]">
+          <table className="w-full min-w-275">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 <th className="w-10 px-5 py-5">

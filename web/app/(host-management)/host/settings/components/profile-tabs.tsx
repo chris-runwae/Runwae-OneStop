@@ -167,7 +167,7 @@ export default function ProfileTab() {
         <div className="flex flex-col gap-5">
           {/* Avatar */}
           <div className="relative inline-block w-fit">
-            <Avatar className="size-[100px]">
+            <Avatar className="size-25">
               {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile photo" />}
               <AvatarFallback className="bg-muted text-2xl text-muted-foreground">
                 {isUploadingAvatar ? "…" : initials}
@@ -280,7 +280,7 @@ export default function ProfileTab() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex w-full shrink-0 items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-4 sm:w-[209px] focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="flex w-full shrink-0 items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-4 sm:w-52.25 focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         <PlatformIcon
@@ -297,7 +297,7 @@ export default function ProfileTab() {
                       />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-[180px]">
+                  <DropdownMenuContent align="start" className="min-w-45">
                     {platformOptions.map((opt) => {
                       const PlatformOptionIcon = opt.icon;
                       return (

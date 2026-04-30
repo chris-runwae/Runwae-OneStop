@@ -135,7 +135,7 @@ export function EventOverviewTab({ event }: Props) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[580px]">
+          <table className="w-full min-w-145">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 {["User ID", "Email Address", "Date", "Issue", "Status", "Action"].map((h) => (

@@ -22,7 +22,7 @@ function filterEvents(events: HostEventRow[], filter: EventFilter): HostEventRow
   if (filter === "all") return events;
   const now = new Date();
   return events.filter((e) => {
-    if (!e.start_date) return filter === "all";
+    if (!e.start_date) return false;
     const d = new Date(e.start_date);
     return filter === "upcoming" ? d >= now : d < now;
   });
@@ -101,7 +101,7 @@ export function EventPerformanceChart({ events }: EventPerformanceChartProps) {
               <ChevronDownIcon width={16} height={16} aria-hidden />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[160px]">
+          <DropdownMenuContent align="end" className="min-w-40">
             {EVENT_FILTER_OPTIONS.map((opt) => (
               <DropdownMenuItem
                 key={opt.value}
@@ -125,13 +125,13 @@ export function EventPerformanceChart({ events }: EventPerformanceChartProps) {
         </div>
 
         {/* Bars */}
-        <div className="flex min-w-0 flex-1 items-end gap-2 sm:min-w-[520px]">
+        <div className="flex min-w-0 flex-1 items-end gap-2 sm:min-w-130">
           {chartData.map((bar) => (
             <div
               key={bar.month}
               className="flex flex-1 flex-col items-center gap-3"
             >
-              <div className="flex h-[372px] w-full max-w-[62px] items-end self-center">
+              <div className="flex h-93 w-full max-w-15.5 items-end self-center">
                 <div
                   className={`w-full rounded-t-xl ${
                     bar.highlighted ? "bg-primary" : "bg-border"

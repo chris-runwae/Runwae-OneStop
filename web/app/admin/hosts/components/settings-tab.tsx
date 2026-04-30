@@ -54,7 +54,7 @@ export function SettingsTab() {
         <p className="mt-1 text-xs text-muted-foreground">Manage per-event commission rates and host revenue splits.</p>
 
         <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-125">
             <thead>
               <tr className="border-y border-border bg-muted/30">
                 {["Event from Name", "Host Status", "Host Application", "Identity Verification"].map((h) => (

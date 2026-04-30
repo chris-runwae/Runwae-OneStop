@@ -66,7 +66,7 @@ export function BookingsTab() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px]">
+        <table className="w-full min-w-175">
           <thead>
             <tr className="border-y border-border bg-muted/30">
               {["Confirmation Code", "Event Name", "Type", "Booking Type", "Expiration Date", "Amount", "Status"].map((h) => (

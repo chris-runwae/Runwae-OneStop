@@ -40,7 +40,7 @@ export function InviteGuestsStep2Modal({
             rows={4}
             className={cn(
               modalInputClass,
-              "mt-1 min-h-[100px] resize-none py-2"
+              "mt-1 min-h-25 resize-none py-2"
             )}
           />
         </div>

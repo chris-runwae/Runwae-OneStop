@@ -77,7 +77,7 @@ export function VendorsTable({ onSelectVendor }: Props) {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px]">
+        <table className="w-full min-w-175">
           <thead>
             <tr className="border-y border-border bg-muted/30">
               {["Vendor ID", "Business Name", "Type", "Location", "Partnership", "Total bookings", "Total Revenue"].map((h) => (

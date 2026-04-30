@@ -61,7 +61,7 @@ export function EventMetrics({
                 <ChevronDownIcon className="size-3.5" aria-hidden />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[140px]">
+            <DropdownMenuContent align="end" className="min-w-35">
               {PERIOD_OPTIONS.map((option) => (
                 <DropdownMenuItem
                   key={option.value}
@@ -78,7 +78,7 @@ export function EventMetrics({
 
       {/* Body */}
       <div className="px-4 pt-4 pb-3 sm:px-6 sm:pt-5 sm:pb-4">
-        <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-[32px] sm:leading-10">
+        <p className="font-display text-2xl font-semibold leading-tight text-black sm:text-8 sm:leading-10">
           {value}
         </p>
         {change && (

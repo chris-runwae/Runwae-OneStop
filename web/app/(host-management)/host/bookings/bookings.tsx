@@ -103,7 +103,7 @@ export default function Bookings() {
                 options={STATUS_OPTIONS}
                 value={statusFilter}
                 onSelect={setStatusFilter}
-                minWidth="min-w-[140px]"
+                minWidth="min-w-35"
               />
               <FilterDropdown
                 label="Date Range"
@@ -111,7 +111,7 @@ export default function Bookings() {
                 value={dateFilter}
                 onSelect={setDateFilter}
                 icon={CalendarIcon}
-                minWidth="min-w-[160px]"
+                minWidth="min-w-40"
               />
               <SearchInput
                 placeholder="Search"
@@ -148,7 +148,7 @@ export default function Bookings() {
 
         {!isLoading && !error && (
           <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-225 text-left text-sm">
               <thead>
                 <tr className="border-b border-border bg-badge/50">
                   <th className={tableHeader}>Confirmation</th>

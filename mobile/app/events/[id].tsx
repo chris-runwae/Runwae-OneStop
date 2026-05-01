@@ -1,7 +1,10 @@
-import AddToTripContent from '@/components/home/AddToTripContent';
-import CustomModal from '@/components/ui/CustomModal';
 import EventDetailSkeleton from '@/components/event/EventDetailSkeleton';
 import FullScreenMapModal from '@/components/event/FullScreenMapModal';
+import {
+  BulletRow,
+  Divider,
+  SectionTitle,
+} from '@/components/event/detail/EventDetailPrimitives';
 import EventGallery from '@/components/event/detail/EventGallery';
 import EventHero from '@/components/event/detail/EventHero';
 import EventItinerary from '@/components/event/detail/EventItinerary';
@@ -9,23 +12,23 @@ import EventLocationSection from '@/components/event/detail/EventLocationSection
 import EventParticipantsBar from '@/components/event/detail/EventParticipantsBar';
 import EventPricingBar from '@/components/event/detail/EventPricingBar';
 import EventQuickStats from '@/components/event/detail/EventQuickStats';
-import {
-  BulletRow,
-  Divider,
-  SectionTitle,
-} from '@/components/event/detail/EventDetailPrimitives';
 import DetailNotFound from '@/components/experience/DetailNotFound';
+import AddToTripContent from '@/components/home/AddToTripContent';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
-import { useTrips } from '@/context/TripsContext';
+import CustomModal from '@/components/ui/CustomModal';
 import { useAuth } from '@/context/AuthContext';
+import { useTrips } from '@/context/TripsContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
 import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
 import { trackEventView } from '@/utils/supabase/analytics.service';
-import { getEventRegistration, registerForEvent } from '@/utils/supabase/event-registrations.service';
 import { supabase } from '@/utils/supabase/client';
-import { useStripe } from '@stripe/stripe-react-native';
+import {
+  getEventRegistration,
+  registerForEvent,
+} from '@/utils/supabase/event-registrations.service';
+import { useStripeSafe } from '@/utils/stripe-safe';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -56,7 +59,7 @@ const EventDetailScreen = () => {
   const { openDirections } = useDirections();
   const { addIdeaToTrip } = useTrips();
   const { user } = useAuth();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
 
   useEffect(() => {
     if (!event?.id || !user?.id) return;
@@ -81,7 +84,9 @@ const EventDetailScreen = () => {
     setRegisterLoading(true);
     try {
       if (event.price && event.price > 0) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const resp = await fetch(
           `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
           {
@@ -91,7 +96,10 @@ const EventDetailScreen = () => {
               Authorization: `Bearer ${session?.access_token ?? ''}`,
               apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
             },
-            body: JSON.stringify({ amount: event.price, currency: event.currency ?? 'USD' }),
+            body: JSON.stringify({
+              amount: event.price,
+              currency: event.currency ?? 'USD',
+            }),
           }
         );
         const { clientSecret, error: fnErr } = await resp.json();
@@ -111,7 +119,8 @@ const EventDetailScreen = () => {
 
         const { error: payErr } = await presentPaymentSheet();
         if (payErr) {
-          if (payErr.code !== 'Canceled') Alert.alert('Payment failed', payErr.message);
+          if (payErr.code !== 'Canceled')
+            Alert.alert('Payment failed', payErr.message);
           return;
         }
 

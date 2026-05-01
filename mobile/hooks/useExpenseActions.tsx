@@ -75,17 +75,22 @@ const EXPENSE_SELECT =
 
 const useExpenseActions = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchExpenses = async (groupId: string): Promise<Expense[]> => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select(EXPENSE_SELECT)
-      .eq('group_id', groupId)
-      .order('date', { ascending: false });
-    if (error) throw error;
-    setExpenses(data as Expense[]);
-    return data as Expense[];
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select(EXPENSE_SELECT)
+        .eq('group_id', groupId)
+        .order('date', { ascending: false });
+      if (error) throw error;
+      setExpenses(data as Expense[]);
+      return data as Expense[];
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchExpenseById = async (expenseId: string): Promise<Expense> => {
@@ -106,7 +111,10 @@ const useExpenseActions = () => {
       .select('user_id, role, profiles!user_id(id, full_name, avatar_url)')
       .eq('group_id', groupId);
     if (error) throw error;
-    return data as ExpenseMember[];
+    return (data as any[]).map((m) => ({
+      ...m,
+      profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
+    })) as ExpenseMember[];
   };
 
   const createExpense = async (

@@ -82,6 +82,7 @@ export function savedItemFromViatorIdea(
     external_id: idea.id,
     cover_image: idea.imageUri,
     notes: idea.description,
+    all_data: idea.product,
   };
 }
 

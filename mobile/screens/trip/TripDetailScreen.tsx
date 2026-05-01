@@ -3,20 +3,23 @@ import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, Pencil, Trash2 } from 'lucide-react-native';
+import { LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, useColorScheme, View } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { uploadGroupCoverImage } from '@/utils/supabase/storage';
+import { useTripDetailActions } from '@/hooks/useTripDetailActions';
 import TripDetailSkeleton from './components/TripDetailSkeleton';
-import HotelsSection from '@/components/trips/HotelsSection';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
 
@@ -25,10 +28,11 @@ import {
   AvatarGroup,
   DateRange,
   HorizontalTabs,
+  ProfileAvatar,
   Spacer,
   Text,
 } from '@/components';
-import { Colors, textStyles } from '@/constants';
+import { AppFonts, COLORS, Colors, textStyles } from '@/constants';
 
 export default function TripDetailScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -38,10 +42,16 @@ export default function TripDetailScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const { user } = useAuth();
-  const { activeTrip, isLoading, updateTrip } = useTrips();
+  const { activeTrip, isLoading } = useTrips();
+  const {
+    isJoining,
+    handleJoinTrip,
+    handleLeaveTrip,
+    handleDeleteTrip,
+    showImagePicker,
+  } = useTripDetailActions(tripId);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('ideas');
-  const [coverImage, setCoverImage] = useState<string | null>(null);
   const scrollY = useSharedValue(0);
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -56,80 +66,14 @@ export default function TripDetailScreen() {
 
   const coverUrl = activeTrip?.cover_image_url;
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'We need camera roll permissions to select a profile image.'
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      await uploadTripCoverImage(result.assets[0].uri);
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'We need camera permissions to take a photo.'
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      await uploadTripCoverImage(result.assets[0].uri);
-    }
-  };
-
-  const showImagePicker = () => {
-    Alert.alert('Select Profile Image', 'Choose an option', [
-      { text: 'Camera', onPress: takePhoto },
-      { text: 'Photo Library', onPress: pickImage },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
-  const uploadTripCoverImage = async (imageUri: string) => {
-    if (!activeTrip) return;
-    try {
-      const coverImageUrl = await uploadGroupCoverImage(
-        activeTrip.id,
-        imageUri
-      );
-      if (coverImageUrl) {
-        await updateTrip(activeTrip.id, { cover_image_url: coverImageUrl });
-      }
-    } catch (err) {
-      console.error('Failed to upload cover image:', err);
-      Alert.alert(
-        'Warning',
-        'Failed to upload cover image. You can add it later.'
-      );
-    }
-  };
-
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
       borderColor: dark ? '#374151' : '#E9ECEF',
       maxWidth: 150,
+    },
+    soloBadge: {
+      backgroundColor: dark ? 'rgba(255, 31, 140, 0.1)' : '#FDF2F8',
+      borderColor: dark ? 'rgba(255, 31, 140, 0.2)' : '#FCE7F3',
     },
     infoText: {
       color: dark ? '#ADB5BD' : '#A8A8A8',
@@ -148,6 +92,16 @@ export default function TripDetailScreen() {
   });
 
   const isOwner = activeTrip.created_by === user?.id;
+  const isMember = activeTrip?.group_members?.some(
+    (m) => m.user_id === user?.id
+  );
+  const isPublic = activeTrip?.trip_details?.visibility === 'public';
+  const isSolo = isOwner && activeTrip?.group_members?.length === 1;
+
+  const creator = activeTrip?.group_members?.find(
+    (m) => m.role === 'owner' || m.role === 'admin'
+  );
+
   const dropdownOptions = [
     ...(isOwner
       ? [
@@ -162,8 +116,18 @@ export default function TripDetailScreen() {
       ? [
           {
             label: 'Delete Trip',
-            onPress: () => {},
+            onPress: handleDeleteTrip,
             icon: Trash2,
+            isDestructive: true,
+          },
+        ]
+      : []),
+    ...(!isOwner && isMember
+      ? [
+          {
+            label: 'Leave Trip',
+            onPress: handleLeaveTrip,
+            icon: LogOut,
             isDestructive: true,
           },
         ]
@@ -177,6 +141,7 @@ export default function TripDetailScreen() {
         imageUri={coverUrl || ''}
         title={activeTrip.name}
         isOwner={isOwner}
+        isMember={isMember}
         onEdit={showImagePicker}
         showMoreOptions={true}
         dropdownOptions={dropdownOptions}
@@ -255,18 +220,58 @@ export default function TripDetailScreen() {
           </Text>
 
           <Spacer size={14} vertical />
-          {activeTrip?.group_members && activeTrip.group_members.length > 1 ? (
-            <AvatarGroup
-              members={activeTrip.group_members}
-              maxVisible={4}
-              size={30}
-              overlap={12}
-            />
-          ) : (
-            <View style={styles.soloBadge}>
-              <Text style={styles.soloBadgeText}>Solo Trip</Text>
+          <View style={styles.membershipRow}>
+            {activeTrip?.group_members &&
+            activeTrip.group_members.length > 1 ? (
+              <AvatarGroup
+                members={activeTrip.group_members}
+                maxVisible={4}
+                size={30}
+                overlap={12}
+              />
+            ) : (
+              <View style={styles.creatorInfo}>
+                <ProfileAvatar
+                  name={creator?.profiles?.full_name || 'User'}
+                  imageUrl={creator?.profiles?.avatar_url}
+                  size={32}
+                />
+                <Spacer size={8} horizontal />
+                <View>
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={styles.creatorName}>
+                    {creator?.profiles?.full_name || 'Guest'}
+                    {isOwner ? ' (You)' : ''}
+                  </Text>
+                  <Text style={styles.createdByLabel}>Created by</Text>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.actionArea}>
+              {isSolo && (
+                <View style={[styles.soloBadge, dynamicStyles.soloBadge]}>
+                  <Text style={styles.soloBadgeText}>Solo Trip</Text>
+                </View>
+              )}
+              {!isMember && (
+                <TouchableOpacity
+                  style={[
+                    styles.soloBadge,
+                    { backgroundColor: '#FF2E92', borderColor: '#FF2E92' },
+                  ]}
+                  onPress={handleJoinTrip}
+                  disabled={isJoining}
+                  activeOpacity={0.8}>
+                  <Text style={[styles.soloBadgeText, { color: '#ffffff' }]}>
+                    {isJoining ? 'Joining...' : 'Join Trip'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-          )}
+          </View>
 
           <Spacer size={32} vertical />
 
@@ -281,17 +286,21 @@ export default function TripDetailScreen() {
           />
           <Spacer size={24} vertical />
 
-          {activeTab === 'ideas' && (
+          {activeTab === 'ideas' && (isMember || isPublic) && (
             <View style={styles.tabContent}>
-              <TripOverviewTab trip={activeTrip} />
+              <TripOverviewTab trip={activeTrip} isMember={isMember} />
               <Spacer size={24} vertical />
-              {/* <HotelsSection trip={activeTrip} onAdd={() => {}} />
-              <Spacer size={14} vertical /> */}
             </View>
           )}
-          {activeTab === 'itinerary' && <TripItineraryTab />}
-          {activeTab === 'activity' && (
-            <ActivityTab tripId={activeTrip.id} trip={activeTrip} />
+          {activeTab === 'itinerary' && (isMember || isPublic) && (
+            <TripItineraryTab isMember={isMember} />
+          )}
+          {activeTab === 'activity' && (isMember || isPublic) && (
+            <ActivityTab
+              tripId={activeTrip.id}
+              trip={activeTrip}
+              isMember={isMember}
+            />
           )}
           <Spacer size={100} vertical />
         </View>
@@ -392,20 +401,31 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'BricolageGrotesque-Bold',
   },
-  soloBadge: {
-    backgroundColor: '#FF1F8C15',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#FF1F8C30',
+  creatorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  soloBadgeText: {
-    ...textStyles.textBody12,
-    color: '#FF1F8C',
-    fontWeight: '500',
+  createdByLabel: {
     fontSize: 10,
+    fontFamily: AppFonts.inter.medium,
+    color: COLORS.gray[500],
+    letterSpacing: 0.5,
+  },
+  creatorName: {
+    fontSize: 14,
+    maxWidth: 150,
+    fontFamily: AppFonts.inter.semiBold,
+  },
+  membershipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  actionArea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   fab: {
     position: 'absolute',
@@ -422,5 +442,62 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     zIndex: 100,
+  },
+  joinTripFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  joinTripButton: {
+    height: 54,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FF2E92',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  joinTripButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontFamily: AppFonts.inter.bold,
+  },
+  inlineJoinButton: {
+    marginTop: 20,
+    height: 40,
+    paddingHorizontal: 24,
+    borderRadius: 99,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    shadowColor: '#FF2E92',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  soloBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  soloBadgeText: {
+    color: '#FF1F8C',
+    fontSize: 10,
+    fontFamily: AppFonts.inter.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

@@ -24,25 +24,39 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
 import { AppFonts, Colors } from '@/constants';
-import { CreateItineraryItemInput, ItineraryItem } from '@/hooks/useItineraryActions';
+import {
+  CreateItineraryItemInput,
+  ItineraryItem,
+} from '@/hooks/useItineraryActions';
 import { uploadItineraryItemImage } from '@/utils/supabase/storage';
 
 const DATE_COLUMN_WIDTH = 55;
 
 type DateStripProps = {
-  startDate: string | null;       // trip_details.start_date e.g. "2026-11-27"
-  totalDays: number;              // days.length
-  selectedIndex: number;          // 0-based
+  startDate: string | null; // trip_details.start_date e.g. "2026-11-27"
+  totalDays: number; // days.length
+  selectedIndex: number; // 0-based
   onSelectIndex: (i: number) => void;
   onAddDay: () => void;
 };
 
-function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDay }: DateStripProps) {
+function DateStrip({
+  startDate,
+  totalDays,
+  selectedIndex,
+  onSelectIndex,
+  onAddDay,
+}: DateStripProps) {
   const flatListRef = useRef<FlatList>(null);
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
 
-  type DayItem = { type: 'day'; index: number; label: string; sublabel: string };
+  type DayItem = {
+    type: 'day';
+    index: number;
+    label: string;
+    sublabel: string;
+  };
   type AddItem = { type: 'add' };
   type StripItem = DayItem | AddItem;
 
@@ -51,9 +65,19 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
     for (let i = 0; i < totalDays; i++) {
       if (startDate) {
         const date = addDays(parseISO(startDate), i);
-        base.push({ type: 'day', index: i, label: format(date, 'EEEEE'), sublabel: format(date, 'd') });
+        base.push({
+          type: 'day',
+          index: i,
+          label: format(date, 'EEEEE'),
+          sublabel: format(date, 'd'),
+        });
       } else {
-        base.push({ type: 'day', index: i, label: 'D', sublabel: String(i + 1) });
+        base.push({
+          type: 'day',
+          index: i,
+          label: 'D',
+          sublabel: String(i + 1),
+        });
       }
     }
     base.push({ type: 'add' });
@@ -62,7 +86,11 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
 
   useEffect(() => {
     if (selectedIndex < totalDays) {
-      flatListRef.current?.scrollToIndex({ index: selectedIndex, animated: true, viewPosition: 0.5 });
+      flatListRef.current?.scrollToIndex({
+        index: selectedIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
     }
   }, [selectedIndex, totalDays]);
 
@@ -70,9 +98,24 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
     if (item.type === 'add') {
       return (
         <Pressable onPress={onAddDay} style={styles.dateColumn}>
-          <Text style={[styles.dayLetter, { color: dark ? '#9BA1A6' : '#AEAEAE' }]}>{' '}</Text>
-          <View style={[styles.dateCircle, { backgroundColor: dark ? '#1F1F1F' : '#F8F9FA', borderColor: dark ? '#374151' : '#F0F5FA', borderStyle: 'dashed' }]}>
-            <Plus size={16} color={dark ? '#ADB5BD' : '#AEAEAE'} strokeWidth={2} />
+          <Text
+            style={[styles.dayLetter, { color: dark ? '#9BA1A6' : '#AEAEAE' }]}>
+            {' '}
+          </Text>
+          <View
+            style={[
+              styles.dateCircle,
+              {
+                backgroundColor: dark ? '#1F1F1F' : '#F8F9FA',
+                borderColor: dark ? '#374151' : '#F0F5FA',
+                borderStyle: 'dashed',
+              },
+            ]}>
+            <Plus
+              size={16}
+              color={dark ? '#ADB5BD' : '#AEAEAE'}
+              strokeWidth={2}
+            />
           </View>
         </Pressable>
       );
@@ -80,12 +123,33 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
 
     const isSelected = item.index === selectedIndex;
     return (
-      <Pressable onPress={() => onSelectIndex(item.index)} style={styles.dateColumn}>
-        <Text style={[styles.dayLetter, isSelected ? styles.dayLetterSelected : { color: dark ? '#9BA1A6' : '#AEAEAE' }]}>
+      <Pressable
+        onPress={() => onSelectIndex(item.index)}
+        style={styles.dateColumn}>
+        <Text
+          style={[
+            styles.dayLetter,
+            isSelected
+              ? styles.dayLetterSelected
+              : { color: dark ? '#9BA1A6' : '#AEAEAE' },
+          ]}>
           {item.label}
         </Text>
-        <View style={[styles.dateCircle, isSelected ? styles.dateCircleSelected : { backgroundColor: dark ? '#1F1F1F' : '#F8F9FA', borderColor: dark ? '#374151' : '#F0F5FA' }]}>
-          <Text style={[styles.dateNumber, isSelected ? styles.dateNumberSelected : { color: '#ADB5BD' }]}>
+        <View
+          style={[
+            styles.dateCircle,
+            isSelected
+              ? styles.dateCircleSelected
+              : {
+                  backgroundColor: dark ? '#1F1F1F' : '#F8F9FA',
+                  borderColor: dark ? '#374151' : '#F0F5FA',
+                },
+          ]}>
+          <Text
+            style={[
+              styles.dateNumber,
+              isSelected ? styles.dateNumberSelected : { color: '#ADB5BD' },
+            ]}>
             {item.sublabel}
           </Text>
         </View>
@@ -94,18 +158,36 @@ function DateStrip({ startDate, totalDays, selectedIndex, onSelectIndex, onAddDa
   };
 
   return (
-    <View style={[styles.dateStripContainer, { backgroundColor: colors.backgroundColors.default, borderBottomColor: dark ? '#374151' : '#E0E0E0' }]}>
+    <View
+      style={[
+        styles.dateStripContainer,
+        {
+          backgroundColor: colors.backgroundColors.default,
+          borderBottomColor: dark ? '#374151' : '#E0E0E0',
+        },
+      ]}>
       <FlatList
         ref={flatListRef}
         data={items}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.type === 'add' ? 'add' : String((item as { type: 'day'; index: number }).index)}
+        keyExtractor={(item) =>
+          item.type === 'add'
+            ? 'add'
+            : String((item as { type: 'day'; index: number }).index)
+        }
         renderItem={renderItem}
         contentContainerStyle={styles.dateStripContent}
-        getItemLayout={(_, index) => ({ length: DATE_COLUMN_WIDTH, offset: DATE_COLUMN_WIDTH * index, index })}
+        getItemLayout={(_, index) => ({
+          length: DATE_COLUMN_WIDTH,
+          offset: DATE_COLUMN_WIDTH * index,
+          index,
+        })}
         onScrollToIndexFailed={({ index }) => {
-          flatListRef.current?.scrollToOffset({ offset: index * DATE_COLUMN_WIDTH, animated: true });
+          flatListRef.current?.scrollToOffset({
+            offset: index * DATE_COLUMN_WIDTH,
+            animated: true,
+          });
         }}
       />
     </View>
@@ -130,6 +212,7 @@ type DaySectionProps = {
   isFirstDay: boolean;
   onItemPress: (item: ItineraryItem) => void;
   onUpdateItemNotes: (itemId: string, notes: string) => void;
+  isMember?: boolean;
 };
 
 function DaySection({
@@ -150,6 +233,7 @@ function DaySection({
   isFirstDay,
   onItemPress,
   onUpdateItemNotes,
+  isMember = false,
 }: DaySectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [titleEdit, setTitleEdit] = useState(false);
@@ -206,7 +290,7 @@ function DaySection({
           ) : (
             <ChevronDown size={18} color={dark ? '#9BA1A6' : '#000'} />
           )}
-          {titleEdit ? (
+          {isMember && titleEdit ? (
             <TextInput
               value={titleVal}
               onChangeText={setTitleVal}
@@ -216,17 +300,24 @@ function DaySection({
               onSubmitEditing={handleTitleBlur}
             />
           ) : (
-            <Text style={[styles.dayTitle, { color: colors.textColors.default }]}>
+            <Text
+              style={[styles.dayTitle, { color: colors.textColors.default }]}>
               {day.title || `Day ${index + 1}`}
             </Text>
           )}
         </View>
-        <Pressable
-          hitSlop={12}
-          onPress={handleDayMenuPress}
-          style={styles.ellipsisBtn}>
-          <Ellipsis size={18} strokeWidth={1.5} color={dark ? '#9BA1A6' : '#AEAEAE'} />
-        </Pressable>
+        {isMember && (
+          <Pressable
+            hitSlop={12}
+            onPress={handleDayMenuPress}
+            style={styles.ellipsisBtn}>
+            <Ellipsis
+              size={18}
+              strokeWidth={1.5}
+              color={dark ? '#9BA1A6' : '#AEAEAE'}
+            />
+          </Pressable>
+        )}
       </Pressable>
 
       {!collapsed && (
@@ -246,15 +337,30 @@ function DaySection({
               canMoveDown={i < day.itinerary_items.length - 1}
               onPress={() => onItemPress(item)}
               onUpdateNotes={(notes) => onUpdateItemNotes(item.id, notes)}
+              isMember={isMember}
             />
           ))}
 
-          <Pressable
-            onPress={() => setShowSheet(true)}
-            style={[styles.addItemPill, { backgroundColor: dark ? '#1F1F1F' : '#FFFFFF', borderColor: dark ? '#374151' : '#F0F0F0' }]}>
-            <Plus size={16} color={dark ? '#ADB5BD' : '#000'} />
-            <Text style={[styles.addItemPillText, { color: colors.textColors.default }]}>Add</Text>
-          </Pressable>
+          {isMember && (
+            <Pressable
+              onPress={() => setShowSheet(true)}
+              style={[
+                styles.addItemPill,
+                {
+                  backgroundColor: dark ? '#1F1F1F' : '#FFFFFF',
+                  borderColor: dark ? '#374151' : '#F0F0F0',
+                },
+              ]}>
+              <Plus size={16} color={dark ? '#ADB5BD' : '#000'} />
+              <Text
+                style={[
+                  styles.addItemPillText,
+                  { color: colors.textColors.default },
+                ]}>
+                Add
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -274,7 +380,11 @@ function DaySection({
   );
 }
 
-export default function TripItineraryTab() {
+export default function TripItineraryTab({
+  isMember = false,
+}: {
+  isMember?: boolean;
+}) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
   const { user } = useAuth();
@@ -297,19 +407,22 @@ export default function TripItineraryTab() {
   const handleCardPress = (item: ItineraryItem) => {
     if (item.type === 'hotel' && item.external_id) {
       router.push({
-        pathname: '/hotel/[hotelId]',
+        pathname: '/hotels/[hotelId]',
         params: {
           hotelId: item.external_id,
-          tripId: activeTrip?.id ?? '',
+          hotelData: JSON.stringify(item.all_data),
+          checkin: activeTrip?.trip_details?.start_date,
+          checkout: activeTrip?.trip_details?.end_date,
+          adults: activeTrip?.group_members?.length ?? 1,
         },
-      });
+      } as any);
       return;
     }
     if (item.type === 'activity' && item.external_id) {
       router.push({
         pathname: '/viator/[productCode]',
         params: { productCode: item.external_id },
-      });
+      } as any);
       return;
     }
     router.push({
@@ -324,13 +437,13 @@ export default function TripItineraryTab() {
   const tripStartDate = activeTrip?.trip_details?.start_date ?? null;
 
   const handleAddDay = async () => {
-    const currentLength = days.length;  // snapshot before await
+    const currentLength = days.length; // snapshot before await
     const nextDayNumber = currentLength + 1;
     const nextDate = tripStartDate
       ? format(addDays(parseISO(tripStartDate), currentLength), 'yyyy-MM-dd')
       : undefined;
     await addDay({ title: `Day ${nextDayNumber}`, date: nextDate });
-    setSelectedDayIndex(currentLength);  // index of the newly added day
+    setSelectedDayIndex(currentLength); // index of the newly added day
   };
 
   useEffect(() => {
@@ -378,7 +491,8 @@ export default function TripItineraryTab() {
           style={[styles.emptyTitle, { color: dark ? '#ffffff' : '#111827' }]}>
           No itinerary yet
         </RNText>
-        <RNText style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
+        <RNText
+          style={[styles.emptySubtitle, { color: colors.textColors.subtle }]}>
           Every adventure begins with an empty page. Start planning now.
         </RNText>
 
@@ -469,7 +583,10 @@ export default function TripItineraryTab() {
                 }}
                 isFirstDay={dayIndex === 0}
                 onItemPress={handleCardPress}
-                onUpdateItemNotes={(itemId, notes) => updateItemCtx(itemId, { notes })}
+                onUpdateItemNotes={(itemId, notes) =>
+                  updateItemCtx(itemId, { notes })
+                }
+                isMember={isMember}
               />
             );
           })}

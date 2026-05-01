@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation, internalMutation } from "./_generated/server";
+import { toPublicEvent } from "./lib/event_sanitize";
 
 export const listPublished = query({
   args: {
@@ -20,13 +21,15 @@ export const listPublished = query({
       return rows
         .filter((e) => e.status === "published")
         .sort((a, b) => a.startDateUtc - b.startDateUtc)
-        .slice(0, limit);
+        .slice(0, limit)
+        .map(toPublicEvent);
     }
     const all = await ctx.db.query("events").collect();
     return all
       .filter((e) => e.status === "published")
       .sort((a, b) => a.startDateUtc - b.startDateUtc)
-      .slice(0, limit);
+      .slice(0, limit)
+      .map(toPublicEvent);
   },
 });
 
@@ -48,7 +51,7 @@ export const getBySlug = query({
       .withIndex("by_event", (q) => q.eq("eventId", event._id))
       .collect();
 
-    return { event, tiers, hosts };
+    return { event: toPublicEvent(event), tiers, hosts };
   },
 });
 

@@ -24,16 +24,12 @@
 
 import { supabase } from '@/utils/supabase/client';
 
-// ================================================================
 // Enums / union types
-// ================================================================
 
 export type GroupMemberRole = 'member' | 'admin' | 'owner';
 export type TripVisibility = 'private' | 'invite_only' | 'public';
 
-// ================================================================
-// Row types (match DB schema exactly, including pending columns)
-// ================================================================
+// Row types (match DB schema exactly)
 
 export interface Trip {
   id: string;
@@ -82,9 +78,7 @@ export interface GroupMember {
   profiles?: MemberProfile | null;
 }
 
-// ================================================================
 // Composite types returned by fetch functions
-// ================================================================
 
 export interface TripWithDetails extends Trip {
   trip_details: TripDetails | null;
@@ -94,9 +88,7 @@ export interface TripWithEverything extends TripWithDetails {
   group_members: GroupMember[];
 }
 
-// ================================================================
 // Input types
-// ================================================================
 
 export interface CreateTripInput {
   name: string;
@@ -125,24 +117,20 @@ export interface UpdateDestinationInput {
   destination_address?: string;
 }
 
-// ================================================================
 // Shared result wrapper
-// ================================================================
 
 export interface ActionResult<T> {
   data: T | null;
   error: string | null;
 }
 
-// ================================================================
-// createTrip
-//
-// Inserts a groups row (type='trip'). The DB trigger
-// trg_create_trip_details auto-creates the trip_details row
-// (currency='GBP', visibility='private'). Creator is added to
-// group_members as 'owner'. On member insert failure the groups
-// row is cleaned up.
-// ================================================================
+/**
+ * Inserts a groups row (type='trip'). The DB trigger
+ * trg_create_trip_details auto-creates the trip_details row
+ * (currency='GBP', visibility='private'). Creator is added to
+ * group_members as 'owner'. On member insert failure the groups
+ * row is cleaned up.
+ */
 
 export async function createTrip(
   userId: string,
@@ -167,11 +155,7 @@ export async function createTrip(
   return { data: group as TripWithDetails, error: null };
 }
 
-// ================================================================
-// fetchMyTrips
-//
-// Returns all trips where created_by = userId, newest first.
-// ================================================================
+/** Returns all trips where created_by = userId, newest first. */
 
 export async function fetchMyTrips(
   userId: string
@@ -189,13 +173,11 @@ export async function fetchMyTrips(
   return { data: (data ?? []) as TripWithEverything[], error: null };
 }
 
-// ================================================================
-// fetchJoinedTrips
-//
-// Returns trips the user is a member of but did NOT create.
-// Queries via group_members to respect RLS, then filters owned
-// trips in JS (cross-table .neq() is unreliable in PostgREST).
-// ================================================================
+/**
+ * Returns trips the user is a member of but did NOT create.
+ * Queries via group_members to respect RLS, then filters owned
+ * trips in JS (cross-table .neq() is unreliable in PostgREST).
+ */
 
 export async function fetchJoinedTrips(
   userId: string
@@ -224,11 +206,7 @@ export async function fetchJoinedTrips(
   return { data: (data ?? []) as TripWithEverything[], error: null };
 }
 
-// ================================================================
-// fetchTripById
-//
-// Returns a single trip with its trip_details and all group_members.
-// ================================================================
+/** Returns a single trip with its trip_details and all group_members. */
 
 export async function fetchTripById(
   groupId: string
@@ -245,11 +223,7 @@ export async function fetchTripById(
   return { data: data as TripWithEverything, error: null };
 }
 
-// ================================================================
-// updateTrip
-//
-// Updates name / description on the groups row.
-// ================================================================
+/** Updates name / description on the groups row. */
 
 export async function updateTrip(
   groupId: string,
@@ -266,15 +240,10 @@ export async function updateTrip(
   return { data: data as Trip, error: null };
 }
 
-// ================================================================
-// updateTripDetails
-//
-// Updates budget, currency, dates, notes, visibility on trip_details.
-// Identified by group_id (= groups.id), not trip_details.id.
-//
-// NOTE: start_date and end_date require the pending schema columns
-// described at the top of this file.
-// ================================================================
+/**
+ * Updates budget, currency, dates, notes, visibility on trip_details.
+ * Identified by group_id (= groups.id), not trip_details.id.
+ */
 
 export async function updateTripDetails(
   groupId: string,
@@ -291,15 +260,7 @@ export async function updateTripDetails(
   return { data: data as TripDetails, error: null };
 }
 
-// ================================================================
-// updateDestination
-//
-// Updates destination_label, destination_place_id,
-// destination_address on the groups row.
-//
-// NOTE: these columns require the pending schema columns described
-// at the top of this file.
-// ================================================================
+/** Updates destination_label, destination_place_id, destination_address on the groups row. */
 
 export async function updateDestination(
   groupId: string,
@@ -321,13 +282,11 @@ export async function updateDestination(
   return { data: data as Trip, error: null };
 }
 
-// ================================================================
-// deleteTrip
-//
-// Hard-deletes the groups row. Cascades to trip_details,
-// group_members, itineraries, saved_itinerary_items via FK ON DELETE
-// CASCADE.
-// ================================================================
+/**
+ * Hard-deletes the groups row. Cascades to trip_details,
+ * group_members, itineraries, saved_itinerary_items via FK ON DELETE
+ * CASCADE.
+ */
 
 export async function deleteTrip(groupId: string): Promise<ActionResult<null>> {
   const { error } = await supabase.from('groups').delete().eq('id', groupId);
@@ -336,12 +295,10 @@ export async function deleteTrip(groupId: string): Promise<ActionResult<null>> {
   return { data: null, error: null };
 }
 
-// ================================================================
-// leaveTrip
-//
-// Removes a user's own group_members row (self-leave).
-// To remove another user, use removeMember().
-// ================================================================
+/**
+ * Removes a user's own group_members row (self-leave).
+ * To remove another user, use removeMember().
+ */
 
 export async function leaveTrip(
   groupId: string,
@@ -357,11 +314,7 @@ export async function leaveTrip(
   return { data: null, error: null };
 }
 
-// ================================================================
-// addMember
-//
-// Inserts a group_members row. Defaults role to 'member'.
-// ================================================================
+/** Inserts a group_members row. Defaults role to 'member'. */
 
 export async function addMember(
   groupId: string,
@@ -378,12 +331,7 @@ export async function addMember(
   return { data: data as GroupMember, error: null };
 }
 
-// ================================================================
-// updateMemberRole
-//
-// Changes an existing member's role. Requires the caller to be
-// an admin or owner (enforced by RLS).
-// ================================================================
+/** Changes an existing member's role. Requires the caller to be an admin or owner (enforced by RLS). */
 
 export async function updateMemberRole(
   groupId: string,
@@ -402,13 +350,11 @@ export async function updateMemberRole(
   return { data: data as GroupMember, error: null };
 }
 
-// ================================================================
-// removeMember
-//
-// Removes another user from the group. Requires the caller to be
-// an admin or owner (enforced by RLS). Use leaveTrip() for
-// self-removal.
-// ================================================================
+/**
+ * Removes another user from the group. Requires the caller to be
+ * an admin or owner (enforced by RLS). Use leaveTrip() for
+ * self-removal.
+ */
 
 export async function removeMember(
   groupId: string,
@@ -422,4 +368,43 @@ export async function removeMember(
 
   if (error) return { data: null, error: error.message };
   return { data: null, error: null };
+}
+
+/**
+ * Returns all trips with visibility='public' that were NOT created
+ * by the given user. Used on the Explore tab for discovery.
+ */
+export async function fetchPublicTrips(
+  userId: string
+): Promise<ActionResult<TripWithEverything[]>> {
+  // 1. Get IDs of groups the user is already a member of
+  const { data: membershipData } = await supabase
+    .from('group_members')
+    .select('group_id')
+    .eq('user_id', userId);
+
+  const joinedGroupIds = (membershipData ?? []).map((m) => m.group_id);
+
+  // 2. Fetch public trips, excluding those the user is already part of
+  let query = supabase
+    .from('groups')
+    .select(
+      '*, trip_details!inner(*), group_members(*, profiles(id, full_name, avatar_url))'
+    )
+    .eq('type', 'trip')
+    .eq('trip_details.visibility', 'public')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (joinedGroupIds.length > 0) {
+    query = query.not('id', 'in', `(${joinedGroupIds.join(',')})`);
+  } else {
+    // Fallback: if no joined groups found, at least exclude own trips by created_by
+    query = query.neq('created_by', userId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) return { data: null, error: error.message };
+  return { data: (data ?? []) as TripWithEverything[], error: null };
 }

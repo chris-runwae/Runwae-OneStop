@@ -46,11 +46,38 @@ export default defineSchema({
     // The single sentinel "Deleted user" row that owns anonymized financial
     // records (bookings, commissions, payouts) after a hard-cascade.
     isSystemSentinel: v.optional(v.boolean()),
+    // Admin console: account suspension. Set together; cleared together.
+    suspendedAt: v.optional(v.number()),
+    suspensionReason: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_username", ["username"])
-    .index("by_deletion_scheduled", ["deletionScheduledFor"]),
+    .index("by_deletion_scheduled", ["deletionScheduledFor"])
+    .index("by_admin", ["isAdmin"]),
+
+  // Admin console audit log. Records every privileged action (suspension,
+  // admin grant/revoke). No UI surfaces this yet — written for forensics
+  // ("who suspended this user?") and future viewer.
+  admin_audit_log: defineTable({
+    actorId: v.id("users"),
+    targetUserId: v.id("users"),
+    action: v.union(
+      v.literal("suspend"),
+      v.literal("unsuspend"),
+      v.literal("promote_admin"),
+      v.literal("demote_admin")
+    ),
+    // JSON-stringified previous and next values. Stored as strings to
+    // keep the validator simple — viewers parse client-side.
+    previousValue: v.optional(v.string()),
+    newValue: v.optional(v.string()),
+    reason: v.optional(v.string()),
+    timestamp: v.number(),
+  })
+    .index("by_actor", ["actorId"])
+    .index("by_target", ["targetUserId"])
+    .index("by_timestamp", ["timestamp"]),
 
   friendships: defineTable({
     requesterId: v.id("users"),
@@ -85,6 +112,9 @@ export default defineSchema({
     ratingCount: v.number(),
     slug: v.string(),
     createdAt: v.number(),
+    // Admin console: soft-delete marker. Public destinations queries must
+    // exclude rows where this is set.
+    deletedAt: v.optional(v.number()),
   })
     .index("by_featured", ["isFeatured"])
     .index("by_slug", ["slug"]),
@@ -133,15 +163,18 @@ export default defineSchema({
         items: v.array(
           v.object({
             time: v.optional(v.string()),
+            endTime: v.optional(v.string()),
             title: v.string(),
             description: v.optional(v.string()),
             type: v.string(),
+            imageUrl: v.optional(v.string()),
             locationName: v.optional(v.string()),
             coords: v.optional(
               v.object({ lat: v.number(), lng: v.number() })
             ),
             estimatedCost: v.optional(v.number()),
             currency: v.optional(v.string()),
+            externalUrl: v.optional(v.string()),
             apiSource: v.optional(v.string()),
             apiRef: v.optional(v.string()),
           })
@@ -362,6 +395,7 @@ export default defineSchema({
     locationName: v.optional(v.string()),
     coords: v.optional(v.object({ lat: v.number(), lng: v.number() })),
     bookingReference: v.optional(v.string()),
+    externalUrl: v.optional(v.string()),
     notes: v.optional(v.string()),
     isCompleted: v.boolean(),
     sortOrder: v.number(),
@@ -513,10 +547,19 @@ export default defineSchema({
     ogImageStorageId: v.optional(v.id("_storage")),
     createdAt: v.number(),
     updatedAt: v.number(),
+    // Admin console: trending curation + private notes.
+    // `isTrending` is optional during widen-migrate-narrow rollout — the
+    // backfill mutation sets it to false on every existing event, after
+    // which it can be safely narrowed to v.boolean() in a follow-up if
+    // desired. The by_trending index handles undefined as missing-from-index.
+    isTrending: v.optional(v.boolean()),
+    trendingRank: v.optional(v.number()),
+    adminNotes: v.optional(v.string()),
   })
     .index("by_host", ["hostUserId"])
     .index("by_slug", ["slug"])
-    .index("by_destination", ["destinationId"]),
+    .index("by_destination", ["destinationId"])
+    .index("by_trending", ["isTrending", "trendingRank"]),
 
   event_ticket_tiers: defineTable({
     eventId: v.id("events"),

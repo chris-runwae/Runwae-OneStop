@@ -2,13 +2,19 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { buildCandidate, validateUsername } from "./lib/username";
+import {
+  toPublicUserSelfOrNull,
+  toPublicUserOther,
+  toPublicUserOtherOrNull,
+} from "./lib/user_sanitize";
 
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) return null;
-    return await ctx.db.get(userId);
+    const u = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(u);
   },
 });
 
@@ -49,7 +55,8 @@ export const updateProfile = mutation({
     if (existing.createdAt === undefined) patch.createdAt = Date.now();
 
     await ctx.db.patch(userId, patch);
-    return await ctx.db.get(userId);
+    const u = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(u);
   },
 });
 
@@ -94,7 +101,8 @@ export const setHomeLocation = mutation({
     if (args.country !== undefined) patch.homeCountry = args.country;
     if (args.iata !== undefined) patch.homeIata = args.iata?.toUpperCase();
     await ctx.db.patch(userId, patch);
-    return await ctx.db.get(userId);
+    const u = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(u);
   },
 });
 
@@ -104,7 +112,8 @@ export const completeOnboarding = mutation({
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
     await ctx.db.patch(userId, { onboardingComplete: true });
-    return await ctx.db.get(userId);
+    const u = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(u);
   },
 });
 
@@ -140,7 +149,8 @@ export const setUsername = mutation({
       .first();
     if (taken && taken._id !== userId) throw new Error("Username already taken.");
     await ctx.db.patch(userId, { username: u });
-    return await ctx.db.get(userId);
+    const updated = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(updated);
   },
 });
 
@@ -179,7 +189,7 @@ export const getUserByUsername = query({
       .withIndex("by_username", (q) => q.eq("username", username.trim().toLowerCase()))
       .first();
     if (!user || user.isSystemSentinel) return null;
-    return user;
+    return toPublicUserOther(user);
   },
 });
 

@@ -48,6 +48,13 @@ The new `apps/web` IS the migrated B2C app.
 
 Source of truth: `packages/ui/tokens.ts` → mirrored in `apps/web/app/globals.css`.
 
+## Active builds
+
+- **Admin console**: see `docs/admin-console-spec.md`. Follow sections in
+  order. Stop at each checkpoint. Do NOT skip the section 0 schema audit.
+- The current schema snapshot lives at `docs/current-schema-snapshot.md` —
+  treat it as ground truth when it conflicts with any spec.
+
 ## Auth Flow
 
 - `middleware.ts` uses `convexAuthNextjsMiddleware`

@@ -21,7 +21,7 @@ const EventLocationSection = ({
   onOpenMap,
   onDirections,
 }: EventLocationSectionProps) => (
-  <View className="px-5 py-6">
+  <View className="py-6">
     <SectionTitle title="Location" />
     <Pressable
       onPress={onOpenMap}

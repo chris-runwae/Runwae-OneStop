@@ -38,6 +38,20 @@ const ChangePassword = () => {
     setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
+  const handleBlur = (field: keyof ChangePasswordFormData) => {
+    const result = changePasswordSchema.safeParse(formData);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path[0] === field);
+      if (issue) {
+        setErrors((prev) => ({ ...prev, [field]: issue.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -106,6 +120,7 @@ const ChangePassword = () => {
                 onChangeText={(val) =>
                   handleInputChange("currentPassword", val)
                 }
+                onBlur={() => handleBlur("currentPassword")}
                 error={errors.currentPassword}
               />
               <CustomTextInput
@@ -114,6 +129,7 @@ const ChangePassword = () => {
                 value={formData.newPassword}
                 isPassword
                 onChangeText={(val) => handleInputChange("newPassword", val)}
+                onBlur={() => handleBlur("newPassword")}
                 error={errors.newPassword}
               />
               <CustomTextInput
@@ -124,6 +140,7 @@ const ChangePassword = () => {
                 onChangeText={(val) =>
                   handleInputChange("confirmPassword", val)
                 }
+                onBlur={() => handleBlur("confirmPassword")}
                 error={errors.confirmPassword}
               />
             </View>

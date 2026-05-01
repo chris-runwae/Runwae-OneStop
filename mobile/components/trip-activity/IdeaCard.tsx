@@ -33,6 +33,7 @@ interface IdeaCardProps {
   price?: number | null;
   currency?: string | null;
   viatorProductCode?: string;
+  isMember?: boolean;
 }
 
 export default function IdeaCard({
@@ -50,6 +51,7 @@ export default function IdeaCard({
   price,
   currency,
   viatorProductCode,
+  isMember = true,
 }: IdeaCardProps) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
@@ -57,18 +59,27 @@ export default function IdeaCard({
 
   function currencySymbol(code: string | null | undefined): string {
     if (!code) return '$';
-    const map: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$' };
+    const map: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      AUD: 'A$',
+      CAD: 'C$',
+    };
     return map[code.toUpperCase()] ?? code;
   }
 
   const handleNavigateToDetails = () => {
-    if (viatorProductCode) {
+    const pCode = viatorProductCode || (item?.type === 'activity' ? item.external_id : null);
+    
+    if (pCode) {
       router.push({
         pathname: '/viator/[productCode]',
-        params: { productCode: viatorProductCode },
+        params: { productCode: pCode },
       } as any);
       return;
     }
+
     if (item?.type === 'hotel') {
       router.push({
         pathname: '/hotels/[hotelId]',
@@ -84,7 +95,9 @@ export default function IdeaCard({
   };
 
   return (
-    <Pressable style={styles.card} onPress={onViewDetails ?? handleNavigateToDetails}>
+    <Pressable
+      style={styles.card}
+      onPress={onViewDetails ?? handleNavigateToDetails}>
       <View
         style={[
           styles.imageContainer,
@@ -98,7 +111,7 @@ export default function IdeaCard({
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{categoryLabel}</Text>
         </View>
-        {onOptionsPress && (
+        {isMember && onOptionsPress && (
           <TouchableOpacity
             ref={moreBtnRef}
             style={styles.moreButton}
@@ -141,11 +154,14 @@ export default function IdeaCard({
           numberOfLines={4}>
           {description}
         </Text>
-        {onAdd && (
+        {isMember && onAdd && (
           <View style={styles.footer}>
             {price != null && price > 0 ? (
               <Text
-                style={[styles.priceLabel, { color: colors.textColors.subtle }]}>
+                style={[
+                  styles.priceLabel,
+                  { color: colors.textColors.subtle },
+                ]}>
                 {`From ${currencySymbol(currency)}${Math.round(price)}`}
               </Text>
             ) : (

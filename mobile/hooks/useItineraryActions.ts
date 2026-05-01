@@ -72,7 +72,6 @@ export type CreateItineraryItemInput = {
 
 export type UpdateItineraryItemInput = Partial<CreateItineraryItemInput>;
 
-
 // ================================================================
 // Pure async functions — no React state here.
 // State lives in TripsContext.
@@ -85,7 +84,8 @@ export type UpdateItineraryItemInput = Partial<CreateItineraryItemInput>;
 export const fetchOrCreateItinerary = async (
   groupId: string,
   userId: string,
-): Promise<Itinerary> => {
+  allowCreate: boolean = true
+): Promise<Itinerary | null> => {
   const { data: existing, error: fetchErr } = await supabase
     .from('itineraries')
     .select('*')
@@ -94,6 +94,8 @@ export const fetchOrCreateItinerary = async (
 
   if (fetchErr) throw fetchErr;
   if (existing) return existing as Itinerary;
+
+  if (!allowCreate) return null;
 
   const { data: created, error: createErr } = await supabase
     .from('itineraries')
@@ -108,7 +110,9 @@ export const fetchOrCreateItinerary = async (
 /**
  * Returns the total count of itinerary items for a given group.
  */
-export const fetchItineraryItemsCount = async (groupId: string): Promise<number> => {
+export const fetchItineraryItemsCount = async (
+  groupId: string
+): Promise<number> => {
   const { data: itin, error: itinErr } = await supabase
     .from('itineraries')
     .select('id')
@@ -137,7 +141,7 @@ export const fetchItineraryItemsCount = async (groupId: string): Promise<number>
  * ordered by day_number and position.
  */
 export const fetchDaysWithItems = async (
-  itineraryId: string,
+  itineraryId: string
 ): Promise<ItineraryDayWithItems[]> => {
   const { data, error } = await supabase
     .from('itinerary_day')
@@ -151,7 +155,7 @@ export const fetchDaysWithItems = async (
   return (data as ItineraryDayWithItems[]).map((day) => ({
     ...day,
     itinerary_items: [...(day.itinerary_items ?? [])].sort(
-      (a, b) => a.position - b.position,
+      (a, b) => a.position - b.position
     ),
   }));
 };
@@ -162,7 +166,7 @@ export const fetchDaysWithItems = async (
  */
 export const createDay = async (
   itineraryId: string,
-  input: { title?: string; date?: string },
+  input: { title?: string; date?: string }
 ): Promise<ItineraryDay> => {
   // Get current max day_number.
   const { data: existing, error: fetchErr } = await supabase
@@ -174,9 +178,10 @@ export const createDay = async (
 
   if (fetchErr) throw fetchErr;
 
-  const nextNumber = existing && existing.length > 0
-    ? (existing[0].day_number as number) + 1
-    : 1;
+  const nextNumber =
+    existing && existing.length > 0
+      ? (existing[0].day_number as number) + 1
+      : 1;
 
   const { data, error } = await supabase
     .from('itinerary_day')
@@ -197,7 +202,9 @@ export const createDay = async (
 /** Patches a day's mutable fields. */
 export const updateDay = async (
   dayId: string,
-  input: Partial<Pick<ItineraryDay, 'title' | 'date' | 'notes' | 'position' | 'day_number'>>,
+  input: Partial<
+    Pick<ItineraryDay, 'title' | 'date' | 'notes' | 'position' | 'day_number'>
+  >
 ): Promise<ItineraryDay> => {
   const { data, error } = await supabase
     .from('itinerary_day')
@@ -230,7 +237,7 @@ export const deleteDay = async (dayId: string): Promise<void> => {
 export const createItem = async (
   dayId: string,
   input: CreateItineraryItemInput,
-  userId: string,
+  userId: string
 ): Promise<ItineraryItem> => {
   const { data: existing, error: fetchErr } = await supabase
     .from('itinerary_items')
@@ -241,9 +248,8 @@ export const createItem = async (
 
   if (fetchErr) throw fetchErr;
 
-  const nextPosition = existing && existing.length > 0
-    ? (existing[0].position as number) + 1
-    : 0;
+  const nextPosition =
+    existing && existing.length > 0 ? (existing[0].position as number) + 1 : 0;
 
   const { data, error } = await supabase
     .from('itinerary_items')
@@ -264,7 +270,7 @@ export const createItem = async (
 /** Patches an item's mutable fields. */
 export const updateItem = async (
   itemId: string,
-  input: UpdateItineraryItemInput,
+  input: UpdateItineraryItemInput
 ): Promise<ItineraryItem> => {
   const { data, error } = await supabase
     .from('itinerary_items')
@@ -294,15 +300,12 @@ export const deleteItem = async (itemId: string): Promise<void> => {
  */
 export const reorderItems = async (
   _dayId: string,
-  orderedIds: string[],
+  orderedIds: string[]
 ): Promise<void> => {
   await Promise.all(
     orderedIds.map((id, index) =>
-      supabase
-        .from('itinerary_items')
-        .update({ position: index })
-        .eq('id', id),
-    ),
+      supabase.from('itinerary_items').update({ position: index }).eq('id', id)
+    )
   );
 };
 
@@ -329,14 +332,14 @@ export const moveItemToDay = async (
  */
 export const reorderDays = async (
   _itineraryId: string,
-  orderedIds: string[],
+  orderedIds: string[]
 ): Promise<void> => {
   await Promise.all(
     orderedIds.map((id, index) =>
       supabase
         .from('itinerary_day')
         .update({ position: index, day_number: index + 1 })
-        .eq('id', id),
-    ),
+        .eq('id', id)
+    )
   );
 };

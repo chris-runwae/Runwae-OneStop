@@ -95,7 +95,10 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
               { borderRightColor: isDark ? '#374151' : '#E5E5E5' },
             ]}>
             <Text style={styles.emoji}>📍</Text>
-            <Text style={styles.metadataText}>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={styles.metadataText}>
               {trip.destination_label || 'TBD'}
             </Text>
           </View>
@@ -222,6 +225,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: AppFonts.inter.medium,
     color: '#6B7280',
+    maxWidth: 100,
   },
   bottomRow: {
     flexDirection: 'row',

@@ -93,7 +93,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           data: [
             {
               scheme: 'https',
-              host: 'runwae.io',
+              host: 'app.runwae.io',
               pathPrefix: '/auth/callback',
             },
             {

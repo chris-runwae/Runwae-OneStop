@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import RenderHTML from 'react-native-render-html';
 
 interface ExperienceInfoProps {
   title: string;
@@ -13,8 +14,18 @@ const ExperienceInfo = ({
   price,
   description,
   category,
-}: ExperienceInfoProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  location,
+  durationMinutes,
+  cost,
+  currency,
+}: ExperienceInfoProps & {
+  location?: string;
+  durationMinutes?: number;
+  cost?: number;
+  currency?: string;
+}) => {
+  const { width } = useWindowDimensions();
+  const strippedDescription = description.replace(/<[^>]*>?/gm, '');
 
   return (
     <View className="px-5 pt-6">
@@ -26,8 +37,25 @@ const ExperienceInfo = ({
       </Text>
 
       <View className="flex-row items-baseline gap-x-1 mb-4">
-        <Text className="font-bold dark:text-white">${price}</Text>
+        <Text className="font-bold dark:text-white">${cost || price} {currency || ""}</Text>
         <Text className="text-gray-400 text-sm">starting price/person</Text>
+      </View>
+
+      <View className="flex-row items-center gap-x-2 mb-4">
+        {location && (
+          <View className="bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30">
+            <Text className="text-blue-600 dark:text-blue-400 text-xs font-semibold">
+              📍 {location}
+            </Text>
+          </View>
+        )}
+        {durationMinutes && (
+          <View className="bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-md border border-orange-100 dark:border-orange-800/30">
+            <Text className="text-orange-600 dark:text-orange-400 text-xs font-semibold">
+              ⏱️ {durationMinutes} mins
+            </Text>
+          </View>
+        )}
       </View>
 
       <View className="flex-row mb-6">
@@ -39,12 +67,24 @@ const ExperienceInfo = ({
       </View>
 
       <View>
-        <Text
-          className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
-          numberOfLines={isExpanded ? undefined : 3}
-        >
-          {description}
-        </Text>
+        {isExpanded ? (
+          <RenderHTML
+            contentWidth={width - 40}
+            source={{ html: description }}
+            baseStyle={{
+              color: '#6B7280', // text-gray-500
+              fontSize: 14,
+              lineHeight: 24,
+            }}
+          />
+        ) : (
+          <Text
+            className="text-gray-500 dark:text-gray-400 leading-6 text-sm"
+            numberOfLines={3}
+          >
+            {strippedDescription}
+          </Text>
+        )}
         {!isExpanded && (
           <TouchableOpacity onPress={() => setIsExpanded(true)}>
             <Text className="text-primary font-semibold mt-1">More</Text>

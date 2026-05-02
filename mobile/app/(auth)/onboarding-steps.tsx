@@ -37,9 +37,6 @@ const OnboardingSteps = () => {
 
   const handleNext = () => {
     if (currentStep < ONBOARDING_DATA.length - 1) {
-      if (currentStep === 1) {
-        nextOnboardingStep();
-      }
       setCurrentStep((prev) => prev + 1);
     } else {
       completeOnboarding();

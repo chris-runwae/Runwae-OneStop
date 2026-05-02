@@ -16,7 +16,7 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
   return (
     <>
       <Text
-        className="mb-2 text-3xl font-bold"
+        className="mb-1 text-2xl font-bold"
         style={{
           color: isDarkMode ? COLORS.white.base : COLORS.gray[750],
           fontFamily: 'BricolageGrotesque_700Bold',
@@ -26,7 +26,7 @@ export const SlideHeader: React.FC<SlideHeaderProps> = ({
 
       {subtitle && (
         <Text
-          className="mb-8 text-base"
+          className="mb-8 text-sm"
           style={{
             color: isDarkMode ? COLORS.gray[400] : COLORS.gray[600],
           }}>

@@ -1,115 +1,98 @@
-import { AddOn } from "@/constants/home.constant";
-import { useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
-import React from "react";
-import { Image, Pressable, Text, TouchableOpacity, View } from "react-native";
-import AddToTripContent from "./AddToTripContent";
-import CustomModal from "../ui/CustomModal";
+import { Experience } from '@/types/content.types';
+import { useRouter } from 'expo-router';
+import { Users } from 'lucide-react-native';
+import React from 'react';
+import { Image, Platform, Pressable, Text, View } from 'react-native';
 
 interface AddOnCardProps {
-  item: AddOn;
+  item: Experience;
+  index?: number;
   fullWidth?: boolean;
+  pathPrefix?: string;
 }
 
-const AddOnCard = ({ item, fullWidth = false }: AddOnCardProps) => {
+const AddOnCard = ({
+  item,
+  index = 0,
+  fullWidth = false,
+  pathPrefix = '/experience',
+}: AddOnCardProps) => {
   const router = useRouter();
-  const [isModalVisible, setIsModalVisible] = React.useState(false);
   const isNavigating = React.useRef(false);
 
   const handlePress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate(`/experience/${item.id}`);
+    router.navigate(`${pathPrefix}/${item.id}`);
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);
   };
 
-  const handleAddToTrip = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleModalDone = (tripId: string) => {
-    // Here logic to add item to trip could be added
-    console.log(`Adding ${item.title} to trip ${tripId}`);
-    setIsModalVisible(false);
-  };
+  const isEven = index % 2 === 0;
+  const smallImage = item.gallery?.[1] || item.image; // Use second gallery image for the overlay if available
 
   return (
-    <>
-      <Pressable
-        onPress={handlePress}
-        className="rounded-t-[16px] mr-3"
-        style={{ width: fullWidth ? "100%" : 315 }}
-      >
-        <Image
-          source={{ uri: item.image }}
-          className="w-full h-[150px] rounded-t-[16px]"
-          resizeMode="cover"
-        />
-        <View className="mt-2 rounded-b-[16px]">
-          <Text className="text-gray-400 dark:text-gray-500 text-sm mb-1.5">
-            {item.category} • {item.rating}/5
-          </Text>
-
-          <Text
-            className="text-black dark:text-white font-bold text-xl leading-tight mb-2"
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {item.title}
-          </Text>
-
-          <Text
-            className="text-gray-500 dark:text-gray-400 text-sm leading-snug mb-2"
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {item.description}
-          </Text>
-
-          <View className="mb-4">
-            <Text className="text-primary text-sm underline decoration-primary">
-              View Details
-            </Text>
-          </View>
-
-          <View className="flex-row items-end justify-between mt-auto">
-            <View>
-              <Text className="text-gray-400 dark:text-gray-500 text-sm mb-0.5">
-                from
-              </Text>
-              <Text className="text-black dark:text-white font-medium text-xl">
-                ${item.price}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleAddToTrip}
-              className="bg-primary rounded-full h-[42px] w-[110px] flex-row gap-x-2 items-center justify-center"
-            >
-              <Plus size={15} color="#fff" />
-              <Text className="text-white text-sm">Add to trip</Text>
-            </TouchableOpacity>
-          </View>
+    <Pressable
+      onPress={handlePress}
+      className={`mr-4 bg-white/0`}
+      style={{ width: fullWidth ? '100%' : 300 }}>
+      <View className="relative mb-3 h-[180px] w-full rounded-[10px] bg-gray-100 dark:bg-dark-seconndary/50">
+        <View className="h-full w-full overflow-hidden rounded-[10px]">
+          <Image
+            source={{ uri: item.image }}
+            className="h-full w-full rounded-[10px]"
+            resizeMode="cover"
+          />
         </View>
-      </Pressable>
 
-      <CustomModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        title="Add to Trip"
-        centeredTitle
-        showCloseButton={false}
-        showIndicator
-      >
-        <AddToTripContent
-          onCancel={() => setIsModalVisible(false)}
-          onDone={handleModalDone}
-        />
-      </CustomModal>
-    </>
+        <View
+          className={`absolute h-[72px] w-[72px] overflow-hidden rounded-[10px] border-[3px] border-white dark:border-dark-bg bg-gray-200 dark:bg-dark-seconndary ${
+            isEven
+              ? 'bottom-[-16px] left-[16px]'
+              : 'left-[20px] top-[-16px] -rotate-12 transform'
+          }`}
+          style={
+            Platform.OS === 'ios'
+              ? {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                }
+              : { elevation: 4 }
+          }>
+          <Image
+            source={{ uri: smallImage }}
+            className="h-full w-full"
+            resizeMode="cover"
+          />
+        </View>
+      </View>
+
+      <Text
+        className="mb-1.5 mt-2 px-2 text-[14px] leading-tight text-black dark:text-white"
+        numberOfLines={1}>
+        {item.title}
+      </Text>
+
+      <View className="flex-row items-center px-2">
+        <Text className="text-xs text-gray-500 dark:text-gray-400">
+          Apr 1 - 6
+        </Text>
+        <View className="mx-2 h-3 w-[1px] bg-gray-300 dark:bg-gray-600" />
+        <Text className="text-xs text-gray-500 dark:text-gray-400">
+          ${item.price} - ${item.price * 3}
+        </Text>
+        <View className="mx-2 h-3 w-[1px] bg-gray-300 dark:bg-gray-600" />
+        <View className="flex-row items-center">
+          <Users size={14} color="#ec4899" strokeWidth={2.5} />
+          <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+            {item.reviewCount ? Math.floor(item.reviewCount / 10) : 6} people
+          </Text>
+        </View>
+      </View>
+    </Pressable>
   );
 };
 

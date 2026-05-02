@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-bricolage);
+
+  /* Brand */
+  --color-primary: hsla(327, 99%, 42%, 1);
+  --color-primary-foreground: hsl(0, 0%, 98.5%);
+
+  /* Semantic */
+  --color-background: hsl(0, 0%, 96%);
+  --color-foreground: hsl(0, 0%, 14.5%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(0, 0%, 14.5%);
+  --color-muted: hsl(0, 0%, 97%);
+  --color-muted-foreground: hsla(208, 7%, 46%, 1);
+  --color-border: hsl(0, 0%, 92.2%);
+  --color-input: hsl(0, 0%, 92.2%);
+  --color-ring: hsl(0, 0%, 70.8%);
+  --color-destructive: hsl(0, 72%, 58%);
+  --color-success: hsl(142, 76%, 36%);
+  --color-error: hsl(0, 84%, 50%);
+  --color-error-light: hsl(0, 84%, 97%);
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.875rem;
+  --radius-3xl: 1rem;
+  --radius-4xl: 1.125rem;
+}
+
+.dark {
+  --color-background: hsl(0, 0%, 14.5%);
+  --color-foreground: hsl(0, 0%, 98.5%);
+  --color-card: hsl(0, 0%, 20.5%);
+  --color-card-foreground: hsl(0, 0%, 98.5%);
+  --color-muted: hsl(0, 0%, 26.9%);
+  --color-muted-foreground: hsla(208, 7%, 46%, 1);
+  --color-border: hsl(0, 0%, 100% / 10%);
+  --color-input: hsl(0, 0%, 100% / 15%);
+  --color-ring: hsl(0, 0%, 55.6%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  button {
+    @apply cursor-pointer disabled:pointer-events-none disabled:opacity-50;
+  }
+}
+
+/* Splash screen animations. The splash component composes Tailwind utilities
+   with these keyframes for the R-mark intro, pulse ring, and content reveal. */
+@keyframes rw-logo-in {
+  0%   { transform: scale(0.2); opacity: 0; }
+  55%  { transform: scale(1.08); opacity: 1; }
+  75%  { transform: scale(0.96); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes rw-pulse-ring {
+  0%   { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes rw-word-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes rw-peek-float {
+  0%, 100% { transform: translateY(0) rotate(var(--rw-rot, 0deg)); }
+  50%      { transform: translateY(-4px) rotate(var(--rw-rot, 0deg)); }
+}
+@keyframes rw-pop-in {
+  from { transform: scale(0.2); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.rw-logo-intro      { animation: rw-logo-in 1.2s cubic-bezier(.2,.9,.25,1.2) both; }
+.rw-pulse-ring      { animation: rw-pulse-ring 2.4s ease-out infinite; }
+.rw-word-fade       { animation: rw-word-fade 800ms ease 600ms forwards; }
+.rw-peek-float      { animation: rw-peek-float 6s ease-in-out infinite; }
+.rw-pop-in          { animation: rw-pop-in 600ms cubic-bezier(.2,.9,.25,1.4) both; }
+
+/* HTML descriptions returned by hotel providers (LiteAPI). Server-side
+   sanitizer keeps p/br/strong/em/lists/headings only; we just style them. */
+.hotel-prose {
+  @apply text-[14.5px] leading-relaxed text-foreground/90;
+}
+.hotel-prose p { @apply mb-3 last:mb-0; }
+.hotel-prose strong, .hotel-prose b { @apply font-semibold text-foreground; }
+.hotel-prose em, .hotel-prose i { @apply italic; }
+.hotel-prose ul { @apply mb-3 list-disc pl-5 space-y-1; }
+.hotel-prose ol { @apply mb-3 list-decimal pl-5 space-y-1; }
+.hotel-prose h1, .hotel-prose h2, .hotel-prose h3,
+.hotel-prose h4, .hotel-prose h5, .hotel-prose h6 {
+  @apply mb-2 mt-4 font-display font-bold tracking-tight text-foreground;
+}
+.hotel-prose h1 { @apply text-xl; }
+.hotel-prose h2 { @apply text-lg; }
+.hotel-prose h3 { @apply text-base; }
+.hotel-prose blockquote {
+  @apply mb-3 border-l-2 border-border pl-3 italic text-muted-foreground;
+}

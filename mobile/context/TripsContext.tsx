@@ -1,0 +1,887 @@
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
+import { useAuth } from '@/context/AuthContext';
+import {
+  createSavedItem,
+  CreateSavedItemInput,
+  deleteSavedItem,
+  fetchSavedItems,
+  SavedItineraryItem,
+} from '@/hooks/useIdeaActions';
+import {
+  createDay as createDayAction,
+  createItem as createItemAction,
+  CreateItineraryItemInput,
+  deleteDay as deleteDayAction,
+  deleteItem as deleteItemAction,
+  fetchDaysWithItems,
+  fetchOrCreateItinerary,
+  Itinerary,
+  ItineraryDay,
+  ItineraryDayWithItems,
+  moveItemToDay as moveItemToDayAction,
+  reorderDays as reorderDaysAction,
+  reorderItems as reorderItemsAction,
+  updateDay as updateDayAction,
+  updateItem as updateItemAction,
+  UpdateItineraryItemInput,
+} from '@/hooks/useItineraryActions';
+import {
+  addMember as addMemberAction,
+  createTrip as createTripAction,
+  CreateTripInput,
+  deleteTrip as deleteTripAction,
+  fetchJoinedTrips,
+  fetchMyTrips,
+  fetchTripById,
+  GroupMemberRole,
+  leaveTrip as leaveTripAction,
+  removeMember as removeMemberAction,
+  TripWithEverything,
+  updateDestination as updateDestinationAction,
+  UpdateDestinationInput,
+  updateMemberRole as updateMemberRoleAction,
+  updateTrip as updateTripAction,
+  updateTripDetails as updateTripDetailsAction,
+  UpdateTripDetailsInput,
+  UpdateTripInput,
+} from '@/hooks/useTripActions';
+import { joinTripByCode } from '@/utils/supabase/trips.service';
+
+// ================================================================
+// Context shape
+// ================================================================
+
+export interface TripsContextType {
+  // State
+  myTrips: TripWithEverything[];
+  joinedTrips: TripWithEverything[];
+  activeTrip: TripWithEverything | null;
+  isLoading: boolean;
+  error: string | null;
+
+  // Itinerary & Ideas state
+  itinerary: Itinerary | null;
+  days: ItineraryDayWithItems[];
+  itineraryLoading: boolean;
+  ideas: SavedItineraryItem[];
+  ideasLoading: boolean;
+
+  // Refresh
+  refreshMyTrips: () => Promise<void>;
+  refreshJoinedTrips: () => Promise<void>;
+
+  // Active trip
+  loadTrip: (id: string) => Promise<void>;
+  clearActiveTrip: () => void;
+
+  // Mutations
+  createTrip: (
+    input: CreateTripInput
+  ) => Promise<{ groupId: string | null; error: string | null }>;
+  updateTrip: (
+    groupId: string,
+    input: UpdateTripInput
+  ) => Promise<{ error: string | null }>;
+  updateTripDetails: (
+    groupId: string,
+    input: UpdateTripDetailsInput
+  ) => Promise<{ error: string | null }>;
+  updateDestination: (
+    groupId: string,
+    place: UpdateDestinationInput
+  ) => Promise<{ error: string | null }>;
+  deleteTrip: (groupId: string) => Promise<{ error: string | null }>;
+  leaveTrip: (groupId: string) => Promise<{ error: string | null }>;
+  updateMemberRole: (
+    groupId: string,
+    userId: string,
+    role: GroupMemberRole
+  ) => Promise<{ error: string | null }>;
+  removeMember: (
+    groupId: string,
+    userId: string
+  ) => Promise<{ error: string | null }>;
+
+  // Itinerary actions
+  loadItinerary: (groupId: string, isMember?: boolean) => Promise<void>;
+  refreshItinerary: () => Promise<void>;
+  addDay: (input: { title?: string; date?: string }) => Promise<void>;
+  updateDayCtx: (dayId: string, input: Partial<ItineraryDay>) => Promise<void>;
+  removeDay: (dayId: string) => Promise<void>;
+  addItem: (dayId: string, input: CreateItineraryItemInput) => Promise<void>;
+  updateItemCtx: (
+    itemId: string,
+    input: UpdateItineraryItemInput
+  ) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  reorderItemsCtx: (dayId: string, orderedIds: string[]) => Promise<void>;
+  reorderDaysCtx: (orderedIds: string[]) => Promise<void>;
+  moveItemToDayCtx: (
+    itemId: string,
+    fromDayId: string,
+    toDayId: string
+  ) => Promise<void>;
+
+  // Ideas actions
+  loadIdeas: (groupId: string) => Promise<void>;
+  addIdea: (input: CreateSavedItemInput) => Promise<void>;
+  /** Saves an idea to a specific trip (e.g. picker from detail screens). */
+  addIdeaToTrip: (tripId: string, input: CreateSavedItemInput) => Promise<void>;
+  removeIdea: (ideaId: string) => Promise<void>;
+  joinTrip: (code: string) => Promise<string>;
+  joinTripById: (groupId: string) => Promise<{ error: string | null }>;
+}
+
+const TripsContext = createContext<TripsContextType | undefined>(undefined);
+
+// ================================================================
+// Provider
+// ================================================================
+
+export const TripsProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+
+  const [myTrips, setMyTrips] = useState<TripWithEverything[]>([]);
+  const [joinedTrips, setJoinedTrips] = useState<TripWithEverything[]>([]);
+  const [activeTrip, setActiveTrip] = useState<TripWithEverything | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Itinerary & Ideas state
+  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [days, setDays] = useState<ItineraryDayWithItems[]>([]);
+  const [itineraryLoading, setItineraryLoading] = useState(false);
+  const [ideas, setIdeas] = useState<SavedItineraryItem[]>([]);
+  const [ideasLoading, setIdeasLoading] = useState(false);
+
+  // Prevent double-fetch on StrictMode double-mount
+  const initialFetchDone = useRef(false);
+
+  // ----------------------------------------------------------------
+  // Refresh helpers
+  // ----------------------------------------------------------------
+
+  const refreshMyTrips = useCallback(async () => {
+    if (!user?.id) return;
+    const { data, error: err } = await fetchMyTrips(user.id);
+    if (err) {
+      setError(err);
+    } else {
+      const normalizedData = (data ?? []).map((t: any) => ({
+        ...t,
+        trip_details: t.trip_details,
+      }));
+      setMyTrips(normalizedData);
+    }
+  }, [user?.id]);
+
+  const refreshJoinedTrips = useCallback(async () => {
+    if (!user?.id) return;
+    const { data, error: err } = await fetchJoinedTrips(user.id);
+    if (err) {
+      setError(err);
+    } else {
+      const normalizedData = (data ?? []).map((t: any) => ({
+        ...t,
+        trip_details: t.trip_details,
+      }));
+      setJoinedTrips(normalizedData);
+    }
+  }, [user?.id]);
+
+  // ----------------------------------------------------------------
+  // On mount / user change: fetch both lists
+  // ----------------------------------------------------------------
+
+  useEffect(() => {
+    if (!user?.id) {
+      setMyTrips([]);
+      setJoinedTrips([]);
+      setActiveTrip(null);
+      initialFetchDone.current = false;
+      return;
+    }
+
+    if (initialFetchDone.current) return;
+    initialFetchDone.current = true;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      await Promise.all([refreshMyTrips(), refreshJoinedTrips()]);
+      setIsLoading(false);
+    };
+
+    load();
+  }, [user?.id, refreshMyTrips, refreshJoinedTrips]);
+
+  // ----------------------------------------------------------------
+  // Itinerary helpers
+  // ----------------------------------------------------------------
+
+  const loadItinerary = useCallback(
+    async (groupId: string, isMember = false) => {
+      setItineraryLoading(true);
+      try {
+        const itin = await fetchOrCreateItinerary(
+          groupId,
+          user!.id,
+          isMember // only allow creation if isMember
+        );
+        setItinerary(itin);
+        if (itin) {
+          const daysData = await fetchDaysWithItems(itin.id);
+          setDays(daysData);
+        }
+      } catch (error) {
+        console.error('Error loading itinerary:', error);
+      } finally {
+        setItineraryLoading(false);
+      }
+    },
+    [user]
+  );
+
+  const refreshItinerary = useCallback(async () => {
+    if (!itinerary) return;
+    const daysWithItems = await fetchDaysWithItems(itinerary.id);
+    setDays(daysWithItems);
+  }, [itinerary]);
+
+  const addDay = useCallback(
+    async (input: { title?: string; date?: string }) => {
+      if (!itinerary) return;
+      const newDay = await createDayAction(itinerary.id, input);
+      setDays((prev) => [...prev, { ...newDay, itinerary_items: [] }]);
+    },
+    [itinerary]
+  );
+
+  const updateDayCtx = useCallback(
+    async (dayId: string, input: Partial<ItineraryDay>) => {
+      const prevDays = days;
+      setDays((prev) =>
+        prev.map((d) => (d.id === dayId ? { ...d, ...input } : d))
+      );
+      try {
+        await updateDayAction(dayId, input);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+
+  const removeDay = useCallback(
+    async (dayId: string) => {
+      const prevDays = days;
+      setDays((prev) => prev.filter((d) => d.id !== dayId));
+      try {
+        await deleteDayAction(dayId);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+
+  const addItem = useCallback(
+    async (dayId: string, input: CreateItineraryItemInput) => {
+      if (!user?.id) return;
+      const newItem = await createItemAction(dayId, input, user.id);
+      setDays((prev) =>
+        prev.map((d) =>
+          d.id === dayId
+            ? { ...d, itinerary_items: [...d.itinerary_items, newItem] }
+            : d
+        )
+      );
+    },
+    [user?.id]
+  );
+
+  const updateItemCtx = useCallback(
+    async (itemId: string, input: UpdateItineraryItemInput) => {
+      const prevDays = days;
+      setDays((prev) =>
+        prev.map((d) => ({
+          ...d,
+          itinerary_items: d.itinerary_items.map((it) =>
+            it.id === itemId ? { ...it, ...input } : it
+          ),
+        }))
+      );
+      try {
+        await updateItemAction(itemId, input);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+
+  const removeItem = useCallback(
+    async (itemId: string) => {
+      const prevDays = days;
+      setDays((prev) =>
+        prev.map((d) => ({
+          ...d,
+          itinerary_items: d.itinerary_items.filter((it) => it.id !== itemId),
+        }))
+      );
+      try {
+        await deleteItemAction(itemId);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+
+  const reorderItemsCtx = useCallback(
+    async (dayId: string, orderedIds: string[]) => {
+      setDays((prev) =>
+        prev.map((d) => {
+          if (d.id !== dayId) return d;
+          const sorted = orderedIds
+            .map((id) => d.itinerary_items.find((it) => it.id === id))
+            .filter(Boolean) as typeof d.itinerary_items;
+          return { ...d, itinerary_items: sorted };
+        })
+      );
+      await reorderItemsAction(dayId, orderedIds);
+    },
+    []
+  );
+
+  const reorderDaysCtx = useCallback(
+    async (orderedIds: string[]) => {
+      setDays((prev) => {
+        const sorted = orderedIds
+          .map((id) => prev.find((d) => d.id === id))
+          .filter(Boolean) as ItineraryDayWithItems[];
+        return sorted;
+      });
+      if (!itinerary) return;
+      await reorderDaysAction(itinerary.id, orderedIds);
+    },
+    [itinerary]
+  );
+
+  const moveItemToDayCtx = useCallback(
+    async (itemId: string, fromDayId: string, toDayId: string) => {
+      const prevDays = days;
+      setDays((prev) => {
+        const item = prev
+          .flatMap((d) => d.itinerary_items)
+          .find((it) => it.id === itemId);
+        if (!item) return prev;
+
+        return prev.map((d) => {
+          if (d.id === fromDayId) {
+            return {
+              ...d,
+              itinerary_items: d.itinerary_items.filter(
+                (it) => it.id !== itemId
+              ),
+            };
+          }
+          if (d.id === toDayId) {
+            return {
+              ...d,
+              itinerary_items: [
+                ...d.itinerary_items,
+                { ...item, day_id: toDayId },
+              ],
+            };
+          }
+          return d;
+        });
+      });
+
+      try {
+        await moveItemToDayAction(itemId, toDayId);
+      } catch (err) {
+        setDays(prevDays);
+        throw err;
+      }
+    },
+    [days]
+  );
+
+  // ----------------------------------------------------------------
+  // Ideas / saved items helpers
+  // ----------------------------------------------------------------
+
+  const loadIdeas = useCallback(async (groupId: string) => {
+    setIdeasLoading(true);
+    try {
+      const data = await fetchSavedItems(groupId);
+      setIdeas(data);
+    } catch (error) {
+      console.error('Error loading ideas:', error);
+    } finally {
+      setIdeasLoading(false);
+    }
+  }, []);
+
+  const addIdea = useCallback(
+    async (input: CreateSavedItemInput) => {
+      if (!user?.id || !activeTrip) return;
+      try {
+        const newItem = await createSavedItem(activeTrip.id, user.id, input);
+        setIdeas((prev) => [newItem, ...prev]);
+      } catch (err) {
+        console.error('Failed to add idea:', err);
+      }
+    },
+    [user?.id, activeTrip]
+  );
+
+  const addIdeaToTrip = useCallback(
+    async (tripId: string, input: CreateSavedItemInput) => {
+      if (!user?.id) return;
+      const newItem = await createSavedItem(tripId, user.id, input);
+      if (activeTrip?.id === tripId) {
+        setIdeas((prev) => [newItem, ...prev]);
+      }
+    },
+    [user?.id, activeTrip?.id]
+  );
+
+  const removeIdea = useCallback(async (ideaId: string) => {
+    setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
+    try {
+      await deleteSavedItem(ideaId);
+    } catch (err) {
+      console.error('Failed to remove idea:', err);
+    }
+  }, []);
+
+  // ----------------------------------------------------------------
+  // Active trip
+  // ----------------------------------------------------------------
+
+  const loadTrip = useCallback(
+    async (id: string) => {
+      setIsLoading(true);
+      setError(null);
+      const { data, error: err } = await fetchTripById(id);
+      if (err) {
+        setError(err);
+      } else {
+        setActiveTrip(data);
+
+        const tripDetails = data?.trip_details;
+
+        const isMember = !!data?.group_members?.some(
+          (m) => m.user_id === user?.id
+        );
+        const isPublic = tripDetails?.visibility === 'public';
+
+        if (isMember || isPublic) {
+          await Promise.all([loadItinerary(id, isMember), loadIdeas(id)]);
+        }
+      }
+      setIsLoading(false);
+    },
+    [user?.id, loadItinerary, loadIdeas]
+  );
+
+  const clearActiveTrip = useCallback(() => {
+    setActiveTrip(null);
+    setItinerary(null);
+    setDays([]);
+    setIdeas([]);
+  }, []);
+
+  // ----------------------------------------------------------------
+  // createTrip — optimistic insert at head of myTrips
+  // ----------------------------------------------------------------
+
+  const createTrip = useCallback(
+    async (
+      input: CreateTripInput
+    ): Promise<{ groupId: string | null; error: string | null }> => {
+      if (!user?.id) return { groupId: null, error: 'Not authenticated' };
+
+      const { data, error: err } = await createTripAction(user.id, input);
+      if (err || !data)
+        return { groupId: null, error: err ?? 'Failed to create trip' };
+
+      // Insert at the head — newest first matches fetchMyTrips ordering
+      setMyTrips((prev) => [data as unknown as TripWithEverything, ...prev]);
+      return { groupId: data.id, error: null };
+    },
+    [user?.id]
+  );
+
+  // ----------------------------------------------------------------
+  // updateTrip — optimistic update in myTrips, joinedTrips, activeTrip
+  // ----------------------------------------------------------------
+
+  const updateTrip = useCallback(
+    async (
+      groupId: string,
+      input: UpdateTripInput
+    ): Promise<{ error: string | null }> => {
+      // Snapshot for rollback
+      const prevMyTrips = myTrips;
+      const prevJoined = joinedTrips;
+      const prevActiveTrip = activeTrip;
+
+      const applyPatch = (trip: TripWithEverything) =>
+        trip.id === groupId ? { ...trip, ...input } : trip;
+
+      setMyTrips((prev) => prev.map(applyPatch));
+      setJoinedTrips((prev) => prev.map(applyPatch));
+      if (activeTrip?.id === groupId) {
+        setActiveTrip((prev) => (prev ? { ...prev, ...input } : prev));
+      }
+
+      const { error: err } = await updateTripAction(groupId, input);
+      if (err) {
+        setMyTrips(prevMyTrips);
+        setJoinedTrips(prevJoined);
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [myTrips, joinedTrips, activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // updateTripDetails — optimistic patch of nested trip_details
+  // ----------------------------------------------------------------
+
+  const updateTripDetails = useCallback(
+    async (
+      groupId: string,
+      input: UpdateTripDetailsInput
+    ): Promise<{ error: string | null }> => {
+      const prevMyTrips = myTrips;
+      const prevJoined = joinedTrips;
+      const prevActiveTrip = activeTrip;
+
+      const applyPatch = (trip: TripWithEverything) =>
+        trip.id === groupId
+          ? {
+              ...trip,
+              trip_details: trip.trip_details
+                ? { ...trip.trip_details, ...input }
+                : trip.trip_details,
+            }
+          : trip;
+
+      setMyTrips((prev) => prev.map(applyPatch));
+      setJoinedTrips((prev) => prev.map(applyPatch));
+      if (activeTrip?.id === groupId) {
+        setActiveTrip((prev) =>
+          prev
+            ? {
+                ...prev,
+                trip_details: prev.trip_details
+                  ? { ...prev.trip_details, ...input }
+                  : prev.trip_details,
+              }
+            : prev
+        );
+      }
+
+      const { error: err } = await updateTripDetailsAction(groupId, input);
+      if (err) {
+        setMyTrips(prevMyTrips);
+        setJoinedTrips(prevJoined);
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [myTrips, joinedTrips, activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // updateDestination — optimistic patch of destination fields
+  // ----------------------------------------------------------------
+
+  const updateDestination = useCallback(
+    async (
+      groupId: string,
+      place: UpdateDestinationInput
+    ): Promise<{ error: string | null }> => {
+      const prevMyTrips = myTrips;
+      const prevJoined = joinedTrips;
+      const prevActiveTrip = activeTrip;
+
+      const applyPatch = (trip: TripWithEverything) =>
+        trip.id === groupId ? { ...trip, ...place } : trip;
+
+      setMyTrips((prev) => prev.map(applyPatch));
+      setJoinedTrips((prev) => prev.map(applyPatch));
+      if (activeTrip?.id === groupId) {
+        setActiveTrip((prev) => (prev ? { ...prev, ...place } : prev));
+      }
+
+      const { error: err } = await updateDestinationAction(groupId, place);
+      if (err) {
+        setMyTrips(prevMyTrips);
+        setJoinedTrips(prevJoined);
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [myTrips, joinedTrips, activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // deleteTrip — optimistic removal from both lists
+  // ----------------------------------------------------------------
+
+  const deleteTrip = useCallback(
+    async (groupId: string): Promise<{ error: string | null }> => {
+      const prevMyTrips = myTrips;
+      const prevJoined = joinedTrips;
+      const prevActiveTrip = activeTrip;
+
+      setMyTrips((prev) => prev.filter((t) => t.id !== groupId));
+      setJoinedTrips((prev) => prev.filter((t) => t.id !== groupId));
+      if (activeTrip?.id === groupId) setActiveTrip(null);
+
+      const { error: err } = await deleteTripAction(groupId);
+      if (err) {
+        setMyTrips(prevMyTrips);
+        setJoinedTrips(prevJoined);
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [myTrips, joinedTrips, activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // leaveTrip — optimistic removal from joinedTrips
+  // ----------------------------------------------------------------
+
+  const leaveTrip = useCallback(
+    async (groupId: string): Promise<{ error: string | null }> => {
+      if (!user?.id) return { error: 'Not authenticated' };
+
+      const prevJoined = joinedTrips;
+      const prevActiveTrip = activeTrip;
+
+      setJoinedTrips((prev) => prev.filter((t) => t.id !== groupId));
+      if (activeTrip?.id === groupId) setActiveTrip(null);
+
+      const { error: err } = await leaveTripAction(groupId, user.id);
+      if (err) {
+        setJoinedTrips(prevJoined);
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [user?.id, joinedTrips, activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // updateMemberRole — optimistic patch on activeTrip.group_members
+  // ----------------------------------------------------------------
+
+  const updateMemberRole = useCallback(
+    async (
+      groupId: string,
+      userId: string,
+      role: GroupMemberRole
+    ): Promise<{ error: string | null }> => {
+      const prevActiveTrip = activeTrip;
+
+      if (activeTrip?.id === groupId) {
+        setActiveTrip((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            group_members: prev.group_members.map((m) =>
+              m.user_id === userId ? { ...m, role } : m
+            ),
+          };
+        });
+      }
+
+      const { error: err } = await updateMemberRoleAction(
+        groupId,
+        userId,
+        role
+      );
+      if (err) {
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // removeMember — optimistic removal from activeTrip.group_members
+  // ----------------------------------------------------------------
+
+  const removeMember = useCallback(
+    async (
+      groupId: string,
+      userId: string
+    ): Promise<{ error: string | null }> => {
+      const prevActiveTrip = activeTrip;
+
+      if (activeTrip?.id === groupId) {
+        setActiveTrip((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            group_members: prev.group_members.filter(
+              (m) => m.user_id !== userId
+            ),
+          };
+        });
+      }
+
+      const { error: err } = await removeMemberAction(groupId, userId);
+      if (err) {
+        setActiveTrip(prevActiveTrip);
+        setError(err);
+        return { error: err };
+      }
+      return { error: null };
+    },
+    [activeTrip]
+  );
+
+  // ----------------------------------------------------------------
+  // joinTrip — join a trip by invite code, then refresh both lists
+  // ----------------------------------------------------------------
+
+  const joinTrip = useCallback(
+    async (code: string): Promise<string> => {
+      if (!user?.id) throw new Error('Not authenticated');
+      const tripId = await joinTripByCode(code, user.id);
+      await Promise.all([refreshMyTrips(), refreshJoinedTrips()]);
+      return tripId;
+    },
+    [user?.id, refreshMyTrips, refreshJoinedTrips]
+  );
+
+  const joinTripById = useCallback(
+    async (groupId: string): Promise<{ error: string | null }> => {
+      if (!user?.id) return { error: 'Not authenticated' };
+
+      // Optimistic check: if we already see ourselves in the member list, skip
+      const isAlreadyMember = activeTrip?.group_members?.some(
+        (m) => m.user_id === user.id
+      );
+      if (isAlreadyMember) return { error: null };
+
+      const { data, error: err } = await addMemberAction(groupId, user.id);
+
+      if (err) {
+        // If the error is about duplicate membership, treat as success
+        if (err.includes('duplicate key') || err.includes('already exists')) {
+          return { error: null };
+        }
+        return { error: err };
+      }
+
+      // Refresh both the lists and the active trip detail
+      await Promise.all([
+        refreshMyTrips(),
+        refreshJoinedTrips(),
+        loadTrip(groupId),
+      ]);
+      return { error: null };
+    },
+    [user?.id, activeTrip, refreshMyTrips, refreshJoinedTrips]
+  );
+
+  // ----------------------------------------------------------------
+  // Context value
+  // ----------------------------------------------------------------
+
+  return (
+    <TripsContext.Provider
+      value={{
+        myTrips,
+        joinedTrips,
+        activeTrip,
+        isLoading,
+        error,
+        itinerary,
+        days,
+        itineraryLoading,
+        refreshMyTrips,
+        refreshJoinedTrips,
+        loadTrip,
+        clearActiveTrip,
+        createTrip,
+        updateTrip,
+        updateTripDetails,
+        updateDestination,
+        deleteTrip,
+        leaveTrip,
+        updateMemberRole,
+        removeMember,
+        loadItinerary,
+        refreshItinerary,
+        addDay,
+        updateDayCtx,
+        removeDay,
+        addItem,
+        updateItemCtx,
+        removeItem,
+        reorderItemsCtx,
+        reorderDaysCtx,
+        moveItemToDayCtx,
+        ideas,
+        ideasLoading,
+        loadIdeas,
+        addIdea,
+        addIdeaToTrip,
+        removeIdea,
+        joinTrip,
+        joinTripById,
+      }}>
+      {children}
+    </TripsContext.Provider>
+  );
+};
+
+// ================================================================
+// Hook
+// ================================================================
+
+export const useTrips = (): TripsContextType => {
+  const context = useContext(TripsContext);
+  if (!context) {
+    throw new Error('useTrips must be used within a TripsProvider');
+  }
+  return context;
+};

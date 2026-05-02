@@ -8,33 +8,32 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 const BoardingStep4 = () => {
   const router = useRouter();
-  const { completeBoarding } = useAuth();
-  const [selectedBudget, setSelectedBudget] = useState<string>("");
+  const { setCurrentBoardingStep } = useAuth();
+  const [selectedCompanion, setSelectedCompanion] = useState<string>("");
 
-  const budgetOptions = [
-    "💸 Free & budget-friendly",
-    "💳 Mid-range",
-    "💎 Premium experiences",
+  const companionOptions = [
+    "🙋🏽 Just Me (Solo)",
+    "👯 Friends",
+    "❤️ Partner",
+    "👨‍👩‍👧 Family",
+    "🌍 Community/Groups",
   ];
 
-  const handleComplete = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await completeBoarding();
-    router.replace("/(tabs)");
+  const handleNext = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await setCurrentBoardingStep(5);
+    router.push("/boarding/step-5");
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await setCurrentBoardingStep(3);
     router.replace("/boarding/step-3");
   };
 
   return (
     <AppSafeAreaView className="px-[20px] items-center justify-between">
-      <BoardingHeader
-        currentStep={4}
-        totalSteps={4}
-        onBack={handleBack}
-      />
+      <BoardingHeader currentStep={4} totalSteps={5} onBack={handleBack} />
 
       <View className="flex-1 gap-y-6 w-full">
         <View className="gap-y-4">
@@ -42,38 +41,38 @@ const BoardingStep4 = () => {
             className="text-black dark:text-white text-2xl font-bold"
             style={{ fontFamily: "BricolageGrotesque-Bold" }}
           >
-            What's your budget comfort zone?
+            Who do you usually go with?
           </Text>
           <Text className="text-gray-400 text-sm">
-            No judgment — just helping us recommend the right options.
+            Select your typical companions for activities
           </Text>
         </View>
 
         <View className="gap-y-3">
-          {budgetOptions.map((option) => (
+          {companionOptions.map((option) => (
             <TouchableOpacity
               key={option}
               className={`p-4 flex flex-row items-center gap-x-5 border ${
-                selectedBudget === option
+                selectedCompanion === option
                   ? "bg-primary/20 border-primary"
                   : "bg-gray-50 dark:bg-dark-seconndary/50 border-gray-200 dark:border-dark-seconndary"
               }`}
-              onPress={() => setSelectedBudget(option)}
+              onPress={() => setSelectedCompanion(option)}
             >
               <View
                 className={`h-[20px] w-[20px] rounded-full flex items-center justify-center border ${
-                  selectedBudget === option
+                  selectedCompanion === option
                     ? "border-primary"
                     : "border-gray-300 dark:border-dark-seconndary"
                 }`}
               >
-                {selectedBudget === option && (
+                {selectedCompanion === option && (
                   <View className="h-[15px] w-[15px] rounded-full bg-primary" />
                 )}
               </View>
               <Text
                 className={`text-base font-medium ${
-                  selectedBudget === option
+                  selectedCompanion === option
                     ? "text-primary"
                     : "text-black dark:text-white"
                 }`}
@@ -94,9 +93,9 @@ const BoardingStep4 = () => {
         </TouchableOpacity>
         <TouchableOpacity
           className="bg-primary h-[45px] rounded-full flex-1 w-full items-center justify-center"
-          onPress={handleComplete}
+          onPress={handleNext}
         >
-          <Text className="text-white font-medium text-base">Get Started</Text>
+          <Text className="text-white font-medium text-base">Next</Text>
         </TouchableOpacity>
       </View>
     </AppSafeAreaView>

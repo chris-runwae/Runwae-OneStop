@@ -1,3 +1,5 @@
+import AddToTripContent from "@/components/home/AddToTripContent";
+import CustomModal from "@/components/ui/CustomModal";
 import DetailNotFound from "@/components/experience/DetailNotFound";
 import ExperienceGallery from "@/components/experience/ExperienceGallery";
 import ExperienceIncluded from "@/components/experience/ExperienceIncluded";
@@ -7,9 +9,11 @@ import ImagePreviewModal from "@/components/experience/ImagePreviewModal";
 import ReviewList from "@/components/experience/ReviewList";
 import WhatToKnow from "@/components/experience/WhatToKnow";
 import ItineraryHeader from "@/components/itinerary/ItineraryHeader";
+import { useTrips } from "@/context/TripsContext";
 import { useDetailItem } from "@/hooks/use-detail-item";
+import { savedItemFromExperience } from "@/utils/savedIdeaInputs";
 import React, { useEffect, useMemo, useState } from "react";
-import { TouchableOpacity, View } from "react-native";
+import { Alert, TouchableOpacity, View } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -18,10 +22,19 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Experience } from "@/types/content.types";
+
 const ExperienceDetailScreen = () => {
-  const { id, item: experience } = useDetailItem("experience") as {
+  const {
+    id,
+    item: experience,
+    loading,
+    error,
+  } = useDetailItem("experience") as {
     id: string;
-    item: any;
+    item: Experience | null;
+    loading: boolean;
+    error: string | null;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -52,11 +65,39 @@ const ExperienceDetailScreen = () => {
 
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [addToTripOpen, setAddToTripOpen] = useState(false);
+  const [ideaSaved, setIdeaSaved] = useState(false);
+  const { addIdeaToTrip } = useTrips();
 
   const openPreview = (index: number) => {
     setPreviewIndex(index);
     setIsPreviewVisible(true);
   };
+
+  const handleAddToTripDone = async (tripId: string) => {
+    if (!experience) return;
+    try {
+      await addIdeaToTrip(tripId, savedItemFromExperience(experience));
+      setAddToTripOpen(false);
+      setIdeaSaved(true);
+      Alert.alert("Saved", "Added to your trip Ideas.");
+    } catch (e) {
+      Alert.alert(
+        "Could not save",
+        e instanceof Error ? e.message : "Please try again."
+      );
+    }
+  };
+
+  if (loading) {
+    return null; // Or a loading spinner if preferred, but usually returning null prevents the flash before mounting content.
+  }
+
+  if (error) {
+    return (
+      <DetailNotFound type="experience" />
+    );
+  }
 
   if (!experience) {
     return <DetailNotFound type="experience" />;
@@ -68,6 +109,8 @@ const ExperienceDetailScreen = () => {
         scrollY={scrollY}
         imageUri={allImages[currentImageIndex] || experience.image}
         title={experience.title}
+        onFavoritePress={() => setAddToTripOpen(true)}
+        favoriteFilled={ideaSaved}
       />
 
       <Animated.ScrollView
@@ -102,6 +145,10 @@ const ExperienceDetailScreen = () => {
           price={experience.price}
           description={experience.description}
           category={experience.category}
+          location={experience.location}
+          durationMinutes={experience.durationMinutes}
+          cost={experience.cost}
+          currency={experience.currency}
         />
         <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />
 
@@ -126,6 +173,20 @@ const ExperienceDetailScreen = () => {
         initialIndex={previewIndex}
         onClose={() => setIsPreviewVisible(false)}
       />
+
+      <CustomModal
+        isVisible={addToTripOpen}
+        onClose={() => setAddToTripOpen(false)}
+        title="Add to Trip"
+        centeredTitle
+        showCloseButton={false}
+        showIndicator
+      >
+        <AddToTripContent
+          onCancel={() => setAddToTripOpen(false)}
+          onDone={handleAddToTripDone}
+        />
+      </CustomModal>
     </View>
   );
 };

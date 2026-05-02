@@ -150,7 +150,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           url: 'https://sentry.io/',
           project: 'react-native',
-          organization: 'splash-za',
+          organization: 'runwae',
         },
       ],
       'expo-font',

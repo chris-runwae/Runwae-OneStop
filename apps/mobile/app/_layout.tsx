@@ -31,10 +31,18 @@ import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
 import { convex } from '@/lib/convex';
+import {
+  configurePushHandler,
+  registerPushNotifications,
+} from '@/lib/pushNotifications';
 import { secureStorage } from '@/lib/secureStorage';
 import { getThemePreference } from '@/utils/storage';
 import { useColorScheme } from 'nativewind';
 import '../global.css';
+
+// One-shot foreground handler config — runs at module import so push
+// banners surface correctly even before the first auth ready event.
+configurePushHandler();
 
 const stripeMerchantIdentifier =
   (
@@ -58,6 +66,15 @@ function RouteGuard() {
   useEffect(() => {
     initialize();
   }, []);
+
+  // Register the device's push token once the user is authenticated.
+  // The Convex mutation upserts on (userId, deviceId), so re-running
+  // on every auth-state transition is safe — and useful, since iOS
+  // can rotate tokens after backups/restores.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void registerPushNotifications(convex);
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return <SplashScreen />;

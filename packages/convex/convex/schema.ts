@@ -813,4 +813,22 @@ export default defineSchema({
   })
     .index("by_key", ["provider", "category", "queryKey"])
     .index("by_category_key", ["category", "queryKey"]),
+
+  // ── PUSH NOTIFICATIONS ───────────────────────────────────────
+  // One row per device per user. Multiple rows per user is normal —
+  // they install on phone + tablet. We dedupe on (userId, deviceId)
+  // at registration time so re-registering the same hardware doesn't
+  // create duplicates.
+  device_tokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),                              // Expo push token
+    platform: v.union(v.literal("ios"), v.literal("android")),
+    deviceId: v.string(),
+    isActive: v.boolean(),
+    lastVerifiedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_token", ["token"])
+    .index("by_user_device", ["userId", "deviceId"]),
 });

@@ -55,6 +55,7 @@ import type * as providers_tiqets from "../providers/tiqets.js";
 import type * as providers_types from "../providers/types.js";
 import type * as providers_viator from "../providers/viator.js";
 import type * as providers_yelp from "../providers/yelp.js";
+import type * as push from "../push.js";
 import type * as routing from "../routing.js";
 import type * as saved_items from "../saved_items.js";
 import type * as search from "../search.js";
@@ -120,6 +121,7 @@ declare const fullApi: ApiFromModules<{
   "providers/types": typeof providers_types;
   "providers/viator": typeof providers_viator;
   "providers/yelp": typeof providers_yelp;
+  push: typeof push;
   routing: typeof routing;
   saved_items: typeof saved_items;
   search: typeof search;

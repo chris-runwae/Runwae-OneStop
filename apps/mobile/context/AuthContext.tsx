@@ -21,6 +21,7 @@ export interface AuthContextType {
     email: string,
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   updateUser: (
     profile: Partial<any>,
   ) => Promise<{ success: boolean; error?: string }>;

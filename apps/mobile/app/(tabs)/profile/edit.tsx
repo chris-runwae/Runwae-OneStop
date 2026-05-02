@@ -1,8 +1,10 @@
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
-import { uploadProfileImage } from "@/utils/supabase/storage";
+import { uploadAvatarFromUri } from "@/lib/uploadAvatar";
+import { api } from "@runwae/convex/convex/_generated/api";
 import { useTheme } from "@react-navigation/native";
+import { useMutation } from "convex/react";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { Camera } from "lucide-react-native";
@@ -23,6 +25,8 @@ import {
 const ProfileEditScreen = () => {
   const { user, updateUser } = useAuth();
   const { dark } = useTheme();
+  const generateAvatarUrl = useMutation(api.users.generateAvatarUploadUrl);
+  const setAvatar = useMutation(api.users.setAvatar);
 
   const [fullName, setFullName] = useState(user?.full_name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -107,7 +111,10 @@ const ProfileEditScreen = () => {
       let avatarUrl = user.avatar_url;
 
       if (tempAvatar) {
-        avatarUrl = await uploadProfileImage(user.id, tempAvatar);
+        avatarUrl = await uploadAvatarFromUri(tempAvatar, {
+          generateUrl: () => generateAvatarUrl({}),
+          setAvatar: (args) => setAvatar(args),
+        });
       }
 
       const result = await updateUser({

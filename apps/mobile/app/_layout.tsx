@@ -14,6 +14,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from '@react-navigation/native';
+import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
@@ -29,6 +30,8 @@ import SplashScreen from '@/components/ui/splash-screen';
 import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TripsProvider } from '@/context/TripsContext';
+import { convex } from '@/lib/convex';
+import { secureStorage } from '@/lib/secureStorage';
 import { getThemePreference } from '@/utils/storage';
 import { useColorScheme } from 'nativewind';
 import '../global.css';
@@ -138,9 +141,9 @@ function RouteGuard() {
     return <Redirect href="/(auth)/onboarding" />;
   }
 
-  if (isAuthenticated && !user?.email_verified && !isInAuthFlow) {
-    return <Redirect href={{ pathname: "/(auth)/verification-sent", params: { email: user?.email } } as any} />;
-  }
+  // Email-verification gate is intentionally disabled until the Convex auth
+  // setup adds a verifier (Resend integration). Password sign-ups land
+  // straight in the boarding flow.
 
   if (
     isAuthenticated &&
@@ -218,26 +221,28 @@ export default function RootLayout() {
   }
 
   return (
-    <StripeProviderSafe
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
-      merchantIdentifier={stripeMerchantIdentifier}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <KeyboardProvider>
-            <AuthProvider>
-              <TripsProvider>
-                <StatusBar style="auto" />
-                <ToastManager
-                  showProgressBar={false}
-                  style={{ borderRadius: 20, boxShadow: 'none' }}
-                  theme={colorScheme === 'dark' ? 'dark' : 'light'}
-                />
-                <RouteGuard />
-              </TripsProvider>
-            </AuthProvider>
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </ThemeProvider>
-    </StripeProviderSafe>
+    <ConvexAuthProvider client={convex} storage={secureStorage}>
+      <StripeProviderSafe
+        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+        merchantIdentifier={stripeMerchantIdentifier}>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <KeyboardProvider>
+              <AuthProvider>
+                <TripsProvider>
+                  <StatusBar style="auto" />
+                  <ToastManager
+                    showProgressBar={false}
+                    style={{ borderRadius: 20, boxShadow: 'none' }}
+                    theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                  />
+                  <RouteGuard />
+                </TripsProvider>
+              </AuthProvider>
+            </KeyboardProvider>
+          </GestureHandlerRootView>
+        </ThemeProvider>
+      </StripeProviderSafe>
+    </ConvexAuthProvider>
   );
 }

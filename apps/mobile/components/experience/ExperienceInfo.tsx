@@ -25,6 +25,7 @@ const ExperienceInfo = ({
   currency?: string;
 }) => {
   const { width } = useWindowDimensions();
+  const [isExpanded, setIsExpanded] = useState(false);
   const strippedDescription = description.replace(/<[^>]*>?/gm, '');
 
   return (

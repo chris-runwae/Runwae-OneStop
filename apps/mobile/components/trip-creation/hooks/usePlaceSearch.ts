@@ -1,5 +1,6 @@
 import { LiteAPIPlace } from "@/types/liteapi.types";
-import { searchPlaces } from "@/utils/supabase/liteapi.service";
+import { useAction } from "convex/react";
+import { api } from "@runwae/convex/convex/_generated/api";
 import {
   getSearchErrorMessage,
   placeSearchCache,
@@ -21,7 +22,10 @@ export const usePlaceSearch = (
   onError: (error: string | null) => void,
   onShowSuggestions: (show: boolean) => void,
 ): UsePlaceSearchResult => {
-  const debounceTimeoutRef = useRef<number | null>(null);
+  // setTimeout in React Native returns a Timeout object, not a number,
+  // so type-narrow via ReturnType to dodge the platform mismatch.
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchPlaces = useAction(api.places.search);
 
   const performSearch = useCallback(
     async (query: string) => {
@@ -46,9 +50,10 @@ export const usePlaceSearch = (
           return;
         }
 
-        // Perform API search
-        const response = await searchPlaces(query);
-        const validPlaces = (response.data || []).filter(validatePlace);
+        // Convex action proxies LiteAPI server-side; the device never
+        // sees the LiteAPI key.
+        const data = await searchPlaces({ query });
+        const validPlaces = (data ?? []).filter(validatePlace);
 
         // Cache the results
         placeSearchCache.set(query, validPlaces);
@@ -73,7 +78,7 @@ export const usePlaceSearch = (
         onLoading(false);
       }
     },
-    [onResults, onLoading, onError, onShowSuggestions],
+    [onResults, onLoading, onError, onShowSuggestions, searchPlaces],
   );
 
   const debouncedSearch = useCallback(

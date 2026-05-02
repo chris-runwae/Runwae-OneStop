@@ -22,9 +22,10 @@ import { useTrips } from '@/context/TripsContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
 import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+import { useStripeSafe } from '@/utils/stripe-safe';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -55,7 +56,8 @@ const EventDetailScreen = () => {
   const { openDirections } = useDirections();
   const { addIdeaToTrip } = useTrips();
   const { user } = useAuth();
-  // Stripe handles re-introduce in Phase 8 alongside payments.createPaymentIntent.
+  const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
+  const createPaymentIntent = useAction(api.payments.createPaymentIntent);
 
   // Convex tracks current rsvp via api.events.getViewerRsvp; the
   // analytics view-counter is api.events.incrementViewCount.
@@ -89,16 +91,30 @@ const EventDetailScreen = () => {
     }
     setRegisterLoading(true);
     try {
-      // Phase 4 wires free / external RSVPs only. Paid ticketing flows
-      // through api.bookings.createTicketBooking and the native Stripe
-      // Payment Sheet — ramping up alongside the PaymentIntent action
-      // in Phase 8.
       if (event.price && event.price > 0) {
-        Alert.alert(
-          'Ticket purchases coming soon',
-          'Paid event ticketing is rolling out shortly. Please check back later.',
-        );
-        return;
+        // Stripe expects amounts in the currency's smallest unit, so
+        // multiply the major-unit price by 100 before minting the
+        // PaymentIntent.
+        const { clientSecret } = await createPaymentIntent({
+          amount: Math.round(event.price * 100),
+          currency: event.currency ?? 'GBP',
+          description: `Ticket: ${event.title}`,
+          metadata: { kind: 'event_ticket', eventId: event.id },
+        });
+        const { error: initErr } = await initPaymentSheet({
+          merchantDisplayName: 'Runwae',
+          paymentIntentClientSecret: clientSecret,
+          applePay: { merchantCountryCode: 'GB' },
+          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
+          style: 'automatic',
+        });
+        if (initErr) throw new Error(initErr.message);
+        const { error: payErr } = await presentPaymentSheet();
+        if (payErr) {
+          if (payErr.code !== 'Canceled')
+            Alert.alert('Payment failed', payErr.message);
+          return;
+        }
       }
       await rsvpMut({
         eventId: event.id as unknown as Id<'events'>,

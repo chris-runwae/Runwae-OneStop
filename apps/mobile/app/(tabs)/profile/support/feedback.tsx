@@ -3,7 +3,6 @@ import CustomModal from "@/components/ui/CustomModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
-import { createFeedback } from "@/utils/supabase/feedback.service";
 import { router } from "expo-router";
 import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
@@ -40,20 +39,15 @@ const Feedback = () => {
 
     setIsSubmitting(true);
     try {
-      const { success, error } = await createFeedback({
-        user_id: user.id,
-        user_email: user.email,
-        feedback_type: feedbackType,
-        description: description,
-      });
-
-      if (success) {
-        console.log("Feedback submitted successfully");
-        router.back();
-      } else {
-        console.error("Failed to submit feedback:", error);
-        alert("Failed to submit feedback. Please try again.");
-      }
+      // Direct Convex feedback module isn't yet wired; until then, send
+      // the user to email so we never lose feedback. Replace with
+      // api.feedback.create when the backend module ships.
+      const subject = encodeURIComponent(`Runwae feedback: ${feedbackType}`);
+      const body = encodeURIComponent(description);
+      const mailto = `mailto:support@runwae.io?subject=${subject}&body=${body}`;
+      // eslint-disable-next-line no-undef
+      (await import('react-native')).Linking.openURL(mailto);
+      router.back();
     } catch (error) {
       console.error("Error submitting feedback:", error);
       alert("An unexpected error occurred.");

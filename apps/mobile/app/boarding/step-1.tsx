@@ -1,7 +1,9 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
-import { uploadProfileImage } from "@/utils/supabase/storage";
+import { uploadAvatarFromUri } from "@/lib/uploadAvatar";
+import { useMutation } from "convex/react";
+import { api } from "@runwae/convex/convex/_generated/api";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -21,6 +23,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 const BoardingStep1 = () => {
   const router = useRouter();
   const { user, updateUser, setCurrentBoardingStep } = useAuth();
+  const generateAvatarUrl = useMutation(api.users.generateAvatarUploadUrl);
+  const setAvatar = useMutation(api.users.setAvatar);
   const [name, setName] = useState(user?.full_name || "");
   const [username, setUsername] = useState(user?.username || "");
   const [profileImage, setProfileImage] = useState<string | null>(user?.avatar_url || null);
@@ -55,10 +59,14 @@ const BoardingStep1 = () => {
     setIsLoading(true);
     try {
       let finalImageUrl = profileImage;
-      
-      // If image is a local URI, upload it
+
+      // Local URIs upload to Convex storage and persist on the viewer's
+      // user row in one go via setAvatar.
       if (profileImage && profileImage.startsWith('file://')) {
-        finalImageUrl = await uploadProfileImage(user!.id, profileImage);
+        finalImageUrl = await uploadAvatarFromUri(profileImage, {
+          generateUrl: () => generateAvatarUrl(),
+          setAvatar: (args) => setAvatar(args),
+        });
       }
 
       await updateUser({

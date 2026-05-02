@@ -20,14 +20,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import type { HotelDetail } from '@/types/hotel.types';
-import type {
-  LiteAPIHotelDetails,
-  LiteAPIHotelRatesResponse,
-} from '@/types/liteapi.types';
-import {
-  getHotelDetails,
-  getHotelRatesByHotelIds,
-} from '@/utils/supabase/liteapi.service';
+import type { LiteAPIHotelRatesResponse } from '@/types/liteapi.types';
+import { useAction } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 import EventLocationSection from '@/components/event/detail/EventLocationSection';
 import { Divider } from '@/components/event/detail/EventDetailPrimitives';
 import RoomRateCard from '@/components/hotels/RoomRateCard';
@@ -56,33 +51,30 @@ function amenityLabel(facility: string) {
   return null;
 }
 
-function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
-  const gallery = raw.hotelImages?.map((img) => img.url) ?? [];
-  if (raw.main_photo && !gallery.includes(raw.main_photo)) {
-    gallery.unshift(raw.main_photo);
-  }
+// Adapts a Convex DiscoveryDetail (from api.hotels.getDetail) to the
+// legacy mobile HotelDetail shape. Fields the discovery payload doesn't
+// carry (rooms, policies, sentiment) default to empty placeholders;
+// the rates rail still renders separately via api.hotels.getRates.
+function mapDetails(raw: any): HotelDetail {
   return {
-    hotelId: raw.id,
-    name: raw.name,
-    rating: raw.starRating ?? 0,
-    address: raw.address ?? '',
-    thumbnail: raw.main_photo ?? gallery[0] ?? '',
-    gallery,
-    description: raw.hotelDescription ?? '',
-    minRate: 0,
-    currency: 'USD',
+    hotelId: raw.apiRef,
+    name: raw.title ?? '',
+    rating: raw.rating ?? 0,
+    address: raw.address ?? raw.locationName ?? '',
+    thumbnail: raw.imageUrl ?? '',
+    gallery: raw.gallery ?? (raw.imageUrl ? [raw.imageUrl] : []),
+    description: raw.description ?? '',
+    minRate: raw.price ?? 0,
+    currency: raw.currency ?? 'USD',
     offerId: '',
-    amenities: raw.hotelFacilities ?? [],
-    city: raw.city ?? '',
-    country: raw.country ?? '',
+    amenities: raw.amenities ?? [],
+    city: '',
+    country: '',
     coordinates: {
-      latitude: raw.location?.latitude ?? 0,
-      longitude: raw.location?.longitude ?? 0,
+      latitude: raw.coords?.lat ?? 0,
+      longitude: raw.coords?.lng ?? 0,
     },
-    rooms: normalizeHotelRooms(raw.rooms as unknown[]),
-    policies: raw.policies,
-    sentimentPros: raw.sentiment_analysis?.pros,
-    sentimentCons: raw.sentiment_analysis?.cons,
+    rooms: normalizeHotelRooms([]),
   };
 }
 
@@ -120,38 +112,31 @@ export default function HotelDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
 
+  const getDetailAction = useAction(api.hotels.getDetail);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch Details (Required)
-      const detailsRes = await getHotelDetails(hotelId);
-      setHotel(mapDetails(detailsRes.data));
-
-      // 2. Fetch Rates (Optional)
-      try {
-        const checkinDate = checkin ?? activeTrip?.startDate ?? '';
-        const checkoutDate = checkout ?? activeTrip?.endDate ?? '';
-
-        if (checkinDate && checkoutDate) {
-          const ratesRes = await getHotelRatesByHotelIds(
-            [hotelId],
-            checkinDate,
-            checkoutDate,
-            adults
-          );
-          setRates(ratesRes);
-        }
-      } catch (rateErr) {
-        console.warn('[LiteAPI] Could not fetch rates:', (rateErr as Error).message);
-        setRates(null);
+      const detail = await getDetailAction({ apiRef: hotelId });
+      if (!detail) {
+        setError('Hotel not found');
+        setLoading(false);
+        return;
       }
+      setHotel(mapDetails(detail));
+      // Phase 8 leaves the rich rates table unwired — Convex returns
+      // the rate list via api.hotels.getRates, but it doesn't yet
+      // surface the full LiteAPI roomTypes/cancellation tree this UI
+      // expects. The rates section degrades gracefully to "no rates
+      // available" until that adapter ships.
+      setRates(null);
     } catch (err) {
       setError((err as Error).message || 'Failed to load hotel details');
     } finally {
       setLoading(false);
     }
-  }, [hotelId, checkin, checkout, adults, activeTrip]);
+  }, [hotelId, getDetailAction]);
 
   useEffect(() => {
     fetchData();

@@ -89,6 +89,7 @@ export default function BookingScreen() {
   };
 
   const startBookingAction = useAction(api.hotels.startBooking);
+  const createPaymentIntent = useAction(api.payments.createPaymentIntent);
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -101,9 +102,17 @@ export default function BookingScreen() {
         checkout,
         ...(eventId ? { eventId: eventId as unknown as Id<'events'> } : {}),
       });
-      // The Stripe PaymentIntent for the hotel sheet ships in Phase 8
-      // alongside `payments.createPaymentIntent`. Until then the
-      // payment screen renders without a real client_secret.
+      const { clientSecret } = await createPaymentIntent({
+        amount: Math.round(result.finalPrice * 100),
+        currency: result.currency,
+        description: `Hotel: ${hotelName}`,
+        metadata: {
+          kind: 'hotel_booking',
+          bookingId: result.bookingId as unknown as string,
+          hotelId,
+          ...(tripId ? { tripId } : {}),
+        },
+      });
       router.push({
         pathname: '/hotel/payment',
         params: {
@@ -111,7 +120,7 @@ export default function BookingScreen() {
           hotelName,
           hotelThumb,
           bookingId: result.bookingId as unknown as string,
-          clientSecret: '',
+          clientSecret,
           price: String(result.finalPrice),
           currency: result.currency,
           checkin,

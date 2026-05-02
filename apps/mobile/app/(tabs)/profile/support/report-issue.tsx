@@ -3,7 +3,6 @@ import CustomModal from "@/components/ui/CustomModal";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
-import { createIssueReport } from "@/utils/supabase/issue-report.service";
 import { router } from "expo-router";
 import { Check, ChevronDown } from "lucide-react-native";
 import React, { useState } from "react";
@@ -39,21 +38,11 @@ const ReportIssue = () => {
 
     setIsSubmitting(true);
     try {
-      const { success, error } = await createIssueReport({
-        user_id: user.id,
-        user_email: user.email,
-        issue_type: issueType,
-        description: description,
-      });
-
-      if (success) {
-        console.log("Issue report submitted successfully");
-        router.back();
-      } else {
-        // Handle error (e.g., show a toast)
-        console.error("Failed to submit issue report:", error);
-        alert("Failed to submit report. Please try again.");
-      }
+      const subject = encodeURIComponent(`Runwae issue: ${issueType}`);
+      const body = encodeURIComponent(description);
+      const mailto = `mailto:support@runwae.io?subject=${subject}&body=${body}`;
+      (await import('react-native')).Linking.openURL(mailto);
+      router.back();
     } catch (error) {
       console.error("Error submitting issue report:", error);
       alert("An unexpected error occurred.");

@@ -85,6 +85,83 @@ export const createCheckoutSession = action({
   },
 });
 
+/**
+ * Mobile-native checkout uses the Stripe Payment Sheet
+ * (`@stripe/stripe-react-native`), which needs a PaymentIntent
+ * client_secret rather than a Checkout Session URL. This action
+ * mints one server-side so the publishable key is the only Stripe
+ * credential the device ever sees.
+ *
+ * Returns `{ clientSecret, paymentIntentId }`. Callers persist the
+ * `paymentIntentId` on whichever booking row they're driving so the
+ * webhook reconciliation step can find the row when the payment
+ * succeeds.
+ */
+export const createPaymentIntent = action({
+  args: {
+    amount: v.number(),
+    currency: v.string(),
+    description: v.optional(v.string()),
+    metadata: v.optional(v.record(v.string(), v.string())),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ clientSecret: string; paymentIntentId: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "Payments aren't configured. Set STRIPE_SECRET_KEY in Convex env.",
+      );
+    }
+
+    const params: Array<[string, string]> = [
+      ["amount", String(Math.round(args.amount))],
+      ["currency", args.currency.toLowerCase()],
+      ["automatic_payment_methods[enabled]", "true"],
+    ];
+    if (args.description) params.push(["description", args.description]);
+    // Always tag the intent with the Convex user id so refund / customer
+    // tooling can attribute charges back to the right user.
+    params.push(["metadata[convexUserId]", userId as unknown as string]);
+    if (args.metadata) {
+      for (const [k, val] of Object.entries(args.metadata)) {
+        params.push([`metadata[${k}]`, val]);
+      }
+    }
+    const body = params
+      .map(([k, vv]) => `${encodeURIComponent(k)}=${encodeURIComponent(vv)}`)
+      .join("&");
+
+    const res = await fetch("https://api.stripe.com/v1/payment_intents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
+    const json = (await res.json()) as {
+      id?: string;
+      client_secret?: string;
+      error?: { message?: string };
+    };
+    if (!res.ok || !json.id || !json.client_secret) {
+      const msg =
+        json.error?.message ?? `Stripe rejected the intent (${res.status})`;
+      console.error("[stripe] payment_intent failed", msg);
+      throw new Error(msg);
+    }
+    return {
+      paymentIntentId: json.id,
+      clientSecret: json.client_secret,
+    };
+  },
+});
+
 // Cancel an active Stripe subscription at the end of the current billing
 // period. We don't terminate immediately because the user has already paid
 // for the current period and is entitled to use it. Used by the

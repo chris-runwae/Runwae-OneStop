@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { ArrowLeft, Calendar } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,32 +10,45 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from 'convex/react';
 
 import { Text } from '@/components';
 import EventCard from '@/components/home/EventCard';
 import { Colors, textStyles } from '@/constants';
-import { useAuth } from '@/context/AuthContext';
 import { Event } from '@/types/content.types';
-import {
-  EventRegistration,
-  getUserEventRegistrations,
-} from '@/utils/supabase/event-registrations.service';
+import { api } from '@runwae/convex/convex/_generated/api';
 
 export default function MyEventsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    getUserEventRegistrations(user.id)
-      .then((regs) => setRegistrations(regs))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [user?.id]);
+  const registrations = useQuery(api.events.myEvents, {}) ?? [];
+  const loading = registrations === undefined;
+
+  function isoDateOnly(ms: number) {
+    return new Date(ms).toISOString().slice(0, 10);
+  }
+  function isoTime(ms: number) {
+    const d = new Date(ms);
+    return `${String(d.getUTCHours()).padStart(2, '0')}:${String(
+      d.getUTCMinutes(),
+    ).padStart(2, '0')}`;
+  }
+  function toEvent(e: any): Event {
+    return {
+      id: e._id as unknown as string,
+      title: e.name,
+      location: e.locationName,
+      date: isoDateOnly(e.startDateUtc),
+      time: isoTime(e.startDateUtc),
+      category: e.category ?? 'event',
+      image: e.imageUrl ?? e.imageUrls?.[0] ?? '',
+      latitude: e.locationCoords?.lat ?? 0,
+      longitude: e.locationCoords?.lng ?? 0,
+      description: e.description,
+    };
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
@@ -72,13 +85,12 @@ export default function MyEventsScreen() {
       ) : (
         <FlashList
           data={registrations}
-          keyExtractor={(i) => i.id}
+          keyExtractor={(i) => i._id as unknown as string}
           numColumns={2}
-          // estimatedItemSize={250}
           contentContainerStyle={{ padding: 10 }}
           renderItem={({ item, index }) => (
             <View style={{ flex: 1, padding: 6 }}>
-              <EventCard event={item.event as Event} index={index} fullWidth />
+              <EventCard event={toEvent(item.event)} index={index} fullWidth />
             </View>
           )}
         />

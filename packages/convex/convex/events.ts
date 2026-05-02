@@ -33,6 +33,31 @@ export const listPublished = query({
   },
 });
 
+// Events the current viewer has marked "going" or "interested". Used by
+// the mobile My Events tab to render their RSVP'd lineup.
+export const myEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
+
+    const attendees = await ctx.db
+      .query("event_attendees")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const events = await Promise.all(
+      attendees.map((a) => ctx.db.get(a.eventId)),
+    );
+    return attendees
+      .map((a, i) => {
+        const event = events[i];
+        return event ? { ...a, event: toPublicEvent(event) } : null;
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort((a, b) => a.event.startDateUtc - b.event.startDateUtc);
+  },
+});
+
 export const getBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {

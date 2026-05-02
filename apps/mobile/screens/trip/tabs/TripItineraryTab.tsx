@@ -1,6 +1,10 @@
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
-import { ItineraryDayWithItems } from '@/hooks/useItineraryActions';
+import {
+  type ItineraryDayWithItems,
+  type ItineraryItem,
+  type CreateItineraryItemInput,
+} from '@/hooks/useItineraryActions';
 import { useTheme } from '@react-navigation/native';
 import { addDays, format, parseISO } from 'date-fns';
 import { Image } from 'expo-image';
@@ -24,18 +28,16 @@ import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
 import { AppFonts, Colors } from '@/constants';
-import {
-  CreateItineraryItemInput,
-  ItineraryItem,
-} from '@/hooks/useItineraryActions';
-import { uploadItineraryItemImage } from '@/utils/supabase/storage';
+import { useMutation } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import { uploadImageFromUri } from '@/lib/uploadImage';
 
 const DATE_COLUMN_WIDTH = 55;
 
 type DateStripProps = {
-  startDate: string | null; // trip_details.start_date e.g. "2026-11-27"
-  totalDays: number; // days.length
-  selectedIndex: number; // 0-based
+  startDate: string | null;
+  totalDays: number;
+  selectedIndex: number;
   onSelectIndex: (i: number) => void;
   onAddDay: () => void;
 };
@@ -220,7 +222,6 @@ function DaySection({
   index,
   userId,
   reorderingDayId,
-  onToggleReorder,
   onAddItem,
   onDeleteItem,
   onMoveItemUp,
@@ -230,7 +231,6 @@ function DaySection({
   onUpdateTitle,
   onDeleteDay,
   onClearDay,
-  isFirstDay,
   onItemPress,
   onUpdateItemNotes,
   isMember = false,
@@ -242,12 +242,13 @@ function DaySection({
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
 
-  const isReordering = reorderingDayId === day.id;
+  const isReordering = reorderingDayId === (day._id as unknown as string);
+  const dayId = day._id as unknown as string;
 
   const handleTitleBlur = async () => {
     setTitleEdit(false);
     if (titleVal.trim() !== (day.title ?? '')) {
-      await onUpdateTitle(day.id, titleVal.trim());
+      await onUpdateTitle(dayId, titleVal.trim());
     }
   };
 
@@ -263,7 +264,7 @@ function DaySection({
     { label: 'Add day after', onPress: () => {} },
     {
       label: 'Clear day',
-      onPress: () => onClearDay(day.id),
+      onPress: () => onClearDay(dayId),
       isDestructive: true,
       hasSeparator: true,
     },
@@ -322,24 +323,27 @@ function DaySection({
 
       {!collapsed && (
         <View style={{ gap: 15 }}>
-          {day.itinerary_items.map((item, i) => (
-            <ItineraryItemCard
-              key={item.id}
-              item={item}
-              isReordering={isReordering}
-              isCreator={item.created_by === userId}
-              onDelete={() => onDeleteItem(item.id)}
-              onMoveUp={() => onMoveItemUp(day.id, item.id)}
-              onMoveDown={() => onMoveItemDown(day.id, item.id)}
-              onMoveToPrevDay={() => onMoveItemToPrevDay?.(item.id)}
-              onMoveToNextDay={() => onMoveItemToNextDay?.(item.id)}
-              canMoveUp={i > 0}
-              canMoveDown={i < day.itinerary_items.length - 1}
-              onPress={() => onItemPress(item)}
-              onUpdateNotes={(notes) => onUpdateItemNotes(item.id, notes)}
-              isMember={isMember}
-            />
-          ))}
+          {day.items.map((item, i) => {
+            const itemId = item._id as unknown as string;
+            return (
+              <ItineraryItemCard
+                key={itemId}
+                item={item}
+                isReordering={isReordering}
+                isCreator={(item.addedByUserId as unknown as string) === userId}
+                onDelete={() => onDeleteItem(itemId)}
+                onMoveUp={() => onMoveItemUp(dayId, itemId)}
+                onMoveDown={() => onMoveItemDown(dayId, itemId)}
+                onMoveToPrevDay={() => onMoveItemToPrevDay?.(itemId)}
+                onMoveToNextDay={() => onMoveItemToNextDay?.(itemId)}
+                canMoveUp={i > 0}
+                canMoveDown={i < day.items.length - 1}
+                onPress={() => onItemPress(item)}
+                onUpdateNotes={(notes) => onUpdateItemNotes(itemId, notes)}
+                isMember={isMember}
+              />
+            );
+          })}
 
           {isMember && (
             <Pressable
@@ -367,7 +371,7 @@ function DaySection({
       <AddItineraryItemSheet
         visible={showSheet}
         onClose={() => setShowSheet(false)}
-        onSubmit={(input) => onAddItem(day.id, input)}
+        onSubmit={(input) => onAddItem(dayId, input)}
       />
 
       <ActionMenu
@@ -399,51 +403,48 @@ export default function TripItineraryTab({
     removeItem,
     updateItemCtx,
     reorderItemsCtx,
-    reorderDaysCtx,
     moveItemToDayCtx,
   } = useTrips();
   const router = useRouter();
 
+  const generateUrlMut = useMutation(api.users.generateImageUploadUrl);
+  const resolveUrlMut = useMutation(api.users.resolveStorageUrl);
+
   const handleCardPress = (item: ItineraryItem) => {
-    if (item.type === 'hotel' && item.external_id) {
+    if (item.type === 'hotel' && item.apiRef) {
       router.push({
         pathname: '/hotels/[hotelId]',
         params: {
-          hotelId: item.external_id,
-          hotelData: JSON.stringify(item.all_data),
-          checkin: activeTrip?.trip_details?.start_date,
-          checkout: activeTrip?.trip_details?.end_date,
-          adults: activeTrip?.group_members?.length ?? 1,
+          hotelId: item.apiRef,
+          checkin: activeTrip?.startDate,
+          checkout: activeTrip?.endDate,
         },
       } as any);
       return;
     }
-    if (item.type === 'activity' && item.external_id) {
+    if (item.type === 'activity' && item.apiRef) {
       router.push({
         pathname: '/viator/[productCode]',
-        params: { productCode: item.external_id },
+        params: { productCode: item.apiRef },
       } as any);
       return;
     }
     router.push({
       pathname: '/itinerary/item/[itemId]',
-      params: { itemId: item.id },
+      params: { itemId: item._id as unknown as string },
     });
   };
 
   const [reorderingDayId, setReorderingDayId] = useState<string | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
-  const tripStartDate = activeTrip?.trip_details?.start_date ?? null;
+  const tripStartDate = activeTrip?.startDate ?? null;
 
   const handleAddDay = async () => {
-    const currentLength = days.length; // snapshot before await
+    const currentLength = days.length;
     const nextDayNumber = currentLength + 1;
-    const nextDate = tripStartDate
-      ? format(addDays(parseISO(tripStartDate), currentLength), 'yyyy-MM-dd')
-      : undefined;
-    await addDay({ title: `Day ${nextDayNumber}`, date: nextDate });
-    setSelectedDayIndex(currentLength); // index of the newly added day
+    await addDay({ title: `Day ${nextDayNumber}` });
+    setSelectedDayIndex(currentLength);
   };
 
   useEffect(() => {
@@ -454,21 +455,20 @@ export default function TripItineraryTab({
 
   const handleAddItem = async (
     dayId: string,
-    input: CreateItineraryItemInput
+    input: CreateItineraryItemInput,
   ) => {
-    let finalInput = { ...input };
-    if (input.image_url?.startsWith('file://')) {
+    let imageUrl = input.imageUrl;
+    if (imageUrl?.startsWith('file://')) {
       try {
-        const remoteUrl = await uploadItineraryItemImage(
-          `${dayId}-${Date.now()}`,
-          input.image_url
-        );
-        finalInput.image_url = remoteUrl;
+        imageUrl = await uploadImageFromUri(imageUrl, {
+          generateUrl: () => generateUrlMut(),
+          resolveUrl: (args) => resolveUrlMut(args),
+        });
       } catch (err) {
-        finalInput.image_url = null;
+        imageUrl = undefined;
       }
     }
-    await addItem(dayId, finalInput);
+    await addItem(dayId, { ...input, imageUrl });
   };
 
   if (itineraryLoading && days.length === 0) {
@@ -525,9 +525,10 @@ export default function TripItineraryTab({
           .filter((_, idx) => idx === selectedDayIndex)
           .map((day) => {
             const dayIndex = selectedDayIndex;
+            const dayId = day._id as unknown as string;
             return (
               <DaySection
-                key={day.id}
+                key={dayId}
                 day={day}
                 index={dayIndex}
                 userId={user?.id ?? ''}
@@ -536,8 +537,10 @@ export default function TripItineraryTab({
                 onAddItem={handleAddItem}
                 onDeleteItem={removeItem}
                 onMoveItemUp={async (dId, iId) => {
-                  const dayItems = day.itinerary_items;
-                  const idx = dayItems.findIndex((it) => it.id === iId);
+                  const dayItems = day.items;
+                  const idx = dayItems.findIndex(
+                    (it) => (it._id as unknown as string) === iId,
+                  );
                   if (idx <= 0) return;
                   const newOrder = [...dayItems];
                   [newOrder[idx - 1], newOrder[idx]] = [
@@ -546,12 +549,14 @@ export default function TripItineraryTab({
                   ];
                   await reorderItemsCtx(
                     dId,
-                    newOrder.map((it) => it.id)
+                    newOrder.map((it) => it._id as unknown as string),
                   );
                 }}
                 onMoveItemDown={async (dId, iId) => {
-                  const dayItems = day.itinerary_items;
-                  const idx = dayItems.findIndex((it) => it.id === iId);
+                  const dayItems = day.items;
+                  const idx = dayItems.findIndex(
+                    (it) => (it._id as unknown as string) === iId,
+                  );
                   if (idx < 0 || idx >= dayItems.length - 1) return;
                   const newOrder = [...dayItems];
                   [newOrder[idx], newOrder[idx + 1]] = [
@@ -560,26 +565,35 @@ export default function TripItineraryTab({
                   ];
                   await reorderItemsCtx(
                     dId,
-                    newOrder.map((it) => it.id)
+                    newOrder.map((it) => it._id as unknown as string),
                   );
                 }}
                 onMoveItemToPrevDay={async (itemId) => {
                   if (dayIndex > 0) {
                     const prevDay = days[dayIndex - 1];
-                    await moveItemToDayCtx(itemId, day.id, prevDay.id);
+                    await moveItemToDayCtx(
+                      itemId,
+                      dayId,
+                      prevDay._id as unknown as string,
+                    );
                   }
                 }}
                 onMoveItemToNextDay={async (itemId) => {
                   if (dayIndex < days.length - 1) {
                     const nextDay = days[dayIndex + 1];
-                    await moveItemToDayCtx(itemId, day.id, nextDay.id);
+                    await moveItemToDayCtx(
+                      itemId,
+                      dayId,
+                      nextDay._id as unknown as string,
+                    );
                   }
                 }}
                 onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
-                onDeleteDay={(d) => removeDay(d.id)}
-                onClearDay={(dId) => {
-                  // For each item in the day, remove it
-                  day.itinerary_items.forEach((it) => removeItem(it.id));
+                onDeleteDay={(d) => removeDay(d._id as unknown as string)}
+                onClearDay={(_dId) => {
+                  for (const it of day.items) {
+                    void removeItem(it._id as unknown as string);
+                  }
                 }}
                 isFirstDay={dayIndex === 0}
                 onItemPress={handleCardPress}

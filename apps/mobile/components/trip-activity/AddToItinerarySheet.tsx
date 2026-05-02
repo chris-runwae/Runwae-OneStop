@@ -46,7 +46,7 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
   // Initialize selected day to first day when opening
   useEffect(() => {
     if (visible && days.length > 0 && !selectedDayId) {
-      setSelectedDayId(days[0].id);
+      setSelectedDayId(days[0]._id as unknown as string);
     }
   }, [visible, days]);
 
@@ -70,7 +70,9 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
   }, [visible]);
 
   const resetForm = () => {
-    setSelectedDayId(days.length > 0 ? days[0].id : null);
+    setSelectedDayId(
+      days.length > 0 ? (days[0]._id as unknown as string) : null,
+    );
     setStartTimeValue(null);
     setEndTimeValue(null);
   };
@@ -133,16 +135,17 @@ const AddToItinerarySheet = ({ visible, onClose, idea, days, onSubmit }: Props) 
             <Text style={[styles.sectionTitle, { color: colors.textColors.default }]}>Day</Text>
             <View style={[styles.cardGroup, { backgroundColor: dark ? '#1F1F1F' : '#fff', borderColor: dark ? '#374151' : '#F3F4F6' }]}>
               {days.map((day, index) => {
-                const isSelected = selectedDayId === day.id;
+                const dayIdStr = day._id as unknown as string;
+                const isSelected = selectedDayId === dayIdStr;
                 return (
                   <Pressable
-                    key={day.id}
-                    onPress={() => setSelectedDayId(day.id)}
+                    key={dayIdStr}
+                    onPress={() => setSelectedDayId(dayIdStr)}
                     style={[
                       styles.radioRow,
                       index !== days.length - 1 && [styles.borderBottom, { borderBottomColor: dark ? '#374151' : '#F3F4F6' }]
                     ]}>
-                    <Text style={[styles.radioLabel, { color: isSelected ? (dark ? '#fff' : '#111827') : (dark ? '#ADB5BD' : '#6B7280') }]}>Day {day.day_number}</Text>
+                    <Text style={[styles.radioLabel, { color: isSelected ? (dark ? '#fff' : '#111827') : (dark ? '#ADB5BD' : '#6B7280') }]}>Day {day.dayNumber}</Text>
                     <View style={[styles.radioOutline, { borderColor: isSelected ? '#FF1F8C' : (dark ? '#4B5563' : '#E5E7EB') }]}>
                       {isSelected && <View style={styles.radioInner} />}
                     </View>

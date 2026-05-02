@@ -12,11 +12,11 @@ import SearchInput from '@/components/ui/SearchInput';
 import { EXPLORE_CATEGORIES } from '@/constants/home.constant';
 import { useAuth } from '@/context/AuthContext';
 import { useExploreData } from '@/hooks/useExploreData';
-import { fetchPublicTrips, TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { useViator } from '@/hooks/useViator';
 import type { ViatorProduct } from '@/types/viator.types';
 import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToExperience';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -36,25 +36,14 @@ const ExploreScreen = () => {
   const { products: viatorProducts, loading: viatorLoading } = useViator();
   const { user } = useAuth();
 
-  // Public trips from other users
-  const [publicTrips, setPublicTrips] = useState<TripWithEverything[]>([]);
-  const [publicTripsLoading, setPublicTripsLoading] = useState(true);
-
-  const loadPublicTrips = useCallback(async () => {
-    if (!user?.id) return;
-    setPublicTripsLoading(true);
-    const { data: trips } = await fetchPublicTrips(user.id);
-    setPublicTrips(trips ?? []);
-    setPublicTripsLoading(false);
-  }, [user?.id]);
-
-  useEffect(() => {
-    loadPublicTrips();
-  }, [loadPublicTrips]);
+  // Public trip discovery is wired up in Phase 4 (browse migration);
+  // for now the section is hidden so the screen compiles cleanly.
+  const publicTrips: Trip[] = [];
+  const publicTripsLoading = false;
 
   const handleRefresh = useCallback(async () => {
-    await Promise.all([refresh(), loadPublicTrips()]);
-  }, [refresh, loadPublicTrips]);
+    await refresh();
+  }, [refresh]);
 
   const handleApplyFilters = () => {
     console.log('Applying filters:', { selectedTopCategory, selectedPrice });
@@ -151,7 +140,7 @@ const ExploreScreen = () => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
     return publicTrips.filter((item) =>
-      matchesSearch(item.name + (item.destination_label ?? ''), searchQuery)
+      matchesSearch(item.title + (item.destinationLabel ?? ''), searchQuery),
     );
   }, [searchQuery, selectedTopCategory, publicTrips]);
 

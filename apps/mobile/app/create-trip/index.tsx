@@ -18,8 +18,12 @@ import React, {
 
 import TripCreatedModal from "@/components/trip-creation/TripCreatedModal";
 import ShareTripModal from "@/components/trip-creation/ShareTripModal";
+import TemplatePickerModal from "@/components/trip-creation/TemplatePickerModal";
 import { useAuth } from "@/context/AuthContext";
-import { createTrip } from "@/utils/supabase/trips.service";
+import { useCreateFromTemplate, useCreateTrip } from "@/hooks/useTripActions";
+import { useMutation } from "convex/react";
+import { api } from "@runwae/convex/convex/_generated/api";
+import { uploadImageFromUri } from "@/lib/uploadImage";
 import {
   ActivityIndicator,
   Dimensions,
@@ -53,6 +57,11 @@ const CreateTrip = () => {
   const [createdTrip, setCreatedTrip] = useState<any>(null);
 
   const { user } = useAuth();
+  const createTripMut = useCreateTrip();
+  const createFromTemplateMut = useCreateFromTemplate();
+  const generateUrlMut = useMutation(api.users.generateImageUploadUrl);
+  const resolveUrlMut = useMutation(api.users.resolveStorageUrl);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   const { calendarActiveDateRanges, onCalendarDayPress, dateRange } =
     useDateRange();
@@ -228,33 +237,46 @@ const CreateTrip = () => {
 
     setIsCreating(true);
     try {
-      const result = await createTrip({
-        user_id: user.id,
+      let coverImageUrl: string | undefined;
+      if (image) {
+        try {
+          coverImageUrl = await uploadImageFromUri(image, {
+            generateUrl: () => generateUrlMut(),
+            resolveUrl: (args) => resolveUrlMut(args),
+          });
+        } catch (uploadErr) {
+          console.error("Error uploading cover:", uploadErr);
+        }
+      }
+
+      const result = await createTripMut({
         title: title.trim(),
-        destination: destination.trim(),
-        start_date: selectedDates.startId || "",
-        end_date: selectedDates.endId || selectedDates.startId || "",
-        cover_img_url: image || undefined,
-        description: description.trim(),
+        description: description.trim() || undefined,
+        destinationLabel: destination.trim(),
+        startDate: selectedDates.startId || "",
+        endDate: selectedDates.endId || selectedDates.startId || "",
+        visibility: "private",
+        currency: "GBP",
+        coverImageUrl,
       });
 
-      if (result.success) {
-        setCreatedTrip(result.data);
-        setShowSuccessModal(true);
-      } else {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: result.error || "Failed to create trip.",
-          position: "bottom",
-        });
-      }
+      setCreatedTrip({
+        tripId: result.tripId,
+        slug: result.slug,
+        title: title.trim(),
+        destination: destination.trim(),
+        startDate: selectedDates.startId || "",
+        endDate: selectedDates.endId || selectedDates.startId || "",
+      });
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error("Error creating trip:", error);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: error.message || "An unexpected error occurred. Please try again.",
+        text2:
+          error?.message ||
+          "An unexpected error occurred. Please try again.",
         position: "bottom",
       });
     } finally {
@@ -277,8 +299,8 @@ const CreateTrip = () => {
 
   const formattedDates = useMemo(() => {
     if (!createdTrip) return "";
-    const start = new Date(createdTrip.start_date);
-    const end = new Date(createdTrip.end_date);
+    const start = new Date(createdTrip.startDate);
+    const end = new Date(createdTrip.endDate);
 
     const startMonth = start.toLocaleDateString("en-US", { month: "short" });
     const startDay = start.getDate();
@@ -296,6 +318,24 @@ const CreateTrip = () => {
   return (
     <AppSafeAreaView edges={["top"]}>
       <ScreenHeader title="Create Trip" onBack={handleBack} />
+
+      <View className="px-5">
+        <TouchableOpacity
+          onPress={() => setShowTemplatePicker(true)}
+          activeOpacity={0.8}
+          className="mb-4 flex-row items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-dark-secondary/50 px-4 py-3"
+        >
+          <View>
+            <Text className="text-sm font-semibold text-black dark:text-white">
+              Start from a template ✨
+            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              Skip the setup — pick a curated itinerary
+            </Text>
+          </View>
+          <Text className="text-base text-primary">›</Text>
+        </TouchableOpacity>
+      </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -363,6 +403,25 @@ const CreateTrip = () => {
         onShare={() => {
           setShowSuccessModal(false);
           setShowShareModal(true);
+        }}
+      />
+
+      <TemplatePickerModal
+        isVisible={showTemplatePicker}
+        onClose={() => setShowTemplatePicker(false)}
+        onSelect={async (templateId) => {
+          try {
+            const result = await createFromTemplateMut({ templateId });
+            setShowTemplatePicker(false);
+            router.replace(`/(tabs)/(trips)/${result.tripId}` as any);
+          } catch (err) {
+            Toast.show({
+              type: "error",
+              text1: "Could not create trip",
+              text2: err instanceof Error ? err.message : "Try a different template.",
+              position: "bottom",
+            });
+          }
         }}
       />
 

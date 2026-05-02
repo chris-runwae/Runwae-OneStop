@@ -1,410 +1,166 @@
-/**
- * useTripActions.ts
- *
- * Pure async data functions for trip management. No hook wrapper,
- * no internal state — call directly from components or stores.
- *
- * NOTE: The actual Supabase client lives at @/utils/supabase/client.
- * This file imports from @/lib/supabase — ensure that path is aliased
- * or re-exported in tsconfig/babel config.
- *
- * SCHEMA NOTES — two sets of columns are typed below but not yet in the
- * DB. Add them via a follow-up migration before calling the functions
- * that write them:
- *
- *   ALTER TABLE public.trip_details
- *     ADD COLUMN IF NOT EXISTS start_date date,
- *     ADD COLUMN IF NOT EXISTS end_date   date;
- *
- *   ALTER TABLE public.groups
- *     ADD COLUMN IF NOT EXISTS destination_label    text,
- *     ADD COLUMN IF NOT EXISTS destination_place_id text,
- *     ADD COLUMN IF NOT EXISTS destination_address  text;
- */
+import { api } from "@runwae/convex/convex/_generated/api";
+import type { Doc, Id } from "@runwae/convex/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 
-import { supabase } from '@/utils/supabase/client';
+// ================================================================
+// Types — mirrored from packages/convex/convex/schema.ts. Trip rows
+// are now flat: no nested `trip_details`, no `group_members` array.
+// Members are fetched separately via api.members.listByTrip.
+// ================================================================
 
-// Enums / union types
+export type Trip = Doc<"trips">;
 
-export type GroupMemberRole = 'member' | 'admin' | 'owner';
-export type TripVisibility = 'private' | 'invite_only' | 'public';
+export type TripMember = {
+  _id: Id<"trip_members">;
+  role: "owner" | "editor" | "viewer";
+  joinedAt: number;
+  user: {
+    _id: Id<"users">;
+    name?: string;
+    username?: string;
+    avatarUrl?: string;
+    image?: string;
+  } | null;
+};
 
-// Row types (match DB schema exactly)
+// Convenience composite for screens that pair a trip with its accepted
+// members. The members list is fetched in a sibling query and joined
+// in the hook layer so consumers can stay declarative.
+export type TripWithMembers = Trip & { members: TripMember[] };
 
-export interface Trip {
-  id: string;
-  type: 'trip';
-  name: string;
-  description: string | null;
-  created_by: string;
-  group_id: string | null; // self-ref: parent trip-group
-  // Pending columns (see SCHEMA NOTES above):
-  destination_label: string | null;
-  destination_place_id: string | null;
-  destination_address: string | null;
-  created_at: string;
-  updated_at: string;
-  cover_image_url: string | null;
-  join_code: string | null;
-}
+// Legacy alias kept until consumers finish migrating off snake_case;
+// new code should use `TripWithMembers` instead.
+export type TripWithEverything = TripWithMembers;
 
-export interface TripDetails {
-  id: string;
-  group_id: string;
-  budget: number | null;
-  currency: string;
-  notes: string | null;
-  cover_image_url: string | null;
-  visibility: TripVisibility;
-  // Pending columns (see SCHEMA NOTES above):
-  start_date: string | null;
-  end_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MemberProfile {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-}
-
-export interface GroupMember {
-  id: string;
-  group_id: string;
-  user_id: string;
-  role: GroupMemberRole;
-  joined_at: string;
-  profiles?: MemberProfile | null;
-}
-
-// Composite types returned by fetch functions
-
-export interface TripWithDetails extends Trip {
-  trip_details: TripDetails | null;
-}
-
-export interface TripWithEverything extends TripWithDetails {
-  group_members: GroupMember[];
-}
-
-// Input types
+export type TripVisibility = "private" | "invite_only" | "friends" | "public";
+export type TripCategory =
+  | "leisure" | "business" | "family" | "adventure" | "cultural" | "romantic";
+export type TripMemberRole = "owner" | "editor" | "viewer";
 
 export interface CreateTripInput {
-  name: string;
+  title: string;
   description?: string;
+  destinationLabel?: string;
+  destinationCoords?: { lat: number; lng: number };
+  destinationId?: Id<"destinations">;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  category?: TripCategory;
+  visibility: TripVisibility;
+  currency: string;
+  estimatedBudget?: number;
+  coverImageUrl?: string;
 }
 
 export interface UpdateTripInput {
-  name?: string;
+  title?: string;
   description?: string;
-  cover_image_url?: string | null;
-}
-
-export interface UpdateTripDetailsInput {
-  start_date?: string | null;
-  end_date?: string | null;
-  budget?: number | null;
-  currency?: string;
-  notes?: string | null;
-  cover_image_url?: string | null;
+  coverImageUrl?: string;
+  destinationLabel?: string;
+  destinationCoords?: { lat: number; lng: number };
+  startDate?: string;
+  endDate?: string;
   visibility?: TripVisibility;
+  category?: TripCategory;
+  estimatedBudget?: number;
+  currency?: string;
 }
 
-export interface UpdateDestinationInput {
-  destination_label: string;
-  destination_place_id?: string;
-  destination_address?: string;
+// ================================================================
+// Reactive list hooks
+// ================================================================
+
+/** All trips the viewer is a member of (any status). Reactive. */
+export function useMyTripsAll(): Trip[] | undefined {
+  return useQuery(api.trips.getMyTrips, {});
 }
 
-// Shared result wrapper
-
-export interface ActionResult<T> {
-  data: T | null;
-  error: string | null;
+/** Single trip by Convex id, with member-list access enforced server-side. */
+export function useTripById(
+  tripId: Id<"trips"> | string | undefined,
+): Trip | null | undefined {
+  return useQuery(
+    api.trips.getTripById,
+    tripId ? { tripId: tripId as Id<"trips"> } : "skip",
+  );
 }
 
-/**
- * Inserts a groups row (type='trip'). The DB trigger
- * trg_create_trip_details auto-creates the trip_details row
- * (currency='GBP', visibility='private'). Creator is added to
- * group_members as 'owner'. On member insert failure the groups
- * row is cleaned up.
- */
+/** Accepted members for a trip, with hydrated user records. Reactive. */
+export function useTripMembers(
+  tripId: Id<"trips"> | string | undefined,
+): TripMember[] | undefined {
+  return useQuery(
+    api.members.listByTrip,
+    tripId ? { tripId: tripId as Id<"trips"> } : "skip",
+  ) as TripMember[] | undefined;
+}
 
-export async function createTrip(
-  userId: string,
-  input: CreateTripInput
-): Promise<ActionResult<TripWithDetails>> {
-  const { data: group, error: groupError } = await supabase
-    .from('groups')
-    .insert({
-      type: 'trip',
-      name: input.name,
-      description: input.description ?? null,
-      created_by: userId,
-    })
-    .select('*, trip_details(*)')
-    .single();
+/** Viewer's membership row for a trip — surfaces pending invites. */
+export function useViewerMembership(
+  tripId: Id<"trips"> | string | undefined,
+) {
+  return useQuery(
+    api.trips.getViewerMembership,
+    tripId ? { tripId: tripId as Id<"trips"> } : "skip",
+  );
+}
 
-  if (groupError) {
-    console.log('Error creating trip: ', groupError, userId);
-    return { data: null, error: groupError.message };
+// ================================================================
+// Mutation hooks — thin wrappers so consumers can stay declarative.
+// All Convex mutations throw on failure; callers should wrap in
+// try/catch and surface errors via Toast/Alert.
+// ================================================================
+
+export function useCreateTrip() {
+  return useMutation(api.trips.createTrip);
+}
+
+export function useUpdateTrip() {
+  return useMutation(api.trips.updateTrip);
+}
+
+export function useDeleteTrip() {
+  return useMutation(api.trips.deleteTrip);
+}
+
+export function useInviteToTrip() {
+  return useMutation(api.trips.inviteToTrip);
+}
+
+export function useRespondToInvite() {
+  return useMutation(api.trips.respondToInvite);
+}
+
+export function useJoinByCode() {
+  return useMutation(api.trips.joinByCode);
+}
+
+export function useCreateFromTemplate() {
+  return useMutation(api.trips.createFromTemplate);
+}
+
+export function useCloneTrip() {
+  return useMutation(api.trips.cloneTrip);
+}
+
+// ================================================================
+// Helpers
+// ================================================================
+
+/** Splits a flat trip list into "my" (creator) and "joined" (other) buckets. */
+export function partitionTrips(
+  trips: Trip[] | undefined,
+  viewerUserId: Id<"users"> | string | undefined,
+): { myTrips: Trip[]; joinedTrips: Trip[] } {
+  if (!trips || !viewerUserId) return { myTrips: [], joinedTrips: [] };
+  const my: Trip[] = [];
+  const joined: Trip[] = [];
+  for (const t of trips) {
+    if ((t.creatorId as unknown as string) === viewerUserId) my.push(t);
+    else joined.push(t);
   }
-
-  return { data: group as TripWithDetails, error: null };
-}
-
-/** Returns all trips where created_by = userId, newest first. */
-
-export async function fetchMyTrips(
-  userId: string
-): Promise<ActionResult<TripWithEverything[]>> {
-  const { data, error } = await supabase
-    .from('groups')
-    .select(
-      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
-    )
-    .eq('type', 'trip')
-    .eq('created_by', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data ?? []) as TripWithEverything[], error: null };
-}
-
-/**
- * Returns trips the user is a member of but did NOT create.
- * Queries via group_members to respect RLS, then filters owned
- * trips in JS (cross-table .neq() is unreliable in PostgREST).
- */
-
-export async function fetchJoinedTrips(
-  userId: string
-): Promise<ActionResult<TripWithEverything[]>> {
-  const { data: memberRows, error: memberError } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .eq('user_id', userId);
-
-  if (memberError) return { data: null, error: memberError.message };
-
-  const groupIds = (memberRows ?? []).map((r) => r.group_id);
-  if (groupIds.length === 0) return { data: [], error: null };
-
-  const { data, error } = await supabase
-    .from('groups')
-    .select(
-      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
-    )
-    .eq('type', 'trip')
-    .neq('created_by', userId)
-    .in('id', groupIds)
-    .order('created_at', { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data ?? []) as TripWithEverything[], error: null };
-}
-
-/** Returns a single trip with its trip_details and all group_members. */
-
-export async function fetchTripById(
-  groupId: string
-): Promise<ActionResult<TripWithEverything>> {
-  const { data, error } = await supabase
-    .from('groups')
-    .select(
-      '*, trip_details(*), group_members(*, profiles(id, full_name, avatar_url))'
-    )
-    .eq('id', groupId)
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as TripWithEverything, error: null };
-}
-
-/** Updates name / description on the groups row. */
-
-export async function updateTrip(
-  groupId: string,
-  input: UpdateTripInput
-): Promise<ActionResult<Trip>> {
-  const { data, error } = await supabase
-    .from('groups')
-    .update({ ...input, updated_at: new Date().toISOString() })
-    .eq('id', groupId)
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as Trip, error: null };
-}
-
-/**
- * Updates budget, currency, dates, notes, visibility on trip_details.
- * Identified by group_id (= groups.id), not trip_details.id.
- */
-
-export async function updateTripDetails(
-  groupId: string,
-  input: UpdateTripDetailsInput
-): Promise<ActionResult<TripDetails>> {
-  const { data, error } = await supabase
-    .from('trip_details')
-    .update({ ...input, updated_at: new Date().toISOString() })
-    .eq('group_id', groupId)
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as TripDetails, error: null };
-}
-
-/** Updates destination_label, destination_place_id, destination_address on the groups row. */
-
-export async function updateDestination(
-  groupId: string,
-  place: UpdateDestinationInput
-): Promise<ActionResult<Trip>> {
-  const { data, error } = await supabase
-    .from('groups')
-    .update({
-      destination_label: place.destination_label,
-      destination_place_id: place.destination_place_id ?? null,
-      destination_address: place.destination_address ?? null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', groupId)
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as Trip, error: null };
-}
-
-/**
- * Hard-deletes the groups row. Cascades to trip_details,
- * group_members, itineraries, saved_itinerary_items via FK ON DELETE
- * CASCADE.
- */
-
-export async function deleteTrip(groupId: string): Promise<ActionResult<null>> {
-  const { error } = await supabase.from('groups').delete().eq('id', groupId);
-
-  if (error) return { data: null, error: error.message };
-  return { data: null, error: null };
-}
-
-/**
- * Removes a user's own group_members row (self-leave).
- * To remove another user, use removeMember().
- */
-
-export async function leaveTrip(
-  groupId: string,
-  userId: string
-): Promise<ActionResult<null>> {
-  const { error } = await supabase
-    .from('group_members')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', userId);
-
-  if (error) return { data: null, error: error.message };
-  return { data: null, error: null };
-}
-
-/** Inserts a group_members row. Defaults role to 'member'. */
-
-export async function addMember(
-  groupId: string,
-  userId: string,
-  role: GroupMemberRole = 'member'
-): Promise<ActionResult<GroupMember>> {
-  const { data, error } = await supabase
-    .from('group_members')
-    .insert({ group_id: groupId, user_id: userId, role })
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as GroupMember, error: null };
-}
-
-/** Changes an existing member's role. Requires the caller to be an admin or owner (enforced by RLS). */
-
-export async function updateMemberRole(
-  groupId: string,
-  userId: string,
-  role: GroupMemberRole
-): Promise<ActionResult<GroupMember>> {
-  const { data, error } = await supabase
-    .from('group_members')
-    .update({ role })
-    .eq('group_id', groupId)
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) return { data: null, error: error.message };
-  return { data: data as GroupMember, error: null };
-}
-
-/**
- * Removes another user from the group. Requires the caller to be
- * an admin or owner (enforced by RLS). Use leaveTrip() for
- * self-removal.
- */
-
-export async function removeMember(
-  groupId: string,
-  userId: string
-): Promise<ActionResult<null>> {
-  const { error } = await supabase
-    .from('group_members')
-    .delete()
-    .eq('group_id', groupId)
-    .eq('user_id', userId);
-
-  if (error) return { data: null, error: error.message };
-  return { data: null, error: null };
-}
-
-/**
- * Returns all trips with visibility='public' that were NOT created
- * by the given user. Used on the Explore tab for discovery.
- */
-export async function fetchPublicTrips(
-  userId: string
-): Promise<ActionResult<TripWithEverything[]>> {
-  // 1. Get IDs of groups the user is already a member of
-  const { data: membershipData } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .eq('user_id', userId);
-
-  const joinedGroupIds = (membershipData ?? []).map((m) => m.group_id);
-
-  // 2. Fetch public trips, excluding those the user is already part of
-  let query = supabase
-    .from('groups')
-    .select(
-      '*, trip_details!inner(*), group_members(*, profiles(id, full_name, avatar_url))'
-    )
-    .eq('type', 'trip')
-    .eq('trip_details.visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  if (joinedGroupIds.length > 0) {
-    query = query.not('id', 'in', `(${joinedGroupIds.join(',')})`);
-  } else {
-    // Fallback: if no joined groups found, at least exclude own trips by created_by
-    query = query.neq('created_by', userId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data ?? []) as TripWithEverything[], error: null };
+  // Newest first by createdAt for parity with the previous fetch order.
+  my.sort((a, b) => b.createdAt - a.createdAt);
+  joined.sort((a, b) => b.createdAt - a.createdAt);
+  return { myTrips: my, joinedTrips: joined };
 }

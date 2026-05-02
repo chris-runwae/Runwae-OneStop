@@ -22,10 +22,10 @@ import SearchIdeasSheet, {
 import { AppFonts, Colors } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
 import { SavedItineraryItem } from '@/hooks/useIdeaActions';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 
 interface Props {
-  trip: TripWithEverything;
+  trip: Trip;
   isMember?: boolean;
 }
 
@@ -43,9 +43,8 @@ const getCategoryWithEmoji = (category: string | null) => {
 export default function TripOverviewTab({ trip, isMember = false }: Props) {
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
-  const { ideas, ideasLoading, removeIdea, addDay, addItem, days } = useTrips();
-
-  const tripDetails = trip?.trip_details;
+  const { ideas, ideasLoading, removeIdea, addItem, days, activeTripMembers } =
+    useTrips();
   const [searchVisible, setSearchVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<SavedItineraryItem | null>(
@@ -92,23 +91,22 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
     {
       label: 'View Details',
       onPress: () => {
-        if (!selectedIdea?.external_id) return;
+        if (!selectedIdea?.apiRef) return;
 
         if (selectedIdea.type === 'hotel') {
           router.push({
             pathname: '/hotels/[hotelId]',
             params: {
-              hotelId: selectedIdea.external_id,
-              hotelData: JSON.stringify(selectedIdea.all_data),
-              checkin: trip?.trip_details?.start_date,
-              checkout: trip?.trip_details?.end_date,
-              adults: trip?.group_members?.length ?? 1,
+              hotelId: selectedIdea.apiRef,
+              checkin: trip.startDate,
+              checkout: trip.endDate,
+              adults: activeTripMembers.length || 1,
             },
           } as any);
         } else {
           router.push({
             pathname: '/viator/[productCode]',
-            params: { productCode: selectedIdea.external_id },
+            params: { productCode: selectedIdea.apiRef },
           } as any);
         }
       },
@@ -126,7 +124,8 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
             isDestructive: true,
             hasSeparator: true,
             onPress: () => {
-              if (selectedIdea) handleDeleteIdea(selectedIdea.id);
+              if (selectedIdea)
+                handleDeleteIdea(selectedIdea._id as unknown as string);
             },
           },
         ]
@@ -145,7 +144,7 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
   const filteredIdeas =
     activeFilter === 'All'
       ? ideas
-      : ideas.filter((idea) => idea.location === activeFilter);
+      : ideas.filter((idea) => idea.locationName === activeFilter);
 
   if (ideas.length === 0 && !ideasLoading) {
     return (
@@ -252,20 +251,17 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
 
       <View style={styles.ideaGridContent}>
         {filteredIdeas.map((item) => {
-          const price = item.all_data?.price || item.all_data?.representativePrice?.amount;
-          const currency = item.all_data?.currency || item.all_data?.representativePrice?.currency;
-
+          const itemId = item._id as unknown as string;
           return (
             <IdeaCard
-              key={item.id}
+              key={itemId}
               item={item}
               imageUri={
-                item.cover_image ||
-                item.image_url || // check both
+                item.imageUrl ||
                 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=600'
               }
-              categoryLabel={getCategoryWithEmoji(item.location)}
-              title={item.name}
+              categoryLabel={getCategoryWithEmoji(item.locationName ?? null)}
+              title={item.title}
               description={item.notes || ''}
               onOptionsPress={
                 isMember
@@ -276,11 +272,11 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
                     }
                   : undefined
               }
-              checkin={tripDetails?.start_date}
-              checkout={tripDetails?.end_date}
-              adults={trip.group_members?.length ?? 1}
-              price={price}
-              currency={currency}
+              checkin={trip.startDate}
+              checkout={trip.endDate}
+              adults={activeTripMembers.length || 1}
+              price={item.price}
+              currency={item.currency}
               isMember={isMember}
             />
           );
@@ -301,17 +297,18 @@ export default function TripOverviewTab({ trip, isMember = false }: Props) {
         onSubmit={async (
           dayId: string,
           startTime?: string | null,
-          endTime?: string | null
+          endTime?: string | null,
         ) => {
           if (!selectedIdea) return;
           await addItem(dayId, {
-            title: selectedIdea.name,
-            type: selectedIdea.type as any, // Cast to ItemType
-            location: selectedIdea.location,
-            external_id: selectedIdea.external_id,
-            image_url: selectedIdea.cover_image,
-            start_time: startTime,
-            end_time: endTime,
+            title: selectedIdea.title,
+            type: selectedIdea.type,
+            locationName: selectedIdea.locationName,
+            apiSource: selectedIdea.apiSource,
+            apiRef: selectedIdea.apiRef,
+            imageUrl: selectedIdea.imageUrl,
+            startTime: startTime ?? undefined,
+            endTime: endTime ?? undefined,
           });
         }}
       />

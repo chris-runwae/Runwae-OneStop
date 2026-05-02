@@ -11,8 +11,8 @@ function avatarColor(userId: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function initials(member: MemberCardProps['member']): string {
-  const name = member.profiles?.full_name;
+function initials(member: { user: { name?: string } | null }): string {
+  const name = member.user?.name;
   if (!name) return '?';
   const parts = name.trim().split(' ');
   return parts.length >= 2
@@ -20,18 +20,12 @@ function initials(member: MemberCardProps['member']): string {
     : parts[0][0].toUpperCase();
 }
 
-const ROLE_LABELS: Record<string, string> = { owner: 'Owner', admin: 'Admin', member: 'Member' };
+const ROLE_LABELS: Record<string, string> = { owner: 'Owner', editor: 'Editor', viewer: 'Viewer' };
+
+import type { TripMember } from '@/hooks/useTripActions';
 
 interface MemberCardProps {
-  member: {
-    id: string;
-    user_id: string;
-    role: string;
-    profiles?: {
-      full_name?: string | null;
-      avatar_url?: string | null;
-    } | null;
-  };
+  member: TripMember;
   isMe: boolean;
   canDelete: boolean;
   dark: boolean;
@@ -40,11 +34,14 @@ interface MemberCardProps {
 
 const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps) => {
   const isOwner = member.role === 'owner';
+  const name = member.user?.name ?? 'Unknown';
+  const avatarUrl = member.user?.avatarUrl ?? member.user?.image;
+  const userIdStr = (member.user?._id as unknown as string) ?? member._id;
 
   const confirmDelete = () =>
     Alert.alert(
       'Remove member',
-      `Remove ${member.profiles?.full_name ?? 'this member'} from the trip?`,
+      `Remove ${name} from the trip?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Remove', style: 'destructive', onPress: onDelete },
@@ -53,9 +50,9 @@ const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps
 
   return (
     <View style={[styles.card, { backgroundColor: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: dark ? '#2c2c2e' : '#E5E7EB' }]}>
-      <View style={[styles.avatar, { backgroundColor: avatarColor(member.user_id) }]}>
-        {member.profiles?.avatar_url ? (
-          <Image source={{ uri: member.profiles.avatar_url }} style={styles.avatarImg} contentFit="cover" />
+      <View style={[styles.avatar, { backgroundColor: avatarColor(userIdStr) }]}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} contentFit="cover" />
         ) : (
           <Text style={styles.avatarText}>{initials(member)}</Text>
         )}
@@ -63,7 +60,7 @@ const MemberCard = ({ member, isMe, canDelete, dark, onDelete }: MemberCardProps
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={[styles.name, { color: dark ? '#fff' : '#111827' }]} numberOfLines={1}>
-            {member.profiles?.full_name ?? 'Unknown'}
+            {name}
           </Text>
           {isMe && (
             <View style={[styles.youBadge, { backgroundColor: '#FF1F8C' }]}>

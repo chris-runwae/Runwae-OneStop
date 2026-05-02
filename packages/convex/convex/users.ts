@@ -72,6 +72,34 @@ export const generateAvatarUploadUrl = mutation({
   },
 });
 
+// Generic upload-URL generator used by trip/itinerary cover images. We
+// gate it behind authentication so anonymous clients can't burn storage
+// quota by hammering the endpoint, but we don't tie the resulting
+// storageId to any user — callers store the resolved URL on whichever
+// row they own.
+export const generateImageUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Resolves a storageId returned by `generateImageUploadUrl` to its
+// public URL. Callers PUT to the upload URL, get a `storageId`, then
+// call this to obtain the URL they persist on the row.
+export const resolveStorageUrl = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) throw new Error("Upload not found");
+    return url;
+  },
+});
+
 export const setAvatar = mutation({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, { storageId }) => {

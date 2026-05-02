@@ -58,8 +58,8 @@ export default function BookingScreen() {
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
 
-  const { activeTrip } = useTrips();
-  const groupSize = activeTrip?.group_members?.length ?? 1;
+  const { activeTripMembers } = useTrips();
+  const groupSize = activeTripMembers.length || 1;
   const isGroupTrip = groupSize > 1;
 
   const baseAdults = parseInt(adultsStr ?? '1', 10);

@@ -10,7 +10,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 
 import { useTrips } from '@/context/TripsContext';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { Event, Experience } from '@/types/content.types';
 import { getFeaturedEvents } from '@/utils/supabase/events.service';
 import { getFeaturedExperiences } from '@/utils/supabase/experiences.service';
@@ -20,7 +20,6 @@ export default function HomeScreen() {
     showWelcomeModal,
     setShowWelcomeModal,
     user,
-    isLoading: authLoading,
   } = useAuth();
   const { dark } = useTheme();
 
@@ -32,35 +31,23 @@ export default function HomeScreen() {
     []
   );
 
-  function isActive(trip: TripWithEverything): boolean {
-    const endDate = trip.trip_details?.end_date;
-    if (!endDate) return true;
-    return new Date(endDate) >= new Date(new Date().toDateString());
+  function isActive(trip: Trip): boolean {
+    if (!trip.endDate) return true;
+    return new Date(trip.endDate) >= new Date(new Date().toDateString());
   }
 
   const allTrips = useMemo(() => {
     const combined = [...myTrips, ...joinedTrips];
     if (!user?.id) return combined;
-
-    return combined.sort((a, b) => {
-      const getInteractionDate = (trip: TripWithEverything) => {
-        if (trip.created_by === user.id) {
-          return new Date(trip.created_at).getTime();
-        }
-        const membership = trip.group_members?.find(
-          (m) => m.user_id === user.id
-        );
-        return membership
-          ? new Date(membership.joined_at).getTime()
-          : new Date(trip.created_at).getTime();
-      };
-
-      return getInteractionDate(b) - getInteractionDate(a);
-    });
+    // Newest interaction first; for trips the viewer created, that's
+    // createdAt. For joined trips we don't have the per-user joinedAt
+    // here (the activeTrip query owns members), so fall back to
+    // createdAt — close enough for the home-screen list.
+    return [...combined].sort((a, b) => b.createdAt - a.createdAt);
   }, [myTrips, joinedTrips, user?.id]);
 
   const upcomingTrips = useMemo(
-    () => allTrips.filter((t) => isActive(t as TripWithEverything)),
+    () => allTrips.filter(isActive),
     [allTrips]
   );
 

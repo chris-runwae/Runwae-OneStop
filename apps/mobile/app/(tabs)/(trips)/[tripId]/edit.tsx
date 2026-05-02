@@ -33,43 +33,32 @@ export default function EditTripScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const {
-    activeTrip,
-    updateTrip,
-    updateTripDetails,
-    updateDestination,
-    loadTrip,
-  } = useTrips();
+  const { activeTrip, updateTrip, loadTrip } = useTrips();
 
   // Basic trip info state
-  const isCorrectTrip = activeTrip?.id === tripId;
+  const isCorrectTrip = (activeTrip?._id as unknown as string) === tripId;
   const [name, setName] = useState(
-    isCorrectTrip ? (activeTrip?.name ?? '') : ''
+    isCorrectTrip ? activeTrip?.title ?? '' : '',
   );
   const [description, setDescription] = useState(
-    isCorrectTrip ? (activeTrip?.description ?? '') : ''
+    isCorrectTrip ? activeTrip?.description ?? '' : '',
   );
   const [coverImage, setCoverImage] = useState<string | null>(
-    isCorrectTrip ? (activeTrip?.cover_image_url ?? null) : null
+    isCorrectTrip ? activeTrip?.coverImageUrl ?? null : null,
   );
 
-  // Destination state
+  // Destination state — Convex schema only stores label + coords;
+  // place id / address are dropped.
   const [destinationLabel, setDestinationLabel] = useState(
-    isCorrectTrip ? (activeTrip?.destination_label ?? '') : ''
-  );
-  const [destinationPlaceId, setDestinationPlaceId] = useState(
-    isCorrectTrip ? (activeTrip?.destination_place_id ?? '') : ''
-  );
-  const [destinationAddress, setDestinationAddress] = useState(
-    isCorrectTrip ? (activeTrip?.destination_address ?? '') : ''
+    isCorrectTrip ? activeTrip?.destinationLabel ?? '' : '',
   );
 
   // Date state
   const [startDate, setStartDate] = useState(
-    isCorrectTrip ? (activeTrip?.trip_details?.start_date ?? '') : ''
+    isCorrectTrip ? activeTrip?.startDate ?? '' : '',
   );
   const [endDate, setEndDate] = useState(
-    isCorrectTrip ? (activeTrip?.trip_details?.end_date ?? '') : ''
+    isCorrectTrip ? activeTrip?.endDate ?? '' : '',
   );
 
   // UI state
@@ -80,24 +69,22 @@ export default function EditTripScreen() {
 
   // Initial load
   useEffect(() => {
-    if (tripId && activeTrip?.id !== tripId) {
+    if (tripId && (activeTrip?._id as unknown as string) !== tripId) {
       loadTrip(tripId);
     }
   }, [tripId]);
 
   // Sync state when activeTrip updates
   useEffect(() => {
-    if (activeTrip?.id === tripId) {
-      setName(activeTrip.name ?? '');
+    if ((activeTrip?._id as unknown as string) === tripId && activeTrip) {
+      setName(activeTrip.title ?? '');
       setDescription(activeTrip.description ?? '');
-      setCoverImage(activeTrip.cover_image_url ?? null);
-      setDestinationLabel(activeTrip.destination_label ?? '');
-      setDestinationPlaceId(activeTrip.destination_place_id ?? '');
-      setDestinationAddress(activeTrip.destination_address ?? '');
-      setStartDate(activeTrip.trip_details?.start_date ?? '');
-      setEndDate(activeTrip.trip_details?.end_date ?? '');
+      setCoverImage(activeTrip.coverImageUrl ?? null);
+      setDestinationLabel(activeTrip.destinationLabel ?? '');
+      setStartDate(activeTrip.startDate ?? '');
+      setEndDate(activeTrip.endDate ?? '');
     }
-  }, [activeTrip]);
+  }, [activeTrip, tripId]);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -129,33 +116,24 @@ export default function EditTripScreen() {
 
     setIsSaving(true);
     try {
-      const results = await Promise.all([
-        updateTrip(tripId!, {
-          name: name.trim(),
-          description: description.trim(),
-          cover_image_url: coverImage,
-        }),
-        updateDestination(tripId!, {
-          destination_label: destinationLabel,
-          destination_place_id: destinationPlaceId,
-          destination_address: destinationAddress,
-        }),
-        updateTripDetails(tripId!, {
-          start_date: startDate || null,
-          end_date: endDate || startDate || null,
-        }),
-      ]);
+      const { error } = await updateTrip(tripId!, {
+        title: name.trim(),
+        description: description.trim() || undefined,
+        coverImageUrl: coverImage ?? undefined,
+        destinationLabel: destinationLabel || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || startDate || undefined,
+      });
 
-      const err = results.find((r) => r?.error)?.error;
-      if (err) {
-        Alert.alert('Sync Error', 'Failed to save some changes.');
+      if (error) {
+        Alert.alert('Sync Error', error);
       } else {
         router.back();
       }
     } catch (err: any) {
       Alert.alert(
         'Save Failed',
-        err.message || 'An unexpected error occurred.'
+        err.message || 'An unexpected error occurred.',
       );
     } finally {
       setIsSaving(false);
@@ -316,8 +294,6 @@ export default function EditTripScreen() {
         initialQuery={destinationLabel}
         onSelect={(place) => {
           setDestinationLabel(place.displayName);
-          setDestinationPlaceId(place.placeId);
-          setDestinationAddress(place.formattedAddress || '');
           setIsDestinationModalVisible(false);
         }}
       />

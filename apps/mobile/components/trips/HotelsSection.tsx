@@ -10,13 +10,14 @@ import { FlashList } from '@shopify/flash-list';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import { useHotels } from '@/hooks/useHotels';
-import type { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip, TripMember } from '@/hooks/useTripActions';
 import type { HotelCitySection } from '@/types/hotel.types';
 import HotelCard from './HotelCard';
 import { LiteAPIHotelRateItem } from '@/types/liteapi.types';
 
 interface Props {
-  trip: TripWithEverything;
+  trip: Trip;
+  members?: TripMember[];
   onAdd: (idea: any) => void;
 }
 
@@ -31,25 +32,25 @@ function defaultDates() {
   return { checkin: fmt(checkin), checkout: fmt(checkout) };
 }
 
-export default function HotelsSection({ trip, onAdd }: Props) {
+export default function HotelsSection({ trip, members, onAdd }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   const defaults = useMemo(() => defaultDates(), []);
-  const checkin = trip.trip_details?.start_date ?? defaults.checkin;
-  const checkout = trip.trip_details?.end_date ?? defaults.checkout;
-  const adults = Math.max(1, trip.group_members?.length ?? 1);
+  const checkin = trip.startDate ?? defaults.checkin;
+  const checkout = trip.endDate ?? defaults.checkout;
+  const adults = Math.max(1, members?.length ?? 1);
 
   const { data, citySections, loading, error } = useHotels(
-    trip.destination_label ?? null,
+    trip.destinationLabel ?? null,
     checkin,
     checkout,
     adults,
-    trip.destination_place_id ?? null
+    null
   );
 
-  const sectionTitle = trip.destination_label
-    ? `Hotels in ${trip.destination_label}`
+  const sectionTitle = trip.destinationLabel
+    ? `Hotels in ${trip.destinationLabel}`
     : 'Hotels';
 
   if (loading) {
@@ -104,7 +105,7 @@ export default function HotelsSection({ trip, onAdd }: Props) {
                   <View style={styles.horizontalCard}>
                     <HotelCard
                       hotel={item as unknown as LiteAPIHotelRateItem}
-                      tripId={trip.id}
+                      tripId={trip._id as unknown as string}
                       checkin={checkin}
                       checkout={checkout}
                       adults={adults}
@@ -147,7 +148,7 @@ export default function HotelsSection({ trip, onAdd }: Props) {
         renderItem={({ item, index }) => (
           <HotelCard
             hotel={item as unknown as LiteAPIHotelRateItem}
-            tripId={trip.id}
+            tripId={trip._id as unknown as string}
             checkin={checkin}
             checkout={checkout}
             adults={adults}

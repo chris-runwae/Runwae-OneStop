@@ -18,40 +18,42 @@ function addOnCategoryToType(category: string): ItemType {
 
 export function savedItemFromAddOn(item: AddOn): CreateSavedItemInput {
   return {
-    name: item.title,
+    title: item.title,
     type: addOnCategoryToType(item.category),
-    location: item.category,
-    external_id: item.id,
-    cover_image: item.image,
+    locationName: item.category,
+    apiRef: item.id,
+    imageUrl: item.image,
     notes: item.description,
+    isManual: false,
   };
 }
 
 export function savedItemFromExperience(
-  experience: Experience
+  experience: Experience,
 ): CreateSavedItemInput {
   return {
-    name: experience.title,
+    title: experience.title,
     type: 'activity',
-    location: experience.location ?? experience.category,
-    external_id: experience.id,
-    cover_image: experience.image,
+    locationName: experience.location ?? experience.category,
+    apiSource: 'viator',
+    apiRef: experience.id,
+    imageUrl: experience.image,
     notes: experience.description,
+    isManual: false,
   };
 }
 
 export function savedItemFromEvent(event: Event): CreateSavedItemInput {
+  const notesParts = [event.date, event.time, event.description].filter(Boolean);
   return {
-    name: event.title,
-    // DB check constraint only allows: activity, restaurant, hotel, transport, other
-    type: 'activity',
-    location: event.location,
-    external_id: event.id,
-    cover_image: event.image,
-    notes:
-      [event.date, event.time, event.description].filter(Boolean).join(' · ') ||
-      null,
-    all_data: event,
+    title: event.title,
+    type: 'event',
+    locationName: event.location,
+    apiSource: 'internal',
+    apiRef: event.id,
+    imageUrl: event.image,
+    notes: notesParts.length ? notesParts.join(' · ') : undefined,
+    isManual: false,
   };
 }
 
@@ -63,40 +65,43 @@ export function savedItemFromDestination(destination: {
   description?: string | null;
 }): CreateSavedItemInput {
   return {
-    name: destination.title,
+    title: destination.title,
     type: 'other',
-    location: destination.location,
-    external_id: destination.id,
-    cover_image: destination.image,
-    notes: destination.description ?? null,
+    locationName: destination.location,
+    apiRef: destination.id,
+    imageUrl: destination.image ?? undefined,
+    notes: destination.description ?? undefined,
+    isManual: false,
   };
 }
 
 export function savedItemFromViatorIdea(
-  idea: MappedViatorIdea
+  idea: MappedViatorIdea,
 ): CreateSavedItemInput {
   return {
-    name: idea.title,
+    title: idea.title,
     type: 'activity',
-    location: idea.category,
-    external_id: idea.id,
-    cover_image: idea.imageUri,
+    locationName: idea.category,
+    apiSource: 'viator',
+    apiRef: idea.id,
+    imageUrl: idea.imageUri,
     notes: idea.description,
-    all_data: idea.product,
+    isManual: false,
   };
 }
 
 export function savedItemFromHotel(
-  hotel: LiteAPIHotelRateItem
+  hotel: LiteAPIHotelRateItem,
 ): CreateSavedItemInput {
   const roomCount = hotel.roomTypes?.length ?? 0;
   return {
-    name: hotel.name,
+    title: hotel.name,
     type: 'hotel',
-    location: 'Stay',
-    external_id: hotel.hotelId,
-    cover_image: hotel.thumbnail ?? null,
+    locationName: 'Stay',
+    apiSource: 'liteapi',
+    apiRef: hotel.hotelId,
+    imageUrl: hotel.thumbnail ?? undefined,
     notes: `${hotel.address} | ${roomCount} room${roomCount !== 1 ? 's' : ''}`,
-    all_data: hotel,
+    isManual: false,
   };
 }

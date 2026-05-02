@@ -87,8 +87,8 @@ const TYPE_OPTIONS: TypeOption[] = [
     color: '#6b7280',
   },
   {
-    value: 'cruise',
-    label: 'Cruise',
+    value: 'tour',
+    label: 'Tour',
     icon: (c, s) => <Ship size={s} color={c} />,
     color: '#06b6d4',
   },
@@ -238,13 +238,13 @@ const AddItineraryItemSheet = ({ visible, onClose, onSubmit }: Props) => {
       await onSubmit({
         title: title.trim(),
         type,
-        start_time: format(startTimeValue, 'HH:mm'),
-        end_time: format(endTimeValue, 'HH:mm'),
-        location: location.trim() || null,
-        cost: cost ? parseFloat(cost) : null,
+        startTime: format(startTimeValue, 'HH:mm'),
+        endTime: format(endTimeValue, 'HH:mm'),
+        locationName: location.trim() || undefined,
+        price: cost ? parseFloat(cost) : undefined,
         currency,
-        notes: notes.trim() || null,
-        image_url: imageUri || null,
+        notes: notes.trim() || undefined,
+        imageUrl: imageUri || undefined,
       });
       onClose();
     } catch (err) {

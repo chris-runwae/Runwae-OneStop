@@ -1,78 +1,81 @@
-import { supabase } from '@/utils/supabase/client';
-import { ItemType } from './useItineraryActions';
+import { api } from "@runwae/convex/convex/_generated/api";
+import type { Doc, Id } from "@runwae/convex/convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import type { ItemType } from "./useItineraryActions";
 
-export interface SavedItineraryItem {
-  id: string;
-  trip_id: string;
-  name: string;
+// ================================================================
+// Types — saved_items live one-per-trip in Convex. Comments are a
+// sibling table; promotion to itinerary uses a dedicated mutation.
+// ================================================================
+
+export type SavedItineraryItem = Doc<"saved_items">;
+
+export interface CreateSavedItemInput {
   type: ItemType;
-  location: string | null;
-  external_id: string | null;
-  image_url: string | null;
-  notes: string | null;
-  user_id: string;
-  created_at: string;
-  all_data?: any | null;
-  cover_image?: string | null;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  price?: number;
+  currency?: string;
+  date?: string;
+  endDate?: string;
+  locationName?: string;
+  coords?: { lat: number; lng: number };
+  externalUrl?: string;
+  apiSource?: string;
+  apiRef?: string;
+  notes?: string;
+  isManual?: boolean;
 }
 
-export type CreateSavedItemInput = {
-  name: string;
-  type: ItemType;
-  location?: string | null;
-  external_id?: string | null;
-  image_url?: string | null;
-  notes?: string | null;
-  cover_image?: string | null;
-  all_data?: any | null;
-};
+// ================================================================
+// Reactive query hooks
+// ================================================================
 
-/**
- * Fetches all saved itinerary items (Ideas) for a given group.
- */
-export const fetchSavedItems = async (
-  tripId: string
-): Promise<SavedItineraryItem[]> => {
-  const { data, error } = await supabase
-    .from('saved_itinerary_items')
-    .select('*')
-    .eq('trip_id', tripId)
-    .order('created_at', { ascending: false });
+/** All saved items for a trip, optionally filtered by type. */
+export function useSavedItems(
+  tripId: Id<"trips"> | string | undefined,
+  type?: ItemType,
+): SavedItineraryItem[] | undefined {
+  return useQuery(
+    api.saved_items.getSavedItems,
+    tripId
+      ? { tripId: tripId as Id<"trips">, ...(type ? { type } : {}) }
+      : "skip",
+  );
+}
 
-  if (error) throw error;
-  return (data || []) as SavedItineraryItem[];
-};
+export function useSavedItemComments(
+  savedItemId: Id<"saved_items"> | string | undefined,
+) {
+  return useQuery(
+    api.saved_items.getComments,
+    savedItemId
+      ? { savedItemId: savedItemId as Id<"saved_items"> }
+      : "skip",
+  );
+}
 
-/**
- * Saves a new activity/place as an Idea for the group.
- */
-export const createSavedItem = async (
-  tripId: string,
-  userId: string,
-  input: CreateSavedItemInput
-): Promise<SavedItineraryItem> => {
-  const { data, error } = await supabase
-    .from('saved_itinerary_items')
-    .insert({
-      trip_id: tripId,
-      user_id: userId,
-      ...input,
-    })
-    .select('*')
-    .single();
+// ================================================================
+// Mutation hooks
+// ================================================================
 
-  if (error) throw error;
-  return data as SavedItineraryItem;
-};
+export function useAddSavedItem() {
+  return useMutation(api.saved_items.addSavedItem);
+}
 
-/**
- * Deletes a saved idea.
- */
-export const deleteSavedItem = async (itemId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('saved_itinerary_items')
-    .delete()
-    .eq('id', itemId);
+export function useRemoveSavedItem() {
+  return useMutation(api.saved_items.removeSavedItem);
+}
 
-  if (error) throw error;
-};
+export function useAddSavedItemComment() {
+  return useMutation(api.saved_items.addComment);
+}
+
+export function useRemoveSavedItemComment() {
+  return useMutation(api.saved_items.removeComment);
+}
+
+export function usePromoteToItinerary() {
+  return useMutation(api.saved_items.promoteToItinerary);
+}

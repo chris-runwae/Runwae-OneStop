@@ -1,7 +1,7 @@
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
 // import { Trip } from '@/constants/home.constant';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -10,7 +10,7 @@ import { Image, Text, View } from 'react-native';
 import TripCard from './TripCard';
 
 interface UpcomingTripsProps {
-  trips: TripWithEverything[];
+  trips: Trip[];
   loading?: boolean;
 }
 
@@ -36,7 +36,7 @@ const UpcomingTrips = ({ trips, loading = false }: UpcomingTripsProps) => {
           marginBottom: 15,
         }}
         keyExtractor={(item, index) =>
-          loading ? `skeleton-${index}` : item.id
+          loading ? `skeleton-${index}` : item._id
         }
         ItemSeparatorComponent={() => <View className="w-3" />}
         renderItem={({ item }) =>

@@ -4,9 +4,10 @@ import { useTrips } from '@/context/TripsContext';
 import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
+import { Copy, LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
+  Alert,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
@@ -19,6 +20,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTripDetailActions } from '@/hooks/useTripDetailActions';
+import { useCloneTrip } from '@/hooks/useTripActions';
 import TripDetailSkeleton from './components/TripDetailSkeleton';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
@@ -42,7 +44,8 @@ export default function TripDetailScreen() {
   const colors = Colors[colorScheme ?? 'light'];
 
   const { user } = useAuth();
-  const { activeTrip, isLoading } = useTrips();
+  const { activeTrip, activeTripMembers, isLoading, loadTrip } = useTrips();
+  const cloneTripMut = useCloneTrip();
   const {
     isJoining,
     handleJoinTrip,
@@ -64,7 +67,7 @@ export default function TripDetailScreen() {
     return <TripDetailSkeleton insetTop={insets.top} />;
   }
 
-  const coverUrl = activeTrip?.cover_image_url;
+  const coverUrl = activeTrip?.coverImageUrl;
 
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
@@ -91,16 +94,29 @@ export default function TripDetailScreen() {
     },
   });
 
-  const isOwner = activeTrip.created_by === user?.id;
-  const isMember = activeTrip?.group_members?.some(
-    (m) => m.user_id === user?.id
+  const isOwner = (activeTrip.creatorId as unknown as string) === user?.id;
+  const isMember = activeTripMembers.some(
+    (m) => (m.user?._id as unknown as string) === user?.id,
   );
-  const isPublic = activeTrip?.trip_details?.visibility === 'public';
-  const isSolo = isOwner && activeTrip?.group_members?.length === 1;
+  const isPublic = activeTrip.visibility === 'public';
+  const isSolo = isOwner && activeTripMembers.length === 1;
 
-  const creator = activeTrip?.group_members?.find(
-    (m) => m.role === 'owner' || m.role === 'admin'
-  );
+  const creator = activeTripMembers.find((m) => m.role === 'owner');
+
+  const handleCloneTrip = async () => {
+    if (!activeTrip) return;
+    try {
+      const newTripId = await cloneTripMut({
+        tripId: activeTrip._id,
+      });
+      Alert.alert('Trip cloned', 'A copy has been added to your trips.');
+      loadTrip(newTripId as unknown as string);
+      router.replace(`/(tabs)/(trips)/${newTripId}` as any);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to clone trip';
+      Alert.alert('Clone failed', msg);
+    }
+  };
 
   const dropdownOptions = [
     ...(isOwner
@@ -112,6 +128,11 @@ export default function TripDetailScreen() {
           },
         ]
       : []),
+    {
+      label: 'Clone Trip',
+      onPress: handleCloneTrip,
+      icon: Copy,
+    },
     ...(isOwner
       ? [
           {
@@ -139,14 +160,14 @@ export default function TripDetailScreen() {
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={coverUrl || ''}
-        title={activeTrip.name}
+        title={activeTrip.title}
         isOwner={isOwner}
         isMember={isMember}
         onEdit={showImagePicker}
         showMoreOptions={true}
         dropdownOptions={dropdownOptions}
         hideFavorite={true}
-        joinCode={activeTrip?.join_code ?? null}
+        joinCode={activeTrip.joinCode ?? null}
       />
 
       <Animated.ScrollView
@@ -186,7 +207,7 @@ export default function TripDetailScreen() {
           ]}>
           <Spacer size={24} vertical />
 
-          <Text style={styles.tripTitle}>{activeTrip.name}</Text>
+          <Text style={styles.tripTitle}>{activeTrip.title}</Text>
 
           <Spacer size={16} vertical />
 
@@ -195,13 +216,13 @@ export default function TripDetailScreen() {
               <Text
                 style={[styles.infoText, dynamicStyles.infoText]}
                 numberOfLines={1}>
-                📍 {activeTrip?.destination_label}
+                📍 {activeTrip.destinationLabel}
               </Text>
             </View>
             <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
               <DateRange
-                startDate={activeTrip?.trip_details?.start_date ?? ''}
-                endDate={activeTrip?.trip_details?.end_date ?? ''}
+                startDate={activeTrip.startDate}
+                endDate={activeTrip.endDate}
                 emoji={true}
                 color={dark ? '#ADB5BD' : '#A8A8A8'}
                 fontSize={12}
@@ -221,10 +242,9 @@ export default function TripDetailScreen() {
 
           <Spacer size={14} vertical />
           <View style={styles.membershipRow}>
-            {activeTrip?.group_members &&
-            activeTrip.group_members.length > 1 ? (
+            {activeTripMembers.length > 1 ? (
               <AvatarGroup
-                members={activeTrip.group_members}
+                members={activeTripMembers}
                 maxVisible={4}
                 size={30}
                 overlap={12}
@@ -232,8 +252,8 @@ export default function TripDetailScreen() {
             ) : (
               <View style={styles.creatorInfo}>
                 <ProfileAvatar
-                  name={creator?.profiles?.full_name || 'User'}
-                  imageUrl={creator?.profiles?.avatar_url}
+                  name={creator?.user?.name || 'User'}
+                  imageUrl={creator?.user?.avatarUrl ?? creator?.user?.image}
                   size={32}
                 />
                 <Spacer size={8} horizontal />
@@ -242,7 +262,7 @@ export default function TripDetailScreen() {
                     numberOfLines={1}
                     ellipsizeMode="tail"
                     style={styles.creatorName}>
-                    {creator?.profiles?.full_name || 'Guest'}
+                    {creator?.user?.name || 'Guest'}
                     {isOwner ? ' (You)' : ''}
                   </Text>
                   <Text style={styles.createdByLabel}>Created by</Text>
@@ -297,7 +317,7 @@ export default function TripDetailScreen() {
           )}
           {activeTab === 'activity' && (isMember || isPublic) && (
             <ActivityTab
-              tripId={activeTrip.id}
+              tripId={activeTrip._id as unknown as string}
               trip={activeTrip}
               isMember={isMember}
             />

@@ -48,6 +48,29 @@ async function assertTripAccess(
   return { userId, membership };
 }
 
+// Lightweight feed for the mobile create-trip entry point's
+// "Start from a template" row. Returns the most popular templates
+// first; we cap at 24 so the call stays bounded as the catalogue grows.
+export const listTemplates = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const max = Math.min(args.limit ?? 24, 100);
+    const templates = await ctx.db
+      .query("itinerary_templates")
+      .take(max);
+    // Sort by `timesCopied` desc; newest first when tied.
+    templates.sort((a, b) => {
+      const ac = a.timesCopied ?? 0;
+      const bc = b.timesCopied ?? 0;
+      if (bc !== ac) return bc - ac;
+      return b._creationTime - a._creationTime;
+    });
+    return templates;
+  },
+});
+
 export const getItinerary = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, args) => {
@@ -256,6 +279,78 @@ export const deleteItem = mutation({
     }
 
     await ctx.db.delete(args.itemId);
+    return { ok: true };
+  },
+});
+
+export const updateDay = mutation({
+  args: {
+    dayId: v.id("itinerary_days"),
+    title: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    date: v.optional(v.string()),
+    dayNumber: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const day = await ctx.db.get(args.dayId);
+    if (!day) throw new Error("Day not found");
+    await assertTripAccess(ctx, day.tripId, "write");
+    const { dayId, ...rest } = args;
+    const patch: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(rest)) {
+      if (val !== undefined) patch[k] = val;
+    }
+    await ctx.db.patch(dayId, patch);
+    return await ctx.db.get(dayId);
+  },
+});
+
+// Cascading delete: remove the day and any items pinned to it.
+export const deleteDay = mutation({
+  args: { dayId: v.id("itinerary_days") },
+  handler: async (ctx, args) => {
+    const day = await ctx.db.get(args.dayId);
+    if (!day) return { ok: true };
+    await assertTripAccess(ctx, day.tripId, "write");
+
+    const items = await ctx.db
+      .query("itinerary_items")
+      .withIndex("by_day", (q) => q.eq("dayId", args.dayId))
+      .collect();
+    for (const item of items) {
+      // Detach saved-item links so the saved tab regains the "add to
+      // itinerary" CTA after the day is gone.
+      if (item.savedItemId) {
+        const saved = await ctx.db.get(item.savedItemId);
+        if (saved) {
+          await ctx.db.patch(item.savedItemId, {
+            addedToItinerary: false,
+            itineraryItemId: undefined,
+          });
+        }
+      }
+      await ctx.db.delete(item._id);
+    }
+    await ctx.db.delete(args.dayId);
+    return { ok: true };
+  },
+});
+
+// Reorder all of a trip's days in one shot. The client passes the new
+// dayNumber sequence; we patch each row in the same transaction so the
+// reactive itinerary query repaints atomically.
+export const reorderDays = mutation({
+  args: {
+    tripId: v.id("trips"),
+    orderedDayIds: v.array(v.id("itinerary_days")),
+  },
+  handler: async (ctx, args) => {
+    await assertTripAccess(ctx, args.tripId, "write");
+    for (let i = 0; i < args.orderedDayIds.length; i++) {
+      const day = await ctx.db.get(args.orderedDayIds[i]);
+      if (!day || day.tripId !== args.tripId) continue;
+      await ctx.db.patch(args.orderedDayIds[i], { dayNumber: i + 1 });
+    }
     return { ok: true };
   },
 });

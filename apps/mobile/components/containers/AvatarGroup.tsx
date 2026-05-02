@@ -12,29 +12,26 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { GroupMember } from '@/hooks/useTripActions';
+import type { TripMember } from '@/hooks/useTripActions';
 import { Colors, COLORS, textStyles } from '@/constants';
 
-// define gradient tuples
 const GRADIENTS = [
-  ['#FF6B6B', '#FFD93D'] as const, // red → yellow
-  ['#6BCB77', '#4D96FF'] as const, // green → blue
-  ['#FF6B6B', '#6A4C93'] as const, // red → purple
-  ['#FFD93D', '#FF6B6B'] as const, // yellow → red
-  ['#4D96FF', '#FF6B6B'] as const, // blue → red
-  ['#6A4C93', '#FFD93D'] as const, // purple → yellow
-  ['#FF9A8B', '#FF6B6B'] as const, // coral → red
-  ['#6BCB77', '#FFD93D'] as const, // green → yellow
-  ['#FF6B6B', '#4D96FF'] as const, // red → blue
-  ['#FFD93D', '#6BCB77'] as const, // yellow → green
-  ['#FF6B6B', '#FF9A8B'] as const, // red → coral
+  ['#FF6B6B', '#FFD93D'] as const,
+  ['#6BCB77', '#4D96FF'] as const,
+  ['#FF6B6B', '#6A4C93'] as const,
+  ['#FFD93D', '#FF6B6B'] as const,
+  ['#4D96FF', '#FF6B6B'] as const,
+  ['#6A4C93', '#FFD93D'] as const,
+  ['#FF9A8B', '#FF6B6B'] as const,
+  ['#6BCB77', '#FFD93D'] as const,
+  ['#FF6B6B', '#4D96FF'] as const,
+  ['#FFD93D', '#6BCB77'] as const,
+  ['#FF6B6B', '#FF9A8B'] as const,
   ['#4D96FF', '#6A4C93'] as const,
 ] as const;
 
-// type for gradient tuple
 type GradientTuple = (typeof GRADIENTS)[number];
 
-// deterministic pick
 export function getRandomGradient(seed: string): GradientTuple {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -43,7 +40,6 @@ export function getRandomGradient(seed: string): GradientTuple {
   return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
 }
 
-// Enable LayoutAnimation on Android
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -52,11 +48,11 @@ if (
 }
 
 type AvatarGroupProps = {
-  members: GroupMember[];
+  members: TripMember[];
   maxVisible?: number;
   size?: number;
   overlap?: number;
-  onPressAvatar?: (attendee: GroupMember) => void;
+  onPressAvatar?: (member: TripMember) => void;
 };
 
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({
@@ -101,9 +97,10 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
 
   return (
     <View style={[styles.container, { height: size, width: containerWidth }]}>
-      {visible.map((user, index) => {
-        const initials = user.profiles?.full_name
-          ? user.profiles?.full_name
+      {visible.map((member, index) => {
+        const name = member.user?.name ?? '';
+        const initials = name
+          ? name
               .split(' ')
               .map((n: string) => n[0])
               .join('')
@@ -111,13 +108,15 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
           : '?';
 
         const gradientColors = getRandomGradient(
-          user.profiles?.full_name || user.user_id
+          name || (member.user?._id as unknown as string) || member._id,
         );
+
+        const avatarUrl = member.user?.avatarUrl ?? member.user?.image;
 
         return (
           <Pressable
-            key={user.user_id}
-            onPress={() => onPressAvatar?.(user)}
+            key={member._id}
+            onPress={() => onPressAvatar?.(member)}
             style={[
               styles.avatarWrapper,
               {
@@ -127,9 +126,9 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
                 borderRadius: size / 2,
               },
             ]}>
-            {user.profiles?.avatar_url ? (
+            {avatarUrl ? (
               <Image
-                source={{ uri: user.profiles.avatar_url }}
+                source={{ uri: avatarUrl }}
                 style={{ width: size, height: size, borderRadius: size / 2 }}
               />
             ) : (

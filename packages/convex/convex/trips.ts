@@ -254,6 +254,62 @@ export const getBySlug = query({
   },
 });
 
+// ID-based lookup for clients (mobile) that route on the trip's `_id` rather
+// than its slug. Mirrors `getBySlug`'s access rules: public trips are
+// returned unconditionally; non-public trips only resolve for accepted or
+// pending members.
+export const getTripById = query({
+  args: { tripId: v.id("trips") },
+  handler: async (ctx, args) => {
+    const trip = await ctx.db.get(args.tripId);
+    if (!trip) return null;
+
+    if (trip.visibility === "public") return trip;
+
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+
+    const membership = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), userId))
+      .first();
+
+    return membership ? trip : null;
+  },
+});
+
+// Public-facing preview for the join-code landing page. Returns just the
+// fields the recipient needs to recognise the trip before joining; member
+// count is denormalised so we don't ship the full member list.
+export const getInvitePreview = query({
+  args: { joinCode: v.string() },
+  handler: async (ctx, args) => {
+    const trip = await ctx.db
+      .query("trips")
+      .withIndex("by_join_code", (q) => q.eq("joinCode", args.joinCode))
+      .unique();
+    if (!trip) return null;
+
+    const members = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
+      .filter((q) => q.eq(q.field("status"), "accepted"))
+      .collect();
+
+    return {
+      _id: trip._id,
+      title: trip.title,
+      slug: trip.slug,
+      coverImageUrl: trip.coverImageUrl,
+      destinationLabel: trip.destinationLabel,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      memberCount: members.length,
+    };
+  },
+});
+
 // Lightweight viewer membership lookup for the trip detail page so it can
 // render an accept/decline banner when status === "pending".
 export const getViewerMembership = query({

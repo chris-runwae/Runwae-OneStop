@@ -1,7 +1,6 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { useTrips } from '@/context/TripsContext';
-import { TripVisibility } from '@/hooks/useTripActions';
-import { supabase } from '@/utils/supabase/client';
+import type { TripVisibility } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,8 +19,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useMutation } from 'convex/react';
 
-import { uploadGroupCoverImage } from '@/utils/supabase/storage';
+import { api } from '@runwae/convex/convex/_generated/api';
+import { uploadImageFromUri } from '@/lib/uploadImage';
 import CreateStepHeader from './CreateStepHeader';
 
 // ================================================================
@@ -39,8 +40,9 @@ export default function CreateTripDetails() {
     end_date: string;
   }>();
 
-  const { createTrip, updateTripDetails, updateDestination, updateTrip } =
-    useTrips();
+  const { createTrip, updateTrip } = useTrips();
+  const generateUrlMut = useMutation(api.users.generateImageUploadUrl);
+  const resolveUrlMut = useMutation(api.users.resolveStorageUrl);
 
   // Trip name — pre-filled from destination_label until user types
   const [tripName, setTripName] = useState(params.destination_label ?? '');
@@ -120,64 +122,51 @@ export default function CreateTripDetails() {
     setInlineError(null);
 
     try {
-      // Step 1: Create the trip (inserts groups row)
-      const { groupId, error: createError } = await createTrip({
-        name: tripName.trim() || (params.destination_label ?? 'My Trip'),
-      });
-      if (createError || !groupId) {
-        setInlineError('Failed to create trip. Please try again.');
-        console.error('Error creating trip: ', createError);
-        setSubmitting(false);
-        return;
-      }
+      const finalTitle =
+        tripName.trim() || params.destination_label || 'My Trip';
 
-      // Step 2: Update trip details with dates and visibility
-      const { error: detailsError } = await updateTripDetails(groupId, {
-        start_date: params.start_date || null,
-        end_date: params.end_date || null,
-        visibility,
-      });
-      if (detailsError) {
-        setInlineError(detailsError);
-        setSubmitting(false);
-        return;
-      }
-
-      // Step 3: Update destination fields
-      const { error: destError } = await updateDestination(groupId, {
-        destination_label: params.destination_label ?? '',
-        destination_place_id: params.destination_place_id ?? undefined,
-        destination_address: params.destination_address ?? undefined,
-      });
-      if (destError) {
-        setInlineError(destError);
-        setSubmitting(false);
-        return;
-      }
-
-      // Step 4: Upload cover image if selected
+      // 1. Upload the cover image first so we can persist it on the
+      //    initial insert. Failure is non-fatal — fall back to the
+      //    server's auto-picked default cover.
       let coverImageUrl: string | undefined;
       if (coverUri) {
         try {
-          coverImageUrl = await uploadGroupCoverImage(groupId, coverUri);
-        } catch (error) {
-          console.error('Error uploading cover image: ', error);
+          coverImageUrl = await uploadImageFromUri(coverUri, {
+            generateUrl: () => generateUrlMut(),
+            resolveUrl: (args) => resolveUrlMut(args),
+          });
+        } catch (uploadErr) {
+          console.error('Error uploading cover image: ', uploadErr);
           Alert.alert(
             'Warning',
-            'Failed to upload cover image. You can add it later.'
+            'Failed to upload cover image. You can add it later.',
           );
         }
       }
 
-      //Update trip with cover image url
-      await updateTrip(groupId, { cover_image_url: coverImageUrl });
+      // 2. Create the trip with the full payload — Convex's createTrip
+      //    inserts trip + auto-seeds itinerary days from the date range.
+      const { tripId, slug, error: createError } = await createTrip({
+        title: finalTitle,
+        destinationLabel: params.destination_label ?? '',
+        startDate: params.start_date,
+        endDate: params.end_date || params.start_date,
+        visibility,
+        currency: 'GBP',
+        coverImageUrl,
+      });
+      if (createError || !tripId) {
+        setInlineError(createError ?? 'Failed to create trip.');
+        setSubmitting(false);
+        return;
+      }
 
-      // Step 5: Navigate to success screen
       router.push({
         pathname: '(tabs)/create-trip/success' as any,
         params: {
-          tripId: groupId,
-          tripName: tripName.trim() || (params.destination_label ?? 'My Trip'),
+          tripId: tripId as unknown as string,
+          tripSlug: slug ?? '',
+          tripName: finalTitle,
           destination_label: params.destination_label ?? '',
         },
       });
@@ -194,9 +183,8 @@ export default function CreateTripDetails() {
     coverUri,
     params,
     createTrip,
-    updateTripDetails,
-    updateDestination,
-    updateTrip,
+    generateUrlMut,
+    resolveUrlMut,
   ]);
 
   // ----------------------------------------------------------------

@@ -23,7 +23,7 @@ import { AppFonts, Colors } from '@/constants';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import IdeaCard from './IdeaCard';
 import HotelsSection from '../trips/HotelsSection';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { ItemType } from '@/hooks/useItineraryActions';
 import {
   loadCategoryProducts,
@@ -40,7 +40,7 @@ import { lookupViatorDestinationId } from '@/utils/viator/viatorDestinationLooku
 interface Props {
   visible: boolean;
   onClose: () => void;
-  trip: TripWithEverything;
+  trip: Trip;
 }
 
 const SpinningLoader = ({
@@ -390,7 +390,7 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
         friction: 11,
       }).start();
       setTimeout(() => inputRef.current?.focus(), 150);
-      lookupViatorDestinationId(trip.destination_label).then((id) => {
+      lookupViatorDestinationId(trip.destinationLabel ?? null).then((id) => {
         setDestinationId(id);
         const filters = id ? { destination: id } : {};
         Promise.all([
@@ -414,33 +414,32 @@ export default function SearchIdeasSheet({ visible, onClose, trip }: Props) {
   }, [visible]);
 
   const handleSaveIdea = async (idea: MappedViatorIdea | HotelIdeaData) => {
-    let input;
-
     if (ideaType === 'hotel') {
       const hotel = idea as HotelIdeaData;
       const roomTypes = hotel.roomTypes.length;
-      input = {
-        name: hotel.name,
+      await addIdea({
+        title: hotel.name,
         type: ideaType,
-        location: 'Stay',
-        external_id: hotel.hotelId,
+        locationName: 'Stay',
+        apiSource: 'liteapi',
+        apiRef: hotel.hotelId,
         notes: `${hotel.address} | ${roomTypes} room${roomTypes > 1 ? 's' : ''}`,
-        all_data: hotel,
-        cover_image: hotel.thumbnail || null,
-      };
+        imageUrl: hotel.thumbnail || undefined,
+        isManual: false,
+      });
     } else {
       const activity = idea as MappedViatorIdea;
-      input = {
-        name: activity.title,
+      await addIdea({
+        title: activity.title,
         type: ideaType,
-        location: activity.category,
-        external_id: activity.id,
+        locationName: activity.category,
+        apiSource: 'viator',
+        apiRef: activity.id,
         notes: activity.description,
-        cover_image: activity.imageUri,
-        all_data: activity,
-      };
+        imageUrl: activity.imageUri,
+        isManual: false,
+      });
     }
-    await addIdea(input);
     onClose();
   };
 

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { FileText, Users } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Image,
   Platform,
@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 
 import { AppFonts, COLORS } from '@/constants/theme';
-import { fetchItineraryItemsCount } from '@/hooks/useItineraryActions';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import { useItineraryItemCount } from '@/hooks/useItineraryActions';
+import { useTripMembers, type Trip } from '@/hooks/useTripActions';
 import { formatDaysToGo, getDaysUntil } from '@/utils/date';
 import { useTheme } from '@react-navigation/native';
 import { AvatarGroup } from '@/components/containers/AvatarGroup';
 
 interface TripCardProps {
-  trip: TripWithEverything;
+  trip: Trip;
   fullWidth?: boolean;
 }
 
@@ -28,31 +28,18 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
 
-  const [itemsCount, setItemsCount] = useState<number | null>(null);
+  const itemsCount = useItineraryItemCount(trip._id);
+  const members = useTripMembers(trip._id) ?? [];
 
-  useEffect(() => {
-    const getItemsCount = async () => {
-      try {
-        const count = await fetchItineraryItemsCount(trip.id);
-        setItemsCount(count);
-      } catch (err) {
-        console.error('Error fetching itinerary items count:', err);
-      }
-    };
-    getItemsCount();
-  }, [trip.id]);
-
-  const daysUntil = getDaysUntil(trip.trip_details?.start_date ?? '');
+  const daysUntil = getDaysUntil(trip.startDate ?? '');
   const countdown = formatDaysToGo(daysUntil);
-
-  const DARK_SEC = '#212529';
 
   const { dark } = useTheme();
 
   return (
     <Pressable
       onPress={() => {
-        router.push(`/(tabs)/(trips)/${trip.id}`);
+        router.push(`/(tabs)/(trips)/${trip._id}`);
       }}
       className="bg-white dark:bg-dark-seconndary/50"
       style={[
@@ -70,7 +57,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
         <Image
           source={{
             uri:
-              trip.cover_image_url ??
+              trip.coverImageUrl ??
               'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
           }}
           style={styles.image}
@@ -85,7 +72,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
             { color: isDark ? COLORS.white.default : COLORS.black.default },
           ]}
           numberOfLines={1}>
-          {trip.name}
+          {trip.title}
         </Text>
 
         <View style={styles.metadataRow}>
@@ -99,7 +86,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
               numberOfLines={1}
               ellipsizeMode="tail"
               style={styles.metadataText}>
-              {trip.destination_label || 'TBD'}
+              {trip.destinationLabel || 'TBD'}
             </Text>
           </View>
           <View
@@ -131,8 +118,8 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
                   styles.pillText,
                   { color: isDark ? '#D1D5DB' : '#374151' },
                 ]}>
-                {trip.group_members?.length || 0}{' '}
-                {(trip.group_members?.length || 0) === 1 ? 'person' : 'people'}
+                {members.length}{' '}
+                {members.length === 1 ? 'person' : 'people'}
               </Text>
             </View>
 
@@ -150,7 +137,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
                   styles.pillText,
                   { color: isDark ? '#D1D5DB' : '#374151' },
                 ]}>
-                {itemsCount === null ? '...' : itemsCount}{' '}
+                {itemsCount === undefined ? '...' : itemsCount}{' '}
                 {itemsCount === 1 ? 'item' : 'items'}
               </Text>
             </View>
@@ -158,7 +145,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
 
           <View style={styles.avatarWrapper}>
             <AvatarGroup
-              members={trip.group_members || []}
+              members={members}
               maxVisible={3}
               size={30}
               overlap={12}

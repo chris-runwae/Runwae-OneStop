@@ -70,8 +70,9 @@ export default function IdeaCard({
   }
 
   const handleNavigateToDetails = () => {
-    const pCode = viatorProductCode || (item?.type === 'activity' ? item.external_id : null);
-    
+    const pCode =
+      viatorProductCode || (item?.type === 'activity' ? item.apiRef : null);
+
     if (pCode) {
       router.push({
         pathname: '/viator/[productCode]',
@@ -80,12 +81,11 @@ export default function IdeaCard({
       return;
     }
 
-    if (item?.type === 'hotel') {
+    if (item?.type === 'hotel' && item.apiRef) {
       router.push({
         pathname: '/hotels/[hotelId]',
         params: {
-          hotelId: item.external_id as string,
-          hotelData: JSON.stringify(item.all_data),
+          hotelId: item.apiRef,
           checkin,
           checkout,
           adults,

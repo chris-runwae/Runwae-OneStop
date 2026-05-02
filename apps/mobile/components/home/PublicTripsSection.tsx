@@ -1,13 +1,13 @@
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Text, View } from 'react-native';
 import TripCard from './TripCard';
 
 interface PublicTripsSectionProps {
-  data: TripWithEverything[];
+  data: Trip[];
   title?: string;
   subtitle?: string;
   loading?: boolean;
@@ -41,7 +41,7 @@ const PublicTripsSection = ({
           paddingHorizontal: 20,
         }}
         keyExtractor={(item, index) =>
-          loading ? `skeleton-${index}` : item.id
+          loading ? `skeleton-${index}` : item._id
         }
         ItemSeparatorComponent={() => <View className="w-3" />}
         renderItem={({ item }) =>

@@ -29,7 +29,7 @@ import { ActivityMemberSkeleton } from '@/components/ui/CardSkeletons';
 import Text from '@/components/ui/Text';
 import Spacer from '@/components/utils/Spacer';
 import { Colors, textStyles } from '@/constants';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 
 type ActivitySection = 'polls' | 'expenses' | 'posts' | 'members';
 
@@ -50,7 +50,7 @@ const SEGMENTS: { key: ActivitySection; label: string; icon: string }[] = [
 
 interface ActivityTabProps {
   tripId: string;
-  trip?: TripWithEverything;
+  trip?: Trip;
   isMember: boolean;
 }
 
@@ -65,12 +65,14 @@ export default function ActivityTab({
   const dark = colorScheme === 'dark';
 
   const { user } = useAuth();
-  const { removeMember } = useTrips();
+  const { removeMember, activeTripMembers } = useTrips();
 
-  const members = trip?.group_members ?? [];
-  const myMember = members.find((m) => m.user_id === user?.id);
+  const members = activeTripMembers;
+  const myMember = members.find(
+    (m) => (m.user?._id as unknown as string) === user?.id,
+  );
   const myRole = myMember?.role;
-  const canDelete = myRole === 'owner' || myRole === 'admin';
+  const canDelete = myRole === 'owner' || myRole === 'editor';
 
   const dynamicStyles = {
     segment: (isActive: boolean) => ({
@@ -131,12 +133,17 @@ export default function ActivityTab({
             contentContainerStyle={styles.membersList}>
             {members.map((member) => (
               <MemberCard
-                key={member.id}
+                key={member._id}
                 member={member}
-                isMe={member.user_id === user?.id}
+                isMe={(member.user?._id as unknown as string) === user?.id}
                 canDelete={canDelete}
                 dark={dark}
-                onDelete={() => removeMember(tripId, member.user_id)}
+                onDelete={() =>
+                  removeMember(
+                    tripId,
+                    member.user?._id as unknown as string,
+                  )
+                }
               />
             ))}
             {members.length === 0 && (

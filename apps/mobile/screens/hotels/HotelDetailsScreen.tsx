@@ -105,7 +105,8 @@ export default function HotelDetailScreen() {
 
   const { activeTrip } = useTrips();
   const adults = parseInt(adultsStr ?? '1', 10);
-  const tripId = tripIdParam ?? activeTrip?.id ?? '';
+  const tripId =
+    tripIdParam ?? (activeTrip?._id as unknown as string) ?? '';
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
@@ -129,8 +130,8 @@ export default function HotelDetailScreen() {
 
       // 2. Fetch Rates (Optional)
       try {
-        const checkinDate = checkin ?? activeTrip?.trip_details?.start_date ?? '';
-        const checkoutDate = checkout ?? activeTrip?.trip_details?.end_date ?? '';
+        const checkinDate = checkin ?? activeTrip?.startDate ?? '';
+        const checkoutDate = checkout ?? activeTrip?.endDate ?? '';
 
         if (checkinDate && checkoutDate) {
           const ratesRes = await getHotelRatesByHotelIds(
@@ -372,10 +373,8 @@ export default function HotelDetailScreen() {
                 </Text>
               );
             }
-            const checkinStr =
-              checkin ?? activeTrip?.trip_details?.start_date ?? '';
-            const checkoutStr =
-              checkout ?? activeTrip?.trip_details?.end_date ?? '';
+            const checkinStr = checkin ?? activeTrip?.startDate ?? '';
+            const checkoutStr = checkout ?? activeTrip?.endDate ?? '';
             const rows = roomTypes.flatMap((roomType: any, rtIdx: number) =>
               (roomType?.rates ?? []).map((room: any) => {
                 const price = ratePriceParts(room);

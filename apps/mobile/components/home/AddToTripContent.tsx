@@ -15,14 +15,14 @@ interface AddToTripContentProps {
 
 const AddToTripContent = ({ onCancel, onDone }: AddToTripContentProps) => {
   const { user } = useAuth();
-  const { myTrips, joinedTrips, isLoading, refreshMyTrips, refreshJoinedTrips } =
-    useTrips();
+  const { myTrips, joinedTrips, isLoading } = useTrips();
 
   const trips: TripOption[] = useMemo(() => {
     const map = new Map<string, TripOption>();
     for (const t of [...myTrips, ...joinedTrips]) {
-      if (!map.has(t.id)) {
-        map.set(t.id, { id: t.id, title: t.name });
+      const id = t._id as unknown as string;
+      if (!map.has(id)) {
+        map.set(id, { id, title: t.title });
       }
     }
     return Array.from(map.values());
@@ -30,12 +30,6 @@ const AddToTripContent = ({ onCancel, onDone }: AddToTripContentProps) => {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    refreshMyTrips();
-    refreshJoinedTrips();
-  }, [user?.id, refreshMyTrips, refreshJoinedTrips]);
 
   useEffect(() => {
     if (!trips.length) {

@@ -2,10 +2,9 @@ import TripCard from '@/components/home/TripCard';
 import EmptyTripsState from '@/components/trips/EmptyTripsState';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
-// import NotificationBell from '@/components/ui/NotificationBell';
 import { useTrips } from '@/context/TripsContext';
 import { useAuth } from '@/hooks/useAuth';
-import { TripWithEverything } from '@/hooks/useTripActions';
+import type { Trip } from '@/hooks/useTripActions';
 import { useTheme } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import React, { useMemo, useState } from 'react';
@@ -36,20 +35,21 @@ const DARK_SEC = '#212529';
 // Helpers
 // ================================================================
 
-function isActive(trip: TripWithEverything): boolean {
-  const endDate = trip.trip_details?.end_date;
-  if (!endDate) return true;
-  return new Date(endDate) >= new Date(new Date().toDateString());
+function isActive(trip: Trip): boolean {
+  if (!trip.endDate) return true;
+  return new Date(trip.endDate) >= new Date(new Date().toDateString());
 }
 
-function isPast(trip: TripWithEverything): boolean {
-  const endDate = trip.trip_details?.end_date;
-  if (!endDate) return false;
-  return new Date(endDate) < new Date(new Date().toDateString());
+function isPast(trip: Trip): boolean {
+  if (!trip.endDate) return false;
+  return new Date(trip.endDate) < new Date(new Date().toDateString());
 }
 
-function isSaved(trip: TripWithEverything): boolean {
-  return (trip.trip_details as any)?.is_saved === true;
+// "Saved" trip filter is no longer modeled on the trip row itself; it
+// lives in the user-level wishlist (api.user_saves) which Phase 6 wires
+// up. For now this segment renders empty.
+function isSaved(_trip: Trip): boolean {
+  return false;
 }
 
 export default function TripsIndexScreen() {
@@ -67,46 +67,38 @@ export default function TripsIndexScreen() {
   const [activeRoleFilter, setActiveRoleFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const myTripIds = useMemo(() => new Set(myTrips.map((t) => t.id)), [myTrips]);
+  const myTripIds = useMemo(
+    () => new Set(myTrips.map((t) => t._id as unknown as string)),
+    [myTrips],
+  );
 
   const allTrips = useMemo(() => {
     const combined = [...myTrips, ...joinedTrips];
     if (!userId) return combined;
-
-    return combined.sort((a, b) => {
-      const getInteractionDate = (trip: TripWithEverything) => {
-        if (trip.created_by === userId) {
-          return new Date(trip.created_at).getTime();
-        }
-        const membership = trip.group_members?.find(
-          (m) => m.user_id === userId
-        );
-        return membership
-          ? new Date(membership.joined_at).getTime()
-          : new Date(trip.created_at).getTime();
-      };
-
-      return getInteractionDate(b) - getInteractionDate(a);
-    });
+    return [...combined].sort((a, b) => b.createdAt - a.createdAt);
   }, [myTrips, joinedTrips, userId]);
 
   const segmentedTrips = useMemo(() => {
     switch (activeSegment) {
       case 'active':
-        return allTrips.filter((t) => isActive(t as TripWithEverything));
+        return allTrips.filter(isActive);
       case 'past':
-        return allTrips.filter((t) => isPast(t as TripWithEverything));
+        return allTrips.filter(isPast);
       case 'saved':
-        return allTrips.filter((t) => isSaved(t as TripWithEverything));
+        return allTrips.filter(isSaved);
     }
   }, [allTrips, activeSegment]);
 
   const filteredTrips = useMemo(() => {
     if (activeRoleFilter === 'all') return segmentedTrips;
     if (activeRoleFilter === 'Leader')
-      return segmentedTrips.filter((t) => myTripIds.has(t.id));
+      return segmentedTrips.filter((t) =>
+        myTripIds.has(t._id as unknown as string),
+      );
     if (activeRoleFilter === 'Member')
-      return segmentedTrips.filter((t) => !myTripIds.has(t.id));
+      return segmentedTrips.filter(
+        (t) => !myTripIds.has(t._id as unknown as string),
+      );
     return segmentedTrips;
   }, [segmentedTrips, activeRoleFilter, myTripIds]);
 
@@ -255,7 +247,7 @@ export default function TripsIndexScreen() {
       ) : (
         <FlashList
           data={filteredTrips}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id as unknown as string}
           contentContainerStyle={[
             styles.listContent,
             filteredTrips.length === 0 && styles.listContentEmpty,
@@ -264,7 +256,7 @@ export default function TripsIndexScreen() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           renderItem={({ item }) => (
-            <TripCard trip={item as TripWithEverything} fullWidth={true} />
+            <TripCard trip={item} fullWidth={true} />
           )}
           ItemSeparatorComponent={() => <View className="h-4" />}
           ListHeaderComponent={ListHeaderComponent}

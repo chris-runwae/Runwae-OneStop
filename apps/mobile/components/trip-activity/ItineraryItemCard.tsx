@@ -31,10 +31,11 @@ type TypeConfig = {
 const TYPE_CONFIG: Record<ItemType, TypeConfig> = {
   flight: { label: 'Flight', emoji: '✈️' },
   hotel: { label: 'Stay', emoji: '🏨' },
+  tour: { label: 'Tour', emoji: '🚢' },
+  car_rental: { label: 'Car', emoji: '🚙' },
   activity: { label: 'Relax', emoji: '🏝' },
   restaurant: { label: 'Dine', emoji: '🍽' },
   transport: { label: 'Transport', emoji: '🚗' },
-  cruise: { label: 'Cruise', emoji: '🚢' },
   event: { label: 'Event', emoji: '🎫' },
   other: { label: 'Other', emoji: '📌' },
 };
@@ -94,7 +95,7 @@ const ItineraryItemCard = ({
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
 
-  const displayImageUrl = item.image_url || null;
+  const displayImageUrl = item.imageUrl || null;
 
   const hasImage = !!displayImageUrl;
 
@@ -172,14 +173,14 @@ const ItineraryItemCard = ({
               {item.title}
             </Text>
 
-            {item.location ? (
+            {item.locationName ? (
               <Text
                 style={[
                   styles.locationText,
                   { color: colors.textColors.subtle },
                 ]}
                 numberOfLines={1}>
-                {item.location}
+                {item.locationName}
               </Text>
             ) : null}
           </View>

@@ -58,7 +58,7 @@ const PollItem = ({
   const createdAt = formatDistanceToNow(new Date(poll.created_at));
 
   const { user } = useAuth();
-  const { activeTrip } = useTrips();
+  const { activeTripMembers } = useTrips();
   const userId = user?.id ?? '';
   const isCreator = poll.created_by === userId;
 
@@ -185,7 +185,7 @@ const PollItem = ({
               height: 32,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
               borderRadius: 16,
             }}>
             <MoreVertical size={18} color={colors.textColors.subtle} />
@@ -213,7 +213,7 @@ const PollItem = ({
               (vote: PollVote) => vote.option_id === option.id
             ).length
           }
-          totalMembers={activeTrip?.group_members.length ?? 0}
+          totalMembers={activeTripMembers.length}
           isSelected={userVotes.some(
             (vote: PollVote) => vote.option_id === option.id
           )}

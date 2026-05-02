@@ -28,25 +28,25 @@ export const VARIANT_CONFIG: Record<
   }
 > = {
   development: {
-    name: 'Runwae (Dev)',
-    iosBundleIdentifier: 'io.runwae.app.dev',
-    androidPackage: 'io.runwae.app.dev',
+    name: 'Dev - Runwae: Plan Trips Together',
+    iosBundleIdentifier: 'app.runwae.dev',
+    androidPackage: 'app.runwae.dev',
     scheme: 'runwae-dev',
-    stripeMerchantIdentifier: 'merchant.io.runwae.app.dev',
+    stripeMerchantIdentifier: 'merchant.app.runwae.dev',
   },
   preview: {
-    name: 'Runwae (Preview)',
-    iosBundleIdentifier: 'io.runwae.app.preview',
-    androidPackage: 'io.runwae.app.preview',
+    name: 'Preview - Runwae: Plan Trips Together',
+    iosBundleIdentifier: 'app.runwae.preview',
+    androidPackage: 'app.runwae.preview',
     scheme: 'runwae-preview',
-    stripeMerchantIdentifier: 'merchant.io.runwae.app.preview',
+    stripeMerchantIdentifier: 'merchant.app.runwae.preview',
   },
   production: {
-    name: 'Runwae',
-    iosBundleIdentifier: 'io.runwae.app',
-    androidPackage: 'io.runwae.app',
+    name: 'Runwae: Plan Trips Together',
+    iosBundleIdentifier: 'app.runwae.io',
+    androidPackage: 'app.runwae.io',
     scheme: 'runwae',
-    stripeMerchantIdentifier: 'merchant.io.runwae.app',
+    stripeMerchantIdentifier: 'merchant.app.runwae.io',
   },
 };
 
@@ -57,7 +57,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: v.name,
-    slug: 'runwae-rn',
+    slug: 'runwae',
+    owner: 'runwae',
     version: pjson.version,
     orientation: 'portrait',
     icon: './assets/images/icon.png',
@@ -90,6 +91,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           action: 'VIEW',
           autoVerify: true,
           data: [
+            {
+              scheme: 'https',
+              host: 'runwae.io',
+              pathPrefix: '/auth/callback',
+            },
             {
               scheme: 'https',
               host: 'app.runwae.io',
@@ -210,7 +216,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       stripeMerchantIdentifier: v.stripeMerchantIdentifier,
       router: {},
       eas: {
-        projectId: '06ce5302-3e4b-43dd-bcdc-7ea53aa4e45d',
+        projectId: 'd77a53ae-5728-4c93-a97a-18343cee6777',
       },
     },
     updates: {

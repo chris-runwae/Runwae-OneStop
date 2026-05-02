@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "5WJR695A8F.app.runwae.io",
+          "5WJR695A8F.app.runwae.dev",
+          "5WJR695A8F.app.runwae.preview"
+        ],
+        "components": [
+          { "/": "/auth/callback", "comment": "OAuth callback" },
+          { "/": "/auth/callback/*" },
+          { "/": "/trip/*", "comment": "Trip detail pages" },
+          { "/": "/hotel/*", "comment": "Hotel detail pages" },
+          { "/": "/destination/*", "comment": "Destination pages" },
+          { "/": "/invite/*", "comment": "Group trip invites" }
+        ]
+      }
+    ]
+  }
+}

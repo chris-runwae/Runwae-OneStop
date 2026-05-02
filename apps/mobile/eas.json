@@ -42,15 +42,15 @@
     "production": {
       "ios": {
         "appleId": "chrisobocha@gmail.com",
-        "ascAppId": "6754623801",
-        "appleTeamId": "VSC85SPZ2A"
+        "ascAppId": "6765879787",
+        "appleTeamId": "5WJR695A8F"
       }
     },
     "preview": {
       "ios": {
         "appleId": "chrisobocha@gmail.com",
-        "ascAppId": "6762600392",
-        "appleTeamId": "VSC85SPZ2A"
+        "ascAppId": "6765879787",
+        "appleTeamId": "5WJR695A8F"
       }
     }
   }

@@ -1,0 +1,32 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.runwae.io",
+      "sha256_cert_fingerprints": [
+        "F7:9B:C1:65:70:4F:08:68:CB:BA:D1:3D:19:21:4F:B3:51:0C:9C:50:32:F8:27:D6:1F:DF:B5:72:23:E6:4F:62"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.runwae.dev",
+      "sha256_cert_fingerprints": [
+        "1C:7B:30:A9:10:D0:C2:F0:2A:46:5F:50:5B:AF:28:34:55:F2:8E:4D:8E:4B:14:1C:7F:B6:B1:CB:D3:5C:76:E4"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.runwae.preview",
+      "sha256_cert_fingerprints": [
+        "B2:85:40:10:A5:C4:4A:FC:51:B3:03:8A:9C:00:01:F7:DA:AF:74:26:E2:D1:AA:8C:1E:00:4E:78:62:5A:62:1E"
+      ]
+    }
+  }
+]

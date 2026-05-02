@@ -1,5 +1,5 @@
 {
-  "name": "@runwae/mobile",
+  "name": "runwae",
   "main": "expo-router/entry",
   "version": "0.8.6",
   "scripts": {

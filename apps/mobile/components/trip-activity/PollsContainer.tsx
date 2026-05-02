@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Plus, Vote } from 'lucide-react-native';
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,23 +21,16 @@ export default function PollsContainer({
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const {
-    polls,
-    isLoading,
-    fetchPolls,
     castVote,
     removeVote,
     swapVote,
     deletePoll,
+    usePollsByTrip,
   } = usePollActions();
+  const pollsRaw = usePollsByTrip(groupId);
+  const polls = pollsRaw ?? [];
+  const isLoading = pollsRaw === undefined;
   const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    callFetchPolls();
-  }, [groupId]);
-
-  const callFetchPolls = useCallback(async () => {
-    await fetchPolls(groupId);
-  }, [groupId, fetchPolls]);
 
   const renderHeader = () => {
     const pollCount = polls?.length ?? 0;
@@ -113,7 +106,7 @@ export default function PollsContainer({
             isMember={isMember}
           />
         )}
-        keyExtractor={(item: Poll) => item.id}
+        keyExtractor={(item: Poll) => item._id as unknown as string}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={{

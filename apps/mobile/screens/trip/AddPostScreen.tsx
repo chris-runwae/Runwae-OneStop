@@ -30,16 +30,18 @@ export default function AddPostScreen() {
 
   const [content, setContent] = useState('');
 
+  // Edit mode is paused while the Convex posts module's update path
+  // ships in a follow-up — usePostActions surfaces a clear error on
+  // updatePost.
   useEffect(() => {
     if (!postId) return;
-    fetchPostById(postId).then((post) => setContent(post.content));
   }, [postId]);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
     try {
       if (isEditMode) {
-        await updatePost(postId, content.trim());
+        throw new Error('Editing posts is not yet supported.');
       } else {
         await createPost(tripId, content.trim(), user?.id as string);
       }

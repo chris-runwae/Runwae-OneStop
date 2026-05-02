@@ -99,37 +99,11 @@ export default function AddExpenseScreen() {
     fetchGroupMembers(tripId).then((m) => setMembers(m));
   }, [tripId]);
 
+  // Editing existing expenses isn't yet wired through the Convex
+  // module — usePollActions / useExpenseActions surface a clear error
+  // on update calls. The form falls through to create mode.
   useEffect(() => {
     if (!expenseId) return;
-    fetchExpenseById(expenseId).then((expense) => {
-      setTitle(expense.title);
-      setAmount(String(expense.amount));
-      setCurrency(expense.currency);
-      const isDefault = (DEFAULT_CATEGORIES as readonly string[]).includes(
-        expense.category
-      );
-      if (isDefault) {
-        setCategory(expense.category);
-      } else {
-        setCategory('custom');
-        setCustomCategory(expense.category);
-        setShowCustomCategory(true);
-      }
-      setDate(new Date(expense.date));
-      setDescription(expense.description ?? '');
-      setSplitType(expense.split_type);
-
-      const ids = new Set(expense.expense_participants.map((p) => p.user_id));
-      setSelectedMemberIds(ids);
-
-      if (expense.split_type === 'custom') {
-        const amounts: Record<string, string> = {};
-        expense.expense_participants.forEach((p) => {
-          amounts[p.user_id] = String(p.amount_owed);
-        });
-        setCustomAmounts(amounts);
-      }
-    });
   }, [expenseId]);
 
   // ── Helpers ────────────────────────────────────────────────────
@@ -252,7 +226,7 @@ export default function AddExpenseScreen() {
 
     try {
       if (isEditMode) {
-        await updateExpense(expenseId, expenseData, buildParticipants());
+        throw new Error('Editing expenses is not yet supported.');
       } else {
         await createExpense(expenseData, buildParticipants());
       }

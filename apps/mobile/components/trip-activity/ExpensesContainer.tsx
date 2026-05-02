@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Plus, Receipt } from 'lucide-react-native';
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,23 +21,15 @@ export default function ExpensesContainer({
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const {
-    expenses,
-    isLoading,
-    fetchExpenses,
     deleteExpense,
     markPaid,
     confirmPayment,
+    useExpensesByTrip,
   } = useExpenseActions();
+  const expensesRaw = useExpensesByTrip(groupId);
+  const expenses = expensesRaw ?? [];
+  const isLoading = expensesRaw === undefined;
   const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    callFetchExpenses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const callFetchExpenses = useCallback(async () => {
-    await fetchExpenses(groupId);
-  }, [groupId, fetchExpenses]);
 
   const renderHeader = () => {
     const count = expenses?.length ?? 0;
@@ -112,7 +104,7 @@ export default function ExpensesContainer({
             isMember={isMember}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id as unknown as string}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={{

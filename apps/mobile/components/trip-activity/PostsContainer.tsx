@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { FileText, Plus } from 'lucide-react-native';
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,17 +20,11 @@ export default function PostsContainer({
 }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { posts, isLoading, fetchPosts, deletePost } = usePostActions();
+  const { deletePost, usePostsByTrip } = usePostActions();
   const insets = useSafeAreaInsets();
-
-  useEffect(() => {
-    callFetchPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const callFetchPosts = useCallback(async () => {
-    await fetchPosts(groupId);
-  }, [groupId, fetchPosts]);
+  const postsRaw = usePostsByTrip(groupId);
+  const posts = postsRaw ?? [];
+  const isLoading = postsRaw === undefined;
 
   const renderHeader = () => {
     const postCount = posts?.length ?? 0;
@@ -100,7 +94,7 @@ export default function PostsContainer({
             isMember={isMember}
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id as unknown as string}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={{

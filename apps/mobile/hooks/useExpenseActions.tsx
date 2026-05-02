@@ -1,51 +1,53 @@
-import { useState } from 'react';
-import { supabase } from '@/utils/supabase/client';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 
 export const DEFAULT_CATEGORIES = [
-  'flight',
+  'accommodation',
+  'transport',
   'food',
-  'drinks',
-  'stays',
   'activity',
+  'shopping',
   'other',
 ] as const;
 
 export type SplitType = 'equal' | 'custom';
 
 export type ExpenseParticipant = {
-  id: string;
-  expense_id: string;
-  user_id: string;
-  amount_owed: number;
-  paid_at: string | null;
-  is_settled: boolean;
-  settled_at: string | null;
-  profiles: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
+  _id: Id<'expense_splits'>;
+  expenseId: Id<'expenses'>;
+  userId: Id<'users'>;
+  amountOwed: number;
+  isSettled: boolean;
+  settledAt?: number;
+  user: {
+    _id: Id<'users'>;
+    name?: string;
+    avatarUrl?: string;
+    image?: string;
   } | null;
 };
 
 export type Expense = {
-  id: string;
-  group_id: string;
-  created_by: string;
-  title: string;
+  _id: Id<'expenses'>;
+  tripId: Id<'trips'>;
+  paidByUserId: Id<'users'>;
   amount: number;
   currency: string;
-  category: string;
+  category: typeof DEFAULT_CATEGORIES[number];
   date: string;
-  description: string | null;
-  split_type: SplitType;
-  created_at: string;
-  updated_at: string;
-  creator: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
-  };
-  expense_participants: ExpenseParticipant[];
+  description?: string;
+  splitType: SplitType;
+  receiptImageUrl?: string;
+  createdAt: number;
+  updatedAt: number;
+  paidBy: {
+    _id: Id<'users'>;
+    name?: string;
+    avatarUrl?: string;
+    image?: string;
+  } | null;
+  splits: ExpenseParticipant[];
 };
 
 export type ExpenseMember = {
@@ -70,227 +72,86 @@ export type CreateExpenseInput = {
   split_type: SplitType;
 };
 
-const EXPENSE_SELECT =
-  '*, creator:profiles!created_by(id, full_name, avatar_url), expense_participants(*, profiles!user_id(id, full_name, avatar_url))';
-
 const useExpenseActions = () => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const createMut = useMutation(api.expenses.create);
+  const removeMut = useMutation(api.expenses.remove);
+  const settleSplitMut = useMutation(api.expenses.settleSplit);
 
-  const fetchExpenses = async (groupId: string): Promise<Expense[]> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select(EXPENSE_SELECT)
-        .eq('group_id', groupId)
-        .order('date', { ascending: false });
-      if (error) throw error;
-      setExpenses(data as Expense[]);
-      return data as Expense[];
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const useExpensesByTrip = (
+    tripId: Id<'trips'> | string | undefined,
+  ): Expense[] | undefined =>
+    useQuery(
+      api.expenses.getByTrip,
+      tripId ? { tripId: tripId as Id<'trips'> } : 'skip',
+    ) as unknown as Expense[] | undefined;
 
-  const fetchExpenseById = async (expenseId: string): Promise<Expense> => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select(EXPENSE_SELECT)
-      .eq('id', expenseId)
-      .single();
-    if (error) throw error;
-    return data as Expense;
-  };
-
-  const fetchGroupMembers = async (
-    groupId: string
-  ): Promise<ExpenseMember[]> => {
-    const { data, error } = await supabase
-      .from('group_members')
-      .select('user_id, role, profiles!user_id(id, full_name, avatar_url)')
-      .eq('group_id', groupId);
-    if (error) throw error;
-    return (data as any[]).map((m) => ({
-      ...m,
-      profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
-    })) as ExpenseMember[];
-  };
-
+  // Phase 5 wires create + delete + settle. The legacy mobile flow
+  // also exposed `markPaid` (a soft "I paid" marker independent of the
+  // settled flag); the new schema collapses to a single isSettled
+  // boolean, so markPaid simply settles for now.
   const createExpense = async (
     input: CreateExpenseInput,
-    participants: { userId: string; amountOwed: number }[]
+    participants: { userId: string; amountOwed: number }[],
   ): Promise<Expense> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert(input)
-        .select('id')
-        .single();
-      if (error) throw error;
-
-      const expenseId = data.id;
-
-      if (participants.length > 0) {
-        const { error: partErr } = await supabase
-          .from('expense_participants')
-          .insert(
-            participants.map((p) => ({
-              expense_id: expenseId,
-              user_id: p.userId,
-              amount_owed: p.amountOwed,
-            }))
-          );
-        if (partErr) throw partErr;
-      }
-
-      const { data: full, error: fetchErr } = await supabase
-        .from('expenses')
-        .select(EXPENSE_SELECT)
-        .eq('id', expenseId)
-        .single();
-      if (fetchErr) throw fetchErr;
-
-      const expense = full as Expense;
-      setExpenses((prev) => [expense, ...prev]);
-      return expense;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateExpense = async (
-    expenseId: string,
-    input: Partial<CreateExpenseInput>,
-    participants: { userId: string; amountOwed: number }[]
-  ): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('expenses')
-        .update({ ...input, updated_at: new Date().toISOString() })
-        .eq('id', expenseId);
-      if (error) throw error;
-
-      const { data: existing, error: existErr } = await supabase
-        .from('expense_participants')
-        .select('id, user_id')
-        .eq('expense_id', expenseId);
-      if (existErr) throw existErr;
-
-      const newUserIds = new Set(participants.map((p) => p.userId));
-      const existingMap = new Map(
-        (existing ?? []).map((e) => [e.user_id, e.id])
-      );
-
-      const toDelete = (existing ?? [])
-        .filter((e) => !newUserIds.has(e.user_id))
-        .map((e) => e.id);
-      if (toDelete.length > 0) {
-        await supabase
-          .from('expense_participants')
-          .delete()
-          .in('id', toDelete);
-      }
-
-      await Promise.all(
-        participants.map((p) => {
-          const existingId = existingMap.get(p.userId);
-          if (existingId) {
-            return supabase
-              .from('expense_participants')
-              .update({ amount_owed: p.amountOwed })
-              .eq('id', existingId);
+    const splitType = input.split_type;
+    const id = await createMut({
+      tripId: input.group_id as unknown as Id<'trips'>,
+      amount: input.amount,
+      currency: input.currency,
+      category: input.category as Expense['category'],
+      date: input.date,
+      description: input.description,
+      splitType,
+      ...(splitType === 'custom'
+        ? {
+            customSplits: participants.map((p) => ({
+              userId: p.userId as unknown as Id<'users'>,
+              amountOwed: p.amountOwed,
+            })),
           }
-          return supabase.from('expense_participants').insert({
-            expense_id: expenseId,
-            user_id: p.userId,
-            amount_owed: p.amountOwed,
-          });
-        })
-      );
-
-      setExpenses((prev) =>
-        prev.map((e) =>
-          e.id === expenseId
-            ? {
-                ...e,
-                ...input,
-                expense_participants: participants.map((p) => {
-                  const existing = e.expense_participants.find(
-                    (ep) => ep.user_id === p.userId
-                  );
-                  return existing
-                    ? { ...existing, amount_owed: p.amountOwed }
-                    : ({
-                        id: '',
-                        expense_id: expenseId,
-                        user_id: p.userId,
-                        amount_owed: p.amountOwed,
-                        paid_at: null,
-                        is_settled: false,
-                        settled_at: null,
-                        profiles: null,
-                      } as ExpenseParticipant);
-                }),
-              }
-            : e
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
+        : {
+            participantIds: participants.map(
+              (p) => p.userId as unknown as Id<'users'>,
+            ),
+          }),
+    });
+    return { _id: id } as unknown as Expense;
   };
 
-  const deleteExpense = async (expenseId: string): Promise<void> => {
-    const { error } = await supabase
-      .from('expenses')
-      .delete()
-      .eq('id', expenseId);
-    if (error) throw error;
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+  const deleteExpense = async (expenseId: string) => {
+    await removeMut({ expenseId: expenseId as unknown as Id<'expenses'> });
   };
 
-  const markPaid = async (participantId: string): Promise<void> => {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('expense_participants')
-      .update({ paid_at: now })
-      .eq('id', participantId);
-    if (error) throw error;
-    setExpenses((prev) =>
-      prev.map((e) => ({
-        ...e,
-        expense_participants: e.expense_participants.map((p) =>
-          p.id === participantId ? { ...p, paid_at: now } : p
-        ),
-      }))
-    );
+  const markPaid = async (participantId: string) => {
+    await settleSplitMut({
+      splitId: participantId as unknown as Id<'expense_splits'>,
+      isSettled: true,
+    });
   };
 
-  const confirmPayment = async (participantId: string): Promise<void> => {
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('expense_participants')
-      .update({ is_settled: true, settled_at: now })
-      .eq('id', participantId);
-    if (error) throw error;
-    setExpenses((prev) =>
-      prev.map((e) => ({
-        ...e,
-        expense_participants: e.expense_participants.map((p) =>
-          p.id === participantId
-            ? { ...p, is_settled: true, settled_at: now }
-            : p
-        ),
-      }))
-    );
+  const confirmPayment = async (participantId: string) => {
+    await settleSplitMut({
+      splitId: participantId as unknown as Id<'expense_splits'>,
+      isSettled: true,
+    });
   };
+
+  // Editing isn't yet exposed server-side; surface a clear error so
+  // the existing edit-expense screen can fall back to delete + recreate.
+  const updateExpense = async () => {
+    throw new Error('Editing expenses is not yet supported.');
+  };
+  const fetchExpenseById = async (_expenseId: string): Promise<Expense> => {
+    throw new Error('Use the reactive trip-level expenses query instead.');
+  };
+  const fetchExpenses = async (_tripId: string): Promise<Expense[]> => [];
+  const fetchGroupMembers = async (
+    _tripId: string,
+  ): Promise<ExpenseMember[]> => [];
 
   return {
-    expenses,
-    isLoading,
+    expenses: [] as Expense[],
+    isLoading: false,
     fetchExpenses,
     fetchExpenseById,
     fetchGroupMembers,
@@ -299,6 +160,7 @@ const useExpenseActions = () => {
     deleteExpense,
     markPaid,
     confirmPayment,
+    useExpensesByTrip,
   };
 };
 

@@ -145,35 +145,20 @@ function ParticipantRow({
 }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const name = participant.profiles?.full_name ?? 'Unknown';
-  const avatarUrl = participant.profiles?.avatar_url ?? '';
+  const name = participant.user?.name ?? 'Unknown';
+  const avatarUrl =
+    participant.user?.avatarUrl ?? participant.user?.image ?? '';
 
+  // The new schema collapses paid/settled into a single isSettled
+  // boolean. The old "Pay" → "Confirm" handshake (markPaid first, then
+  // owner confirms) is replaced with "Mark settled" — fitting the
+  // peer-to-peer model where users paid out-of-band.
   const renderAction = () => {
     if (!isMember) return null;
-    if (participant.is_settled) {
+    if (participant.isSettled) {
       return <CheckCheck size={18} color="#22c55e" />;
     }
-    if (isOwner && !isCurrentUser && participant.paid_at) {
-      return (
-        <Pressable
-          onPress={onConfirmPayment}
-          style={{
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#22c55e',
-          }}>
-          <Text style={{ fontSize: 12, color: '#22c55e', fontWeight: '600' }}>
-            Confirm
-          </Text>
-        </Pressable>
-      );
-    }
-    if (isCurrentUser && participant.paid_at) {
-      return <Check size={18} color="#f59e0b" />;
-    }
-    if (isCurrentUser && !participant.paid_at) {
+    if (isCurrentUser || isOwner) {
       return (
         <Pressable
           onPress={onMarkPaid}
@@ -185,7 +170,7 @@ function ParticipantRow({
             borderColor: '#FF1F8C',
           }}>
           <Text style={{ fontSize: 12, color: '#FF1F8C', fontWeight: '600' }}>
-            Pay
+            Mark settled
           </Text>
         </Pressable>
       );
@@ -216,7 +201,7 @@ function ParticipantRow({
           color: colors.textColors.subtle,
           marginRight: 8,
         }}>
-        {formatCurrency(participant.amount_owed, currency)}
+        {formatCurrency(participant.amountOwed, currency)}
       </Text>
       {renderAction()}
     </View>
@@ -236,15 +221,15 @@ const ExpenseItem = ({
   const isDark = colorScheme === 'dark';
   const { user } = useAuth();
   const userId = user?.id ?? '';
-  const isCreator = expense.created_by === userId;
+  const isCreator =
+    (expense.paidByUserId as unknown as string) === userId;
+  const expenseId = expense._id as unknown as string;
 
-  const createdAt = formatDistanceToNow(new Date(expense.created_at));
+  const createdAt = formatDistanceToNow(new Date(expense.createdAt));
   const formattedDate = format(new Date(expense.date), 'MMM d');
 
-  const settledCount = expense.expense_participants.filter(
-    (p) => p.is_settled
-  ).length;
-  const totalParticipants = expense.expense_participants.length;
+  const settledCount = expense.splits.filter((p) => p.isSettled).length;
+  const totalParticipants = expense.splits.length;
 
   const handleDelete = () => {
     Alert.alert('Delete expense', 'Are you sure? This cannot be undone.', [
@@ -252,14 +237,14 @@ const ExpenseItem = ({
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => onDeleteExpense(expense.id),
+        onPress: () => onDeleteExpense(expenseId),
       },
     ]);
   };
 
   const handleEdit = () => {
     router.push(
-      `/(tabs)/(trips)/${groupId}/add-expense?expenseId=${expense.id}`
+      `/(tabs)/(trips)/${groupId}/add-expense?expenseId=${expenseId}`,
     );
   };
 
@@ -343,7 +328,7 @@ const ExpenseItem = ({
       {/* Title + Ellipsis */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ ...textStyles.textHeading18, color: colors.textColors.default }}>{expense.title}</Text>
+          <Text style={{ ...textStyles.textHeading18, color: colors.textColors.default }}>{expense.description ?? 'Expense'}</Text>
           {expense.description ? (
             <Text
               style={{
@@ -385,18 +370,23 @@ const ExpenseItem = ({
             total={totalParticipants}
           />
           <View style={{ marginTop: 12, gap: 4 }}>
-            {expense.expense_participants.map((participant) => (
-              <ParticipantRow
-                key={participant.id}
-                participant={participant}
-                isCurrentUser={participant.user_id === userId}
-                isOwner={isCreator}
-                currency={expense.currency}
-                onMarkPaid={() => onMarkPaid(participant.id)}
-                onConfirmPayment={() => onConfirmPayment(participant.id)}
-                isMember={isMember}
-              />
-            ))}
+            {expense.splits.map((participant) => {
+              const splitId = participant._id as unknown as string;
+              return (
+                <ParticipantRow
+                  key={splitId}
+                  participant={participant}
+                  isCurrentUser={
+                    (participant.userId as unknown as string) === userId
+                  }
+                  isOwner={isCreator}
+                  currency={expense.currency}
+                  onMarkPaid={() => onMarkPaid(splitId)}
+                  onConfirmPayment={() => onConfirmPayment(splitId)}
+                  isMember={isMember}
+                />
+              );
+            })}
           </View>
         </View>
       )}
@@ -413,13 +403,13 @@ const ExpenseItem = ({
         }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <ProfileAvatar
-            name={expense.creator.full_name}
-            imageUrl={expense.creator.avatar_url}
+            name={expense.paidBy?.name ?? 'User'}
+            imageUrl={expense.paidBy?.avatarUrl ?? expense.paidBy?.image}
             size={24}
           />
           <Text
             style={{ ...textStyles.textBody12, color: colors.textColors.subtle, fontWeight: '600' }}>
-            {expense.creator.full_name}
+            {expense.paidBy?.name ?? 'User'}
           </Text>
         </View>
         <Text

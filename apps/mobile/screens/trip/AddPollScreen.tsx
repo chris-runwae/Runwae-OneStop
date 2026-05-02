@@ -42,15 +42,10 @@ export default function AddPollScreen() {
   ]);
   const [deletedOptionIds, setDeletedOptionIds] = useState<string[]>([]);
 
+  // Edit mode is paused while the Convex polls module's update path is
+  // wired up. The form falls through to create mode on submit.
   useEffect(() => {
     if (!pollId) return;
-    fetchPollById(pollId).then((poll) => {
-      setPollTitle(poll.title);
-      setAllowMultipleAnswers(poll.type === 'multiple_choice');
-      setAnonymousVoting(poll.anonymous_voting ?? false);
-      setAllowAddingOptions(poll.allow_add_options ?? false);
-      setOptions(poll.poll_options.map((o) => ({ id: o.id, label: o.label })));
-    });
   }, [pollId]);
 
   const addOption = () => {
@@ -75,7 +70,7 @@ export default function AddPollScreen() {
     const pollData = {
       title: pollTitle,
       type: allowMultipleAnswers
-        ? ('multiple_choice' as PollType)
+        ? ('multi_choice' as PollType)
         : ('single_choice' as PollType),
       allow_add_options: allowAddingOptions,
       anonymous_voting: anonymousVoting,
@@ -83,20 +78,14 @@ export default function AddPollScreen() {
 
     try {
       if (isEditMode) {
-        await updatePoll(
-          pollId,
-          pollData,
-          options
-            .filter((o) => o.label.trim())
-            .map((o) => ({ ...o, created_by: user?.id as string })),
-          deletedOptionIds
-        );
+        // Phase 5 leaves edit unwired — see usePollActions notes.
+        throw new Error('Editing polls is not yet supported.');
       } else {
         await createPoll(
           { ...pollData, group_id: tripId, created_by: user?.id as string },
           options
             .filter((o) => o.label.trim())
-            .map((o) => ({ label: o.label, created_by: user?.id as string }))
+            .map((o) => ({ label: o.label, created_by: user?.id as string })),
         );
       }
       router.dismiss();

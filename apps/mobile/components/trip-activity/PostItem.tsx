@@ -35,8 +35,10 @@ const PostItem = ({
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { user } = useAuth();
-  const isCreator = post.created_by === user?.id;
-  const createdAt = formatDistanceToNow(new Date(post.created_at));
+  const isCreator =
+    (post.createdByUserId as unknown as string) === user?.id;
+  const createdAt = formatDistanceToNow(new Date(post.createdAt));
+  const postId = post._id as unknown as string;
 
   const handleDelete = () => {
     Alert.alert('Delete post', 'Are you sure? This cannot be undone.', [
@@ -44,13 +46,13 @@ const PostItem = ({
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => onDeletePost(post.id),
+        onPress: () => onDeletePost(postId),
       },
     ]);
   };
 
   const handleEdit = () => {
-    router.push(`/(tabs)/(trips)/${groupId}/add-post?postId=${post.id}`);
+    router.push(`/(tabs)/(trips)/${groupId}/add-post?postId=${postId}`);
   };
 
   const handleEllipsisPress = () => {
@@ -106,13 +108,13 @@ const PostItem = ({
             flex: 1,
           }}>
           <ProfileAvatar
-            name={post.creator.full_name}
-            imageUrl={post.creator.avatar_url}
+            name={post.author?.name ?? 'User'}
+            imageUrl={post.author?.avatarUrl ?? post.author?.image}
             size={40}
           />
           <View>
             <Text style={{ ...textStyles.textHeading16, color: colors.textColors.default }}>
-              {post.creator.full_name}
+              {post.author?.name ?? 'User'}
             </Text>
             <Text
               style={{

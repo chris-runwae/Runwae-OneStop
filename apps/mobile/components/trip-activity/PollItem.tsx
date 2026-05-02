@@ -17,9 +17,12 @@ import ProfileAvatar from '@/components/ui/ProfileAvatar';
 import Spacer from '@/components/utils/Spacer';
 import Text from '@/components/ui/Text';
 import { Colors, textStyles } from '@/constants';
-import { PollOption, Poll, PollVote } from '@/hooks/usePollActions';
+import type { Poll, PollOption, PollVote } from '@/hooks/usePollActions';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrips } from '@/context/TripsContext';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 
 type PollItemProps = {
   poll: Poll;
@@ -55,19 +58,33 @@ const PollItem = ({
 }: PollItemProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const createdAt = formatDistanceToNow(new Date(poll.created_at));
+  const createdAt = formatDistanceToNow(new Date(poll.createdAt));
 
   const { user } = useAuth();
   const { activeTripMembers } = useTrips();
   const userId = user?.id ?? '';
-  const isCreator = poll.created_by === userId;
+  const pollId = poll._id as unknown as string;
+  const isCreator =
+    (poll.createdByUserId as unknown as string) === userId;
 
-  const userVotes = poll.poll_votes.filter(
-    (vote: PollVote) => vote.user_id === userId && vote.poll_id === poll.id
+  // Fetch the viewer's votes alongside the poll detail. The reactive
+  // poll.options entries already carry voteCount; we just need to know
+  // which option the viewer picked. Phase 5 keeps this lightweight by
+  // re-running the bag-of-votes query on the same trip.
+  const allPolls = useQuery(api.polls.getByTrip, {
+    tripId: poll.tripId as unknown as Id<'trips'>,
+  });
+  const enriched = allPolls?.find(
+    (p: any) => (p._id as unknown as string) === pollId,
   );
-
+  const myOptionId = (enriched as any)?.myOptionId as
+    | Id<'poll_options'>
+    | null
+    | undefined;
   const currentVoteOptionId =
-    poll.type === 'single_choice' ? userVotes[0]?.option_id : undefined;
+    poll.type === 'single_choice' && myOptionId
+      ? (myOptionId as unknown as string)
+      : undefined;
 
   const handleDelete = () => {
     Alert.alert('Delete poll', 'Are you sure? This cannot be undone.', [
@@ -75,13 +92,13 @@ const PollItem = ({
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => onDeletePoll(poll.id),
+        onPress: () => onDeletePoll(pollId),
       },
     ]);
   };
 
   const handleEdit = () => {
-    router.push(`/(tabs)/(trips)/${groupId}/add-poll?pollId=${poll.id}`);
+    router.push(`/(tabs)/(trips)/${groupId}/add-poll?pollId=${pollId}`);
   };
 
   const handleEllipsisPress = () => {
@@ -149,11 +166,11 @@ const PollItem = ({
   const selectionText =
     poll.type === 'single_choice'
       ? 'Select one'
-      : poll.type === 'multiple_choice'
+      : poll.type === 'multi_choice'
         ? 'Select multiple'
         : 'Rank the options';
 
-  const votesCount = poll.poll_votes.length;
+  const votesCount = poll.totalVotes ?? 0;
 
   return (
     <View style={styles.card}>
@@ -166,12 +183,17 @@ const PollItem = ({
         }}>
         <View style={styles.creatorContainer}>
           <ProfileAvatar
-            name={poll.creator.full_name}
-            imageUrl={poll.creator.avatar_url}
+            name={(poll as any).author?.name ?? 'User'}
+            imageUrl={
+              (poll as any).author?.avatarUrl ??
+              (poll as any).author?.image
+            }
             size={36}
           />
           <View>
-            <Text style={styles.creatorNameText}>{poll.creator.full_name}</Text>
+            <Text style={styles.creatorNameText}>
+              {(poll as any).author?.name ?? 'User'}
+            </Text>
             <Text style={styles.createdAtText}>{createdAt} ago</Text>
           </View>
         </View>
@@ -203,30 +225,31 @@ const PollItem = ({
         }>{`${selectionText} · ${votesCount} votes`}</Text>
 
       <Spacer size={20} vertical />
-      {poll.poll_options.map((option: PollOption) => (
-        <PollOptionItem
-          key={option.id}
-          optionId={option.id}
-          label={option.label}
-          voteCount={
-            poll.poll_votes.filter(
-              (vote: PollVote) => vote.option_id === option.id
-            ).length
-          }
-          totalMembers={activeTripMembers.length}
-          isSelected={userVotes.some(
-            (vote: PollVote) => vote.option_id === option.id
-          )}
-          pollType={poll.type as 'single_choice' | 'multiple_choice'}
-          selectedOptionId={currentVoteOptionId}
-          onVote={(id) => isMember && onCastVote(poll.id, id, userId)}
-          onUnvote={(id) => isMember && onRemoveVote(poll.id, id, userId)}
-          onSwapVote={(id) =>
-            isMember &&
-            onSwapVote(poll.id, currentVoteOptionId ?? '', id, userId)
-          }
-        />
-      ))}
+      {(poll.options ?? []).map((option: PollOption) => {
+        const optionId = option._id as unknown as string;
+        return (
+          <PollOptionItem
+            key={optionId}
+            optionId={optionId}
+            label={option.label}
+            voteCount={option.voteCount ?? 0}
+            totalMembers={activeTripMembers.length}
+            isSelected={currentVoteOptionId === optionId}
+            pollType={
+              poll.type === 'multi_choice'
+                ? 'multiple_choice'
+                : 'single_choice'
+            }
+            selectedOptionId={currentVoteOptionId}
+            onVote={(id) => isMember && onCastVote(pollId, id, userId)}
+            onUnvote={(id) => isMember && onRemoveVote(pollId, id, userId)}
+            onSwapVote={(id) =>
+              isMember &&
+              onSwapVote(pollId, currentVoteOptionId ?? '', id, userId)
+            }
+          />
+        );
+      })}
       <Spacer size={32} vertical />
     </View>
   );

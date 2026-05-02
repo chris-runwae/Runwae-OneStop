@@ -29,6 +29,28 @@ async function assertTripMember(
   return membership;
 }
 
+export const getById = query({
+  args: { expenseId: v.id("expenses") },
+  handler: async (ctx, { expenseId }) => {
+    const expense = await ctx.db.get(expenseId);
+    if (!expense) return null;
+    const splits = await ctx.db
+      .query("expense_splits")
+      .withIndex("by_expense", (q) => q.eq("expenseId", expenseId))
+      .collect();
+    return {
+      ...expense,
+      paidBy: toPublicUserOtherOrNull(await ctx.db.get(expense.paidByUserId)),
+      splits: await Promise.all(
+        splits.map(async (s) => ({
+          ...s,
+          user: toPublicUserOtherOrNull(await ctx.db.get(s.userId)),
+        })),
+      ),
+    };
+  },
+});
+
 export const getByTrip = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, { tripId }) => {
@@ -148,6 +170,102 @@ export const create = mutation({
       }
     }
     return expenseId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    expenseId: v.id("expenses"),
+    amount: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    category: v.optional(EXPENSE_CATEGORY),
+    date: v.optional(v.string()),
+    description: v.optional(v.string()),
+    receiptImageUrl: v.optional(v.string()),
+    splitType: v.optional(SPLIT_TYPE),
+    participantIds: v.optional(v.array(v.id("users"))),
+    customSplits: v.optional(
+      v.array(
+        v.object({
+          userId: v.id("users"),
+          amountOwed: v.number(),
+        }),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const expense = await ctx.db.get(args.expenseId);
+    if (!expense) throw new Error("Expense not found");
+    if (expense.paidByUserId !== userId) {
+      throw new Error("Only the payer can edit this expense");
+    }
+
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const key of [
+      "amount",
+      "currency",
+      "category",
+      "date",
+      "description",
+      "receiptImageUrl",
+      "splitType",
+    ] as const) {
+      const val = (args as any)[key];
+      if (val !== undefined) patch[key] = val;
+    }
+    await ctx.db.patch(args.expenseId, patch);
+
+    // If split-shape changed, re-fan-out the expense_splits rows to
+    // match the new participants/amounts. Settlement state on existing
+    // splits is preserved when the same participant is still in the
+    // new set.
+    const reshape =
+      args.splitType !== undefined ||
+      args.participantIds !== undefined ||
+      args.customSplits !== undefined ||
+      args.amount !== undefined;
+    if (!reshape) return { ok: true };
+
+    const existingSplits = await ctx.db
+      .query("expense_splits")
+      .withIndex("by_expense", (q) => q.eq("expenseId", args.expenseId))
+      .collect();
+    const settledMap = new Map(
+      existingSplits.map((s) => [s.userId as unknown as string, s.isSettled]),
+    );
+    for (const s of existingSplits) await ctx.db.delete(s._id);
+
+    const splitType = args.splitType ?? expense.splitType;
+    const amount = args.amount ?? expense.amount;
+    const currency = args.currency ?? expense.currency;
+
+    if (splitType === "equal") {
+      const ids = args.participantIds ?? [];
+      const share = ids.length > 0 ? amount / ids.length : 0;
+      for (const uid of ids) {
+        await ctx.db.insert("expense_splits", {
+          expenseId: args.expenseId,
+          userId: uid,
+          amountOwed: share,
+          currency,
+          isSettled: settledMap.get(uid as unknown as string) ?? false,
+        });
+      }
+    } else {
+      for (const split of args.customSplits ?? []) {
+        await ctx.db.insert("expense_splits", {
+          expenseId: args.expenseId,
+          userId: split.userId,
+          amountOwed: split.amountOwed,
+          currency,
+          isSettled:
+            settledMap.get(split.userId as unknown as string) ?? false,
+        });
+      }
+    }
+    return { ok: true };
   },
 });
 

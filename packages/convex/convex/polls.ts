@@ -77,6 +77,32 @@ export const getOpenForUser = query({
   },
 });
 
+export const getById = query({
+  args: { pollId: v.id("trip_polls") },
+  handler: async (ctx, { pollId }) => {
+    const poll = await ctx.db.get(pollId);
+    if (!poll) return null;
+    const options = await ctx.db
+      .query("poll_options")
+      .withIndex("by_poll", (q: any) => q.eq("pollId", pollId))
+      .collect();
+    const votes = await ctx.db
+      .query("poll_votes")
+      .withIndex("by_poll", (q: any) => q.eq("pollId", pollId))
+      .collect();
+    const counts: Record<string, number> = {};
+    for (const v2 of votes) counts[v2.optionId] = (counts[v2.optionId] ?? 0) + 1;
+    return {
+      ...poll,
+      totalVotes: votes.length,
+      options: options.map((o: Doc<"poll_options">) => ({
+        ...o,
+        voteCount: counts[o._id] ?? 0,
+      })),
+    };
+  },
+});
+
 export const getByTrip = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, { tripId }) => {
@@ -147,6 +173,97 @@ export const unvote = mutation({
       .filter((q: any) => q.eq(q.field("optionId"), optionId))
       .unique();
     if (existing) await ctx.db.delete(existing._id);
+  },
+});
+
+export const update = mutation({
+  args: {
+    pollId: v.id("trip_polls"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    type: v.optional(
+      v.union(v.literal("single_choice"), v.literal("multi_choice"), v.literal("ranked")),
+    ),
+    closesAt: v.optional(v.number()),
+    allowAddOptions: v.optional(v.boolean()),
+    isAnonymous: v.optional(v.boolean()),
+    addOptions: v.optional(v.array(v.string())),
+    removeOptionIds: v.optional(v.array(v.id("poll_options"))),
+  },
+  handler: async (ctx, args) => {
+    const userId = await resolveUserId(ctx);
+    const poll = await ctx.db.get(args.pollId);
+    if (!poll) throw new Error("Poll not found");
+    if (poll.createdByUserId !== userId) {
+      throw new Error("Only the poll creator can edit it");
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (args.title !== undefined) patch.title = args.title;
+    if (args.description !== undefined) patch.description = args.description;
+    if (args.type !== undefined) patch.type = args.type;
+    if (args.closesAt !== undefined) patch.closesAt = args.closesAt;
+    if (args.allowAddOptions !== undefined)
+      patch.allowAddOptions = args.allowAddOptions;
+    if (args.isAnonymous !== undefined) patch.isAnonymous = args.isAnonymous;
+    if (Object.keys(patch).length > 0) await ctx.db.patch(args.pollId, patch);
+
+    // Removing options also removes the votes that pointed at them so
+    // tallies don't reference orphaned rows.
+    for (const optionId of args.removeOptionIds ?? []) {
+      const option = await ctx.db.get(optionId);
+      if (!option || option.pollId !== args.pollId) continue;
+      const votes = await ctx.db
+        .query("poll_votes")
+        .withIndex("by_poll", (q) => q.eq("pollId", args.pollId))
+        .filter((q) => q.eq(q.field("optionId"), optionId))
+        .collect();
+      for (const vote of votes) await ctx.db.delete(vote._id);
+      await ctx.db.delete(optionId);
+    }
+
+    for (const label of args.addOptions ?? []) {
+      await ctx.db.insert("poll_options", {
+        pollId: args.pollId,
+        label,
+        addedByUserId: userId,
+        createdAt: Date.now(),
+      });
+    }
+
+    return { ok: true };
+  },
+});
+
+export const remove = mutation({
+  args: { pollId: v.id("trip_polls") },
+  handler: async (ctx, args) => {
+    const userId = await resolveUserId(ctx);
+    const poll = await ctx.db.get(args.pollId);
+    if (!poll) return { ok: true };
+    if (poll.createdByUserId !== userId) {
+      // Trip owners can delete polls in their trip for moderation.
+      const membership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", poll.tripId))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .first();
+      if (!membership || membership.role !== "owner") {
+        throw new Error("Not authorized to delete this poll");
+      }
+    }
+    const options = await ctx.db
+      .query("poll_options")
+      .withIndex("by_poll", (q) => q.eq("pollId", args.pollId))
+      .collect();
+    for (const option of options) await ctx.db.delete(option._id);
+    const votes = await ctx.db
+      .query("poll_votes")
+      .withIndex("by_poll", (q) => q.eq("pollId", args.pollId))
+      .collect();
+    for (const vote of votes) await ctx.db.delete(vote._id);
+    await ctx.db.delete(args.pollId);
+    return { ok: true };
   },
 });
 

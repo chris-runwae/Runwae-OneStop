@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+import { convex } from '@/lib/convex';
 
 // The Convex polls module supports `single_choice`, `multi_choice`, and
 // `ranked`. The legacy mobile `multiple_choice` literal maps to
@@ -75,6 +76,8 @@ const usePollActions = () => {
   const createMut = useMutation(api.polls.create);
   const voteMut = useMutation(api.polls.vote);
   const unvoteMut = useMutation(api.polls.unvote);
+  const updateMut = useMutation(api.polls.update);
+  const removeMut = useMutation(api.polls.remove);
 
   const usePollsByTrip = (
     tripId: Id<'trips'> | string | undefined,
@@ -137,22 +140,49 @@ const usePollActions = () => {
     });
   };
 
-  // Phase 5 leaves edit/delete unwired — the UI offered these via the
-  // ellipsis menu but the backend doesn't expose them. Surfacing a
-  // clear error keeps callsites honest.
-  const updatePoll = async () => {
-    throw new Error('Editing polls is not yet supported.');
+  const updatePoll = async (
+    pollId: string,
+    updates: Partial<Pick<CreatePollInput, 'title' | 'type' | 'allow_add_options' | 'anonymous_voting'>>,
+    options: { id?: string; label: string; created_by: string }[],
+    deletedOptionIds: string[],
+  ) => {
+    const newLabels = options.filter((o) => !o.id).map((o) => o.label);
+    await updateMut({
+      pollId: pollId as Id<'trip_polls'>,
+      ...(updates.title !== undefined ? { title: updates.title } : {}),
+      ...(updates.type !== undefined ? { type: updates.type } : {}),
+      ...(updates.allow_add_options !== undefined
+        ? { allowAddOptions: updates.allow_add_options }
+        : {}),
+      ...(updates.anonymous_voting !== undefined
+        ? { isAnonymous: updates.anonymous_voting }
+        : {}),
+      ...(newLabels.length > 0 ? { addOptions: newLabels } : {}),
+      ...(deletedOptionIds.length > 0
+        ? {
+            removeOptionIds: deletedOptionIds.map(
+              (id) => id as Id<'poll_options'>,
+            ),
+          }
+        : {}),
+    });
   };
-  const deletePoll = async () => {
-    throw new Error('Deleting polls is not yet supported.');
+  const deletePoll = async (pollId: string) => {
+    await removeMut({ pollId: pollId as Id<'trip_polls'> });
   };
   const addPollOption = async (
     _input: CreatePollOptionInput,
   ): Promise<PollOption | undefined> => {
-    throw new Error('Adding options after creation is not yet supported.');
+    // Use updatePoll(pollId, {}, [{ label, created_by }], []) to add
+    // options to an existing poll instead of calling this directly.
+    throw new Error('Use updatePoll with addOptions to add options.');
   };
-  const fetchPollById = async (_pollId: string): Promise<Poll> => {
-    throw new Error('Use the reactive trip-level polls query instead.');
+  const fetchPollById = async (pollId: string): Promise<Poll> => {
+    const row = await convex.query(api.polls.getById, {
+      pollId: pollId as Id<'trip_polls'>,
+    });
+    if (!row) throw new Error('Poll not found');
+    return row as unknown as Poll;
   };
   const fetchPolls = async (_tripId: string): Promise<Poll[]> => [];
 

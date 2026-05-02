@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+import { convex } from '@/lib/convex';
 
 export const DEFAULT_CATEGORIES = [
   'accommodation',
@@ -74,6 +75,7 @@ export type CreateExpenseInput = {
 
 const useExpenseActions = () => {
   const createMut = useMutation(api.expenses.create);
+  const updateMut = useMutation(api.expenses.update);
   const removeMut = useMutation(api.expenses.remove);
   const settleSplitMut = useMutation(api.expenses.settleSplit);
 
@@ -136,13 +138,46 @@ const useExpenseActions = () => {
     });
   };
 
-  // Editing isn't yet exposed server-side; surface a clear error so
-  // the existing edit-expense screen can fall back to delete + recreate.
-  const updateExpense = async () => {
-    throw new Error('Editing expenses is not yet supported.');
+  const updateExpense = async (
+    expenseId: string,
+    input: Partial<CreateExpenseInput>,
+    participants: { userId: string; amountOwed: number }[],
+  ) => {
+    const splitType = input.split_type;
+    await updateMut({
+      expenseId: expenseId as Id<'expenses'>,
+      ...(input.amount !== undefined ? { amount: input.amount } : {}),
+      ...(input.currency !== undefined ? { currency: input.currency } : {}),
+      ...(input.category !== undefined
+        ? { category: input.category as Expense['category'] }
+        : {}),
+      ...(input.date !== undefined ? { date: input.date } : {}),
+      ...(input.description !== undefined
+        ? { description: input.description }
+        : {}),
+      ...(splitType !== undefined ? { splitType } : {}),
+      ...(splitType === 'custom'
+        ? {
+            customSplits: participants.map((p) => ({
+              userId: p.userId as unknown as Id<'users'>,
+              amountOwed: p.amountOwed,
+            })),
+          }
+        : participants.length > 0
+          ? {
+              participantIds: participants.map(
+                (p) => p.userId as unknown as Id<'users'>,
+              ),
+            }
+          : {}),
+    });
   };
-  const fetchExpenseById = async (_expenseId: string): Promise<Expense> => {
-    throw new Error('Use the reactive trip-level expenses query instead.');
+  const fetchExpenseById = async (expenseId: string): Promise<Expense> => {
+    const row = await convex.query(api.expenses.getById, {
+      expenseId: expenseId as Id<'expenses'>,
+    });
+    if (!row) throw new Error('Expense not found');
+    return row as unknown as Expense;
   };
   const fetchExpenses = async (_tripId: string): Promise<Expense[]> => [];
   const fetchGroupMembers = async (

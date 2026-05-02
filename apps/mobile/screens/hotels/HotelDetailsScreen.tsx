@@ -23,6 +23,9 @@ import type { HotelDetail } from '@/types/hotel.types';
 import type { LiteAPIHotelRatesResponse } from '@/types/liteapi.types';
 import { useAction } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
+// LiteAPI types remain consumed by the rate-tree renderer further down
+// this file; the rates payload is now sourced via api.hotels.getRatesRaw
+// rather than direct Supabase service calls.
 import EventLocationSection from '@/components/event/detail/EventLocationSection';
 import { Divider } from '@/components/event/detail/EventDetailPrimitives';
 import RoomRateCard from '@/components/hotels/RoomRateCard';
@@ -113,6 +116,7 @@ export default function HotelDetailScreen() {
   const [imageIndex, setImageIndex] = useState(0);
 
   const getDetailAction = useAction(api.hotels.getDetail);
+  const getRatesRawAction = useAction(api.hotels.getRatesRaw);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -125,18 +129,36 @@ export default function HotelDetailScreen() {
         return;
       }
       setHotel(mapDetails(detail));
-      // Phase 8 leaves the rich rates table unwired — Convex returns
-      // the rate list via api.hotels.getRates, but it doesn't yet
-      // surface the full LiteAPI roomTypes/cancellation tree this UI
-      // expects. The rates section degrades gracefully to "no rates
-      // available" until that adapter ships.
-      setRates(null);
+
+      // Pull the full LiteAPI rates payload via the Convex proxy. The
+      // proxy hides the LiteAPI key but otherwise returns the raw
+      // response body unchanged so this screen's rate-tree code keeps
+      // working. Failure here is non-fatal — the hotel still renders
+      // without a bookable-rates list.
+      const checkinDate = checkin ?? activeTrip?.startDate ?? '';
+      const checkoutDate = checkout ?? activeTrip?.endDate ?? '';
+      if (checkinDate && checkoutDate) {
+        try {
+          const raw = await getRatesRawAction({
+            apiRef: hotelId,
+            checkin: checkinDate,
+            checkout: checkoutDate,
+            adults,
+          });
+          setRates(raw as LiteAPIHotelRatesResponse | null);
+        } catch (rateErr) {
+          console.warn('[hotels] rates fetch failed', (rateErr as Error).message);
+          setRates(null);
+        }
+      } else {
+        setRates(null);
+      }
     } catch (err) {
       setError((err as Error).message || 'Failed to load hotel details');
     } finally {
       setLoading(false);
     }
-  }, [hotelId, getDetailAction]);
+  }, [hotelId, getDetailAction, getRatesRawAction, checkin, checkout, adults, activeTrip?.startDate, activeTrip?.endDate]);
 
   useEffect(() => {
     fetchData();

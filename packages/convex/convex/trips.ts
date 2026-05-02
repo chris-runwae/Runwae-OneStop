@@ -326,6 +326,41 @@ export const getViewerMembership = query({
   },
 });
 
+/**
+ * Public trips for the Explore feed. Returns the most recent
+ * `visibility: "public"` trips, excluding any the caller is already a
+ * member of. Capped at 50 by default to keep the response bounded.
+ */
+export const listPublic = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args): Promise<Doc<"trips">[]> => {
+    const limit = Math.min(args.limit ?? 50, 100);
+
+    // Convex doesn't support a compound index by_visibility yet, so we
+    // take a bounded slice and filter in memory. The cap keeps the read
+    // amplification predictable; a future index on visibility can drop
+    // this to a single index scan.
+    const recent = await ctx.db.query("trips").order("desc").take(500);
+    const publics = recent.filter((t) => t.visibility === "public");
+
+    const userId = await getAuthUserId(ctx);
+    let excludedTripIds = new Set<string>();
+    if (userId !== null) {
+      const myMemberships = await ctx.db
+        .query("trip_members")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      excludedTripIds = new Set(
+        myMemberships.map((m) => m.tripId as unknown as string),
+      );
+    }
+
+    return publics
+      .filter((t) => !excludedTripIds.has(t._id as unknown as string))
+      .slice(0, limit);
+  },
+});
+
 export const getMyTrips = query({
   args: {},
   handler: async (ctx) => {

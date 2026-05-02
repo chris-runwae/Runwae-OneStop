@@ -29,8 +29,17 @@ export interface AuthContextType {
   resetPassword: (
     email: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  confirmPasswordReset: (
+    email: string,
+    code: string,
+    newPassword: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (
     newPassword: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  verifyEmail: (
+    email: string,
+    code: string,
   ) => Promise<{ success: boolean; error?: string }>;
   initialize: () => Promise<void>;
   completeOnboarding: () => Promise<void>;

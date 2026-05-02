@@ -99,11 +99,45 @@ export default function AddExpenseScreen() {
     fetchGroupMembers(tripId).then((m) => setMembers(m));
   }, [tripId]);
 
-  // Editing existing expenses isn't yet wired through the Convex
-  // module — usePollActions / useExpenseActions surface a clear error
-  // on update calls. The form falls through to create mode.
   useEffect(() => {
     if (!expenseId) return;
+    fetchExpenseById(expenseId)
+      .then((expense) => {
+        // Convex expense rows store the title/category in description +
+        // category; the legacy mobile form had a separate `title` field
+        // that doesn't exist server-side, so we leave it blank.
+        setAmount(String(expense.amount));
+        setCurrency(expense.currency);
+        const isDefault = (DEFAULT_CATEGORIES as readonly string[]).includes(
+          expense.category,
+        );
+        if (isDefault) {
+          setCategory(expense.category);
+        } else {
+          setCategory('custom');
+          setCustomCategory(expense.category);
+          setShowCustomCategory(true);
+        }
+        setDate(new Date(expense.date));
+        setDescription(expense.description ?? '');
+        setSplitType(expense.splitType);
+
+        const ids = new Set(
+          expense.splits.map((s) => s.userId as unknown as string),
+        );
+        setSelectedMemberIds(ids);
+
+        if (expense.splitType === 'custom') {
+          const amounts: Record<string, string> = {};
+          expense.splits.forEach((s) => {
+            amounts[s.userId as unknown as string] = String(s.amountOwed);
+          });
+          setCustomAmounts(amounts);
+        }
+      })
+      .catch((err) =>
+        console.warn('[AddExpense] could not load expense', err),
+      );
   }, [expenseId]);
 
   // ── Helpers ────────────────────────────────────────────────────
@@ -226,7 +260,7 @@ export default function AddExpenseScreen() {
 
     try {
       if (isEditMode) {
-        throw new Error('Editing expenses is not yet supported.');
+        await updateExpense(expenseId, expenseData, buildParticipants());
       } else {
         await createExpense(expenseData, buildParticipants());
       }

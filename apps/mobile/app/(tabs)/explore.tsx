@@ -14,6 +14,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useExploreData } from '@/hooks/useExploreData';
 import type { Trip } from '@/hooks/useTripActions';
 import { useViator } from '@/hooks/useViator';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 import type { ViatorProduct } from '@/types/viator.types';
 import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToExperience';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -36,10 +38,12 @@ const ExploreScreen = () => {
   const { products: viatorProducts, loading: viatorLoading } = useViator();
   const { user } = useAuth();
 
-  // Public trip discovery is wired up in Phase 4 (browse migration);
-  // for now the section is hidden so the screen compiles cleanly.
-  const publicTrips: Trip[] = [];
-  const publicTripsLoading = false;
+  // Public trips for Explore — server-side filtering in
+  // api.trips.listPublic excludes the caller's own memberships so the
+  // section never shows a trip you can already see in My Trips.
+  const publicTripsRaw = useQuery(api.trips.listPublic, { limit: 20 });
+  const publicTrips: Trip[] = (publicTripsRaw ?? []) as Trip[];
+  const publicTripsLoading = publicTripsRaw === undefined;
 
   const handleRefresh = useCallback(async () => {
     await refresh();

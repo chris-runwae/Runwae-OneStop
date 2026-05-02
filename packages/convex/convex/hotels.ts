@@ -57,6 +57,58 @@ export const getDetail = action({
   },
 });
 
+/**
+ * Returns the raw LiteAPI hotels/rates response body for a single
+ * hotel. The mobile detail screen renders the full
+ * `LiteAPIHotelRatesResponse` shape (roomTypes → rates →
+ * cancellationPolicies), so this action is a thin proxy that just
+ * authenticates the caller, hides the API key, and forwards the
+ * response. Callers should treat this as best-effort: when the LiteAPI
+ * key isn't configured or the fetch fails we return null and the UI
+ * degrades to "no rates available".
+ */
+export const getRatesRaw = action({
+  args: {
+    apiRef: v.string(),
+    checkin: v.string(),
+    checkout: v.string(),
+    adults: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    guestNationality: v.optional(v.string()),
+  },
+  handler: async (_ctx, args): Promise<unknown> => {
+    const apiKey = process.env.LITEAPI_KEY;
+    if (!apiKey) return null;
+    try {
+      const res = await fetch("https://api.liteapi.travel/v3.0/hotels/rates", {
+        method: "POST",
+        headers: {
+          "X-API-Key": apiKey,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hotelIds: [args.apiRef],
+          checkin: args.checkin,
+          checkout: args.checkout,
+          currency: args.currency ?? "USD",
+          guestNationality: args.guestNationality ?? "US",
+          occupancies: [{ adults: args.adults ?? 2 }],
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.warn("[liteapi] getRatesRaw not ok", res.status, txt.slice(0, 200));
+        return null;
+      }
+      return (await res.json()) as unknown;
+    } catch (err) {
+      console.warn("[liteapi] getRatesRaw fetch failed", err);
+      return null;
+    }
+  },
+});
+
 export const getRates = action({
   args: {
     apiRef: v.string(),

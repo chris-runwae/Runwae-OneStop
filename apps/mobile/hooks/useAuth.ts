@@ -40,11 +40,24 @@ export interface UseAuthReturn {
   updateUser: (
     userData: Partial<User>,
   ) => Promise<{ success: boolean; error?: string }>;
+  // Two-step password reset: `resetPassword` mails the OTP, then
+  // `confirmPasswordReset` consumes it together with the new password.
   resetPassword: (
     email: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  confirmPasswordReset: (
+    email: string,
+    code: string,
+    newPassword: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (
     newPassword: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  // Email-verification on sign-up. `signUp` triggers the email; the
+  // user types the 8-digit OTP into `verifyEmail` which signs them in.
+  verifyEmail: (
+    email: string,
+    code: string,
   ) => Promise<{ success: boolean; error?: string }>;
 
   completeOnboarding: () => Promise<void>;
@@ -258,24 +271,77 @@ export function useAuth(): UseAuthReturn {
     [updateProfile],
   );
 
-  // Password reset / change flows aren't wired through @convex-dev/auth's
-  // base Password provider yet — adding requires a `reset`/`verify` verifier
-  // in packages/convex/convex/auth.ts plus a Resend integration.
-  const resetPassword = useCallback(async (_email: string) => {
-    return {
-      success: false,
-      error:
-        "Password reset isn't available yet. Please contact support@runwae.io.",
-    };
-  }, []);
+  // Password reset is a two-step OTP flow: requesting the reset mails
+  // an 8-digit code; submitting that code with a new password rotates
+  // the credential. Convex Auth keys the request on `flow: "reset"` and
+  // the confirm on `flow: "reset-verification"`.
+  const resetPassword = useCallback(
+    async (email: string) => {
+      try {
+        await convexSignIn("password", { email, flow: "reset" });
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: errorMessage(err, "Could not send reset email"),
+        };
+      }
+    },
+    [convexSignIn],
+  );
 
+  const confirmPasswordReset = useCallback(
+    async (email: string, code: string, newPassword: string) => {
+      try {
+        await convexSignIn("password", {
+          email,
+          code,
+          newPassword,
+          flow: "reset-verification",
+        });
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: errorMessage(err, "Reset failed"),
+        };
+      }
+    },
+    [convexSignIn],
+  );
+
+  // Updating the password while logged in routes through the same
+  // reset flow against the viewer's own email; @convex-dev/auth doesn't
+  // expose a separate "change password" verb. Callers should prompt
+  // the user for the OTP they just received before calling this.
   const updatePassword = useCallback(async (_newPassword: string) => {
     return {
       success: false,
       error:
-        "Password change isn't available yet. Please contact support@runwae.io.",
+        "Use Settings → Reset password to change your password from this device.",
     };
   }, []);
+
+  // Sign-up email verification. The `signUp` flow triggers the OTP
+  // mail; the user enters the code here to complete provisioning.
+  const verifyEmail = useCallback(
+    async (email: string, code: string) => {
+      try {
+        await convexSignIn("password", {
+          email,
+          code,
+          flow: "email-verification",
+        });
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: errorMessage(err, "Verification failed"),
+        };
+      }
+    },
+    [convexSignIn],
+  );
 
   const completeOnboarding = useCallback(async () => {
     setHasSeenOnboarding(true);
@@ -317,7 +383,9 @@ export function useAuth(): UseAuthReturn {
     signOut,
     updateUser,
     resetPassword,
+    confirmPasswordReset,
     updatePassword,
+    verifyEmail,
     completeOnboarding,
     completeBoarding,
     setCurrentBoardingStep,

@@ -18,7 +18,7 @@ import React, {
 
 import TripCreatedModal from '@/components/trip-creation/TripCreatedModal';
 import { useAuth } from '@/context/AuthContext';
-import { createTrip } from '@/utils/supabase/trips.service';
+import { useCreateTrip } from '@/hooks/useTripActions';
 import {
   ActivityIndicator,
   Dimensions,
@@ -50,6 +50,7 @@ const CreateTrip = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const { user } = useAuth();
+  const createTripMut = useCreateTrip();
 
   const { calendarActiveDateRanges, onCalendarDayPress, dateRange } =
     useDateRange();
@@ -225,26 +226,17 @@ const CreateTrip = () => {
 
     setIsCreating(true);
     try {
-      const result = await createTrip({
-        user_id: user.id,
+      await createTripMut({
         title: title.trim(),
-        destination: destination.trim(),
-        start_date: selectedDates.startId || '',
-        end_date: selectedDates.endId || selectedDates.startId || '',
-        cover_img_url: image || undefined,
-        description: description.trim(),
+        description: description.trim() || undefined,
+        destinationLabel: destination.trim(),
+        startDate: selectedDates.startId || '',
+        endDate: selectedDates.endId || selectedDates.startId || '',
+        visibility: 'private',
+        currency: 'GBP',
+        coverImageUrl: image || undefined,
       });
-
-      if (result.success) {
-        setShowSuccessModal(true);
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: result.error || 'Failed to create trip.',
-          position: 'bottom',
-        });
-      }
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Error creating trip:', error);
       Toast.show({

@@ -41,6 +41,7 @@ import type * as migrations_section7_verify from "../migrations/section7_verify.
 import type * as migrations_seed_dev_events from "../migrations/seed_dev_events.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
+import type * as places from "../places.js";
 import type * as polls from "../polls.js";
 import type * as posts from "../posts.js";
 import type * as providers_duffel from "../providers/duffel.js";
@@ -104,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   "migrations/seed_dev_events": typeof migrations_seed_dev_events;
   notifications: typeof notifications;
   payments: typeof payments;
+  places: typeof places;
   polls: typeof polls;
   posts: typeof posts;
   "providers/duffel": typeof providers_duffel;

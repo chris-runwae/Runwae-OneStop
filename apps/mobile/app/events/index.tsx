@@ -3,9 +3,9 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { EventCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { Event } from "@/types/content.types";
-import { getEvents, searchEvents } from "@/utils/supabase/events.service";
-import React, { useCallback, useEffect, useState } from "react";
+import type { Event } from "@/types/content.types";
+import { useExploreData } from "@/hooks/useExploreData";
+import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
 const EmptyState = () => (
@@ -29,43 +29,17 @@ const EmptyState = () => (
 
 const EventsScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchEvents = useCallback(async (query: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = query.trim() 
-        ? await searchEvents(query) 
-        : await getEvents();
-      setEvents(data);
-    } catch (err) {
-      console.error("EventsScreen: Error fetching events:", err);
-      setError(err instanceof Error ? err : new Error("Failed to fetch events"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Initial fetch
-    fetchEvents("");
-  }, [fetchEvents]);
-
-  useEffect(() => {
-    if (!searchQuery) {
-      fetchEvents("");
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      fetchEvents(searchQuery);
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, fetchEvents]);
+  const { data, loading } = useExploreData();
+  const events = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return data.events;
+    return data.events.filter(
+      (e) =>
+        e.title.toLowerCase().includes(q) ||
+        e.location.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q),
+    );
+  }, [data.events, searchQuery]);
 
   const displayData = loading && events.length === 0 ? Array(6).fill({}) : events;
 

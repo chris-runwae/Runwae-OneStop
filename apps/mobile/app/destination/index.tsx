@@ -3,8 +3,8 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { DestinationCardSkeleton } from '@/components/ui/CardSkeletons';
 import ScreenHeader from '@/components/ui/ScreenHeader';
 import SearchInput from '@/components/ui/SearchInput';
-import { Destination } from '@/types/content.types';
-import { getDestinations } from '@/utils/supabase/destinations.service';
+import type { Destination } from '@/types/content.types';
+import { useExploreData } from '@/hooks/useExploreData';
 import React, { useMemo, useState } from 'react';
 import { FlatList, Image, Text, View } from 'react-native';
 
@@ -28,24 +28,8 @@ const EmptyState = () => (
 
 const DestinationsScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [destinations, setDestinations] = useState<Destination[]>([]);
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await getDestinations();
-        setDestinations(data);
-      } catch (err) {
-        console.error('DestinationsScreen: Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const { data, loading } = useExploreData();
+  const destinations = data.destinations;
 
   const filteredDestinations = useMemo(() => {
     const query = searchQuery.toLowerCase();

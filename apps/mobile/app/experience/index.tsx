@@ -3,8 +3,7 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { AddOnCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { Experience } from "@/types/content.types";
-import { getExperiences } from "@/utils/supabase/experiences.service";
+import { useExploreData } from "@/hooks/useExploreData";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
@@ -29,24 +28,8 @@ const EmptyState = () => (
 
 const ExperienceScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await getExperiences();
-        setExperiences(data);
-      } catch (err) {
-        console.error("ExperienceScreen: Error fetching experiences:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const { data, loading } = useExploreData();
+  const experiences = data.experiences;
 
   const filteredExperiences = useMemo(() => {
     const query = searchQuery.toLowerCase();

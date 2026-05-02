@@ -22,13 +22,9 @@ import { useTrips } from '@/context/TripsContext';
 import { useDirections } from '@/hooks/useDirections';
 import { useEvent } from '@/hooks/useEvent';
 import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
-import { trackEventView } from '@/utils/supabase/analytics.service';
-import { supabase } from '@/utils/supabase/client';
-import {
-  getEventRegistration,
-  registerForEvent,
-} from '@/utils/supabase/event-registrations.service';
-import { useStripeSafe } from '@/utils/stripe-safe';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -59,18 +55,28 @@ const EventDetailScreen = () => {
   const { openDirections } = useDirections();
   const { addIdeaToTrip } = useTrips();
   const { user } = useAuth();
-  const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
+  // Stripe handles re-introduce in Phase 8 alongside payments.createPaymentIntent.
+
+  // Convex tracks current rsvp via api.events.getViewerRsvp; the
+  // analytics view-counter is api.events.incrementViewCount.
+  const viewerRsvp = useQuery(
+    api.events.getViewerRsvp,
+    event?.id ? { eventId: event.id as unknown as Id<'events'> } : 'skip',
+  );
+  const incrementViewCount = useMutation(api.events.incrementViewCount);
+  const rsvpMut = useMutation(api.events.rsvp);
 
   useEffect(() => {
-    if (!event?.id || !user?.id) return;
-    getEventRegistration(event.id, user.id)
-      .then((reg) => setIsRegistered(reg?.status === 'confirmed'))
-      .catch(() => {});
-  }, [event?.id, user?.id]);
+    if (viewerRsvp === 'going') setIsRegistered(true);
+  }, [viewerRsvp]);
 
   useEffect(() => {
-    if (event?.id) trackEventView(event.id);
-  }, [event?.id]);
+    if (event?.id) {
+      void incrementViewCount({
+        eventId: event.id as unknown as Id<'events'>,
+      }).catch(() => {});
+    }
+  }, [event?.id, incrementViewCount]);
 
   if (loading) return <EventDetailSkeleton />;
   if (error || !event) return <DetailNotFound type="experience" />;
@@ -83,55 +89,21 @@ const EventDetailScreen = () => {
     }
     setRegisterLoading(true);
     try {
+      // Phase 4 wires free / external RSVPs only. Paid ticketing flows
+      // through api.bookings.createTicketBooking and the native Stripe
+      // Payment Sheet — ramping up alongside the PaymentIntent action
+      // in Phase 8.
       if (event.price && event.price > 0) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const resp = await fetch(
-          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.access_token ?? ''}`,
-              apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
-            },
-            body: JSON.stringify({
-              amount: event.price,
-              currency: event.currency ?? 'USD',
-            }),
-          }
+        Alert.alert(
+          'Ticket purchases coming soon',
+          'Paid event ticketing is rolling out shortly. Please check back later.',
         );
-        const { clientSecret, error: fnErr } = await resp.json();
-        if (fnErr) throw new Error(fnErr);
-
-        // Extract payment intent ID from client secret (format: pi_xxx_secret_yyy)
-        const paymentIntentId = clientSecret?.split('_secret_')[0] ?? null;
-
-        const { error: initErr } = await initPaymentSheet({
-          merchantDisplayName: 'Runwae',
-          paymentIntentClientSecret: clientSecret,
-          applePay: { merchantCountryCode: 'GB' },
-          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
-          style: 'automatic',
-        });
-        if (initErr) throw new Error(initErr.message);
-
-        const { error: payErr } = await presentPaymentSheet();
-        if (payErr) {
-          if (payErr.code !== 'Canceled')
-            Alert.alert('Payment failed', payErr.message);
-          return;
-        }
-
-        await registerForEvent(event.id, user.id, {
-          amountPaid: event.price,
-          currency: event.currency ?? 'USD',
-          stripePaymentIntent: paymentIntentId,
-        });
-      } else {
-        await registerForEvent(event.id, user.id);
+        return;
       }
+      await rsvpMut({
+        eventId: event.id as unknown as Id<'events'>,
+        status: 'going',
+      });
       setIsRegistered(true);
       Alert.alert("You're in!", `Successfully registered for ${event.title}.`);
     } catch (err) {

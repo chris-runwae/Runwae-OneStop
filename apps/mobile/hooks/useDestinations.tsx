@@ -1,23 +1,21 @@
-// hooks/useDestinations.ts
-import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabase/client'; // adjust to your supabase client path
+import { useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 
-import { Destination } from '@/types/content.types';
+import type { Destination } from '@/types/content.types';
 
-function mapRow(row: any): Destination {
+function toDestination(d: any): Destination {
   return {
-    id: row.id,
-    title: row.title,
-    location: row.location,
-    country: row.country,
-    image: row.image,
-    rating: row.rating ? Number(row.rating) : undefined,
-    reviewCount: row.review_count,
-    description: row.description,
-    featured: row.featured,
-    tags: row.tags,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: d._id as unknown as string,
+    title: d.name,
+    location: [d.country, d.region].filter(Boolean).join(', '),
+    image: d.heroImageUrl ?? '',
+    country: d.country,
+    rating: d.ratingAverage,
+    reviewCount: d.ratingCount,
+    description: d.description,
+    featured: d.isFeatured,
+    tags: d.tags,
   };
 }
 
@@ -35,53 +33,28 @@ type UseDestinationsReturn = {
 };
 
 export function useDestinations(
-  options: UseDestinationsOptions = {}
+  options: UseDestinationsOptions = {},
 ): UseDestinationsReturn {
   const { featuredOnly = false, limit = 20, search } = options;
 
-  const [destinations, setDestinations] = useState<Destination[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const raw = useQuery(api.destinations.list, {
+    featuredOnly,
+    limit,
+  });
+  const loading = raw === undefined;
 
-  const fetchDestinations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const destinations = useMemo<Destination[]>(() => {
+    const list = (raw ?? []).map(toDestination);
+    if (!search?.trim()) return list;
+    const q = search.toLowerCase();
+    return list.filter(
+      (d) =>
+        d.title.toLowerCase().includes(q) ||
+        d.location.toLowerCase().includes(q),
+    );
+  }, [raw, search]);
 
-    try {
-      let query = supabase
-        .from('destinations')
-        .select('*')
-        .order('featured', { ascending: false })
-        .order('rating', { ascending: false })
-        .limit(limit);
-
-      if (featuredOnly) {
-        query = query.eq('featured', true);
-      }
-
-      if (search && search.trim().length > 0) {
-        query = query.or(`title.ilike.%${search}%,location.ilike.%${search}%`);
-      }
-
-      const { data, error: supabaseError } = await query;
-
-      if (supabaseError) throw supabaseError;
-
-      setDestinations((data ?? []).map(mapRow));
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Something went wrong';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [featuredOnly, limit, search]);
-
-  useEffect(() => {
-    fetchDestinations();
-  }, [fetchDestinations]);
-
-  return { destinations, loading, error, refetch: fetchDestinations };
+  return { destinations, loading, error: null, refetch: () => {} };
 }
 
 type UseDestinationByIdReturn = {
@@ -92,44 +65,16 @@ type UseDestinationByIdReturn = {
 };
 
 export function useDestinationById(
-  id: string | null
+  id: string | null,
 ): UseDestinationByIdReturn {
-  const [destination, setDestination] = useState<Destination | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const raw = useQuery(api.destinations.list, id ? {} : 'skip');
+  const loading = raw === undefined;
 
-  const fetchDestination = useCallback(async () => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
+  const destination = useMemo<Destination | null>(() => {
+    if (!raw || !id) return null;
+    const match = raw.find((d: any) => (d._id as unknown as string) === id);
+    return match ? toDestination(match) : null;
+  }, [raw, id]);
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data, error: supabaseError } = await supabase
-        .from('destinations')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (supabaseError) throw supabaseError;
-
-      setDestination(data ? mapRow(data) : null);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Something went wrong';
-      setError(message);
-      setDestination(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchDestination();
-  }, [fetchDestination]);
-
-  return { destination, loading, error, refetch: fetchDestination };
+  return { destination, loading, error: null, refetch: () => {} };
 }

@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import { useTrips } from '@/context/TripsContext';
-import { prebookOffer } from '@/utils/supabase/liteapi.service';
+import { useAction } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
@@ -86,22 +88,32 @@ export default function BookingScreen() {
     });
   };
 
+  const startBookingAction = useAction(api.hotels.startBooking);
+
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const prebook = await prebookOffer({ offerId, usePaymentSdk: true });
+      const result = await startBookingAction({
+        apiRef: hotelId,
+        offerId,
+        hotelName,
+        checkin,
+        checkout,
+        ...(eventId ? { eventId: eventId as unknown as Id<'events'> } : {}),
+      });
+      // The Stripe PaymentIntent for the hotel sheet ships in Phase 8
+      // alongside `payments.createPaymentIntent`. Until then the
+      // payment screen renders without a real client_secret.
       router.push({
         pathname: '/hotel/payment',
         params: {
           hotelId,
           hotelName,
           hotelThumb,
-          prebookId: prebook.data.prebookId,
-          transactionId: prebook.data.transactionId,
-          secretKey: prebook.data.secretKey,
-          commission: String(prebook.data.commission),
-          price: String(prebook.data.price),
-          currency: prebook.data.currency,
+          bookingId: result.bookingId as unknown as string,
+          clientSecret: '',
+          price: String(result.finalPrice),
+          currency: result.currency,
           checkin,
           checkout,
           guests: String(effectiveAdults),

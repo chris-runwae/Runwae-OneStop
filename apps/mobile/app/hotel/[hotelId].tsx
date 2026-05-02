@@ -29,8 +29,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import type { HotelDetail, HotelRate } from '@/types/hotel.types';
-import type { LiteAPIHotelDetails } from '@/types/liteapi.types';
-import { getHotelDetails, searchRates } from '@/utils/supabase/liteapi.service';
+import { useAction } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 import { normalizeHotelRooms } from '@/utils/hotelRoom';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -49,33 +49,31 @@ function amenityLabel(facility: string) {
   return null;
 }
 
-function mapDetails(raw: LiteAPIHotelDetails): HotelDetail {
-  const gallery = raw.hotelImages?.map((img) => img.url) ?? [];
-  if (raw.main_photo && !gallery.includes(raw.main_photo)) {
-    gallery.unshift(raw.main_photo);
-  }
+// Convex's hotels.getDetail returns a DiscoveryDetail; the legacy
+// HotelDetail shape carries richer fields (rooms/policies/sentiment)
+// that aren't surfaced in the discovery payload. We keep them as empty
+// placeholders for now — the hotel detail page degrades gracefully
+// when these are absent.
+function mapDetails(raw: any): HotelDetail {
   return {
-    hotelId: raw.id,
-    name: raw.name,
-    rating: raw.starRating ?? 0,
-    address: raw.address ?? '',
-    thumbnail: raw.main_photo ?? gallery[0] ?? '',
-    gallery,
-    description: raw.hotelDescription ?? '',
-    minRate: 0,
-    currency: 'USD',
+    hotelId: raw.apiRef,
+    name: raw.title ?? '',
+    rating: raw.rating ?? 0,
+    address: raw.address ?? raw.locationName ?? '',
+    thumbnail: raw.imageUrl ?? '',
+    gallery: raw.gallery ?? (raw.imageUrl ? [raw.imageUrl] : []),
+    description: raw.description ?? '',
+    minRate: raw.price ?? 0,
+    currency: raw.currency ?? 'USD',
     offerId: '',
-    amenities: raw.hotelFacilities ?? [],
-    city: raw.city ?? '',
-    country: raw.country ?? '',
+    amenities: raw.amenities ?? [],
+    city: '',
+    country: '',
     coordinates: {
-      latitude: raw.location?.latitude ?? 0,
-      longitude: raw.location?.longitude ?? 0,
+      latitude: raw.coords?.lat ?? 0,
+      longitude: raw.coords?.lng ?? 0,
     },
-    rooms: normalizeHotelRooms(raw.rooms as unknown[]),
-    policies: raw.policies,
-    sentimentPros: raw.sentiment_analysis?.pros,
-    sentimentCons: raw.sentiment_analysis?.cons,
+    rooms: normalizeHotelRooms([]),
   };
 }
 
@@ -109,51 +107,46 @@ export default function HotelDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
 
+  const getDetailAction = useAction(api.hotels.getDetail);
+  const getRatesAction = useAction(api.hotels.getRates);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch Details (Required)
-      const detailsRes = await getHotelDetails(hotelId);
-      const mapped = mapDetails(detailsRes.data);
-      setHotel(mapped);
+      const detail = await getDetailAction({ apiRef: hotelId });
+      if (!detail) {
+        setError('Hotel not found');
+        setLoading(false);
+        return;
+      }
+      setHotel(mapDetails(detail));
 
-      // 2. Fetch Rates (Optional - don't crash if no availability)
       if (canFetchRates) {
         try {
-          const ratesRes = await searchRates({
-            hotelIds: [hotelId],
+          const liteRates = await getRatesAction({
+            apiRef: hotelId,
             checkin: checkin!,
             checkout: checkout!,
-            occupancies: [{ adults }],
-            currency: 'USD',
-            guestNationality: 'US',
-            includeHotelData: false,
+            adults,
           });
-
-          const hotelRates: HotelRate[] = [];
-          const hotelRateData = ratesRes?.data.find((h) => h.hotelId === hotelId);
-          if (hotelRateData) {
-            for (const roomType of hotelRateData.roomTypes) {
-              for (const rate of roomType.rates) {
-                const total = rate.retailRate.total[0];
-                hotelRates.push({
-                  offerId: rate.offerId,
-                  roomName: rate.name ?? 'Standard Room',
-                  boardName: rate.boardName ?? 'Room Only',
-                  price: total?.amount ?? 0,
-                  currency: total?.currency ?? 'USD',
-                  refundable: rate.cancellationPolicies?.refundableTag === 'RFN',
-                  cancelDeadline:
-                    rate.cancellationPolicies?.cancelPolicyInfos?.[0]?.cancelTime,
-                });
-              }
-            }
-          }
-          setRates(hotelRates.filter((r) => r.offerId != null));
+          setRates(
+            liteRates.map((r: any) => ({
+              offerId: r.offerId,
+              roomName: r.name ?? 'Standard Room',
+              boardName: r.boardName ?? 'Room Only',
+              price: r.priceTotal ?? r.price ?? 0,
+              currency: r.currency ?? 'USD',
+              refundable: r.refundable ?? false,
+              cancelDeadline: r.cancelDeadline,
+            })),
+          );
         } catch (rateErr) {
-          console.warn('[LiteAPI] Could not fetch rates for this hotel:', (rateErr as Error).message);
-          setRates([]); // No rates found, but page stays alive
+          console.warn(
+            '[Hotels] Could not fetch rates:',
+            (rateErr as Error).message,
+          );
+          setRates([]);
         }
       }
     } catch (err) {
@@ -161,7 +154,7 @@ export default function HotelDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [hotelId, checkin, checkout, adults, canFetchRates]);
+  }, [hotelId, checkin, checkout, adults, canFetchRates, getDetailAction, getRatesAction]);
 
   useEffect(() => {
     fetchData();

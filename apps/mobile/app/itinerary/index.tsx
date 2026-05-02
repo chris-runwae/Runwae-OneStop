@@ -3,8 +3,8 @@ import { ItineraryCardSkeleton } from "@/components/ui/CardSkeletons";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { getItineraryTemplates } from "@/utils/supabase/itinerary-templates.service";
-import { ItineraryTemplate } from "@/types/content.types";
+import { useExploreData } from "@/hooks/useExploreData";
+import type { ItineraryTemplate } from "@/types/content.types";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
@@ -31,24 +31,8 @@ const EmptyState = () => (
 const Itineraries = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [itineraries, setItineraries] = useState<ItineraryTemplate[]>([]);
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await getItineraryTemplates();
-        setItineraries(data);
-      } catch (err) {
-        console.error("ItinerariesScreen: Error fetching data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const { data, loading } = useExploreData();
+  const itineraries = data.itineraries;
 
   const filteredItineraries = useMemo(() => {
     return itineraries.filter(

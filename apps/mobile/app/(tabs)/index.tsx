@@ -11,9 +11,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 
 import { useTrips } from '@/context/TripsContext';
 import type { Trip } from '@/hooks/useTripActions';
-import { Event, Experience } from '@/types/content.types';
-import { getFeaturedEvents } from '@/utils/supabase/events.service';
-import { getFeaturedExperiences } from '@/utils/supabase/experiences.service';
+import { useExploreData } from '@/hooks/useExploreData';
 
 export default function HomeScreen() {
   const {
@@ -24,12 +22,10 @@ export default function HomeScreen() {
   const { dark } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { myTrips, joinedTrips } = useTrips();
-  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
-  const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>(
-    []
-  );
+  const { data: exploreData, loading } = useExploreData();
+  const featuredEvents = exploreData.events;
+  const featuredExperiences = exploreData.experiences;
 
   function isActive(trip: Trip): boolean {
     if (!trip.endDate) return true;
@@ -50,26 +46,6 @@ export default function HomeScreen() {
     () => allTrips.filter(isActive),
     [allTrips]
   );
-
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [eventsData, experiencesData] = await Promise.all([
-          getFeaturedEvents(),
-          getFeaturedExperiences(),
-        ]);
-        setFeaturedEvents(eventsData);
-        setFeaturedExperiences(experiencesData);
-      } catch (err) {
-        console.error('HomeScreen: Error fetching featured data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

@@ -20,9 +20,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacer, Text } from '@/components';
 import { Colors, textStyles } from '@/constants';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/utils/supabase/client';
-import { logHotelBooking } from '@/utils/supabase/hotel-bookings.service';
-import { bookHotel } from '@/utils/supabase/liteapi.service';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
@@ -32,10 +29,8 @@ export default function PaymentScreen() {
     hotelId,
     hotelName,
     hotelThumb,
-    prebookId,
-    transactionId,
-    secretKey,
-    commission: commissionStr,
+    bookingId,
+    clientSecret,
     price: priceStr,
     currency,
     checkin,
@@ -48,10 +43,8 @@ export default function PaymentScreen() {
     hotelId: string;
     hotelName: string;
     hotelThumb: string;
-    prebookId: string;
-    transactionId: string;
-    secretKey: string;
-    commission: string;
+    bookingId: string;
+    clientSecret: string;
     price: string;
     currency: string;
     checkin: string;
@@ -76,40 +69,24 @@ export default function PaymentScreen() {
   const [initError, setInitError] = useState<string | null>(null);
 
   const price = parseFloat(priceStr ?? '0');
-  const commission = parseFloat(commissionStr ?? '0');
   const guests = parseInt(guestsStr ?? '1', 10);
 
+  // The hotel-booking flow now begins on the Convex backend
+  // (`api.hotels.startBooking`), which returns a Stripe PaymentIntent
+  // client_secret. Initialise the Payment Sheet against that secret.
   useEffect(() => {
-    if (!price || !prebookId) return;
+    if (!clientSecret) return;
     (async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const res = await fetch(
-          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/stripe-intent`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${session?.access_token ?? ''}`,
-              apikey: process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
-            },
-            body: JSON.stringify({ amount: price, currency }),
-          }
-        );
-        const json = await res.json();
-        if (json.error) throw new Error(json.error);
-
         const { error: initErr } = await initPaymentSheet({
           merchantDisplayName: 'Runwae',
-          paymentIntentClientSecret: json.clientSecret,
-          applePay: { 
+          paymentIntentClientSecret: clientSecret,
+          applePay: {
             merchantCountryCode: 'GB',
-            merchantIdentifier: 'merchant.io.runwae.app', // Explicitly provide even if in provider
+            merchantIdentifier: 'merchant.io.runwae.app',
           },
           googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
-          returnURL: 'runwae://stripe-redirect', // Required for some payment methods/redirects
+          returnURL: 'runwae://stripe-redirect',
           style: 'automatic',
         });
         if (initErr) throw new Error(initErr.message);
@@ -123,7 +100,7 @@ export default function PaymentScreen() {
         setInitError(msg);
       }
     })();
-  }, [price, prebookId]);
+  }, [clientSecret, initPaymentSheet]);
 
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
 
@@ -152,81 +129,18 @@ export default function PaymentScreen() {
         return;
       }
 
-      // 2. Stripe confirmed — finalize the booking with LiteAPI.
-      setBookingStatus('Finalizing your booking...');
-      
-      let bookRes;
-      try {
-        bookRes = await bookHotel({
-          prebookId,
-          holder: {
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: email.trim(),
-          },
-          payment: { method: 'TRANSACTION_ID', transactionId },
-          guests: [
-            {
-              occupancyNumber: 1,
-              firstName: firstName.trim(),
-              lastName: lastName.trim(),
-              email: email.trim(),
-            },
-          ],
-        });
-      } catch (bookErr: any) {
-        console.error('[LiteAPI] Booking finalization failed:', bookErr);
-        // CRITICAL: The payment was already processed by Stripe.
-        Alert.alert(
-          'Booking Confirmation Pending',
-          'Your payment was successful, but we encountered an error while confirming your room with the hotel. \n\nIMPORTANT: Please do not try to book again. Contact support@runwae.io with your email and we will manually confirm your booking.',
-          [{ text: 'OK' }]
-        );
-        throw bookErr;
-      }
-
-      // 3. Log to Supabase for itinerary tracking
-      setBookingStatus('Updating your itinerary...');
-      if (user?.id) {
-        try {
-          await logHotelBooking({
-            tripId: tripId ?? null,
-            userId: user.id,
-            vendorId: null,
-            eventId: eventId ?? null,
-            hotelId,
-            hotelName,
-            bookingRef: bookRes.data.bookingId,
-            confirmationCode: bookRes.data.hotelConfirmationCode ?? null,
-            prebookId,
-            transactionId,
-            checkin,
-            checkout,
-            guests,
-            roomCount: bookingType === 'group' ? guests : 1,
-            currency: bookRes.data.currency,
-            totalAmount: bookRes.data.price,
-            commissionAmount: commission,
-            bookingType:
-              bookingType === 'individual' || bookingType === 'group'
-                ? bookingType
-                : 'individual',
-            rawResponse: bookRes as unknown as object,
-          });
-        } catch (logErr) {
-          console.warn('[DB] Failed to log booking to history, but booking is confirmed:', logErr);
-          // We don't throw here so the user still gets to the confirmation screen.
-        }
-      }
-
-      // 4. Success!
+      // The Stripe webhook on the Convex backend
+      // (api.payments + api.bookings.finalisePaidBooking) flips the
+      // booking from "pending" to "confirmed" and persists every
+      // detail; the client just needs to navigate forward once the
+      // payment succeeds.
       router.replace({
         pathname: '/hotel/confirmation',
         params: {
           hotelName,
           hotelThumb,
-          bookingRef: bookRes.data.bookingId,
-          confirmationCode: bookRes.data.hotelConfirmationCode ?? '',
+          bookingRef: bookingId,
+          confirmationCode: '',
           checkin,
           checkout,
           hotelId,

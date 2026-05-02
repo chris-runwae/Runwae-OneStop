@@ -14,7 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Spacer, Text } from "@/components";
 import { Colors, textStyles } from "@/constants";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/utils/supabase/client";
+import { useTrips } from "@/context/TripsContext";
+import { useItinerary } from "@/hooks/useItineraryActions";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
@@ -44,6 +45,8 @@ export default function ConfirmationScreen() {
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { addItem } = useTrips();
+  const itinerary = useItinerary(tripId);
 
   const [addingToItinerary, setAddingToItinerary] = useState(false);
   const [addedToItinerary, setAddedToItinerary] = useState(false);
@@ -60,14 +63,18 @@ export default function ConfirmationScreen() {
 
   const handleAddToItinerary = async () => {
     if (!tripId || !user) return;
+    const dayId = itinerary?.days[0]?._id as unknown as string | undefined;
+    if (!dayId) {
+      console.warn("Cannot add to itinerary: trip has no days");
+      return;
+    }
     setAddingToItinerary(true);
     try {
-      await supabase.from("itinerary_items").insert({
-        group_id: tripId,
-        added_by: user.id,
+      await addItem(dayId, {
         type: "hotel",
         title: hotelName,
-        external_id: hotelId,
+        apiSource: "liteapi",
+        apiRef: hotelId,
         notes: `Check-in: ${checkin} · Check-out: ${checkout}`,
       });
       setAddedToItinerary(true);

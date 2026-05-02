@@ -1,61 +1,52 @@
-import { getDestinationById } from "@/utils/supabase/destinations.service";
-import { getExperienceById } from "@/utils/supabase/experiences.service";
-import { getItineraryTemplateById } from "@/utils/supabase/itinerary-templates.service";
-import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useLocalSearchParams } from 'expo-router';
+import { useMemo } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 
-type DetailType = "itinerary" | "experience" | "destination";
+type DetailType = 'itinerary' | 'experience' | 'destination';
 
+// Phase 4 read path: pulls from the same reactive list queries the
+// Explore screen uses, so navigation between list and detail keeps the
+// cache hot. Slug-based lookups (api.destinations.getBySlug etc.) are a
+// follow-up — for now mobile routes on `_id` from list results.
 export function useDetailItem(type: DetailType) {
   const params = useLocalSearchParams<{ id: string }>();
-  // Handle case where id might be an array or undefined
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const [item, setItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const destinations = useQuery(
+    api.destinations.list,
+    type === 'destination' ? {} : 'skip',
+  );
+  const experiences = useQuery(
+    api.experiences.listFeatured,
+    type === 'experience' ? {} : 'skip',
+  );
+  const templates = useQuery(
+    api.itinerary.listTemplates,
+    type === 'itinerary' ? {} : 'skip',
+  );
 
-  useEffect(() => {
-    if (!id) {
-      console.warn(`useDetailItem: No ID found for type ${type}`);
-      return;
+  const item = useMemo(() => {
+    if (!id) return null;
+    if (type === 'destination') {
+      return (destinations ?? []).find(
+        (d: any) => (d._id as unknown as string) === id,
+      ) ?? null;
     }
+    if (type === 'experience') {
+      return (experiences ?? []).find(
+        (e: any) => (e._id as unknown as string) === id,
+      ) ?? null;
+    }
+    return (templates ?? []).find(
+      (t: any) => (t._id as unknown as string) === id,
+    ) ?? null;
+  }, [id, type, destinations, experiences, templates]);
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  const loading =
+    (type === 'destination' && destinations === undefined) ||
+    (type === 'experience' && experiences === undefined) ||
+    (type === 'itinerary' && templates === undefined);
 
-    const fetch = async () => {
-      try {
-        console.log(`useDetailItem: Fetching ${type} with ID: ${id}`);
-        let result: any = null;
-        if (type === "itinerary") {
-          result = await getItineraryTemplateById(id);
-        } else if (type === "experience") {
-          result = await getExperienceById(id);
-        } else {
-          result = await getDestinationById(id);
-        }
-
-        if (!cancelled) {
-          if (!result) {
-            console.log(`useDetailItem: No ${type} found for ID: ${id}`);
-          }
-          setItem(result);
-        }
-      } catch (e: any) {
-        console.error(`useDetailItem: Error fetching ${type} (${id}):`, e);
-        if (!cancelled) setError(e.message ?? "Failed to load");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetch();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, type]);
-
-  return { id, item, loading, error };
+  return { id, item, loading, error: null as string | null };
 }

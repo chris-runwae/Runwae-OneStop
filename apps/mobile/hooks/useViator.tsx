@@ -1,129 +1,65 @@
-import type { ViatorProduct } from '@/types/viator.types';
-import {
-  getViatorSearchSnapshot,
-  isViatorSearchFresh,
-  loadViatorProductsCached,
-  type ViatorSearchFilters,
-  VIATOR_DEFAULT_STALE_MS,
-} from '@/utils/viator/viatorSearchSingleton';
 import { useCallback, useEffect, useState } from 'react';
+import { useAction } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
 
-const BASE_URL = 'https://api.sandbox.viator.com/partner';
+import type { ViatorProduct } from '@/types/viator.types';
 
-interface ViatorSearchParams {
-  text?: string;
-  filters?: ViatorSearchFilters;
+// Convex's discovery layer returns DiscoveryItem[]. The mobile UI was
+// historically built around the Viator partner-API ViatorProduct shape;
+// for Phase 4 we adapt at the hook layer so screens can stay
+// declarative. Fields that don't have a discovery analogue (pricing
+// breakdowns, availability windows) default to null/undefined.
+function toViatorProduct(item: any): ViatorProduct {
+  return {
+    productCode: item.apiRef,
+    title: item.title,
+    description: item.description ?? '',
+    images: item.imageUrl
+      ? [{ variants: [{ url: item.imageUrl, width: 800, height: 600 }] }]
+      : [],
+    pricing: item.price
+      ? {
+          summary: { fromPrice: item.price },
+          currency: item.currency ?? 'GBP',
+        }
+      : undefined,
+    duration: undefined,
+    reviews: item.rating
+      ? {
+          combinedAverageRating: item.rating,
+          totalReviews: 0,
+        }
+      : undefined,
+  } as unknown as ViatorProduct;
 }
 
-/** Legacy helper (proxy) — not cached; prefer `loadViatorProductsCached` / `useViator`. */
-export async function searchViator({ text, filters }: ViatorSearchParams) {
-  const defaultFilters: ViatorSearchFilters = {
-    destination: '732',
-    tags: [21913, 21725, 22046],
-    flags: ['LIKELY_TO_SELL_OUT', 'FREE_CANCELLATION'],
-    lowestPrice: 5,
-    highestPrice: 500,
-    startDate: '2023-01-30',
-    endDate: '2023-02-28',
-    includeAutomaticTranslations: true,
-    confirmationType: 'INSTANT',
-    durationInMinutes: { from: 20, to: 360 },
-    rating: { from: 3, to: 5 },
-  };
-
-  const body = {
-    endpoint: 'products/search',
-    method: 'POST',
-    body: {
-      filtering: { ...defaultFilters, ...filters },
-    },
-  };
-
-  const res = await fetch(`https://${BASE_URL}/viator`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json;version=2.0' },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Viator API error: ${res.status}`);
-  }
-
-  return res.json();
-}
-
-type UseViatorOptions = {
-  /** Max age of cached results before a background refetch (default 15 min). */
-  staleMs?: number;
-};
-
-export function useViator(options?: UseViatorOptions) {
-  const staleMs = options?.staleMs ?? VIATOR_DEFAULT_STALE_MS;
-
-  const [products, setProducts] = useState<ViatorProduct[]>(() => [
-    ...getViatorSearchSnapshot().products,
-  ]);
-  const [loading, setLoading] = useState(
-    () => getViatorSearchSnapshot().products.length === 0
-  );
+export function useViator() {
+  const [products, setProducts] = useState<ViatorProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = useCallback(
-    async (filters?: ViatorSearchFilters, opts?: { force?: boolean }) => {
-      setError(null);
-      setLoading(true);
-      try {
-        const raw = await loadViatorProductsCached(filters, {
-          force: opts?.force ?? false,
-          staleMs,
-        });
-        setProducts(raw);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [staleMs]
-  );
+  const searchByCategory = useAction(api.discovery.searchByCategory);
+
+  const fetchProducts = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const items = await searchByCategory({
+        category: 'tour',
+        term: 'London',
+        limit: 30,
+      });
+      setProducts(items.map(toViatorProduct));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchByCategory]);
 
   useEffect(() => {
-    let cancelled = false;
-    setError(null);
-
-    if (
-      getViatorSearchSnapshot().products.length > 0 &&
-      isViatorSearchFresh(staleMs)
-    ) {
-      setProducts([...getViatorSearchSnapshot().products]);
-      setLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setLoading(true);
-    loadViatorProductsCached(undefined, { staleMs })
-      .then((raw) => {
-        if (!cancelled) {
-          setProducts(raw);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Something went wrong');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [staleMs]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   return { products, loading, error, refetch: fetchProducts };
 }

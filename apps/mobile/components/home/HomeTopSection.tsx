@@ -3,16 +3,8 @@ import { useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Bell } from 'lucide-react-native';
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 
 interface HomeTopSectionProps {
   user: any;
@@ -46,11 +38,12 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
   return (
     <View className="flex-row items-start justify-between px-5 pb-4 pt-8">
       <View className="min-w-0 flex-1 pr-3">
-        <StreamingText
-          text={greetingText}
+        <Text
           className="text-2xl font-bold leading-tight text-black dark:text-white"
-          fontFamily="BricolageGrotesque-ExtraBold"
-        />
+          style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
+          numberOfLines={2}>
+          {greetingText}
+        </Text>
         <Text className="mt-1 text-[15px] text-gray-500 dark:text-gray-400">
           Where are you going next?
         </Text>
@@ -92,94 +85,3 @@ export default function HomeTopSection({ user, dark }: HomeTopSectionProps) {
   );
 }
 
-// Character-by-character reveal pegged to display frames via
-// requestAnimationFrame, so it doesn't fall behind when the JS thread is
-// busy mounting the rest of the home screen. Memoized so parent re-renders
-// (Convex viewer updates, theme flips) don't restart the typewriter.
-const TYPE_MS_PER_CHAR = 35;
-
-const StreamingText = memo(
-  ({
-    text,
-    className,
-    fontFamily,
-  }: {
-    text: string;
-    className?: string;
-    fontFamily?: string;
-  }) => {
-    const [shown, setShown] = useState(text.length > 0 ? 0 : 0);
-    const startedAtRef = useRef<number | null>(null);
-    const lastTextRef = useRef(text);
-    const totalChars = text.length;
-
-    // Restart only when the actual text content changes.
-    useEffect(() => {
-      if (lastTextRef.current === text) return;
-      lastTextRef.current = text;
-      setShown(0);
-      startedAtRef.current = null;
-    }, [text]);
-
-    useEffect(() => {
-      if (totalChars === 0) return;
-      let raf = 0;
-      const tick = (now: number) => {
-        if (startedAtRef.current == null) startedAtRef.current = now;
-        const elapsed = now - startedAtRef.current;
-        const next = Math.min(
-          totalChars,
-          Math.floor(elapsed / TYPE_MS_PER_CHAR),
-        );
-        setShown((prev) => (prev !== next ? next : prev));
-        if (next < totalChars) raf = requestAnimationFrame(tick);
-      };
-      raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
-    }, [totalChars, text]);
-
-    const visible = text.slice(0, shown);
-    const isStreaming = shown < totalChars;
-
-    return (
-      <View className="flex-row items-center" style={{ minHeight: 30 }}>
-        <Text
-          className={className}
-          style={fontFamily ? { fontFamily } : undefined}
-          numberOfLines={2}>
-          {visible || ' '}
-        </Text>
-        {isStreaming && <BlinkingCaret />}
-      </View>
-    );
-  },
-);
-StreamingText.displayName = 'StreamingText';
-
-const BlinkingCaret = memo(() => {
-  const v = useSharedValue(1);
-  useEffect(() => {
-    v.value = withRepeat(
-      withTiming(0, { duration: 460, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(v);
-  }, [v]);
-  const style = useAnimatedStyle(() => ({ opacity: v.value }));
-  return (
-    <Animated.View
-      style={[
-        {
-          marginLeft: 3,
-          width: 2,
-          height: 22,
-          borderRadius: 1,
-          backgroundColor: '#FF2E92',
-        },
-        style,
-      ]}
-    />
-  );
-});
-BlinkingCaret.displayName = 'BlinkingCaret';

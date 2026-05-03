@@ -39,8 +39,15 @@ import {
 } from '@/lib/pushNotifications';
 import { secureStorage } from '@/lib/secureStorage';
 import { getThemePreference } from '@/utils/storage';
-import { useColorScheme } from 'nativewind';
+import { cssInterop, useColorScheme } from 'nativewind';
+import { Image as ExpoImageComponent } from 'expo-image';
 import '../global.css';
+
+// expo-image isn't in NativeWind's default interop registry, so without this
+// `className="h-full w-full"` (and any other style-only classes) silently
+// drops on `<Image />`, causing remote photos to render at 0×0. Done once at
+// app start so every screen's expo-image instances pick it up.
+cssInterop(ExpoImageComponent, { className: 'style' });
 
 // One-shot foreground handler config — runs at module import so push
 // banners surface correctly even before the first auth ready event.

@@ -14,6 +14,22 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_REDIRECT_ORIGINS ?? "")
   .map((s) => s.trim())
   .filter(Boolean);
 
+// Custom URI schemes registered to the mobile app via app.config.ts.
+// Each EAS variant gets its own scheme so dev / preview / prod builds
+// can install side-by-side. We trust any redirect whose scheme matches
+// one of these because URI schemes are app-private on-device — only
+// the installed app that claims the scheme can receive the redirect.
+//
+// We can't put these in ALLOWED_REDIRECT_ORIGINS directly because the
+// URL parser turns `runwae-dev://auth-callback` into protocol
+// `runwae-dev:` + host `auth-callback`, so the computed "origin"
+// includes the host segment and never matches a static allowlist entry.
+const ALLOWED_APP_SCHEMES = new Set([
+  "runwae:",
+  "runwae-dev:",
+  "runwae-preview:",
+]);
+
 // 8-digit numeric OTP. Short enough to type on mobile, long enough to
 // survive the rate-limit budget Convex Auth bakes in. We avoid lookalikes
 // (0/O, 1/I) by sticking to digits only.
@@ -84,6 +100,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   callbacks: {
     async redirect({ redirectTo }) {
       const url = new URL(redirectTo);
+      if (ALLOWED_APP_SCHEMES.has(url.protocol)) return redirectTo;
       const origin = `${url.protocol}//${url.host}`;
       if (ALLOWED_ORIGINS.includes(origin)) return redirectTo;
       throw new Error(`Redirect to ${redirectTo} not allowed`);

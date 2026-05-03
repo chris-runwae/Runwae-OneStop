@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import {
   View,
-  Image,
   Text,
   StyleSheet,
   Pressable,
@@ -10,6 +9,7 @@ import {
   Platform,
   useColorScheme,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import type { TripMember } from '@/hooks/useTripActions';
@@ -130,6 +130,10 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
               <Image
                 source={{ uri: avatarUrl }}
                 style={{ width: size, height: size, borderRadius: size / 2 }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
+                recyclingKey={avatarUrl}
               />
             ) : (
               <LinearGradient

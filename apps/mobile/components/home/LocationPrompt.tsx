@@ -76,7 +76,7 @@ const LocationPrompt = () => {
   }
 
   return (
-    <View className="mx-5 mt-3 mb-1 flex-row items-center gap-3 rounded-2xl border border-pink-200 bg-pink-50 px-3 py-3 dark:border-pink-900/50 dark:bg-pink-950/40">
+    <View className="mx-5 flex-row items-center gap-3 rounded-2xl border border-pink-200 bg-pink-50 px-3 py-3 dark:border-pink-900/50 dark:bg-pink-950/40">
       <View className="h-9 w-9 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-900/50">
         <MapPin size={16} color="#FF2E92" strokeWidth={2} />
       </View>

@@ -2,7 +2,6 @@ import { tabs } from '@/constants';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import {
-  RelativePathString,
   usePathname,
   useRouter,
   useSegments,
@@ -89,7 +88,7 @@ const FloatingTabBar = () => {
 
   const handleNewTripPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/(tabs)/create-trip/destination' as RelativePathString);
+    router.push('/create-trip-options' as any);
   }, [router]);
 
   const isInCreateTripFlow = (segments as string[]).includes('create-trip');

@@ -1,8 +1,8 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { FileText, Users } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
-  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -49,20 +49,8 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
         },
         Platform.OS === 'ios' ? styles.shadowIos : styles.shadowAndroid,
       ]}>
-      <View
-        style={[
-          styles.imageContainer,
-          { borderColor: isDark ? COLORS.black.dark880 : COLORS.white.default },
-        ]}>
-        <Image
-          source={{
-            uri:
-              trip.coverImageUrl ??
-              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
-          }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+      <View style={styles.imageContainer}>
+        <TripCardImage uri={trip.coverImageUrl} />
         <TripStatusChip status={(trip as any).status} />
       </View>
 
@@ -158,6 +146,33 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   );
 };
 
+// Memoized so source identity is stable across parent re-renders. Without
+// this, every parent render produces a new `{ uri }` literal which makes
+// react-native Image refire the network request and orphan the previous
+// in-flight one (visible as a flood of "Task orphaned for request" warns).
+const TripCardImage = React.memo(({ uri }: { uri?: string | null }) => {
+  const source = useMemo(
+    () => ({
+      uri:
+        uri ??
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
+    }),
+    [uri],
+  );
+  return (
+    <Image
+      source={source}
+      style={styles.image}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      priority="high"
+      transition={180}
+      recyclingKey={uri ?? 'fallback'}
+    />
+  );
+});
+TripCardImage.displayName = 'TripCardImage';
+
 type TripStatus =
   | 'planning'
   | 'upcoming'
@@ -198,7 +213,7 @@ export default TripCard;
 const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
-    padding: 13,
+    overflow: 'hidden',
   },
   shadowIos: {
     shadowColor: '#000',
@@ -213,8 +228,6 @@ const styles = StyleSheet.create({
     height: 170,
     width: '100%',
     overflow: 'hidden',
-    borderRadius: 13,
-    borderWidth: 3,
   },
   image: {
     height: '100%',
@@ -222,7 +235,7 @@ const styles = StyleSheet.create({
     objectFit: 'cover',
   },
   infoContainer: {
-    paddingTop: 12,
+    padding: 13,
   },
   title: {
     marginBottom: 4,

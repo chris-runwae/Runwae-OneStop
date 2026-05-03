@@ -12,6 +12,7 @@ interface UpcomingEventsProps {
   subtitle?: string;
   loading?: boolean;
   showSubtitle?: boolean;
+  headerPath?: string;
 }
 
 const UpcomingEvents = ({
@@ -20,16 +21,17 @@ const UpcomingEvents = ({
   subtitle = 'Find events that match your vibe',
   loading = false,
   showSubtitle = true,
+  headerPath = '/events',
 }: UpcomingEventsProps) => {
   const router = useRouter();
   const displayData = loading ? (Array(5).fill({}) as Event[]) : data;
 
   return (
-    <View className="mt-5 pb-5">
+    <View>
       <SectionHeader
         title={title}
         subtitle={showSubtitle ? subtitle : undefined}
-        onPress={() => router.push('/events' as any)}
+        onPress={() => router.push(headerPath as any)}
       />
 
       <FlatList
@@ -38,7 +40,7 @@ const UpcomingEvents = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          marginTop: 16,
+          marginTop: 12,
         }}
         keyExtractor={(item, index) =>
           loading ? `skeleton-${index}` : item.id

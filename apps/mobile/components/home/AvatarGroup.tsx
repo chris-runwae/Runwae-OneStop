@@ -1,6 +1,7 @@
 import { TripMember } from '@/constants/home.constant';
+import { Image } from 'expo-image';
 import React from 'react';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 interface AvatarGroupProps {
   members: TripMember[];
@@ -27,7 +28,10 @@ const AvatarGroup = ({
             <Image
               source={{ uri: member.image }}
               className="h-full w-full"
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={150}
+              recyclingKey={member.image}
             />
           ) : (
             <Text className="text-[9px] font-bold text-white">

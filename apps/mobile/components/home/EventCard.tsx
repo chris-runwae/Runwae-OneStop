@@ -1,7 +1,8 @@
 import { Event } from '@/types/content.types';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Image, Platform, Pressable, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 interface EventCardProps {
   event: Event;
@@ -43,6 +44,7 @@ const EventCard = ({
   const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';
   const emoji = getCategoryEmoji(event.category);
   const title = event.title || 'Untitled Event';
+  const imageSource = useMemo(() => ({ uri: event.image }), [event.image]);
 
   return (
     <Pressable
@@ -67,9 +69,13 @@ const EventCard = ({
               : { elevation: 3 },
           ]}>
           <Image
-            source={{ uri: event.image }}
+            source={imageSource}
             className="h-full w-full rounded-[15px] border-[4px] border-white dark:border-dark-seconndary"
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={180}
+            recyclingKey={event.image || event.id}
           />
         </View>
 

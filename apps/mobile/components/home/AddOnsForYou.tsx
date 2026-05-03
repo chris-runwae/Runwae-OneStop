@@ -34,14 +34,14 @@ const AddOnsForYou = ({
   const handleHeaderPress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate(headerPath);
+    router.navigate(headerPath as any);
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);
   };
 
   return (
-    <View className={`mt-5 ${showBorder ? 'pb-5' : ''}`}>
+    <View>
       {showSubtitle && (
         <SectionHeader title={title} onPress={handleHeaderPress} />
       )}
@@ -52,7 +52,7 @@ const AddOnsForYou = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
-          marginTop: 30,
+          marginTop: showSubtitle ? 16 : 0,
           paddingHorizontal: 20,
         }}
         keyExtractor={(item, index) =>

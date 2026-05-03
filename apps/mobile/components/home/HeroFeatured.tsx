@@ -1,33 +1,50 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Calendar, MapPin } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
 const HERO_IMAGE = 'https://picsum.photos/seed/lisbon-tram-runwae/1200/675';
 const SEED_DESTINATION = 'Lisbon, Portugal';
+
+const HERO_SOURCE = { uri: HERO_IMAGE };
 
 const HeroFeatured = () => {
   const router = useRouter();
 
   const handlePlanTrip = () => {
     router.push({
-      pathname: '/create-trip',
+      pathname: '/create-trip-options',
       params: { seedDestination: SEED_DESTINATION },
-    });
+    } as any);
   };
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.card}>
-        <Image source={{ uri: HERO_IMAGE }} style={styles.image} />
+        <Image
+          source={HERO_SOURCE}
+          style={styles.image}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={250}
+        />
         <LinearGradient
           colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.8)']}
           locations={[0, 0.5, 1]}
@@ -35,7 +52,7 @@ const HeroFeatured = () => {
         />
 
         <View style={styles.badge}>
-          <View style={styles.badgeDot} />
+          <PingDot />
           <Text style={styles.badgeText}>Trending now</Text>
         </View>
 
@@ -84,11 +101,43 @@ const Pill = ({
   </View>
 );
 
+// Two staggered concentric rings expanding outward from the dot, like a GPS
+// location ping. The solid dot stays put; rings scale + fade.
+const PingDot = () => {
+  const ring1 = useSharedValue(0);
+  const ring2 = useSharedValue(0);
+
+  useEffect(() => {
+    const opts = { duration: 1800, easing: Easing.out(Easing.quad) } as const;
+    ring1.value = withRepeat(withTiming(1, opts), -1, false);
+    ring2.value = withDelay(900, withRepeat(withTiming(1, opts), -1, false));
+    return () => {
+      cancelAnimation(ring1);
+      cancelAnimation(ring2);
+    };
+  }, [ring1, ring2]);
+
+  const r1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + ring1.value * 4 }],
+    opacity: 0.55 * (1 - ring1.value),
+  }));
+  const r2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + ring2.value * 4 }],
+    opacity: 0.55 * (1 - ring2.value),
+  }));
+
+  return (
+    <View style={styles.dotWrap}>
+      <Animated.View style={[styles.ring, r1Style]} />
+      <Animated.View style={[styles.ring, r2Style]} />
+      <View style={styles.badgeDot} />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 14,
   },
   card: {
     width: '100%',
@@ -123,7 +172,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.95)',
   },
+  dotWrap: {
+    width: 6,
+    height: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF2E92',
+  },
+  ring: {
+    position: 'absolute',
     width: 6,
     height: 6,
     borderRadius: 3,
@@ -185,16 +247,26 @@ const styles = StyleSheet.create({
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    height: 38,
-    paddingHorizontal: 14,
+    gap: 8,
+    height: 44,
+    paddingHorizontal: 18,
     borderRadius: 999,
     backgroundColor: '#FF2E92',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF2E92',
+        shadowOpacity: 0.45,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 6 },
+      },
+      android: { elevation: 6 },
+    }),
   },
   ctaText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#fff',
+    letterSpacing: 0.2,
   },
 });
 

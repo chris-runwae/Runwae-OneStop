@@ -1,8 +1,9 @@
 import { Experience } from '@/types/content.types';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Users } from 'lucide-react-native';
-import React from 'react';
-import { Image, Platform, Pressable, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 interface AddOnCardProps {
   item: Experience;
@@ -23,14 +24,16 @@ const AddOnCard = ({
   const handlePress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate(`${pathPrefix}/${item.id}`);
+    router.navigate(`${pathPrefix}/${item.id}` as any);
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);
   };
 
   const isEven = index % 2 === 0;
-  const smallImage = item.gallery?.[1] || item.image; // Use second gallery image for the overlay if available
+  const smallImage = item.gallery?.[1] || item.image;
+  const heroSource = useMemo(() => ({ uri: item.image }), [item.image]);
+  const smallSource = useMemo(() => ({ uri: smallImage }), [smallImage]);
 
   return (
     <Pressable
@@ -40,9 +43,12 @@ const AddOnCard = ({
       <View className="relative mb-3 h-[180px] w-full rounded-[10px] bg-gray-100 dark:bg-dark-seconndary/50">
         <View className="h-full w-full overflow-hidden rounded-[10px]">
           <Image
-            source={{ uri: item.image }}
+            source={heroSource}
             className="h-full w-full rounded-[10px]"
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={180}
+            recyclingKey={item.image || item.id}
           />
         </View>
 
@@ -63,9 +69,12 @@ const AddOnCard = ({
               : { elevation: 4 }
           }>
           <Image
-            source={{ uri: smallImage }}
+            source={smallSource}
             className="h-full w-full"
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={180}
+            recyclingKey={smallImage || `${item.id}-small`}
           />
         </View>
       </View>

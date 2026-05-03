@@ -26,6 +26,8 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 import ToastManager from 'toastify-react-native';
 
+export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
+
 import SplashScreen from '@/components/ui/splash-screen';
 import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -114,11 +116,14 @@ function RouteGuard() {
     'experience',
     'viator',
     'create-trip',
+    'create-trip-options',
+    'create-trip-ai',
     'events',
     'search',
     'hotels',
     'invite',
     'trip',
+    'feed',
   ]);
 
   const [currentSegment, secondSegment] = segments as string[];
@@ -147,12 +152,15 @@ function RouteGuard() {
     'viator',
     'destination',
     'create-trip',
+    'create-trip-options',
+    'create-trip-ai',
     'events',
     'search',
     'hotel',
     'hotels',
     'invite',
     'trip',
+    'feed',
   ].includes(currentSegment as any);
 
   // Redirection Logic
@@ -195,6 +203,27 @@ function RouteGuard() {
       <Stack.Screen name="trip" options={{ headerShown: false }} />
       <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="feed" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="create-trip-options"
+        options={{
+          headerShown: false,
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.85, 1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
+      <Stack.Screen
+        name="create-trip-ai"
+        options={{
+          headerShown: false,
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.85, 1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
       <Stack.Screen
         name="modal"
         options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}

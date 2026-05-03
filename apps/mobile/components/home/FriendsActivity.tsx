@@ -1,10 +1,11 @@
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { FunctionReturnType } from 'convex/server';
 import { useQuery } from 'convex/react';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowRight } from 'lucide-react-native';
 import React from 'react';
-import { Image, Pressable, Text, View, useColorScheme } from 'react-native';
+import { Pressable, Text, View, useColorScheme } from 'react-native';
 import { formatDistanceToNow } from 'date-fns';
 
 import SectionHeader from '@/components/ui/SectionHeader';
@@ -24,8 +25,8 @@ const FriendsActivity = ({ onFindFriends }: FriendsActivityProps) => {
   const items = activity?.slice(0, 5);
 
   return (
-    <View className="mt-6">
-      <SectionHeader title="Friends' activity" onPress={() => router.push('/feed')} />
+    <View>
+      <SectionHeader title="Friends' activity" onPress={() => router.push('/feed' as any)} />
       <View className="px-5 pt-3">
         {activity === undefined ? (
           <View className="gap-y-2">
@@ -180,6 +181,10 @@ const ActivityRow = ({
         <Image
           source={{ uri: actor.image }}
           style={{ width: 40, height: 40, borderRadius: 20 }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={150}
+          recyclingKey={actor.image}
         />
       ) : (
         <View className="h-10 w-10 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950">

@@ -17,8 +17,14 @@ import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
 import { useTheme } from '@react-navigation/native';
 import { useQuery } from 'convex/react';
-import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
+
+// Consistent vertical rhythm between every home section. 32px is the
+// standard mobile section gap and gives the page enough breathing room
+// without feeling sparse on smaller phones.
+const SECTION_GAP = 32;
 
 export default function HomeScreen() {
   const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
@@ -51,6 +57,21 @@ export default function HomeScreen() {
     [allTrips],
   );
 
+  // Prefetch hero images for the visible carousels as soon as URLs are
+  // known. expo-image dedupes with its on-disk cache, so the actual
+  // <Image> mounts later just hit the cache instead of waiting on the
+  // network — this is what removes the multi-second blank-card window
+  // on first home-screen mount.
+  useEffect(() => {
+    const urls = [
+      ...featuredEvents.map((e) => e.image),
+      ...featuredExperiences.map((x) => x.image),
+      ...upcomingTrips.map((t) => t.coverImageUrl ?? ''),
+    ].filter((u): u is string => typeof u === 'string' && u.length > 0);
+    if (urls.length === 0) return;
+    ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' }).catch(() => {});
+  }, [featuredEvents, featuredExperiences, upcomingTrips]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
@@ -74,18 +95,27 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
-        {showLocationPrompt && <LocationPrompt />}
-        <HeroFeatured />
-        <UpcomingTrips trips={upcomingTrips} loading={loading} />
-        <UpcomingEvents
-          data={featuredEvents}
-          title="Featured Events"
-          showSubtitle={false}
-          loading={loading}
-        />
-        <AddOnsForYou data={featuredExperiences} loading={loading} />
-        <OpenPollCard />
-        <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
+
+        {showLocationPrompt && (
+          <View style={{ marginBottom: SECTION_GAP }}>
+            <LocationPrompt />
+          </View>
+        )}
+
+        <View style={{ gap: SECTION_GAP }}>
+          <HeroFeatured />
+          <UpcomingTrips trips={upcomingTrips} loading={loading} />
+          <UpcomingEvents
+            data={featuredEvents}
+            title="Featured Events"
+            showSubtitle={false}
+            loading={loading}
+            headerPath="/events/featured"
+          />
+          <AddOnsForYou data={featuredExperiences} loading={loading} />
+          <OpenPollCard />
+          <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
+        </View>
       </ScrollView>
 
       <WelcomeModal

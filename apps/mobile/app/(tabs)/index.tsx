@@ -1,31 +1,39 @@
 import AddOnsForYou from '@/components/home/AddOnsForYou';
+import FindFriendsSheet from '@/components/social/FindFriendsSheet';
+import FriendsActivity from '@/components/home/FriendsActivity';
+import HeroFeatured from '@/components/home/HeroFeatured';
 import HomeTopSection from '@/components/home/HomeTopSection';
+import LocationPrompt from '@/components/home/LocationPrompt';
+import OpenPollCard from '@/components/home/OpenPollCard';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
+import { NATIVE_TABS_ENABLED } from '@/app/(tabs)/_layout';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
-
 import { useTrips } from '@/context/TripsContext';
 import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
+import { api } from '@runwae/convex/convex/_generated/api';
+import { useTheme } from '@react-navigation/native';
+import { useQuery } from 'convex/react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView } from 'react-native';
 
 export default function HomeScreen() {
-  const {
-    showWelcomeModal,
-    setShowWelcomeModal,
-    user,
-  } = useAuth();
+  const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [findFriendsOpen, setFindFriendsOpen] = useState(false);
   const { myTrips, joinedTrips } = useTrips();
   const { data: exploreData, loading } = useExploreData();
   const featuredEvents = exploreData.events;
   const featuredExperiences = exploreData.experiences;
+
+  const viewer = useQuery(api.users.getCurrentUser, {});
+  const showLocationPrompt =
+    viewer !== undefined && viewer !== null && !viewer.homeCoords;
 
   function isActive(trip: Trip): boolean {
     if (!trip.endDate) return true;
@@ -35,16 +43,12 @@ export default function HomeScreen() {
   const allTrips = useMemo(() => {
     const combined = [...myTrips, ...joinedTrips];
     if (!user?.id) return combined;
-    // Newest interaction first; for trips the viewer created, that's
-    // createdAt. For joined trips we don't have the per-user joinedAt
-    // here (the activeTrip query owns members), so fall back to
-    // createdAt — close enough for the home-screen list.
     return [...combined].sort((a, b) => b.createdAt - a.createdAt);
   }, [myTrips, joinedTrips, user?.id]);
 
   const upcomingTrips = useMemo(
     () => allTrips.filter(isActive),
-    [allTrips]
+    [allTrips],
   );
 
   const onRefresh = useCallback(() => {
@@ -57,7 +61,10 @@ export default function HomeScreen() {
   return (
     <AppSafeAreaView edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: NATIVE_TABS_ENABLED ? 32 : 100,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -67,6 +74,8 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
+        {showLocationPrompt && <LocationPrompt />}
+        <HeroFeatured />
         <UpcomingTrips trips={upcomingTrips} loading={loading} />
         <UpcomingEvents
           data={featuredEvents}
@@ -75,11 +84,17 @@ export default function HomeScreen() {
           loading={loading}
         />
         <AddOnsForYou data={featuredExperiences} loading={loading} />
+        <OpenPollCard />
+        <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
       </ScrollView>
 
       <WelcomeModal
         visible={showWelcomeModal}
         onClose={() => setShowWelcomeModal(false)}
+      />
+      <FindFriendsSheet
+        open={findFriendsOpen}
+        onClose={() => setFindFriendsOpen(false)}
       />
     </AppSafeAreaView>
   );

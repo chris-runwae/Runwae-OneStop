@@ -63,6 +63,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
           style={styles.image}
           resizeMode="cover"
         />
+        <TripStatusChip status={(trip as any).status} />
       </View>
 
       <View style={styles.infoContainer}>
@@ -157,6 +158,41 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   );
 };
 
+type TripStatus =
+  | 'planning'
+  | 'upcoming'
+  | 'ongoing'
+  | 'completed'
+  | 'cancelled';
+
+const STATUS_LABEL: Record<TripStatus, string> = {
+  planning: 'Planning',
+  upcoming: 'Upcoming',
+  ongoing: 'Ongoing',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const STATUS_BG: Record<TripStatus, string> = {
+  planning: 'rgba(123,104,238,0.92)',
+  upcoming: 'rgba(245,166,35,0.95)',
+  ongoing: 'rgba(76,175,130,0.95)',
+  completed: 'rgba(107,107,107,0.85)',
+  cancelled: 'rgba(107,107,107,0.85)',
+};
+
+function TripStatusChip({ status }: { status?: string }) {
+  const key = (status as TripStatus) in STATUS_LABEL
+    ? (status as TripStatus)
+    : 'planning';
+  return (
+    <View style={[styles.statusChip, { backgroundColor: STATUS_BG[key] }]}>
+      <View style={styles.statusDot} />
+      <Text style={styles.statusText}>{STATUS_LABEL[key]}</Text>
+    </View>
+  );
+}
+
 export default TripCard;
 
 const styles = StyleSheet.create({
@@ -243,5 +279,29 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     marginLeft: 8,
+  },
+  statusChip: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  statusText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
 });

@@ -1,13 +1,45 @@
 import FloatingTabBar from '@/components/floating-tab';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Tabs } from 'expo-router';
+import {
+  Icon,
+  Label,
+  NativeTabs,
+} from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
+
+const NATIVE_TABS_ENABLED =
+  Platform.OS === 'ios' &&
+  parseInt(String(Platform.Version), 10) >= 18 &&
+  process.env.EXPO_PUBLIC_NATIVE_TABS !== '0';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  if (NATIVE_TABS_ENABLED) {
+    return (
+      <NativeTabs tintColor="#FF2E92">
+        <NativeTabs.Trigger name="index">
+          <Label>Home</Label>
+          <Icon sf="house.fill" />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="explore">
+          <Label>Explore</Label>
+          <Icon sf="magnifyingglass" />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="(trips)">
+          <Label>Trips</Label>
+          <Icon sf="airplane" />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="profile">
+          <Label>Profile</Label>
+          <Icon sf="person.crop.circle.fill" />
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="create" role="search">
+          <Label>Create</Label>
+          <Icon sf="plus" />
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -28,35 +60,4 @@ export default function TabLayout() {
   );
 }
 
-// import { Colors } from '@/constants/theme';
-// import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-// import { useColorScheme } from 'react-native';
-
-// export default function TabLayout() {
-//   const colorScheme = useColorScheme();
-//   const colors = Colors[colorScheme ?? 'light'];
-//   return (
-//     <NativeTabs tintColor={colors.tabIconSelected}>
-//       <NativeTabs.Trigger name="index">
-//         <Label>Home</Label>
-//         <Icon sf="house.fill" drawable="custom_android_drawable" />
-//       </NativeTabs.Trigger>
-//       <NativeTabs.Trigger name="explore">
-//         <Icon sf="gear" drawable="custom_settings_drawable" />
-//         <Label>Explore</Label>
-//       </NativeTabs.Trigger>
-//       <NativeTabs.Trigger name="(trips)">
-//         <Label>Trips</Label>
-//         <Icon sf="house.fill" drawable="custom_android_drawable" />
-//       </NativeTabs.Trigger>
-//       <NativeTabs.Trigger name="profile">
-//         <Label>Profile</Label>
-//         <Icon sf="person" drawable="custom_android_drawable" />
-//       </NativeTabs.Trigger>
-//       <NativeTabs.Trigger name="create-trip" role="search">
-//         <Label>Create Trip</Label>
-//         <Icon sf="plus" drawable="custom_android_drawable" />
-//       </NativeTabs.Trigger>
-//     </NativeTabs>
-//   );
-// }
+export { NATIVE_TABS_ENABLED };

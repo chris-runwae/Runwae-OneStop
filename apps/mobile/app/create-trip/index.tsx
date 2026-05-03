@@ -7,7 +7,7 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useTheme } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, {
   useCallback,
   useEffect,
@@ -47,7 +47,10 @@ const CreateTrip = () => {
   const flatListRef = useRef<FlatList>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const [destination, setDestination] = useState("");
+  const params = useLocalSearchParams<{ seedDestination?: string }>();
+  const seed = typeof params.seedDestination === "string" ? params.seedDestination : "";
+
+  const [destination, setDestination] = useState(seed);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<string | null>(null);
@@ -74,7 +77,7 @@ const CreateTrip = () => {
     setSelectedDates(dateRange);
   }, [dateRange]);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(seed);
   const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

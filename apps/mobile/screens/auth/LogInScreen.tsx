@@ -1,10 +1,11 @@
 import * as Haptics from "expo-haptics";
 import { Link } from "expo-router";
 import React, { useState } from "react";
-import { 
+import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,11 +20,16 @@ import CustomTextInput from "@/components/containers/TextInput";
 import { useAuth } from "@/context/AuthContext";
 import { LoginFormData, loginSchema } from "@/utils/validation/auth.validation";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 const LogInScreen = () => {
   const insets = useSafeAreaInsets();
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, lastAuthMethod } =
+    useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<
+    "google" | "apple" | null
+  >(null);
   const [formData, setFormData] = useState<LoginFormData>({
     email: "",
     password: "",
@@ -64,7 +70,7 @@ const LogInScreen = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
           type: "error",
-          text1: "Login Error",
+          text1: "Couldn't sign in",
           text2: result.error,
           position: "bottom",
           visibilityTime: 4000,
@@ -87,13 +93,40 @@ const LogInScreen = () => {
     }
   };
 
+  const handleSocial = async (provider: "google" | "apple") => {
+    setSocialLoading(provider);
+    try {
+      const result =
+        provider === "google"
+          ? await signInWithGoogle()
+          : await signInWithApple();
+      if (!result.success) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        Toast.show({
+          type: "error",
+          text1: provider === "google" ? "Google sign-in" : "Apple sign-in",
+          text2: result.error,
+          position: "bottom",
+          visibilityTime: 4000,
+          autoHide: true,
+        });
+      }
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
     <AppSafeAreaView className="px-[20px]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View style={{ paddingTop: 24 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Spacer size={24} vertical />
           <Text
             style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
@@ -143,18 +176,37 @@ const LogInScreen = () => {
           </View>
           <Spacer size={20} vertical />
 
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text className="text-white font-medium text-base">Log in</Text>
+          <View>
+            {lastAuthMethod === "password" && (
+              <View style={styles.lastUsedBadgeWrap} pointerEvents="none">
+                <View style={styles.lastUsedBadge}>
+                  <Text style={styles.lastUsedBadgeText}>Last used</Text>
+                </View>
+              </View>
             )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={isSubmitting || socialLoading !== null}
+              className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text className="text-white font-medium text-base">Log in</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <Spacer size={20} vertical />
+
+          <SocialAuthButtons
+            onGoogle={() => handleSocial("google")}
+            onApple={() => handleSocial("apple")}
+            loading={socialLoading}
+            disabled={isSubmitting}
+            lastAuthMethod={lastAuthMethod}
+          />
+        </ScrollView>
       </KeyboardAvoidingView>
     </AppSafeAreaView>
   );
@@ -166,5 +218,24 @@ const styles = StyleSheet.create({
   forgotPasswordContainer: {
     alignItems: "flex-end",
     width: "100%",
+  },
+  lastUsedBadgeWrap: {
+    position: "absolute",
+    top: -10,
+    right: 12,
+    zIndex: 10,
+  },
+  lastUsedBadge: {
+    backgroundColor: "#111",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  lastUsedBadgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
 });

@@ -70,7 +70,7 @@ const ForgotPasswordScreen = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
           type: "error",
-          text1: "Reset Password Error",
+          text1: "Couldn't send reset code",
           text2: result.error,
           position: "bottom",
           visibilityTime: 4000,
@@ -80,8 +80,8 @@ const ForgotPasswordScreen = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Toast.show({
           type: "success",
-          text1: "Email Sent",
-          text2: "Password reset link has been sent to your email",
+          text1: "Check your email",
+          text2: "We sent an 8-digit code to reset your password.",
           position: "bottom",
           visibilityTime: 3000,
           autoHide: true,

@@ -1,4 +1,5 @@
 import { convexAuth } from "@convex-dev/auth/server";
+import Apple from "@auth/core/providers/apple";
 import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { Email } from "@convex-dev/auth/providers/Email";
@@ -53,6 +54,18 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           prompt: "select_account",
         },
       },
+    }),
+    // Apple Sign-In. Requires four env vars on the Convex dashboard:
+    //   AUTH_APPLE_ID            — Services ID (e.g. app.runwae.signin)
+    //   AUTH_APPLE_SECRET        — JWT generated from your Apple private key
+    //   AUTH_APPLE_TEAM_ID       — present only if you build the JWT here;
+    //                               unused by @auth/core directly
+    //   AUTH_APPLE_KEY_ID        — same as above
+    // The clientSecret on Apple is short-lived (max 6 months) and must be
+    // regenerated. See: https://labs.convex.dev/auth/config/oauth/apple
+    Apple({
+      clientId: process.env.AUTH_APPLE_ID,
+      clientSecret: process.env.AUTH_APPLE_SECRET,
     }),
     Password({
       // Email-verification on sign-up: users must confirm an OTP before

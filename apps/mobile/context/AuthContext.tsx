@@ -1,4 +1,4 @@
-import { useAuth as useAuthHook } from "@/hooks/useAuth";
+import { useAuth as useAuthHook, type AuthMethod } from "@/hooks/useAuth";
 import { createContext, ReactNode, useContext } from "react";
 
 export interface AuthContextType {
@@ -12,6 +12,7 @@ export interface AuthContextType {
   setShowWelcomeModal: (show: boolean) => Promise<void>;
   isProfileComplete: boolean;
   currentOnboardingStep: number;
+  lastAuthMethod: AuthMethod | null;
   signUp: (
     email: string,
     password: string,
@@ -22,6 +23,7 @@ export interface AuthContextType {
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithApple: () => Promise<{ success: boolean; error?: string }>;
   updateUser: (
     profile: Partial<any>,
   ) => Promise<{ success: boolean; error?: string }>;

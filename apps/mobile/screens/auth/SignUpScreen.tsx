@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,12 +23,23 @@ import {
 } from "@/utils/validation/auth.validation";
 import z from "zod";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 const SignUpScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { signUp, isLoading: authLoading, completeOnboarding } = useAuth();
+  const {
+    signUp,
+    isLoading: authLoading,
+    completeOnboarding,
+    signInWithGoogle,
+    signInWithApple,
+    lastAuthMethod,
+  } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<
+    "google" | "apple" | null
+  >(null);
   const [formData, setFormData] = useState<SignUpFormData>({
     fullName: "",
     email: "",
@@ -78,7 +90,7 @@ const SignUpScreen = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
           type: "error",
-          text1: "Sign Up Error",
+          text1: "Couldn't sign up",
           text2: result.error,
           position: "bottom",
           visibilityTime: 4000,
@@ -110,8 +122,8 @@ const SignUpScreen = () => {
       } else {
         Toast.show({
           type: "error",
-          text1: "Sign Up Error",
-          text2: error.message || "An error occurred during sign up",
+          text1: "Couldn't sign up",
+          text2: "Something went wrong. Please try again.",
           position: "bottom",
           visibilityTime: 4000,
         });
@@ -121,13 +133,40 @@ const SignUpScreen = () => {
     }
   };
 
+  const handleSocial = async (provider: "google" | "apple") => {
+    setSocialLoading(provider);
+    try {
+      const result =
+        provider === "google"
+          ? await signInWithGoogle()
+          : await signInWithApple();
+      if (!result.success) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        Toast.show({
+          type: "error",
+          text1: provider === "google" ? "Google sign-in" : "Apple sign-in",
+          text2: result.error,
+          position: "bottom",
+          visibilityTime: 4000,
+          autoHide: true,
+        });
+      }
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   return (
     <AppSafeAreaView className="px-[20px]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View style={{ paddingTop: 24 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Spacer size={24} vertical />
           <Text
             style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
@@ -183,7 +222,7 @@ const SignUpScreen = () => {
           <Spacer size={20} vertical />
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={isSubmitting || authLoading}
+            disabled={isSubmitting || authLoading || socialLoading !== null}
             className="bg-primary h-[45px] rounded-full w-full flex items-center justify-center disabled:opacity-50"
           >
             {isSubmitting || authLoading ? (
@@ -192,7 +231,17 @@ const SignUpScreen = () => {
               <Text className="text-white font-medium text-base">Sign Up</Text>
             )}
           </TouchableOpacity>
-        </View>
+
+          <Spacer size={20} vertical />
+
+          <SocialAuthButtons
+            onGoogle={() => handleSocial("google")}
+            onApple={() => handleSocial("apple")}
+            loading={socialLoading}
+            disabled={isSubmitting || authLoading}
+            lastAuthMethod={lastAuthMethod}
+          />
+        </ScrollView>
       </KeyboardAvoidingView>
     </AppSafeAreaView>
   );

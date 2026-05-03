@@ -92,6 +92,14 @@ export default function SignInPage() {
           onChange={(e) => setPassword(e.target.value)}
           className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm focus:border-primary focus:outline-none"
         />
+        <div className="text-right">
+          <Link
+            href="/forgot-password"
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
         <Button type="submit" size="lg" className="w-full" isLoading={submitting} disabled={submitting}>
           Sign in

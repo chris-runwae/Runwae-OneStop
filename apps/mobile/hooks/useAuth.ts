@@ -1,9 +1,18 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@runwae/convex/convex/_generated/api";
 import type { Doc } from "@runwae/convex/convex/_generated/dataModel";
+import * as Sentry from "@sentry/react-native";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
+
+// Required so the in-app browser can hand the auth response back to the JS
+// runtime. No-op on native, but documented to be called at module load.
+WebBrowser.maybeCompleteAuthSession();
+
+export type AuthMethod = "password" | "google" | "apple";
 
 export interface User {
   id: string;
@@ -26,11 +35,16 @@ export interface UseAuthReturn {
   setShowWelcomeModal: (show: boolean) => Promise<void>;
   currentBoardingStep: number;
 
+  // The last sign-in method this device used, hydrated from SecureStore.
+  // Surfaces a "Last used" badge over the right button on the auth screens.
+  lastAuthMethod: AuthMethod | null;
+
   signIn: (
     email: string,
     password: string,
   ) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithApple: () => Promise<{ success: boolean; error?: string }>;
   signUp: (
     email: string,
     password: string,
@@ -71,6 +85,7 @@ const BOARDING_STORAGE_KEY = "@boarding_completed";
 const ONBOARDING_STORAGE_KEY = "@onboarding_completed";
 const CURRENT_BOARDING_STEP_KEY = "@current_boarding_step";
 const WELCOME_MODAL_TRIGGER_KEY = "@show_welcome_modal";
+const LAST_AUTH_METHOD_KEY = "@last_auth_method";
 
 const storage = {
   async getItem(key: string): Promise<string | null> {
@@ -115,14 +130,104 @@ function toAppUser(
   };
 }
 
-function errorMessage(err: unknown, fallback: string) {
-  if (err instanceof Error && err.message) return err.message;
-  if (err && typeof err === "object") {
-    const anyErr = err as { message?: string; data?: unknown };
-    if (anyErr.message) return anyErr.message;
-    if (anyErr.data) return `${fallback}: ${JSON.stringify(anyErr.data)}`;
+// Convex Auth surfaces internal error class names like `InvalidAccountId`
+// (raised both for "no such email" and "wrong password" — by design, to
+// avoid leaking which is which). Map the small known set to user-readable
+// copy and report anything else to Sentry so we can fix it.
+function friendlyAuthError(
+  err: unknown,
+  context:
+    | "signIn"
+    | "signUp"
+    | "reset"
+    | "reset-verification"
+    | "email-verification"
+    | "google"
+    | "apple"
+    | "signOut"
+    | "updateProfile",
+): string {
+  const raw =
+    err instanceof Error
+      ? err.message
+      : err && typeof err === "object" && "message" in err
+        ? String((err as { message?: unknown }).message ?? "")
+        : "";
+
+  // Friendly copy keyed by stable substrings Convex Auth puts in the error.
+  // We match on substring rather than equality because the upstream message
+  // sometimes wraps the class name in a longer "Uncaught Error: …" prefix.
+  const map: Array<{ match: RegExp; messages: Partial<Record<typeof context, string>> }> = [
+    {
+      match: /InvalidAccountId/i,
+      messages: {
+        signIn: "We couldn't find an account with those details. Check your email and password.",
+        reset: "We couldn't find an account with that email.",
+        "reset-verification": "That code is invalid or has expired. Request a new one.",
+        "email-verification": "That code is invalid or has expired. Request a new one.",
+      },
+    },
+    {
+      match: /InvalidSecret|invalid.*password/i,
+      messages: {
+        signIn: "That password doesn't match. Try again or reset it below.",
+      },
+    },
+    {
+      match: /AccountAlreadyExists|already.*exist/i,
+      messages: {
+        signUp: "An account with that email already exists. Try signing in.",
+      },
+    },
+    {
+      match: /TooManyRequests|rate.?limit/i,
+      messages: {
+        signIn: "Too many attempts. Wait a moment and try again.",
+        reset: "Too many requests. Wait a moment before trying again.",
+        signUp: "Too many requests. Wait a moment before trying again.",
+      },
+    },
+    {
+      match: /Network|fetch|ECONN/i,
+      messages: {
+        signIn: "Network error. Check your connection and try again.",
+        signUp: "Network error. Check your connection and try again.",
+        reset: "Network error. Check your connection and try again.",
+        "reset-verification": "Network error. Check your connection and try again.",
+        "email-verification": "Network error. Check your connection and try again.",
+        google: "Network error. Check your connection and try again.",
+        apple: "Network error. Check your connection and try again.",
+      },
+    },
+  ];
+
+  for (const entry of map) {
+    if (entry.match.test(raw)) {
+      const friendly = entry.messages[context];
+      if (friendly) return friendly;
+    }
   }
-  return fallback;
+
+  // Unknown error — capture it so we can write a friendly mapping next time.
+  // Tag with `auth_context` to make these easy to filter in Sentry.
+  Sentry.captureException(err, {
+    tags: { auth_context: context },
+    extra: { raw_message: raw },
+  });
+
+  // Default copy per context — never expose the raw class name to the user.
+  const fallbackByContext: Record<typeof context, string> = {
+    signIn: "Couldn't sign in. Try again.",
+    signUp: "Couldn't create your account. Try again.",
+    reset: "Couldn't send a reset code. Try again.",
+    "reset-verification": "Couldn't reset your password. Try again.",
+    "email-verification": "Couldn't verify that code. Try again.",
+    google: "Google sign-in didn't complete. Try again.",
+    apple: "Apple sign-in didn't complete. Try again.",
+    signOut: "Couldn't sign you out. Try again.",
+    updateProfile: "Couldn't update your profile. Try again.",
+  };
+  return fallbackByContext[context];
 }
 
 export function useAuth(): UseAuthReturn {
@@ -142,6 +247,12 @@ export function useAuth(): UseAuthReturn {
   const [showWelcomeModal, setShowWelcomeModalState] = useState(false);
   const [currentBoardingStep, setCurrentBoardingStepState] = useState(1);
   const [boardingHydrated, setBoardingHydrated] = useState(false);
+  const [lastAuthMethod, setLastAuthMethod] = useState<AuthMethod | null>(null);
+
+  const rememberAuthMethod = useCallback(async (method: AuthMethod) => {
+    setLastAuthMethod(method);
+    await storage.setItem(LAST_AUTH_METHOD_KEY, method);
+  }, []);
 
   const user = toAppUser(viewer ?? null);
   const isProfileComplete = !!user?.full_name;
@@ -153,16 +264,20 @@ export function useAuth(): UseAuthReturn {
     !boardingHydrated;
 
   const initialize = useCallback(async () => {
-    const [seen, completed, step, modal] = await Promise.all([
+    const [seen, completed, step, modal, lastMethod] = await Promise.all([
       storage.getItem(ONBOARDING_STORAGE_KEY),
       storage.getItem(BOARDING_STORAGE_KEY),
       storage.getItem(CURRENT_BOARDING_STEP_KEY),
       storage.getItem(WELCOME_MODAL_TRIGGER_KEY),
+      storage.getItem(LAST_AUTH_METHOD_KEY),
     ]);
     setHasSeenOnboarding(seen === "true");
     setHasCompletedBoarding(completed === "true");
     if (step) setCurrentBoardingStepState(parseInt(step, 10));
     setShowWelcomeModalState(modal === "true");
+    if (lastMethod === "password" || lastMethod === "google" || lastMethod === "apple") {
+      setLastAuthMethod(lastMethod);
+    }
     setBoardingHydrated(true);
   }, []);
 
@@ -183,25 +298,114 @@ export function useAuth(): UseAuthReturn {
     async (email: string, password: string) => {
       try {
         await convexSignIn("password", { email, password, flow: "signIn" });
+        await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
-        return { success: false, error: errorMessage(err, "Sign in failed") };
+        return { success: false, error: friendlyAuthError(err, "signIn") };
       }
     },
-    [convexSignIn],
+    [convexSignIn, rememberAuthMethod],
+  );
+
+  // OAuth redirect for the post-OAuth hand-off back into the app. iOS's
+  // ASWebAuthenticationSession (used by WebBrowser.openAuthSessionAsync)
+  // ONLY closes the in-app browser when the navigation matches a custom
+  // URI scheme registered to this app — HTTPS redirects make the session
+  // hang or dismiss immediately. Linking.createURL("auth-callback")
+  // resolves to e.g. `runwae-dev://auth-callback` based on the variant
+  // scheme in app.config.ts.
+  //
+  // NOTE: this is the redirect Convex Auth uses internally between the
+  // OAuth provider's callback and the app. Google's own OAuth redirect
+  // URI (set in Google Cloud Console) stays as the Convex HTTPS callback
+  // — it never sees this scheme.
+  const buildOAuthRedirect = useCallback(() => {
+    return Linking.createURL("auth-callback");
+  }, []);
+
+  // Convex Auth's `signIn(provider)` on React Native returns a `redirect`
+  // URL but does NOT open it for us — only the web SDK auto-redirects.
+  // We open it ourselves via expo-web-browser, then feed the resulting
+  // `code` back to convexSignIn to finish the handshake.
+  const runOAuthFlow = useCallback(
+    async (
+      provider: "google" | "apple",
+    ): Promise<{ success: boolean; error?: string; cancelled?: boolean }> => {
+      const redirectTo = buildOAuthRedirect();
+      const startResult = (await convexSignIn(provider as any, {
+        redirectTo,
+      })) as unknown as { redirect?: URL | string } | undefined;
+
+      // If the SDK already completed the sign-in (rare on RN, common on web),
+      // there's nothing else to do.
+      if (!startResult?.redirect) {
+        return { success: true };
+      }
+
+      const authorizeUrl =
+        typeof startResult.redirect === "string"
+          ? startResult.redirect
+          : startResult.redirect.toString();
+
+      const browserResult = await WebBrowser.openAuthSessionAsync(
+        authorizeUrl,
+        redirectTo,
+      );
+
+      if (browserResult.type === "cancel" || browserResult.type === "dismiss") {
+        return { success: false, cancelled: true };
+      }
+      if (browserResult.type !== "success" || !browserResult.url) {
+        return { success: false, error: "Sign-in didn't complete." };
+      }
+
+      const code = new URL(browserResult.url).searchParams.get("code");
+      if (!code) {
+        // Provider redirected without a code — usually means the user
+        // declined or the provider config is wrong.
+        return {
+          success: false,
+          error: "Provider didn't return an auth code.",
+        };
+      }
+
+      await convexSignIn(provider as any, { code });
+      return { success: true };
+    },
+    [convexSignIn, buildOAuthRedirect],
   );
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      await convexSignIn("google");
+      const r = await runOAuthFlow("google");
+      if (r.cancelled) return { success: false, error: "Sign-in cancelled." };
+      if (!r.success)
+        return { success: false, error: r.error ?? "Google sign-in failed." };
+      await rememberAuthMethod("google");
       return { success: true };
     } catch (err) {
       return {
         success: false,
-        error: errorMessage(err, "Google sign in failed"),
+        error: friendlyAuthError(err, "google"),
       };
     }
-  }, [convexSignIn]);
+  }, [runOAuthFlow, rememberAuthMethod]);
+
+  const signInWithApple = useCallback(async () => {
+    try {
+      const r = await runOAuthFlow("apple");
+      if (r.cancelled) return { success: false, error: "Sign-in cancelled." };
+      if (!r.success)
+        return { success: false, error: r.error ?? "Apple sign-in failed." };
+      await rememberAuthMethod("apple");
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: friendlyAuthError(err, "apple"),
+      };
+    }
+  }, [runOAuthFlow, rememberAuthMethod]);
 
   const signUp = useCallback(
     async (email: string, password: string, fullName?: string) => {
@@ -221,18 +425,21 @@ export function useAuth(): UseAuthReturn {
         setHasCompletedBoarding(false);
         setCurrentBoardingStepState(1);
         setShowWelcomeModalState(false);
+        await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
-        return { success: false, error: errorMessage(err, "Sign up failed") };
+        return { success: false, error: friendlyAuthError(err, "signUp") };
       }
     },
-    [convexSignIn],
+    [convexSignIn, rememberAuthMethod],
   );
 
   const signOut = useCallback(async () => {
     try {
       await convexSignOut();
       // Clear local UX state so a different user signing in next gets a clean slate.
+      // Note: lastAuthMethod is intentionally preserved so the next sign-in
+      // screen can still show "Last used" for this device.
       await Promise.all([
         storage.setItem(BOARDING_STORAGE_KEY, "false"),
         storage.setItem(ONBOARDING_STORAGE_KEY, "false"),
@@ -245,7 +452,7 @@ export function useAuth(): UseAuthReturn {
       setShowWelcomeModalState(false);
       return { success: true };
     } catch (err) {
-      return { success: false, error: errorMessage(err, "Sign out failed") };
+      return { success: false, error: friendlyAuthError(err, "signOut") };
     }
   }, [convexSignOut]);
 
@@ -264,7 +471,7 @@ export function useAuth(): UseAuthReturn {
       } catch (err) {
         return {
           success: false,
-          error: errorMessage(err, "Failed to update profile"),
+          error: friendlyAuthError(err, "updateProfile"),
         };
       }
     },
@@ -283,7 +490,7 @@ export function useAuth(): UseAuthReturn {
       } catch (err) {
         return {
           success: false,
-          error: errorMessage(err, "Could not send reset email"),
+          error: friendlyAuthError(err, "reset"),
         };
       }
     },
@@ -299,15 +506,16 @@ export function useAuth(): UseAuthReturn {
           newPassword,
           flow: "reset-verification",
         });
+        await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
         return {
           success: false,
-          error: errorMessage(err, "Reset failed"),
+          error: friendlyAuthError(err, "reset-verification"),
         };
       }
     },
-    [convexSignIn],
+    [convexSignIn, rememberAuthMethod],
   );
 
   // Updating the password while logged in routes through the same
@@ -332,15 +540,16 @@ export function useAuth(): UseAuthReturn {
           code,
           flow: "email-verification",
         });
+        await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
         return {
           success: false,
-          error: errorMessage(err, "Verification failed"),
+          error: friendlyAuthError(err, "email-verification"),
         };
       }
     },
-    [convexSignIn],
+    [convexSignIn, rememberAuthMethod],
   );
 
   const completeOnboarding = useCallback(async () => {
@@ -377,8 +586,10 @@ export function useAuth(): UseAuthReturn {
     showWelcomeModal,
     setShowWelcomeModal,
     currentBoardingStep,
+    lastAuthMethod,
     signIn,
     signInWithGoogle,
+    signInWithApple,
     signUp,
     signOut,
     updateUser,

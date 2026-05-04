@@ -2,6 +2,7 @@ import AddOnsForYou from '@/components/home/AddOnsForYou';
 import FindFriendsSheet from '@/components/social/FindFriendsSheet';
 import FriendsActivity from '@/components/home/FriendsActivity';
 import HeroFeatured from '@/components/home/HeroFeatured';
+import HomeQuickActions from '@/components/home/HomeQuickActions';
 import HomeTopSection from '@/components/home/HomeTopSection';
 import LocationPrompt from '@/components/home/LocationPrompt';
 import OpenPollCard from '@/components/home/OpenPollCard';
@@ -29,7 +30,6 @@ const SECTION_GAP = 32;
 export default function HomeScreen() {
   const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
-
   const [refreshing, setRefreshing] = useState(false);
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
   const { myTrips, joinedTrips } = useTrips();
@@ -52,10 +52,7 @@ export default function HomeScreen() {
     return [...combined].sort((a, b) => b.createdAt - a.createdAt);
   }, [myTrips, joinedTrips, user?.id]);
 
-  const upcomingTrips = useMemo(
-    () => allTrips.filter(isActive),
-    [allTrips],
-  );
+  const upcomingTrips = useMemo(() => allTrips.filter(isActive), [allTrips]);
 
   // Prefetch hero images for the visible carousels as soon as URLs are
   // known. expo-image dedupes with its on-disk cache, so the actual
@@ -103,6 +100,8 @@ export default function HomeScreen() {
         )}
 
         <View style={{ gap: SECTION_GAP }}>
+          <HomeQuickActions dark={dark} />
+
           <HeroFeatured />
           <UpcomingTrips trips={upcomingTrips} loading={loading} />
           <UpcomingEvents

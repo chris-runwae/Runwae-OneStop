@@ -4,6 +4,7 @@ import {
   type ItineraryDayWithItems,
   type ItineraryItem,
   type CreateItineraryItemInput,
+  useDayWithTravelTimes,
 } from '@/hooks/useItineraryActions';
 import { useTheme } from '@react-navigation/native';
 import { addDays, format, parseISO } from 'date-fns';
@@ -13,7 +14,6 @@ import { ChevronDown, ChevronRight, Ellipsis, Plus } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   Text as RNText,
   ScrollView,
@@ -22,11 +22,15 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DraggableFlatList, {
+  type RenderItemParams,
+} from 'react-native-draggable-flatlist';
 
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import AddItineraryItemSheet from '@/components/trip-activity/AddItineraryItemSheet';
 import ItineraryItemCard from '@/components/trip-activity/ItineraryItemCard';
+import TravelConnector from '@/components/itinerary/TravelConnector';
 import { AppFonts, Colors } from '@/constants';
 import { useMutation } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
@@ -34,69 +38,61 @@ import { uploadImageFromUri } from '@/lib/uploadImage';
 
 const DATE_COLUMN_WIDTH = 55;
 
+type StripDay = {
+  type: 'day';
+  id: string;
+  label: string;
+  sublabel: string;
+};
+type StripAdd = { type: 'add'; id: 'add' };
+type StripItem = StripDay | StripAdd;
+
 type DateStripProps = {
   startDate: string | null;
-  totalDays: number;
-  selectedIndex: number;
-  onSelectIndex: (i: number) => void;
+  days: ItineraryDayWithItems[];
+  selectedDayId: string | null;
+  onSelectDay: (id: string) => void;
   onAddDay: () => void;
+  onReorderDays: (orderedIds: string[]) => Promise<void> | void;
+  isMember: boolean;
 };
 
 function DateStrip({
   startDate,
-  totalDays,
-  selectedIndex,
-  onSelectIndex,
+  days,
+  selectedDayId,
+  onSelectDay,
   onAddDay,
+  onReorderDays,
+  isMember,
 }: DateStripProps) {
-  const flatListRef = useRef<FlatList>(null);
   const { dark } = useTheme();
   const colors = Colors[dark ? 'dark' : 'light'];
 
-  type DayItem = {
-    type: 'day';
-    index: number;
-    label: string;
-    sublabel: string;
-  };
-  type AddItem = { type: 'add' };
-  type StripItem = DayItem | AddItem;
-
   const items = useMemo<StripItem[]>(() => {
-    const base: StripItem[] = [];
-    for (let i = 0; i < totalDays; i++) {
+    const base: StripItem[] = days.map((d, i) => {
+      const idStr = d._id as unknown as string;
       if (startDate) {
         const date = addDays(parseISO(startDate), i);
-        base.push({
+        return {
           type: 'day',
-          index: i,
+          id: idStr,
           label: format(date, 'EEEEE'),
           sublabel: format(date, 'd'),
-        });
-      } else {
-        base.push({
-          type: 'day',
-          index: i,
-          label: 'D',
-          sublabel: String(i + 1),
-        });
+        };
       }
-    }
-    base.push({ type: 'add' });
+      return {
+        type: 'day',
+        id: idStr,
+        label: 'D',
+        sublabel: String(i + 1),
+      };
+    });
+    base.push({ type: 'add', id: 'add' });
     return base;
-  }, [startDate, totalDays]);
+  }, [days, startDate]);
 
-  useEffect(() => {
-    if (selectedIndex < totalDays) {
-      flatListRef.current?.scrollToIndex({
-        index: selectedIndex,
-        animated: true,
-        viewPosition: 0.5,
-      });
-    }
-  }, [selectedIndex, totalDays]);
-
-  const renderItem = ({ item }: { item: StripItem }) => {
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<StripItem>) => {
     if (item.type === 'add') {
       return (
         <Pressable onPress={onAddDay} style={styles.dateColumn}>
@@ -123,11 +119,18 @@ function DateStrip({
       );
     }
 
-    const isSelected = item.index === selectedIndex;
+    const isSelected = item.id === selectedDayId;
     return (
       <Pressable
-        onPress={() => onSelectIndex(item.index)}
-        style={styles.dateColumn}>
+        onPress={() => onSelectDay(item.id)}
+        onLongPress={isMember ? drag : undefined}
+        delayLongPress={220}
+        style={[
+          styles.dateColumn,
+          isActive && {
+            transform: [{ scale: 1.08 }],
+          },
+        ]}>
         <Text
           style={[
             styles.dayLetter,
@@ -146,6 +149,13 @@ function DateStrip({
                   backgroundColor: dark ? '#1F1F1F' : '#F8F9FA',
                   borderColor: dark ? '#374151' : '#F0F5FA',
                 },
+            isActive && {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 6,
+            },
           ]}>
           <Text
             style={[
@@ -159,6 +169,13 @@ function DateStrip({
     );
   };
 
+  const handleDragEnd = ({ data }: { data: StripItem[] }) => {
+    const orderedDayIds = data
+      .filter((d): d is StripDay => d.type === 'day')
+      .map((d) => d.id);
+    void onReorderDays(orderedDayIds);
+  };
+
   return (
     <View
       style={[
@@ -168,29 +185,16 @@ function DateStrip({
           borderBottomColor: dark ? '#374151' : '#E0E0E0',
         },
       ]}>
-      <FlatList
-        ref={flatListRef}
+      <DraggableFlatList<StripItem>
         data={items}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) =>
-          item.type === 'add'
-            ? 'add'
-            : String((item as { type: 'day'; index: number }).index)
-        }
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        onDragEnd={handleDragEnd}
+        activationDistance={12}
+        dragItemOverflow
         contentContainerStyle={styles.dateStripContent}
-        getItemLayout={(_, index) => ({
-          length: DATE_COLUMN_WIDTH,
-          offset: DATE_COLUMN_WIDTH * index,
-          index,
-        })}
-        onScrollToIndexFailed={({ index }) => {
-          flatListRef.current?.scrollToOffset({
-            offset: index * DATE_COLUMN_WIDTH,
-            animated: true,
-          });
-        }}
       />
     </View>
   );
@@ -204,8 +208,7 @@ type DaySectionProps = {
   onToggleReorder: (dayId: string | null) => void;
   onAddItem: (dayId: string, input: CreateItineraryItemInput) => Promise<void>;
   onDeleteItem: (itemId: string) => Promise<void>;
-  onMoveItemUp: (dayId: string, itemId: string) => Promise<void>;
-  onMoveItemDown: (dayId: string, itemId: string) => Promise<void>;
+  onReorderItems: (dayId: string, orderedIds: string[]) => Promise<void> | void;
   onMoveItemToPrevDay?: (itemId: string) => void;
   onMoveItemToNextDay?: (itemId: string) => void;
   onUpdateTitle: (dayId: string, title: string) => Promise<void>;
@@ -224,8 +227,7 @@ function DaySection({
   reorderingDayId,
   onAddItem,
   onDeleteItem,
-  onMoveItemUp,
-  onMoveItemDown,
+  onReorderItems,
   onMoveItemToPrevDay,
   onMoveItemToNextDay,
   onUpdateTitle,
@@ -244,6 +246,29 @@ function DaySection({
 
   const isReordering = reorderingDayId === (day._id as unknown as string);
   const dayId = day._id as unknown as string;
+
+  // TODO: legs come from the stub query (CLAUDE.md). Will surface real
+  // distances/durations once routing.computeLegs lands.
+  const dayLegs = useDayWithTravelTimes(day._id as unknown as string);
+  const legByFromId = useMemo(() => {
+    const map = new Map<
+      string,
+      { distanceKm?: number; durationMin?: number }
+    >();
+    if (dayLegs && 'legs' in dayLegs && Array.isArray((dayLegs as any).legs)) {
+      for (const leg of (dayLegs as any).legs as Array<{
+        fromItemId: string;
+        distanceKm?: number;
+        durationMin?: number;
+      }>) {
+        map.set(leg.fromItemId, {
+          distanceKm: leg.distanceKm,
+          durationMin: leg.durationMin,
+        });
+      }
+    }
+    return map;
+  }, [dayLegs]);
 
   const handleTitleBlur = async () => {
     setTitleEdit(false);
@@ -322,28 +347,65 @@ function DaySection({
       </Pressable>
 
       {!collapsed && (
-        <View style={{ gap: 15 }}>
-          {day.items.map((item, i) => {
-            const itemId = item._id as unknown as string;
-            return (
-              <ItineraryItemCard
-                key={itemId}
-                item={item}
-                isReordering={isReordering}
-                isCreator={(item.addedByUserId as unknown as string) === userId}
-                onDelete={() => onDeleteItem(itemId)}
-                onMoveUp={() => onMoveItemUp(dayId, itemId)}
-                onMoveDown={() => onMoveItemDown(dayId, itemId)}
-                onMoveToPrevDay={() => onMoveItemToPrevDay?.(itemId)}
-                onMoveToNextDay={() => onMoveItemToNextDay?.(itemId)}
-                canMoveUp={i > 0}
-                canMoveDown={i < day.items.length - 1}
-                onPress={() => onItemPress(item)}
-                onUpdateNotes={(notes) => onUpdateItemNotes(itemId, notes)}
-                isMember={isMember}
-              />
-            );
-          })}
+        <View style={{ gap: 8 }}>
+          <DraggableFlatList<ItineraryItem>
+            data={day.items}
+            keyExtractor={(item) => item._id as unknown as string}
+            scrollEnabled={false}
+            activationDistance={12}
+            dragItemOverflow
+            onDragEnd={({ data }) => {
+              const orderedIds = data.map(
+                (it) => it._id as unknown as string,
+              );
+              const original = day.items.map(
+                (it) => it._id as unknown as string,
+              );
+              const changed =
+                orderedIds.length !== original.length ||
+                orderedIds.some((id, i) => id !== original[i]);
+              if (changed) {
+                void onReorderItems(dayId, orderedIds);
+              }
+            }}
+            renderItem={({ item, drag, isActive, getIndex }) => {
+              const i = getIndex() ?? 0;
+              const itemId = item._id as unknown as string;
+              const leg = legByFromId.get(itemId);
+              const showLeg = !isActive && i < day.items.length - 1 && !!leg;
+              return (
+                <View>
+                  <ItineraryItemCard
+                    item={item}
+                    isReordering={isReordering}
+                    isCreator={
+                      (item.addedByUserId as unknown as string) === userId
+                    }
+                    onDelete={() => onDeleteItem(itemId)}
+                    onMoveUp={() => {}}
+                    onMoveDown={() => {}}
+                    onMoveToPrevDay={() => onMoveItemToPrevDay?.(itemId)}
+                    onMoveToNextDay={() => onMoveItemToNextDay?.(itemId)}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < day.items.length - 1}
+                    onPress={() => onItemPress(item)}
+                    onUpdateNotes={(notes) =>
+                      onUpdateItemNotes(itemId, notes)
+                    }
+                    isMember={isMember}
+                    drag={isMember ? drag : undefined}
+                    isActive={isActive}
+                  />
+                  {showLeg ? (
+                    <TravelConnector
+                      distanceKm={leg?.distanceKm}
+                      durationMin={leg?.durationMin}
+                    />
+                  ) : null}
+                </View>
+              );
+            }}
+          />
 
           {isMember && (
             <Pressable
@@ -403,6 +465,7 @@ export default function TripItineraryTab({
     removeItem,
     updateItemCtx,
     reorderItemsCtx,
+    reorderDaysCtx,
     moveItemToDayCtx,
   } = useTrips();
   const router = useRouter();
@@ -436,22 +499,36 @@ export default function TripItineraryTab({
   };
 
   const [reorderingDayId, setReorderingDayId] = useState<string | null>(null);
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
 
   const tripStartDate = activeTrip?.startDate ?? null;
 
-  const handleAddDay = async () => {
-    const currentLength = days.length;
-    const nextDayNumber = currentLength + 1;
-    await addDay({ title: `Day ${nextDayNumber}` });
-    setSelectedDayIndex(currentLength);
-  };
-
   useEffect(() => {
-    if (days.length > 0 && selectedDayIndex >= days.length) {
-      setSelectedDayIndex(days.length - 1);
+    if (days.length === 0) {
+      if (selectedDayId !== null) setSelectedDayId(null);
+      return;
     }
-  }, [days.length]);
+    const exists = days.some(
+      (d) => (d._id as unknown as string) === selectedDayId,
+    );
+    if (!exists) {
+      setSelectedDayId(days[0]._id as unknown as string);
+    }
+  }, [days, selectedDayId]);
+
+  const prevDayCountRef = useRef(days.length);
+  useEffect(() => {
+    if (days.length > prevDayCountRef.current) {
+      const last = days[days.length - 1];
+      if (last) setSelectedDayId(last._id as unknown as string);
+    }
+    prevDayCountRef.current = days.length;
+  }, [days]);
+
+  const handleAddDay = async () => {
+    const nextDayNumber = days.length + 1;
+    await addDay({ title: `Day ${nextDayNumber}` });
+  };
 
   const handleAddItem = async (
     dayId: string,
@@ -507,103 +584,73 @@ export default function TripItineraryTab({
     );
   }
 
+  const dayIndex = selectedDayId
+    ? days.findIndex((d) => (d._id as unknown as string) === selectedDayId)
+    : -1;
+  const activeDay = dayIndex >= 0 ? days[dayIndex] : null;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
       <DateStrip
         startDate={tripStartDate}
-        totalDays={days.length}
-        selectedIndex={selectedDayIndex}
-        onSelectIndex={setSelectedDayIndex}
+        days={days}
+        selectedDayId={selectedDayId}
+        onSelectDay={setSelectedDayId}
         onAddDay={handleAddDay}
+        onReorderDays={reorderDaysCtx}
+        isMember={isMember}
       />
 
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        {days
-          .filter((_, idx) => idx === selectedDayIndex)
-          .map((day) => {
-            const dayIndex = selectedDayIndex;
-            const dayId = day._id as unknown as string;
-            return (
-              <DaySection
-                key={dayId}
-                day={day}
-                index={dayIndex}
-                userId={user?.id ?? ''}
-                reorderingDayId={reorderingDayId}
-                onToggleReorder={setReorderingDayId}
-                onAddItem={handleAddItem}
-                onDeleteItem={removeItem}
-                onMoveItemUp={async (dId, iId) => {
-                  const dayItems = day.items;
-                  const idx = dayItems.findIndex(
-                    (it) => (it._id as unknown as string) === iId,
-                  );
-                  if (idx <= 0) return;
-                  const newOrder = [...dayItems];
-                  [newOrder[idx - 1], newOrder[idx]] = [
-                    newOrder[idx],
-                    newOrder[idx - 1],
-                  ];
-                  await reorderItemsCtx(
-                    dId,
-                    newOrder.map((it) => it._id as unknown as string),
-                  );
-                }}
-                onMoveItemDown={async (dId, iId) => {
-                  const dayItems = day.items;
-                  const idx = dayItems.findIndex(
-                    (it) => (it._id as unknown as string) === iId,
-                  );
-                  if (idx < 0 || idx >= dayItems.length - 1) return;
-                  const newOrder = [...dayItems];
-                  [newOrder[idx], newOrder[idx + 1]] = [
-                    newOrder[idx + 1],
-                    newOrder[idx],
-                  ];
-                  await reorderItemsCtx(
-                    dId,
-                    newOrder.map((it) => it._id as unknown as string),
-                  );
-                }}
-                onMoveItemToPrevDay={async (itemId) => {
-                  if (dayIndex > 0) {
-                    const prevDay = days[dayIndex - 1];
-                    await moveItemToDayCtx(
-                      itemId,
-                      dayId,
-                      prevDay._id as unknown as string,
-                    );
-                  }
-                }}
-                onMoveItemToNextDay={async (itemId) => {
-                  if (dayIndex < days.length - 1) {
-                    const nextDay = days[dayIndex + 1];
-                    await moveItemToDayCtx(
-                      itemId,
-                      dayId,
-                      nextDay._id as unknown as string,
-                    );
-                  }
-                }}
-                onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
-                onDeleteDay={(d) => removeDay(d._id as unknown as string)}
-                onClearDay={(_dId) => {
-                  for (const it of day.items) {
-                    void removeItem(it._id as unknown as string);
-                  }
-                }}
-                isFirstDay={dayIndex === 0}
-                onItemPress={handleCardPress}
-                onUpdateItemNotes={(itemId, notes) =>
-                  updateItemCtx(itemId, { notes })
-                }
-                isMember={isMember}
-              />
-            );
-          })}
+        {activeDay ? (
+          <DaySection
+            key={activeDay._id as unknown as string}
+            day={activeDay}
+            index={dayIndex}
+            userId={user?.id ?? ''}
+            reorderingDayId={reorderingDayId}
+            onToggleReorder={setReorderingDayId}
+            onAddItem={handleAddItem}
+            onDeleteItem={removeItem}
+            onReorderItems={reorderItemsCtx}
+            onMoveItemToPrevDay={async (itemId) => {
+              if (dayIndex > 0) {
+                const prevDay = days[dayIndex - 1];
+                await moveItemToDayCtx(
+                  itemId,
+                  activeDay._id as unknown as string,
+                  prevDay._id as unknown as string,
+                );
+              }
+            }}
+            onMoveItemToNextDay={async (itemId) => {
+              if (dayIndex < days.length - 1) {
+                const nextDay = days[dayIndex + 1];
+                await moveItemToDayCtx(
+                  itemId,
+                  activeDay._id as unknown as string,
+                  nextDay._id as unknown as string,
+                );
+              }
+            }}
+            onUpdateTitle={(dId, title) => updateDayCtx(dId, { title })}
+            onDeleteDay={(d) => removeDay(d._id as unknown as string)}
+            onClearDay={(_dId) => {
+              for (const it of activeDay.items) {
+                void removeItem(it._id as unknown as string);
+              }
+            }}
+            isFirstDay={dayIndex === 0}
+            onItemPress={handleCardPress}
+            onUpdateItemNotes={(itemId, notes) =>
+              updateItemCtx(itemId, { notes })
+            }
+            isMember={isMember}
+          />
+        ) : null}
 
         <View style={{ height: 120 }} />
       </ScrollView>

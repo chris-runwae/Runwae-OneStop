@@ -1,9 +1,19 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { action, internalAction } from "./_generated/server";
+import { action, internalAction, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { DiscoveryItem } from "./providers/types";
-import type { DuffelOfferDetail } from "./providers/duffel";
+import { POPULAR_DESTINATIONS, type DuffelOfferDetail } from "./providers/duffel";
+
+// Curated list surfaced in the mobile flight search picker. Same source the
+// Duffel exploration mode uses, exposed publicly so the client doesn't need
+// to duplicate it.
+export const popularAirports = query({
+  args: {},
+  handler: async (): Promise<ReadonlyArray<{ iata: string; city: string }>> => {
+    return POPULAR_DESTINATIONS;
+  },
+});
 
 export const search = action({
   args: {

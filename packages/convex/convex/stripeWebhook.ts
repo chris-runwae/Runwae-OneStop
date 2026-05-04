@@ -97,6 +97,19 @@ export const handleStripeWebhook = httpAction(async (ctx, request) => {
       }
       break;
     }
+    case "payment_intent.succeeded": {
+      // Mobile Payment Sheet flow: createPaymentIntent stamps the pending
+      // booking id into PaymentIntent metadata so we can find it here.
+      const intent = event.data.object;
+      const bookingId = intent?.metadata?.bookingId;
+      if (bookingId) {
+        await ctx.runMutation(api.bookings.confirmByPaymentIntent, {
+          bookingId,
+          paymentIntentId: String(intent.id),
+        });
+      }
+      break;
+    }
     case "payment_intent.payment_failed": {
       const intent = event.data.object;
       await ctx.runMutation(api.bookings.failByPaymentIntent, {

@@ -19,7 +19,7 @@ const VERSION = "v2";
 // destinations so the home Fly chip surfaces a varied set of route ideas.
 // Order is preserved when filtering — earlier entries appear first if `limit`
 // clips the list.
-const POPULAR_DESTINATIONS: ReadonlyArray<{ iata: string; city: string }> = [
+export const POPULAR_DESTINATIONS: ReadonlyArray<{ iata: string; city: string }> = [
   { iata: "LIS", city: "Lisbon" },
   { iata: "BCN", city: "Barcelona" },
   { iata: "AMS", city: "Amsterdam" },

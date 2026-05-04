@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Ellipsis,
   ImageIcon,
+  MapPin,
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -17,10 +18,12 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
+import { ScaleDecorator } from 'react-native-draggable-flatlist';
 
 import { Text } from '@/components';
 import ActionMenu, { ActionOption } from '@/components/common/ActionMenu';
 import { AppFonts, COLORS, Colors } from '@/constants';
+import { useDirections } from '@/hooks/useDirections';
 import { ItemType, ItineraryItem } from '@/hooks/useItineraryActions';
 
 type TypeConfig = {
@@ -54,6 +57,8 @@ type Props = {
   onPress?: () => void;
   onUpdateNotes?: (notes: string) => void;
   isMember?: boolean;
+  drag?: () => void;
+  isActive?: boolean;
 };
 
 const ItineraryItemCard = ({
@@ -70,7 +75,10 @@ const ItineraryItemCard = ({
   onPress,
   onUpdateNotes,
   isMember = true,
+  drag,
+  isActive,
 }: Props) => {
+  const { openDirections } = useDirections();
   const colorScheme = useColorScheme() ?? 'light';
   const dark = colorScheme === 'dark';
   const colors = Colors[colorScheme];
@@ -120,10 +128,22 @@ const ItineraryItemCard = ({
     },
   ];
 
-  return (
+  const hasMapTarget = !!(item.locationName || item.coords);
+  const handleOpenInMaps = () => {
+    if (!hasMapTarget) return;
+    const location =
+      item.locationName ??
+      (item.coords ? `${item.coords.lat},${item.coords.lng}` : '');
+    if (!location) return;
+    openDirections({ title: item.title, location });
+  };
+
+  const cardInner = (
     <View>
       <Pressable
         onPress={!isReordering ? onPress : undefined}
+        onLongPress={drag}
+        delayLongPress={220}
         style={({ pressed }) => [
           { opacity: pressed && !isReordering && onPress ? 0.75 : 1 },
         ]}>
@@ -133,6 +153,13 @@ const ItineraryItemCard = ({
             {
               backgroundColor: colors.backgroundColors.default,
               borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
+            },
+            isActive && {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: dark ? 0.45 : 0.18,
+              shadowRadius: 12,
+              elevation: 8,
             },
           ]}>
           {hasImage ? (
@@ -182,6 +209,32 @@ const ItineraryItemCard = ({
                 numberOfLines={1}>
                 {item.locationName}
               </Text>
+            ) : null}
+
+            {hasMapTarget ? (
+              <Pressable
+                onPress={handleOpenInMaps}
+                hitSlop={6}
+                style={[
+                  styles.mapsPill,
+                  {
+                    backgroundColor: dark ? '#1F1F1F' : '#FFF1F8',
+                    borderColor: dark ? '#374151' : '#FFD3E6',
+                  },
+                ]}>
+                <MapPin
+                  size={11}
+                  color={dark ? '#FF6FB1' : '#FF1F8C'}
+                  strokeWidth={2}
+                />
+                <Text
+                  style={[
+                    styles.mapsPillText,
+                    { color: dark ? '#FF6FB1' : '#FF1F8C' },
+                  ]}>
+                  Open in Maps
+                </Text>
+              </Pressable>
             ) : null}
           </View>
 
@@ -273,6 +326,12 @@ const ItineraryItemCard = ({
         options={menuOptions}
         anchorPosition={menuAnchor}
       />
+    </View>
+  );
+
+  return (
+    <View>
+      {drag ? <ScaleDecorator>{cardInner}</ScaleDecorator> : cardInner}
 
       <Modal
         visible={notesModalVisible}
@@ -388,6 +447,21 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 11,
     fontFamily: AppFonts.inter.regular,
+  },
+  mapsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
+    marginTop: 6,
+  },
+  mapsPillText: {
+    fontSize: 10,
+    fontFamily: AppFonts.inter.medium,
   },
   right: {
     flexShrink: 0,

@@ -1,13 +1,13 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import AnimatedTabBar, { type AnimatedTab } from '@/components/ui/AnimatedTabBar';
+import FlightSearchForm from '@/components/search/FlightSearchForm';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getLinkPreview } from 'link-preview-js';
 import {
   ArrowLeft,
   ChevronDown,
-  ChevronUp,
   Link as LinkIcon,
-  MoveRight,
   Search,
   Sparkles,
   X,
@@ -19,7 +19,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Animated as RNAnimated,
   ScrollView,
   Text,
   TextInput,
@@ -33,50 +32,32 @@ import Animated, {
   FadeOutLeft,
 } from 'react-native-reanimated';
 
-import CategoryItem from '@/components/ui/CategoryItem';
 import { useTheme } from '@react-navigation/native';
+
+type SearchTab = 'flights' | 'stays' | 'experiences';
+
+const SEARCH_TABS: AnimatedTab<SearchTab>[] = [
+  { id: 'flights', label: 'Flights', imageSrc: require('@/assets/images/plane.png') },
+  { id: 'stays', label: 'Stays', imageSrc: require('@/assets/images/house.png') },
+  { id: 'experiences', label: 'Experiences', imageSrc: require('@/assets/images/map.png') },
+];
 
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab: string }>();
   const inputRef = useRef<TextInput>(null);
 
-  const [activeTab, setActiveTab] = useState<string | null>(
-    params.tab || 'flights'
-  );
-  const [flightType, setFlightType] = useState<'one-way' | 'round-trip'>(
-    'one-way'
-  );
+  const initialTab: SearchTab =
+    params.tab === 'stays' || params.tab === 'experiences'
+      ? params.tab
+      : 'flights';
+  const [activeTab, setActiveTab] = useState<SearchTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [previewData, setPreviewData] = useState<any>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const { width } = Dimensions.get('window');
   const containerWidth = width - 40; // 20px paddingHorizontal on ScrollView
-  const indicatorAnim = useRef(new RNAnimated.Value(0)).current;
-
-  useEffect(() => {
-    let toValue = 0;
-    if (activeTab === 'flights') toValue = 0;
-    else if (activeTab === 'stays') toValue = 1;
-    else if (activeTab === 'experiences') toValue = 2;
-
-    RNAnimated.spring(indicatorAnim, {
-      toValue,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 16,
-    }).start();
-  }, [activeTab]);
-
-  const translateX = indicatorAnim.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: [
-      8, // left px-2 padding
-      8 + (containerWidth - 16) / 3,
-      8 + ((containerWidth - 16) / 3) * 2,
-    ],
-  });
 
   useEffect(() => {
     // Auto focus the input when screen mounts
@@ -263,136 +244,19 @@ export default function SearchScreen() {
               />
             </TouchableOpacity>
 
-            {/* Categories */}
-            <View className="relative z-0 mb-6 border-b border-gray-200 dark:border-dark-seconndary/60">
-              <View className="flex-row justify-between px-2">
-                <CategoryItem
-                  imageSrc={require('@/assets/images/plane.png')}
-                  label="Flights"
-                  isActive={activeTab === 'flights'}
-                  onPress={() => setActiveTab('flights')}
-                />
-                <CategoryItem
-                  imageSrc={require('@/assets/images/house.png')}
-                  label="Stays"
-                  isActive={activeTab === 'stays'}
-                  onPress={() => setActiveTab('stays')}
-                />
-                <CategoryItem
-                  imageSrc={require('@/assets/images/map.png')}
-                  label="Experiences"
-                  isActive={activeTab === 'experiences'}
-                  onPress={() => setActiveTab('experiences')}
-                />
-              </View>
-
-              {/* Sliding Indicator */}
-              {activeTab !== null && (
-                <RNAnimated.View
-                  style={{
-                    position: 'absolute',
-                    bottom: -1,
-                    left: 0,
-                    width: (containerWidth - 16) / 3,
-                    alignItems: 'center',
-                    transform: [{ translateX }],
-                  }}>
-                  <View className="h-[3px] w-[60%] rounded-t-[3px] bg-[#fd2879]" />
-                </RNAnimated.View>
-              )}
-            </View>
-
-            {/* DEFAULT / NO TAB VIEW */}
-            {activeTab === null && (
-              <Animated.View
-                entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(200)}
-                className="z-50 px-1">
-                <View className="mb-4 mt-2 flex-row items-center">
-                  <View className="flex-row items-center gap-x-1">
-                    <Sparkles
-                      size={13}
-                      fill="#fd2879"
-                      strokeWidth={1.5}
-                      stroke="#fd2879"
-                    />
-                    <Text className="text-sm font-bold tracking-wide text-[#fd2879]">
-                      NEW
-                    </Text>
-                  </View>
-                  <View className="mx-3 h-4 w-[1px] bg-gray-300" />
-                  <Text className="text-sm font-medium text-gray-500">
-                    Paste a Link
-                  </Text>
-                  <MoveRight size={14} color="#9ca3af" className="mx-3" />
-                  <Text className="text-sm font-medium text-gray-500">
-                    Generate Itinerary
-                  </Text>
-                </View>
-
-                {renderSearchBar()}
-              </Animated.View>
-            )}
+            <AnimatedTabBar
+              tabs={SEARCH_TABS}
+              active={activeTab}
+              onChange={setActiveTab}
+              containerWidth={containerWidth}
+            />
 
             {/* FLIGHTS VIEW */}
             {activeTab === 'flights' && (
               <Animated.View
                 entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(200)}
-                className="relative z-50 px-2">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-lg font-semibold text-black dark:text-white">
-                    Where are you flying?
-                  </Text>
-                  <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-primary">
-                    <ChevronUp size={22} color="#fff" strokeWidth={2} />
-                  </View>
-                </View>
-
-                <View className="mb-8 flex-row gap-x-3">
-                  <Pressable
-                    className={`rounded-full px-5 py-2 ${flightType === 'one-way' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
-                    onPress={() => setFlightType('one-way')}>
-                    <Text
-                      className={`text-sm ${flightType === 'one-way' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-                      One-way
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    className={`rounded-full px-5 py-2 ${flightType === 'round-trip' ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-800'}`}
-                    onPress={() => setFlightType('round-trip')}>
-                    <Text
-                      className={`text-sm ${flightType === 'round-trip' ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-                      Round-trip
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <View className="z-50 mb-2">
-                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                    From
-                  </Text>
-                  {renderSearchBar()}
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 mb-2">
-                  <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
-                    To
-                  </Text>
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 flex-row items-center justify-between">
-                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                    Passengers
-                  </Text>
-                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                    <ChevronDown size={18} color="#6b7280" />
-                  </View>
-                </View>
+                exiting={FadeOut.duration(200)}>
+                <FlightSearchForm />
               </Animated.View>
             )}
 

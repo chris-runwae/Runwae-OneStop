@@ -127,6 +127,7 @@ function RouteGuard() {
     'create-trip-ai',
     'events',
     'search',
+    'flights',
     'hotels',
     'invite',
     'trip',
@@ -163,6 +164,7 @@ function RouteGuard() {
     'create-trip-ai',
     'events',
     'search',
+    'flights',
     'hotel',
     'hotels',
     'invite',
@@ -204,6 +206,10 @@ function RouteGuard() {
       <Stack.Screen name="destination" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="flights"
+        options={{ presentation: 'modal', headerShown: false }}
+      />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />
       <Stack.Screen name="hotels" options={{ headerShown: false }} />
       <Stack.Screen name="invite" options={{ headerShown: false }} />

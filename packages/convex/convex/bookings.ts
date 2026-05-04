@@ -385,6 +385,87 @@ export const attachStripeSession = mutation({
   },
 });
 
+// Shared between the Checkout Session (web) and PaymentIntent (mobile)
+// confirmation paths — same booking-finalisation logic, different lookup.
+async function confirmBookingPostPayment(
+  ctx: { db: any; scheduler: any },
+  booking: Doc<"bookings">,
+  paymentIntentId: string,
+): Promise<void> {
+  if (booking.status === "confirmed") return; // Idempotent
+
+  if (booking.type === "event_ticket" && booking.eventId) {
+    await ctx.db.patch(booking._id, {
+      status: "confirmed",
+      stripePaymentIntentId: paymentIntentId,
+    });
+    const items = (booking.rawResponse?.items ?? []) as Array<{
+      tierId: Id<"event_ticket_tiers">;
+      qty: number;
+    }>;
+    for (const item of items) {
+      const tier = await ctx.db.get(item.tierId);
+      if (!tier) continue;
+      await ctx.db.patch(item.tierId, {
+        quantitySold: tier.quantitySold + item.qty,
+      });
+      // Issue ticket rows so the buyer has scannable codes.
+      for (let i = 0; i < item.qty; i++) {
+        await ctx.db.insert("event_tickets", {
+          eventId: booking.eventId,
+          tierId: item.tierId,
+          userId: booking.userId,
+          bookingId: booking._id,
+          ticketCode: `TKT-${booking._id}-${item.tierId}-${i}`,
+          status: "active",
+          issuedAt: Date.now(),
+        });
+      }
+    }
+  } else if (booking.type === "hotel") {
+    // Hotel: stay 'pending' until LiteAPI book succeeds. Stripe payment is
+    // captured but the room isn't reserved with the supplier yet.
+    await ctx.db.patch(booking._id, {
+      stripePaymentIntentId: paymentIntentId,
+    });
+    await ctx.scheduler.runAfter(0, internal.hotels.finalisePaidBooking, {
+      bookingId: booking._id,
+    });
+    // Commission + notification are deferred to the finalise step.
+    return;
+  } else if (booking.type === "flight") {
+    // Flight: same defer pattern — Duffel order creation runs post-payment.
+    await ctx.db.patch(booking._id, {
+      stripePaymentIntentId: paymentIntentId,
+    });
+    await ctx.scheduler.runAfter(0, internal.flights.finalisePaidBooking, {
+      bookingId: booking._id,
+    });
+    return;
+  }
+
+  await ctx.db.insert("commissions", {
+    bookingId: booking._id,
+    eventId: booking.eventId,
+    hostId: undefined,
+    totalCommission: booking.commissionAmount,
+    runwaeShare: booking.commissionAmount,
+    hostShare: 0,
+    splitPct: PLATFORM_TICKET_COMMISSION_PCT,
+    currency: booking.currency,
+    status: "pending",
+    createdAt: Date.now(),
+  });
+
+  await ctx.db.insert("notifications", {
+    userId: booking.userId,
+    type: "booking_confirmed",
+    data: { bookingId: booking._id },
+    isRead: false,
+    createdAt: Date.now(),
+  });
+}
+
 // Called from the Stripe webhook (Next.js route) once the signature has been
 // verified — no auth required, but only matches if the session id is one we
 // minted ourselves.
@@ -401,78 +482,23 @@ export const confirmByStripeSession = mutation({
       .filter((q) => q.eq(q.field("apiRef"), args.sessionId))
       .first();
     if (!booking) return; // Webhook fired for something we didn't mint
-    if (booking.status === "confirmed") return; // Idempotent
+    await confirmBookingPostPayment(ctx, booking, args.paymentIntentId);
+  },
+});
 
-    if (booking.type === "event_ticket" && booking.eventId) {
-      await ctx.db.patch(booking._id, {
-        status: "confirmed",
-        stripePaymentIntentId: args.paymentIntentId,
-      });
-      const items = (booking.rawResponse?.items ?? []) as Array<{
-        tierId: Id<"event_ticket_tiers">;
-        qty: number;
-      }>;
-      for (const item of items) {
-        const tier = await ctx.db.get(item.tierId);
-        if (!tier) continue;
-        await ctx.db.patch(item.tierId, {
-          quantitySold: tier.quantitySold + item.qty,
-        });
-        // Issue ticket rows so the buyer has scannable codes.
-        for (let i = 0; i < item.qty; i++) {
-          await ctx.db.insert("event_tickets", {
-            eventId: booking.eventId,
-            tierId: item.tierId,
-            userId: booking.userId,
-            bookingId: booking._id,
-            ticketCode: `TKT-${booking._id}-${item.tierId}-${i}`,
-            status: "active",
-            issuedAt: Date.now(),
-          });
-        }
-      }
-    } else if (booking.type === "hotel") {
-      // Hotel: stay 'pending' until LiteAPI book succeeds. Stripe payment is
-      // captured but the room isn't reserved with the supplier yet.
-      await ctx.db.patch(booking._id, {
-        stripePaymentIntentId: args.paymentIntentId,
-      });
-      await ctx.scheduler.runAfter(0, internal.hotels.finalisePaidBooking, {
-        bookingId: booking._id,
-      });
-      // Commission + notification are deferred to the finalise step.
-      return;
-    } else if (booking.type === "flight") {
-      // Flight: same defer pattern — Duffel order creation runs post-payment.
-      await ctx.db.patch(booking._id, {
-        stripePaymentIntentId: args.paymentIntentId,
-      });
-      await ctx.scheduler.runAfter(0, internal.flights.finalisePaidBooking, {
-        bookingId: booking._id,
-      });
-      return;
-    }
-
-    await ctx.db.insert("commissions", {
-      bookingId: booking._id,
-      eventId: booking.eventId,
-      hostId: undefined,
-      totalCommission: booking.commissionAmount,
-      runwaeShare: booking.commissionAmount,
-      hostShare: 0,
-      splitPct: PLATFORM_TICKET_COMMISSION_PCT,
-      currency: booking.currency,
-      status: "pending",
-      createdAt: Date.now(),
-    });
-
-    await ctx.db.insert("notifications", {
-      userId: booking.userId,
-      type: "booking_confirmed",
-      data: { bookingId: booking._id },
-      isRead: false,
-      createdAt: Date.now(),
-    });
+// Mobile uses the Stripe Payment Sheet (PaymentIntent) flow, which has no
+// Checkout Session id. The PaymentIntent is created with `metadata.bookingId`
+// pointing at the pending booking, and the `payment_intent.succeeded` webhook
+// dispatches here with that pair.
+export const confirmByPaymentIntent = mutation({
+  args: {
+    bookingId: v.id("bookings"),
+    paymentIntentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) return;
+    await confirmBookingPostPayment(ctx, booking, args.paymentIntentId);
   },
 });
 

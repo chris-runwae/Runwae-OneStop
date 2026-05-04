@@ -12,8 +12,11 @@ import {
   Text,
   TextInput,
   View,
+  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, textStyles } from '@/constants';
+import { FlashList } from '@shopify/flash-list';
 
 type Props = {
   visible: boolean;
@@ -35,6 +38,8 @@ export default function LocationPicker({
   const { dark } = useTheme();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme ?? 'light'];
 
   const popular = useQuery(api.flights.popularAirports, {});
 
@@ -44,7 +49,7 @@ export default function LocationPicker({
     const q = query.trim().toUpperCase();
     if (!q) return filtered;
     return filtered.filter(
-      (a) => a.iata.includes(q) || a.city.toUpperCase().includes(q),
+      (a) => a.iata.includes(q) || a.city.toUpperCase().includes(q)
     );
   }, [popular, query, excludeIata]);
 
@@ -86,10 +91,10 @@ export default function LocationPicker({
           style={[
             styles.searchRow,
             {
-              backgroundColor: dark ? '#1c1c1e' : '#f3f4f6',
+              backgroundColor: colors.backgroundColors.subtle,
             },
           ]}>
-          <Search size={18} color="#9ca3af" />
+          <Search size={18} color={colors.icon} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -101,16 +106,25 @@ export default function LocationPicker({
           />
         </View>
 
-        <FlatList
+        <FlashList
           data={manualMatch ? [manualMatch, ...list] : list}
           keyExtractor={(item) => item.iata}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 20 }}
+          ItemSeparatorComponent={() => (
+            <View
+              style={[
+                styles.separator,
+                { backgroundColor: colors.borderColors.subtle },
+              ]}
+            />
+          )}
           ListEmptyComponent={
             <Text
               style={{
                 color: '#9ca3af',
                 textAlign: 'center',
                 marginTop: 24,
+                paddingHorizontal: 20,
               }}>
               No airports match your search.
             </Text>
@@ -121,30 +135,16 @@ export default function LocationPicker({
                 onSelect(item);
                 reset();
               }}
-              style={({ pressed }) => [
-                styles.row,
-                {
-                  borderBottomColor: dark ? '#1f1f22' : '#f3f4f6',
-                  opacity: pressed ? 0.6 : 1,
-                },
-              ]}>
-              <View
-                style={[
-                  styles.iconWrap,
-                  { backgroundColor: dark ? '#1c1c1e' : '#FFE5F0' },
-                ]}>
-                <Plane size={18} color="#FF1F8C" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.iata,
-                    { color: dark ? '#fff' : '#000' },
-                  ]}>
-                  {item.iata}
-                </Text>
-                <Text style={styles.city}>{item.city}</Text>
-              </View>
+              style={styles.row}>
+              <Plane size={18} color={colors.icon} strokeWidth={1.8} />
+              <Text style={[styles.iata, { color: colors.icon }]}>
+                {item.iata}
+              </Text>
+              <Text
+                style={[styles.city, { color: colors.textColors.subtitle }]}
+                numberOfLines={1}>
+                {item.city}
+              </Text>
             </Pressable>
           )}
         />
@@ -154,7 +154,9 @@ export default function LocationPicker({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,7 +164,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
-  title: { fontSize: 17, fontWeight: '600' },
+  title: {
+    ...textStyles.textHeading20,
+    fontSize: 18,
+  },
   searchRow: {
     marginHorizontal: 20,
     marginTop: 4,
@@ -174,21 +179,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
-  searchInput: { flex: 1, fontSize: 15 },
+  searchInput: {
+    flex: 1,
+    ...textStyles.textBody14,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     paddingVertical: 14,
-    borderBottomWidth: 1,
   },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 52,
   },
-  iata: { fontSize: 16, fontWeight: '700' },
-  city: { fontSize: 13, color: '#9ca3af', marginTop: 2 },
+  iata: {
+    ...textStyles.textBody14,
+    letterSpacing: 0.4,
+    flex: 1,
+  },
+  city: {
+    ...textStyles.textBody14,
+    textAlign: 'right',
+  },
 });

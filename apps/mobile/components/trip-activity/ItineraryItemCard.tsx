@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import {
+  ArrowUpRight,
   ChevronDown,
   ChevronUp,
   Ellipsis,
   ImageIcon,
-  MapPin,
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -152,12 +152,12 @@ const ItineraryItemCard = ({
             styles.card,
             {
               backgroundColor: colors.backgroundColors.default,
-              borderColor: dark ? COLORS.gray[750] : '#F0F0F0',
+              borderColor: dark ? COLORS.gray[750] : '#EEEEEE',
             },
             isActive && {
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: dark ? 0.45 : 0.18,
+              shadowOpacity: dark ? 0.45 : 0.12,
               shadowRadius: 12,
               elevation: 8,
             },
@@ -171,34 +171,101 @@ const ItineraryItemCard = ({
           ) : (
             <View
               style={[
+                styles.thumbnail,
                 styles.thumbnailPlaceholder,
                 { backgroundColor: dark ? '#1F1F1F' : '#F5F5F5' },
               ]}>
-              <ImageIcon size={20} color={dark ? '#4B5563' : '#D0D0D0'} />
+              <ImageIcon size={22} color={dark ? '#4B5563' : '#C9C9C9'} />
             </View>
           )}
 
           <View style={styles.content}>
-            <View
-              style={[
-                styles.typeBadge,
-                { borderColor: dark ? '#374151' : '#E9ECEF' },
-              ]}>
-              <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
+            <View style={styles.topRow}>
               <Text
-                style={[
-                  styles.typeBadgeLabel,
-                  { color: colors.textColors.default },
-                ]}>
-                {config.label}
+                style={[styles.title, { color: colors.textColors.default }]}
+                numberOfLines={2}>
+                {item.title}
               </Text>
-            </View>
 
-            <Text
-              style={[styles.title, { color: colors.textColors.default }]}
-              numberOfLines={1}>
-              {item.title}
-            </Text>
+              <View style={styles.topRight}>
+                <View
+                  style={[
+                    styles.typeBadge,
+                    { borderColor: dark ? '#2D2D2D' : '#ECECEC' },
+                  ]}>
+                  <Text style={styles.typeBadgeEmoji}>{config.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.typeBadgeLabel,
+                      { color: colors.textColors.subtle },
+                    ]}>
+                    {config.label}
+                  </Text>
+                </View>
+
+                {isMember ? (
+                  isReordering ? (
+                    <View style={styles.reorderButtons}>
+                      <Pressable
+                        onPress={onMoveUp}
+                        disabled={!canMoveUp}
+                        hitSlop={6}
+                        style={[
+                          styles.arrowBtn,
+                          !canMoveUp && styles.arrowDisabled,
+                        ]}>
+                        <ChevronUp
+                          size={16}
+                          strokeWidth={1.75}
+                          color={
+                            canMoveUp
+                              ? dark
+                                ? '#ADB5BD'
+                                : '#1A1A1A'
+                              : dark
+                                ? '#4B5563'
+                                : '#D0D0D0'
+                          }
+                        />
+                      </Pressable>
+                      <Pressable
+                        onPress={onMoveDown}
+                        disabled={!canMoveDown}
+                        hitSlop={6}
+                        style={[
+                          styles.arrowBtn,
+                          !canMoveDown && styles.arrowDisabled,
+                        ]}>
+                        <ChevronDown
+                          size={16}
+                          strokeWidth={1.75}
+                          color={
+                            canMoveDown
+                              ? dark
+                                ? '#ADB5BD'
+                                : '#1A1A1A'
+                              : dark
+                                ? '#4B5563'
+                                : '#D0D0D0'
+                          }
+                        />
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable
+                      hitSlop={10}
+                      onPress={handleOptionsPress}
+                      style={styles.menuBtn}>
+                      <Ellipsis
+                        size={16}
+                        strokeWidth={1.5}
+                        color={colors.textColors.subtle}
+                      />
+                    </Pressable>
+                  )
+                ) : null}
+              </View>
+            </View>
 
             {item.locationName ? (
               <Text
@@ -211,113 +278,34 @@ const ItineraryItemCard = ({
               </Text>
             ) : null}
 
-            {hasMapTarget ? (
-              <Pressable
-                onPress={handleOpenInMaps}
-                hitSlop={6}
-                style={[
-                  styles.mapsPill,
-                  {
-                    backgroundColor: dark ? '#1F1F1F' : '#FFF1F8',
-                    borderColor: dark ? '#374151' : '#FFD3E6',
-                  },
-                ]}>
-                <MapPin
-                  size={11}
-                  color={dark ? '#FF6FB1' : '#FF1F8C'}
-                  strokeWidth={2}
-                />
-                <Text
-                  style={[
-                    styles.mapsPillText,
-                    { color: dark ? '#FF6FB1' : '#FF1F8C' },
-                  ]}>
-                  Open in Maps
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
+            <View style={styles.spacer} />
 
-          <View style={styles.right}>
-            {isMember ? (
-              isReordering ? (
-                <View style={styles.reorderButtons}>
-                  <Pressable
-                    onPress={onMoveUp}
-                    disabled={!canMoveUp}
+            {hasMapTarget ? (
+              <View style={styles.bottomRow}>
+                <Pressable
+                  onPress={handleOpenInMaps}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.mapsLink,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}>
+                  <Text
                     style={[
-                      styles.arrowBtn,
-                      !canMoveUp && styles.arrowDisabled,
+                      styles.mapsLinkText,
+                      { color: colors.textColors.subtle },
                     ]}>
-                    <ChevronUp
-                      size={20}
-                      color={
-                        canMoveUp
-                          ? dark
-                            ? '#ADB5BD'
-                            : '#000'
-                          : dark
-                            ? '#4B5563'
-                            : '#D0D0D0'
-                      }
-                    />
-                  </Pressable>
-                  <Pressable
-                    onPress={onMoveDown}
-                    disabled={!canMoveDown}
-                    style={[
-                      styles.arrowBtn,
-                      !canMoveDown && styles.arrowDisabled,
-                    ]}>
-                    <ChevronDown
-                      size={18}
-                      strokeWidth={1.5}
-                      color={
-                        canMoveDown
-                          ? dark
-                            ? '#ADB5BD'
-                            : '#000'
-                          : dark
-                            ? '#4B5563'
-                            : '#D0D0D0'
-                      }
-                    />
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable hitSlop={12} onPress={handleOptionsPress}>
-                  <Ellipsis
-                    size={18}
-                    strokeWidth={1.5}
+                    Open in Maps
+                  </Text>
+                  <ArrowUpRight
+                    size={12}
+                    strokeWidth={1.75}
                     color={colors.textColors.subtle}
                   />
                 </Pressable>
-              )
+              </View>
             ) : null}
           </View>
         </View>
-      </Pressable>
-
-      <Pressable
-        onPress={openNotesModal}
-        style={[
-          styles.notesContainer,
-          {
-            backgroundColor: dark ? '#1A1A1A' : '#F9F9F9',
-            borderColor: dark ? '#333' : '#F0F0F0',
-          },
-        ]}>
-        <Text
-          style={[
-            styles.notesText,
-            { color: dark ? '#9BA1A6' : '#666' },
-            !item.notes && [
-              styles.notesPlaceholder,
-              { color: colors.textColors.subtle },
-            ],
-          ]}>
-          {item.notes || 'Add notes, links, etc here.'}
-        </Text>
       </Pressable>
 
       <ActionMenu
@@ -399,79 +387,93 @@ export default ItineraryItemCard;
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 5,
-    gap: 12,
+    alignItems: 'stretch',
+    minHeight: 112,
     zIndex: 1,
   },
   thumbnail: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
+    width: 104,
+    alignSelf: 'stretch',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
     flexShrink: 0,
   },
   thumbnailPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
   },
   content: {
     flex: 1,
-    gap: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: 4,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 99,
-    marginBottom: 4,
   },
   typeBadgeEmoji: {
-    fontSize: 12,
+    fontSize: 11,
   },
   typeBadgeLabel: {
     fontSize: 10,
     fontFamily: AppFonts.inter.medium,
+    letterSpacing: 0.2,
   },
   title: {
-    fontSize: 14,
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 19,
     fontFamily: AppFonts.bricolage.semiBold,
+    letterSpacing: -0.1,
   },
   locationText: {
-    fontSize: 11,
+    marginTop: 4,
+    fontSize: 12,
     fontFamily: AppFonts.inter.regular,
+    lineHeight: 16,
   },
-  mapsPill: {
+  spacer: {
+    flex: 1,
+    minHeight: 8,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  mapsLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: 4,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 99,
-    marginTop: 6,
+    paddingVertical: 2,
   },
-  mapsPillText: {
-    fontSize: 10,
+  mapsLinkText: {
+    fontSize: 11,
     fontFamily: AppFonts.inter.medium,
+    letterSpacing: 0.1,
   },
-  right: {
-    flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 24,
+  menuBtn: {
+    padding: 2,
   },
   reorderButtons: {
     flexDirection: 'column',
-    gap: 4,
+    gap: 2,
   },
   arrowBtn: {
     padding: 2,
@@ -479,20 +481,6 @@ const styles = StyleSheet.create({
   arrowDisabled: {
     opacity: 0.3,
   },
-  notesContainer: {
-    marginTop: 5,
-    paddingTop: 12,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  notesText: {
-    fontSize: 13,
-    fontFamily: AppFonts.inter.regular,
-    lineHeight: 16,
-  },
-  notesPlaceholder: {},
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

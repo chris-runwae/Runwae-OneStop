@@ -20,7 +20,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import Animated, {
@@ -178,20 +177,20 @@ export default function FlightPassengersScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <ScrollView
-            ref={scrollRef}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 18,
-              paddingBottom: 140,
-              gap: 18,
-            }}
-            showsVerticalScrollIndicator={false}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 18,
+            paddingBottom: 24,
+            gap: 18,
+          }}
+          showsVerticalScrollIndicator={false}>
+          <Pressable onPress={Keyboard.dismiss} style={{ gap: 18 }}>
             {passengers.map((p, idx) => (
               <Animated.View
                 key={idx}
@@ -344,8 +343,8 @@ export default function FlightPassengersScreen() {
                 </FieldGroup>
               </Animated.View>
             ))}
-          </ScrollView>
-        </TouchableWithoutFeedback>
+          </Pressable>
+        </ScrollView>
 
         <View
           style={[

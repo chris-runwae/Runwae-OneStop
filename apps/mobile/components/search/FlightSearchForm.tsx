@@ -17,13 +17,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -37,8 +31,6 @@ import Animated, {
 type Sheet = 'origin' | 'destination' | 'dates' | 'passengers' | null;
 
 const PINK = '#FF1F8C';
-const PINK_TINT_LIGHT = '#FFF0F7';
-const PINK_TINT_DARK = '#2A0F1B';
 
 export default function FlightSearchForm() {
   const { dark } = useTheme();
@@ -88,7 +80,6 @@ export default function FlightSearchForm() {
     setDestination(o ?? null);
   };
 
-  const tintBg = dark ? PINK_TINT_DARK : PINK_TINT_LIGHT;
   const cardBg = dark ? '#1c1c1e' : '#ffffff';
   const borderClr = dark ? '#27272a' : '#EEF0F3';
   const labelClr = dark ? '#9ca3af' : '#6B7280';
@@ -123,7 +114,7 @@ export default function FlightSearchForm() {
           },
         ]}>
         <RouteRow
-          icon={<Plane size={16} color={PINK} />}
+          icon={<Plane size={18} color={dark ? '#fff' : '#0F1115'} />}
           label="From"
           value={
             state.origin
@@ -132,7 +123,6 @@ export default function FlightSearchForm() {
           }
           placeholder={!state.origin}
           dark={dark}
-          tintBg={tintBg}
           onPress={() => setSheet('origin')}
         />
 
@@ -159,7 +149,7 @@ export default function FlightSearchForm() {
         </View>
 
         <RouteRow
-          icon={<MapPin size={16} color={PINK} />}
+          icon={<MapPin size={18} color={dark ? '#fff' : '#0F1115'} />}
           label="To"
           value={
             state.destination
@@ -168,7 +158,6 @@ export default function FlightSearchForm() {
           }
           placeholder={!state.destination}
           dark={dark}
-          tintBg={tintBg}
           onPress={() => setSheet('destination')}
         />
       </View>
@@ -180,9 +169,8 @@ export default function FlightSearchForm() {
           dark={dark}
           cardBg={cardBg}
           borderClr={borderClr}
-          tintBg={tintBg}
           onPress={() => setSheet('dates')}
-          icon={<Calendar size={15} color={PINK} />}
+          icon={<Calendar size={16} color={dark ? '#fff' : '#0F1115'} />}
           label={state.tripType === 'one-way' ? 'Date' : 'Dates'}
           value={dateLabel}
           placeholder={!state.depart}
@@ -192,14 +180,15 @@ export default function FlightSearchForm() {
           dark={dark}
           cardBg={cardBg}
           borderClr={borderClr}
-          tintBg={tintBg}
           onPress={() => setSheet('passengers')}
-          icon={<Users size={15} color={PINK} />}
+          icon={<Users size={16} color={dark ? '#fff' : '#0F1115'} />}
           label="Travellers"
           value={`${state.adults} adult${state.adults > 1 ? 's' : ''}`}
           placeholder={false}
         />
       </View>
+
+      <View style={{ height: 14 }} />
 
       <SearchButton enabled={isValid} onPress={onSearch} />
 
@@ -310,7 +299,6 @@ function RouteRow({
   value,
   placeholder,
   dark,
-  tintBg,
   onPress,
 }: {
   icon: React.ReactNode;
@@ -318,7 +306,6 @@ function RouteRow({
   value: string;
   placeholder: boolean;
   dark: boolean;
-  tintBg: string;
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
@@ -336,9 +323,7 @@ function RouteRow({
         }}
         onPress={onPress}
         style={styles.routeRow}>
-        <View style={[styles.iconWrap, { backgroundColor: tintBg }]}>
-          {icon}
-        </View>
+        <View style={styles.bareIcon}>{icon}</View>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>{label}</Text>
           <Text
@@ -363,7 +348,6 @@ function PressableCell({
   dark,
   cardBg,
   borderClr,
-  tintBg,
   onPress,
   icon,
   label,
@@ -374,7 +358,6 @@ function PressableCell({
   dark: boolean;
   cardBg: string;
   borderClr: string;
-  tintBg: string;
   onPress: () => void;
   icon: React.ReactNode;
   label: string;
@@ -400,9 +383,7 @@ function PressableCell({
           { backgroundColor: cardBg, borderColor: borderClr },
         ]}>
         <View style={styles.cellHead}>
-          <View style={[styles.cellIcon, { backgroundColor: tintBg }]}>
-            {icon}
-          </View>
+          {icon}
           <Text style={styles.label}>{label}</Text>
         </View>
         <Text
@@ -519,9 +500,9 @@ const styles = StyleSheet.create({
   routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
   },
   divider: {
     height: 1,
@@ -547,10 +528,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginTop: -18,
   },
-  iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  bareIcon: {
+    width: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -581,13 +560,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  cellIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cellValue: {
     fontSize: 15.5,

@@ -31,6 +31,7 @@ import Animated, {
   FadeOut,
   FadeOutLeft,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@react-navigation/native';
 
@@ -46,6 +47,7 @@ export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab: string }>();
   const inputRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
 
   const initialTab: SearchTab =
     params.tab === 'stays' || params.tab === 'experiences'
@@ -234,10 +236,12 @@ export default function SearchScreen() {
           <ScrollView
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingHorizontal: 20,
               paddingTop: 14,
-              paddingBottom: 32,
+              paddingBottom: insets.bottom + 48,
+              flexGrow: 1,
             }}>
             <TouchableOpacity
               onPress={() => router.back()}

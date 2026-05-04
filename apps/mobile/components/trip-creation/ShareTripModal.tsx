@@ -1,9 +1,9 @@
 import { COLORS } from '@/constants';
 import { textStyles } from '@/utils/styles';
 import * as Clipboard from 'expo-clipboard';
-import { Calendar, Check, Copy, MapPin, Upload } from 'lucide-react-native';
+import { Calendar, Check, Copy, MapPin, Share2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Toast } from 'toastify-react-native';
 import CustomModal from '../ui/CustomModal';
 
@@ -18,66 +18,6 @@ interface ShareTripModalProps {
   };
 }
 
-const ShareOption = ({
-  icon,
-  label,
-  isImage = true,
-  onPress,
-}: {
-  icon: any;
-  label: string;
-  isImage?: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    activeOpacity={0.7}
-    onPress={onPress}
-    className="mb-6 w-1/4 items-center">
-    <View className="mb-2 h-14 w-14 items-center justify-center overflow-hidden rounded-full">
-      {isImage ? (
-        <Image source={icon} className="h-full w-full" resizeMode="cover" />
-      ) : (
-        <View className="w-full flex-1 items-center justify-center bg-gray-100 dark:bg-gray-800">
-          {icon}
-        </View>
-      )}
-    </View>
-    <Text
-      className="text-[10px] text-gray-500 dark:text-gray-400"
-      style={{ fontFamily: 'BricolageGrotesque-Medium' }}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
-
-const SHARE_OPTIONS = [
-  {
-    label: 'Facebook',
-    icon: require('@/assets/images/facebook-share.png'),
-  },
-  {
-    label: 'Instagram',
-    icon: require('@/assets/images/instagram-share.png'),
-  },
-  {
-    label: 'Snapchat',
-    icon: require('@/assets/images/snap-share.png'),
-  },
-  {
-    label: 'WhatsApp',
-    icon: require('@/assets/images/whatsapp-share.png'),
-  },
-  {
-    label: 'X',
-    icon: require('@/assets/images/twitter-share.png'),
-  },
-  {
-    label: 'More',
-    icon: <Upload size={20} color="#6B7280" strokeWidth={2} />,
-    isImage: false,
-  },
-];
-
 const ShareTripModal = ({
   isVisible,
   onClose,
@@ -86,6 +26,7 @@ const ShareTripModal = ({
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
+    if (!tripData.shareLink) return;
     await Clipboard.setStringAsync(tripData.shareLink);
     setCopied(true);
     Toast.show({
@@ -97,13 +38,19 @@ const ShareTripModal = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSocialShare = (platform: string) => {
-    Toast.show({
-      type: 'info',
-      text1: 'Share',
-      text2: `Sharing to ${platform} coming soon!`,
-      position: 'bottom',
-    });
+  const handleShare = async () => {
+    if (!tripData.shareLink) return;
+    try {
+      const message = tripData.title
+        ? `Join me on ${tripData.title} — ${tripData.shareLink}`
+        : tripData.shareLink;
+      await Share.share({
+        message,
+        url: tripData.shareLink,
+      });
+    } catch {
+      // User dismissed or share failed; nothing to surface.
+    }
   };
 
   return (
@@ -117,35 +64,41 @@ const ShareTripModal = ({
       <View className="px-1">
         {/* Trip Info Section */}
         <View className="mb-6">
-          <Text
-            className="mb-3 text-xl font-bold text-black dark:text-white"
-            style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
-            {tripData.title || 'Festival in Fiji'}
-          </Text>
-
-          <View className="mb-2 flex-row items-center">
-            <MapPin size={16} color={COLORS.pink.default} />
+          {tripData.title ? (
             <Text
-              className="ml-2 text-gray-500"
-              style={{ ...textStyles.regular_14 }}>
-              {tripData.destination || 'Suva, Fiji'}
+              className="mb-3 text-xl font-bold text-black dark:text-white"
+              style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
+              {tripData.title}
             </Text>
-          </View>
+          ) : null}
 
-          <View className="flex-row items-center">
-            <Calendar size={16} color="#9CA3AF" />
-            <Text
-              className="ml-2 text-gray-500"
-              style={{ ...textStyles.regular_14 }}>
-              {tripData.dates || 'Feb 14-21 2026'}
-            </Text>
-          </View>
+          {tripData.destination ? (
+            <View className="mb-2 flex-row items-center">
+              <MapPin size={16} color={COLORS.pink.default} />
+              <Text
+                className="ml-2 text-gray-500"
+                style={{ ...textStyles.regular_14 }}>
+                {tripData.destination}
+              </Text>
+            </View>
+          ) : null}
+
+          {tripData.dates ? (
+            <View className="flex-row items-center">
+              <Calendar size={16} color="#9CA3AF" />
+              <Text
+                className="ml-2 text-gray-500"
+                style={{ ...textStyles.regular_14 }}>
+                {tripData.dates}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View className="mb-6 h-[1px] bg-gray-100 dark:bg-gray-600" />
 
         {/* Share Link Section */}
-        <View className="mb-8">
+        <View className="mb-6">
           <Text
             className="mb-3 text-sm font-semibold text-black dark:text-white"
             style={{ fontFamily: 'BricolageGrotesque-SemiBold' }}>
@@ -167,27 +120,29 @@ const ShareTripModal = ({
           </View>
         </View>
 
-        <View className="mb-6 h-[1px] bg-gray-100 dark:bg-gray-600" />
+        {/* Native Share Sheet — opens iOS/Android share UI so the user
+            can post to whichever channel they have installed. */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleShare}
+          disabled={!tripData.shareLink}
+          className={`mb-3 h-[50px] flex-row items-center justify-center rounded-full bg-primary ${
+            tripData.shareLink ? '' : 'opacity-50'
+          }`}>
+          <Share2 size={18} color="#fff" strokeWidth={2} />
+          <Text
+            className="ml-2 text-base font-semibold text-white"
+            style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
+            Share
+          </Text>
+        </TouchableOpacity>
 
-        <View className="flex-row flex-wrap justify-start">
-          {SHARE_OPTIONS.map((option, index) => (
-            <ShareOption
-              key={index}
-              label={option.label}
-              icon={option.icon}
-              isImage={option.isImage}
-              onPress={() => handleSocialShare(option.label)}
-            />
-          ))}
-        </View>
-
-        {/* Done Button */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={onClose}
-          className="mt-4 h-[50px] items-center justify-center rounded-full bg-primary">
+          className="h-[50px] items-center justify-center rounded-full border border-gray-200 dark:border-gray-700">
           <Text
-            className="text-base font-semibold text-white"
+            className="text-base font-semibold text-black dark:text-white"
             style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
             Done
           </Text>

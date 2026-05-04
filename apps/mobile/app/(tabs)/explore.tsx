@@ -18,6 +18,8 @@ import { useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { ViatorProduct } from '@/types/viator.types';
 import { mapViatorProductToExperience } from '@/utils/viator/mapViatorProductToExperience';
+import { router } from 'expo-router';
+import { ArrowRight } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   RefreshControl,
@@ -35,7 +37,17 @@ const ExploreScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { data, loading, refreshing, refresh } = useExploreData();
   const { itineraries, events, experiences, destinations } = data;
-  const { products: viatorProducts, loading: viatorLoading } = useViator();
+  // Drive the Viator row from the explore search query when present, falling
+  // back to the first featured destination's name. This replaces a hardcoded
+  // "London" search that pinned every user to the same tour list.
+  const viatorTerm = useMemo(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length > 0) return trimmed;
+    return destinations[0]?.title ?? '';
+  }, [searchQuery, destinations]);
+  const { products: viatorProducts, loading: viatorLoading } = useViator({
+    term: viatorTerm,
+  });
   const { user } = useAuth();
 
   // Public trips for Explore — server-side filtering in
@@ -60,10 +72,20 @@ const ExploreScreen = () => {
     return text.toLowerCase().includes(query.toLowerCase());
   };
 
-  // Helper for sub-category matching
-  const matchesSubCategory = (itemCategory: string, selected: string) => {
+  // Sub-category matching is intentionally permissive: pills like "Romance" or
+  // "Food & Drink" rarely match a single canonical `category` string in the
+  // data, so we substring-match (case-insensitive) against category + tags.
+  const matchesSubCategory = (
+    item: { category?: string | null; tags?: readonly string[] | string[] | null },
+    selected: string,
+  ) => {
     if (selected === 'All') return true;
-    return itemCategory === selected;
+    const needle = selected.toLowerCase();
+    const haystack = [item.category, ...(item.tags ?? [])]
+      .filter((s): s is string => typeof s === 'string' && s.length > 0)
+      .map((s) => s.toLowerCase())
+      .join(' ');
+    return haystack.includes(needle);
   };
 
   const filteredItineraries = useMemo(() => {
@@ -72,7 +94,7 @@ const ExploreScreen = () => {
     return itineraries.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
-        matchesSubCategory(item.category, selectedSubCategory)
+        matchesSubCategory(item, selectedSubCategory)
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, itineraries]);
 
@@ -82,7 +104,7 @@ const ExploreScreen = () => {
     return events.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
-        matchesSubCategory(item.category, selectedSubCategory)
+        matchesSubCategory(item, selectedSubCategory)
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, events]);
 
@@ -101,7 +123,7 @@ const ExploreScreen = () => {
     return experiences.filter(
       (item) =>
         matchesSearch(item.title, searchQuery) &&
-        matchesSubCategory(item.category, selectedSubCategory) &&
+        matchesSubCategory(item, selectedSubCategory) &&
         item.price >= minPrice &&
         item.price <= maxPrice
     );
@@ -135,10 +157,12 @@ const ExploreScreen = () => {
   const filteredDestinations = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
-    return destinations.filter((item) =>
-      matchesSearch(item.title + item.location, searchQuery)
+    return destinations.filter(
+      (item) =>
+        matchesSearch(item.title + item.location, searchQuery) &&
+        matchesSubCategory(item, selectedSubCategory),
     );
-  }, [searchQuery, selectedTopCategory, destinations]);
+  }, [searchQuery, selectedSubCategory, selectedTopCategory, destinations]);
 
   const filteredPublicTrips = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
@@ -241,6 +265,29 @@ const ExploreScreen = () => {
               />
             )}
 
+            {/* Plan-a-trip CTA — mirrors the bottom strip on web Explore so
+                discovery flows always have a clear way back to creation. */}
+            <View className="mx-5 mt-6 mb-2 overflow-hidden rounded-2xl bg-primary">
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() =>
+                  router.push('/create-trip-options' as any)
+                }
+                className="flex-row items-center justify-between px-5 py-5">
+                <View className="flex-1 pr-4">
+                  <Text className="text-lg font-bold text-white">
+                    Have a destination in mind?
+                  </Text>
+                  <Text className="mt-1 text-sm text-white/85">
+                    Plan a trip in minutes — invite friends, vote, book.
+                  </Text>
+                </View>
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-white/20">
+                  <ArrowRight size={18} color="#fff" strokeWidth={2.4} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
             {filteredItineraries.length === 0 &&
               filteredEvents.length === 0 &&
               filteredExperiences.length === 0 &&
@@ -277,7 +324,7 @@ const ExploreScreen = () => {
               Category
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {['All', 'Trips', 'Hotels', 'Experiences'].map((cat, i) => (
+              {['All', 'Trips', 'Experiences'].map((cat, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => setSelectedTopCategory(cat)}

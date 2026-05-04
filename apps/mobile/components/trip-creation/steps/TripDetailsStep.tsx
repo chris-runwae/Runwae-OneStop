@@ -1,3 +1,4 @@
+import { getCurrencySymbol } from "@/utils/currency";
 import React from "react";
 import {
   Image,
@@ -8,6 +9,28 @@ import {
   View,
 } from "react-native";
 
+export type TripVisibility = "private" | "invite_only" | "public";
+
+const CURRENCY_CHOICES = ["GBP", "USD", "EUR", "JPY", "CAD", "AUD"] as const;
+
+const VISIBILITY_CHOICES: { value: TripVisibility; label: string; hint: string }[] = [
+  {
+    value: "private",
+    label: "Private",
+    hint: "Only people you add can see this trip.",
+  },
+  {
+    value: "invite_only",
+    label: "Invite-only",
+    hint: "Visible to anyone with the join code or link.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    hint: "Anyone on Runwae can discover this trip.",
+  },
+];
+
 interface TripDetailsStepProps {
   width: number;
   dark: boolean;
@@ -17,6 +40,13 @@ interface TripDetailsStepProps {
   setDescription: (description: string) => void;
   image: string | null;
   pickImage: () => Promise<void>;
+  // Currency / visibility are optional so the legacy (tabs)/create-trip
+  // variant keeps compiling. The new pickers are only rendered when both
+  // value + setter are provided.
+  currency?: string;
+  setCurrency?: (currency: string) => void;
+  visibility?: TripVisibility;
+  setVisibility?: (visibility: TripVisibility) => void;
 }
 
 export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
@@ -28,7 +58,14 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
   setDescription,
   image,
   pickImage,
+  currency,
+  setCurrency,
+  visibility,
+  setVisibility,
 }) => {
+  const showCurrencyPicker = currency !== undefined && setCurrency !== undefined;
+  const showVisibilityPicker =
+    visibility !== undefined && setVisibility !== undefined;
   return (
     <View style={{ width }} className="px-5 pt-8">
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -49,7 +86,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
 
           <TextInput
             className="bg-gray-100 dark:bg-dark-seconndary p-4 rounded-xl dark:text-white"
-            placeholder="Placeholder"
+            placeholder="Weekend in Lisbon"
             placeholderTextColor={dark ? "#666" : "#999"}
             value={title}
             onChangeText={setTitle}
@@ -63,7 +100,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
 
           <TextInput
             className="bg-gray-100 dark:bg-dark-seconndary p-4 rounded-xl dark:text-white h-32"
-            placeholder="Placeholder"
+            placeholder="What's the vibe? Who's coming? Anything we should know?"
             placeholderTextColor={dark ? "#666" : "#999"}
             multiline
             textAlignVertical="top"
@@ -71,6 +108,77 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
             onChangeText={setDescription}
           />
         </View>
+
+        {showCurrencyPicker && (
+          <View className="mb-6">
+            <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
+              Currency
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {CURRENCY_CHOICES.map((code) => {
+                const selected = code === currency;
+                return (
+                  <TouchableOpacity
+                    key={code}
+                    onPress={() => setCurrency!(code)}
+                    className={`px-4 py-2 rounded-full border ${
+                      selected
+                        ? "bg-primary border-primary"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        selected ? "text-white" : "text-black dark:text-white"
+                      }`}
+                    >
+                      {getCurrencySymbol(code)} {code}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {showVisibilityPicker && (
+          <View className="mb-6">
+            <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
+              Who can see this trip?
+            </Text>
+            <View className="flex-row gap-2">
+              {VISIBILITY_CHOICES.map((option) => {
+                const selected = option.value === visibility;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    onPress={() => setVisibility!(option.value)}
+                    className={`flex-1 px-3 py-3 rounded-xl border items-center ${
+                      selected
+                        ? "bg-primary border-primary"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-semibold ${
+                        selected ? "text-white" : "text-black dark:text-white"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {VISIBILITY_CHOICES.find((v) => v.value === visibility)?.hint}
+            </Text>
+          </View>
+        )}
 
         <View className="mb-10">
           <Text className="text-sm font-semibold mb-2 dark:text-gray-300">

@@ -17,57 +17,6 @@ export interface Trip {
   extraMembers: number;
 }
 
-export const UPCOMING_TRIPS: Trip[] = [
-  {
-    id: '1',
-    title: 'Festival in Fiji',
-    location: 'Suva, Fiji',
-    dateRange: 'Feb 14-21 2026',
-    duration: '3 days',
-    items: 12,
-    role: 'Leader',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
-    members: [
-      { initials: 'KD', color: '#ef4444' },
-      { initials: 'AH', color: '#a855f7' },
-      { image: 'https://i.pravatar.cc/100?img=3' },
-      { image: 'https://i.pravatar.cc/100?img=4' },
-    ],
-    extraMembers: 2,
-  },
-  {
-    id: '2',
-    title: 'Safari Adventure',
-    location: 'Nairobi, Kenya',
-    dateRange: 'Mar 5-12 2026',
-    duration: '7 days',
-    items: 8,
-    role: 'Member',
-    image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600',
-    members: [
-      { initials: 'JM', color: '#3b82f6' },
-      { image: 'https://i.pravatar.cc/100?img=5' },
-    ],
-    extraMembers: 0,
-  },
-  {
-    id: '3',
-    title: 'City Break',
-    location: 'Tokyo, Japan',
-    dateRange: 'Apr 1-5 2026',
-    duration: '4 days',
-    items: 5,
-    role: 'Leader',
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600',
-    members: [
-      { initials: 'YT', color: '#f59e0b' },
-      { image: 'https://i.pravatar.cc/100?img=8' },
-      { initials: 'LS', color: '#10b981' },
-    ],
-    extraMembers: 4,
-  },
-];
-
 export interface ItineraryIncluded {
   icon: string;
   title: string;

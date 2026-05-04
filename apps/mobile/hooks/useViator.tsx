@@ -33,7 +33,22 @@ function toViatorProduct(item: any): ViatorProduct {
   } as unknown as ViatorProduct;
 }
 
-export function useViator() {
+export interface UseViatorOptions {
+  // Free-text search term. Falls back to a sensible default when empty so
+  // the row never renders blank on first paint.
+  term?: string;
+  // Pre-resolved coordinates from upstream geocoding (optional). When
+  // provided, the discovery layer can rank results by proximity.
+  latitude?: number;
+  longitude?: number;
+  category?: string;
+  limit?: number;
+}
+
+const DEFAULT_TERM = 'top tours';
+
+export function useViator(options: UseViatorOptions = {}) {
+  const { term, latitude, longitude, category = 'tour', limit = 30 } = options;
   const [products, setProducts] = useState<ViatorProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +59,14 @@ export function useViator() {
     setError(null);
     setLoading(true);
     try {
+      const trimmed = term?.trim();
       const items = await searchByCategory({
-        category: 'tour',
-        term: 'London',
-        limit: 30,
+        category,
+        term: trimmed && trimmed.length > 0 ? trimmed : DEFAULT_TERM,
+        limit,
+        ...(typeof latitude === 'number' && typeof longitude === 'number'
+          ? { lat: latitude, lng: longitude }
+          : {}),
       });
       setProducts(items.map(toViatorProduct));
     } catch (err) {
@@ -55,7 +74,7 @@ export function useViator() {
     } finally {
       setLoading(false);
     }
-  }, [searchByCategory]);
+  }, [searchByCategory, term, category, limit, latitude, longitude]);
 
   useEffect(() => {
     fetchProducts();

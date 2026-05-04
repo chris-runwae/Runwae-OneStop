@@ -5,6 +5,7 @@ import { useDateRange } from "@marceloterreiro/flash-calendar";
 
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
+import { COLORS } from "@/constants/theme";
 import { useTheme } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,9 +20,10 @@ import React, {
 import TripCreatedModal from "@/components/trip-creation/TripCreatedModal";
 import ShareTripModal from "@/components/trip-creation/ShareTripModal";
 import TemplatePickerModal from "@/components/trip-creation/TemplatePickerModal";
+import type { TripVisibility } from "@/components/trip-creation/steps/TripDetailsStep";
 import { useAuth } from "@/context/AuthContext";
 import { useCreateFromTemplate, useCreateTrip } from "@/hooks/useTripActions";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@runwae/convex/convex/_generated/api";
 import { uploadImageFromUri } from "@/lib/uploadImage";
 import {
@@ -58,13 +60,29 @@ const CreateTrip = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [createdTrip, setCreatedTrip] = useState<any>(null);
+  const [currency, setCurrency] = useState("GBP");
+  const [visibility, setVisibility] = useState<TripVisibility>("private");
 
   const { user } = useAuth();
   const createTripMut = useCreateTrip();
   const createFromTemplateMut = useCreateFromTemplate();
   const generateUrlMut = useMutation(api.users.generateImageUploadUrl);
   const resolveUrlMut = useMutation(api.users.resolveStorageUrl);
+  const currentUser = useQuery(api.users.getCurrentUser, {});
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+
+  // Pre-fill the currency picker with the user's saved preference once the
+  // viewer query resolves. We only set it once so an explicit user choice
+  // sticks even if the query later refreshes.
+  const hasInitCurrency = useRef(false);
+  useEffect(() => {
+    if (hasInitCurrency.current) return;
+    const pref = currentUser?.preferredCurrency;
+    if (typeof pref === "string" && pref.length > 0) {
+      setCurrency(pref);
+      hasInitCurrency.current = true;
+    }
+  }, [currentUser]);
 
   const { calendarActiveDateRanges, onCalendarDayPress, dateRange } =
     useDateRange();
@@ -126,7 +144,7 @@ const CreateTrip = () => {
     () => ({
       itemDayContainer: {
         activeDayFiller: {
-          backgroundColor: "#FF2E92",
+          backgroundColor: COLORS.pink.default,
         },
       },
       itemDay: {
@@ -134,7 +152,7 @@ const CreateTrip = () => {
           container: isToday
             ? {
                 borderRadius: 20,
-                backgroundColor: "#FF2E92",
+                backgroundColor: COLORS.pink.default,
               }
             : {},
           content: isToday
@@ -148,7 +166,7 @@ const CreateTrip = () => {
         }),
         active: ({ isToday }: { isToday: boolean }) => ({
           container: {
-            backgroundColor: "#FF2E92",
+            backgroundColor: COLORS.pink.default,
           },
           content: {
             color: "#fff",
@@ -202,6 +220,10 @@ const CreateTrip = () => {
               setDescription={setDescription}
               image={image}
               pickImage={pickImage}
+              currency={currency}
+              setCurrency={setCurrency}
+              visibility={visibility}
+              setVisibility={setVisibility}
             />
           );
         default:
@@ -224,6 +246,8 @@ const CreateTrip = () => {
       title,
       description,
       image,
+      currency,
+      visibility,
     ],
   );
 
@@ -258,8 +282,8 @@ const CreateTrip = () => {
         destinationLabel: destination.trim(),
         startDate: selectedDates.startId || "",
         endDate: selectedDates.endId || selectedDates.startId || "",
-        visibility: "private",
-        currency: "GBP",
+        visibility,
+        currency,
         coverImageUrl,
       });
 
@@ -295,9 +319,13 @@ const CreateTrip = () => {
   }, [currentStep, destination, selectedDates, title]);
 
   const shareLink = useMemo(() => {
-    if (!createdTrip) return "";
-    const slug = createdTrip.title.toLowerCase().replace(/ /g, "");
-    return `https://${slug}trip.runwae`;
+    if (!createdTrip?.slug) return "";
+    // The web app exposes trips at /t/<slug>. Override the host via
+    // EXPO_PUBLIC_WEB_URL when previewing against a non-prod deploy.
+    const host =
+      process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, "") ??
+      "https://runwae.com";
+    return `${host}/t/${createdTrip.slug}`;
   }, [createdTrip]);
 
   const formattedDates = useMemo(() => {

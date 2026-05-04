@@ -1,14 +1,15 @@
+import { api } from "@runwae/convex/convex/_generated/api";
 import { useTheme } from "@react-navigation/native";
+import { useQuery } from "convex/react";
 import { router } from "expo-router";
 import { Bell } from "lucide-react-native";
-import { useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 
 const NotificationBell = () => {
   const { dark } = useTheme();
 
-  // TODO: Replace with real notification check
-  const [hasNewNotification] = useState(true);
+  const unread = useQuery(api.notifications.unreadCount, {});
+  const hasNewNotification = (unread ?? 0) > 0;
 
   return (
     <TouchableOpacity

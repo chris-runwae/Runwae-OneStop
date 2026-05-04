@@ -40,9 +40,8 @@ interface TripDetailsStepProps {
   setDescription: (description: string) => void;
   image: string | null;
   pickImage: () => Promise<void>;
-  // Currency / visibility are optional so the legacy (tabs)/create-trip
-  // variant keeps compiling. The new pickers are only rendered when both
-  // value + setter are provided.
+  // Pickers are gated on the value + setter being provided so the
+  // component remains usable for read-only flows that don't need them.
   currency?: string;
   setCurrency?: (currency: string) => void;
   visibility?: TripVisibility;

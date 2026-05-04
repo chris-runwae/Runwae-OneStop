@@ -1,3 +1,4 @@
+import ExploreHero from '@/components/explore/ExploreHero';
 import AddOnsForYou from '@/components/home/AddOnsForYou';
 import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ExploreCategories from '@/components/home/ExploreCategories';
@@ -198,6 +199,14 @@ const ExploreScreen = () => {
           <ExploreSkeleton />
         ) : (
           <>
+            {/* Hero banner — only when no filters/search are narrowing the
+                feed, mirroring web's behaviour. Hidden when destinations
+                hasn't loaded yet to avoid a layout pop. */}
+            {searchQuery.trim() === '' &&
+              selectedSubCategory === 'All' &&
+              selectedTopCategory === 'All' &&
+              destinations[0] && <ExploreHero destination={destinations[0]} />}
+
             <ExploreCategories
               categories={EXPLORE_CATEGORIES}
               selectedCategory={selectedSubCategory}
@@ -225,7 +234,10 @@ const ExploreScreen = () => {
               />
             )}
 
-            {filteredPublicTrips.length > 0 && (
+            {/* Public trips arrive on a separate query than the main
+                explore feed, so keep the row mounted while it loads to
+                avoid a layout pop when results stream in. */}
+            {(publicTripsLoading || filteredPublicTrips.length > 0) && (
               <PublicTripsSection
                 data={filteredPublicTrips}
                 loading={publicTripsLoading}
@@ -245,7 +257,9 @@ const ExploreScreen = () => {
               />
             )}
 
-            {mappedViatorExperiences.length > 0 && (
+            {/* Viator hits an external API; render a skeleton row while
+                it's still resolving instead of a blank gap. */}
+            {(viatorLoading || mappedViatorExperiences.length > 0) && (
               <AddOnsForYou
                 data={mappedViatorExperiences}
                 title="Tours & Activities"

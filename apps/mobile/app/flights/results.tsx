@@ -8,13 +8,8 @@ import { Image as ExpoImage } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ArrowRight, Plane } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -61,7 +56,7 @@ export default function FlightResultsScreen() {
           setError(
             err instanceof Error
               ? err.message
-              : 'Could not load flights. Please try again.',
+              : 'Could not load flights. Please try again.'
           );
         }
       });
@@ -90,11 +85,7 @@ export default function FlightResultsScreen() {
     <AppSafeAreaView
       edges={['top']}
       style={{ flex: 1, backgroundColor: dark ? '#0d0d0d' : '#F8F9FA' }}>
-      <View
-        style={[
-          styles.header,
-          { borderBottomColor: dividerColor },
-        ]}>
+      <View style={[styles.header, { borderBottomColor: dividerColor }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
@@ -144,23 +135,27 @@ export default function FlightResultsScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={results}
           keyExtractor={(item) => item.apiRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 32 }}
           ItemSeparatorComponent={() => (
-            <View
-              style={[
-                styles.separator,
-                { backgroundColor: dividerColor },
-              ]}
-            />
+            <>
+              <View
+                style={[styles.separator, { backgroundColor: dividerColor }]}
+              />
+              <View style={{ height: 8 }} />
+            </>
           )}
           ListHeaderComponent={
-            <Text style={[styles.resultsCount, { color: dark ? '#9ca3af' : '#6B7280' }]}>
-              {results.length} flight{results.length === 1 ? '' : 's'}
-              {' '}· sorted by price
+            <Text
+              style={[
+                styles.resultsCount,
+                { color: dark ? '#9ca3af' : '#6B7280' },
+              ]}>
+              {results.length} flight{results.length === 1 ? '' : 's'} · sorted
+              by price
             </Text>
           }
           renderItem={({ item, index }) => (
@@ -223,24 +218,19 @@ function OfferRow({
         onPressOut={() => {
           scale.value = withSpring(1, { damping: 18, stiffness: 320 });
         }}
-        style={({ pressed }) => [
-          styles.row,
-          pressed && {
-            backgroundColor: dark ? '#141416' : '#FAFBFC',
-          },
-        ]}>
+        style={styles.row}>
         <View style={styles.logoWrap}>
           {item.imageUrl ? (
             <ExpoImage
               source={{ uri: item.imageUrl }}
-              style={{ width: 28, height: 28 }}
+              style={{ width: 48, height: 48 }}
               contentFit="contain"
             />
           ) : (
             <Plane size={18} color={dark ? '#fff' : '#0F1115'} />
           )}
         </View>
-        <View style={{ flex: 1 }}>
+        <View>
           <Text
             style={[styles.title, { color: dark ? '#fff' : '#0F1115' }]}
             numberOfLines={1}>
@@ -251,10 +241,12 @@ function OfferRow({
               {item.description}
             </Text>
           ) : null}
+
+          <View style={{ height: 8 }} />
+          <Text style={[styles.price, { color: dark ? '#fff' : '#0F1115' }]}>
+            {priceLabel}
+          </Text>
         </View>
-        <Text style={[styles.price, { color: dark ? '#fff' : '#0F1115' }]}>
-          {priceLabel}
-        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -304,6 +296,7 @@ const styles = StyleSheet.create({
   separator: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 20,
+    marginTop: 8,
   },
   row: {
     flexDirection: 'row',
@@ -313,8 +306,8 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   logoWrap: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },

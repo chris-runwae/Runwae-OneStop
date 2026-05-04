@@ -433,10 +433,7 @@ function SearchButton({
         onPressOut={() => {
           scale.value = withSpring(1, { damping: 18, stiffness: 320 });
         }}
-        style={({ pressed }) => [
-          styles.searchBtn,
-          pressed && enabled && { opacity: 0.92 },
-        ]}>
+        style={[styles.searchBtn]}>
         <Text style={styles.searchBtnText}>Search flights</Text>
         {enabled ? (
           <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut}>

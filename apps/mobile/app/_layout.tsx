@@ -129,6 +129,8 @@ function RouteGuard() {
     'search',
     'flights',
     'hotels',
+    'hotels-search',
+    'experiences-search',
     'invite',
     'trip',
     'feed',
@@ -167,6 +169,8 @@ function RouteGuard() {
     'flights',
     'hotel',
     'hotels',
+    'hotels-search',
+    'experiences-search',
     'invite',
     'trip',
     'feed',
@@ -208,6 +212,14 @@ function RouteGuard() {
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen
         name="flights"
+        options={{ presentation: 'modal', headerShown: false }}
+      />
+      <Stack.Screen
+        name="hotels-search"
+        options={{ presentation: 'modal', headerShown: false }}
+      />
+      <Stack.Screen
+        name="experiences-search"
         options={{ presentation: 'modal', headerShown: false }}
       />
       <Stack.Screen name="hotel" options={{ headerShown: false }} />

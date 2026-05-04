@@ -1,6 +1,8 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import AnimatedTabBar, { type AnimatedTab } from '@/components/ui/AnimatedTabBar';
 import FlightSearchForm from '@/components/search/FlightSearchForm';
+import HotelSearchForm from '@/components/search/HotelSearchForm';
+import ExperiencesSearchForm from '@/components/search/ExperiencesSearchForm';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getLinkPreview } from 'link-preview-js';
@@ -273,52 +275,8 @@ export default function SearchScreen() {
             {activeTab === 'stays' && (
               <Animated.View
                 entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(200)}
-                className="relative z-50 mt-2 px-2">
-                <View className="mb-8 flex-row items-center justify-between">
-                  <Text className="text-lg font-semibold text-black dark:text-white">
-                    Where are you staying?
-                  </Text>
-                </View>
-
-                <View className="z-50 mb-2">
-                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                    Destination
-                  </Text>
-                  {renderSearchBar('Search city, hotel, or address')}
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 mb-8 flex-row items-center justify-between">
-                  <View className="flex-1 border-r border-gray-200 dark:border-gray-800">
-                    <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
-                      Check-in
-                    </Text>
-                    <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                      Select date
-                    </Text>
-                  </View>
-                  <View className="flex-1 pl-4">
-                    <Text className="mb-1 ml-2 text-[14px] font-medium text-gray-500">
-                      Check-out
-                    </Text>
-                    <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                      Select date
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 flex-row items-center justify-between">
-                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                    Guests & Rooms
-                  </Text>
-                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                    <ChevronDown size={18} color="#6b7280" />
-                  </View>
-                </View>
+                exiting={FadeOut.duration(200)}>
+                <HotelSearchForm />
               </Animated.View>
             )}
 
@@ -326,42 +284,8 @@ export default function SearchScreen() {
             {activeTab === 'experiences' && (
               <Animated.View
                 entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(200)}
-                className="relative z-50 mt-2 px-2">
-                <View className="mb-8 flex-row items-center justify-between">
-                  <Text className="text-lg font-semibold text-black dark:text-white">
-                    What are you looking for?
-                  </Text>
-                </View>
-
-                <View className="z-50 mb-2">
-                  <Text className="mb-3 ml-2 text-[14px] font-medium text-gray-500">
-                    Location or Activity
-                  </Text>
-                  {renderSearchBar('Find activities, tours, or places')}
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 mb-2">
-                  <Text className="mb-2 ml-2 text-[14px] font-medium text-gray-500">
-                    Dates
-                  </Text>
-                  <Text className="ml-2 text-[16px] font-medium text-gray-900 dark:text-white">
-                    Anytime
-                  </Text>
-                </View>
-
-                <View className="-z-10 my-6 h-[1px] w-full bg-gray-200 dark:bg-gray-800" />
-
-                <View className="-z-10 flex-row items-center justify-between">
-                  <Text className="ml-2 text-[16px] font-medium text-gray-600 dark:text-gray-300">
-                    Guests
-                  </Text>
-                  <View className="mr-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-                    <ChevronDown size={18} color="#6b7280" />
-                  </View>
-                </View>
+                exiting={FadeOut.duration(200)}>
+                <ExperiencesSearchForm />
               </Animated.View>
             )}
           </ScrollView>

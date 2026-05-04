@@ -10,7 +10,14 @@ import { POPULAR_DESTINATIONS, type DuffelOfferDetail } from "./providers/duffel
 // to duplicate it.
 export const popularAirports = query({
   args: {},
-  handler: async (): Promise<ReadonlyArray<{ iata: string; city: string }>> => {
+  handler: async (): Promise<
+    ReadonlyArray<{
+      iata: string;
+      city: string;
+      name?: string;
+      country?: string;
+    }>
+  > => {
     return POPULAR_DESTINATIONS;
   },
 });

@@ -48,9 +48,13 @@ export default function LocationPicker({
     const filtered = base.filter((a) => a.iata !== excludeIata);
     const q = query.trim().toUpperCase();
     if (!q) return filtered;
-    return filtered.filter(
-      (a) => a.iata.includes(q) || a.city.toUpperCase().includes(q)
-    );
+    return filtered.filter((a) => {
+      if (a.iata.includes(q)) return true;
+      if (a.city.toUpperCase().includes(q)) return true;
+      if (a.name && a.name.toUpperCase().includes(q)) return true;
+      if (a.country && a.country.toUpperCase().includes(q)) return true;
+      return false;
+    });
   }, [popular, query, excludeIata]);
 
   // Allow free-text IATA entry — useful for airports outside the curated list.
@@ -129,24 +133,29 @@ export default function LocationPicker({
               No airports match your search.
             </Text>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                onSelect(item);
-                reset();
-              }}
-              style={styles.row}>
-              <Plane size={18} color={colors.icon} strokeWidth={1.8} />
-              <Text style={[styles.iata, { color: colors.icon }]}>
-                {item.iata}
-              </Text>
-              <Text
-                style={[styles.city, { color: colors.textColors.subtitle }]}
-                numberOfLines={1}>
-                {item.city}
-              </Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const subtitle = item.name
+              ? `${item.city} · ${item.name}`
+              : item.city;
+            return (
+              <Pressable
+                onPress={() => {
+                  onSelect(item);
+                  reset();
+                }}
+                style={styles.row}>
+                <Plane size={18} color={colors.icon} strokeWidth={1.8} />
+                <Text style={[styles.iata, { color: colors.icon }]}>
+                  {item.iata}
+                </Text>
+                <Text
+                  style={[styles.city, { color: colors.textColors.subtitle }]}
+                  numberOfLines={1}>
+                  {subtitle}
+                </Text>
+              </Pressable>
+            );
+          }}
         />
       </View>
     </Modal>

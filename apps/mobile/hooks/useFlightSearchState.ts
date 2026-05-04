@@ -1,6 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 
-export type Airport = { iata: string; city: string };
+export type Airport = {
+  iata: string;
+  city: string;
+  name?: string;
+  country?: string;
+};
 export type TripType = 'one-way' | 'round-trip';
 
 export type FlightSearchState = {

@@ -19,15 +19,68 @@ const VERSION = "v2";
 // destinations so the home Fly chip surfaces a varied set of route ideas.
 // Order is preserved when filtering — earlier entries appear first if `limit`
 // clips the list.
-export const POPULAR_DESTINATIONS: ReadonlyArray<{ iata: string; city: string }> = [
-  { iata: "LIS", city: "Lisbon" },
-  { iata: "BCN", city: "Barcelona" },
-  { iata: "AMS", city: "Amsterdam" },
-  { iata: "CDG", city: "Paris" },
-  { iata: "JFK", city: "New York" },
-  { iata: "DXB", city: "Dubai" },
-  { iata: "LOS", city: "Lagos" },
-  { iata: "LAX", city: "Los Angeles" },
+export type Airport = {
+  iata: string;
+  city: string;
+  name?: string;
+  country?: string;
+};
+
+export const POPULAR_DESTINATIONS: ReadonlyArray<Airport> = [
+  // London
+  { iata: "LHR", city: "London", name: "Heathrow", country: "UK" },
+  { iata: "LGW", city: "London", name: "Gatwick", country: "UK" },
+  { iata: "STN", city: "London", name: "Stansted", country: "UK" },
+  { iata: "LCY", city: "London", name: "City", country: "UK" },
+  { iata: "LTN", city: "London", name: "Luton", country: "UK" },
+  // New York
+  { iata: "JFK", city: "New York", name: "John F. Kennedy", country: "USA" },
+  { iata: "LGA", city: "New York", name: "LaGuardia", country: "USA" },
+  { iata: "EWR", city: "Newark", name: "Liberty", country: "USA" },
+  // Paris
+  { iata: "CDG", city: "Paris", name: "Charles de Gaulle", country: "France" },
+  { iata: "ORY", city: "Paris", name: "Orly", country: "France" },
+  // Tokyo
+  { iata: "HND", city: "Tokyo", name: "Haneda", country: "Japan" },
+  { iata: "NRT", city: "Tokyo", name: "Narita", country: "Japan" },
+  // Other major hubs
+  { iata: "AMS", city: "Amsterdam", name: "Schiphol", country: "Netherlands" },
+  { iata: "FRA", city: "Frankfurt", name: "Frankfurt am Main", country: "Germany" },
+  { iata: "MAD", city: "Madrid", name: "Barajas", country: "Spain" },
+  { iata: "BCN", city: "Barcelona", name: "El Prat", country: "Spain" },
+  { iata: "LIS", city: "Lisbon", name: "Humberto Delgado", country: "Portugal" },
+  { iata: "FCO", city: "Rome", name: "Fiumicino", country: "Italy" },
+  { iata: "MXP", city: "Milan", name: "Malpensa", country: "Italy" },
+  { iata: "ZRH", city: "Zurich", name: "Kloten", country: "Switzerland" },
+  { iata: "DUB", city: "Dublin", name: "Dublin", country: "Ireland" },
+  { iata: "CPH", city: "Copenhagen", name: "Kastrup", country: "Denmark" },
+  { iata: "ARN", city: "Stockholm", name: "Arlanda", country: "Sweden" },
+  { iata: "IST", city: "Istanbul", name: "Istanbul Airport", country: "Turkey" },
+  { iata: "DXB", city: "Dubai", name: "Dubai International", country: "UAE" },
+  { iata: "DOH", city: "Doha", name: "Hamad International", country: "Qatar" },
+  { iata: "SIN", city: "Singapore", name: "Changi", country: "Singapore" },
+  { iata: "HKG", city: "Hong Kong", name: "Chek Lap Kok", country: "Hong Kong" },
+  { iata: "ICN", city: "Seoul", name: "Incheon", country: "South Korea" },
+  { iata: "BKK", city: "Bangkok", name: "Suvarnabhumi", country: "Thailand" },
+  { iata: "SYD", city: "Sydney", name: "Kingsford Smith", country: "Australia" },
+  { iata: "JNB", city: "Johannesburg", name: "O. R. Tambo", country: "South Africa" },
+  { iata: "LOS", city: "Lagos", name: "Murtala Muhammed", country: "Nigeria" },
+  { iata: "NBO", city: "Nairobi", name: "Jomo Kenyatta", country: "Kenya" },
+  { iata: "CAI", city: "Cairo", name: "Cairo International", country: "Egypt" },
+  // North America
+  { iata: "LAX", city: "Los Angeles", name: "Los Angeles International", country: "USA" },
+  { iata: "SFO", city: "San Francisco", name: "San Francisco International", country: "USA" },
+  { iata: "ORD", city: "Chicago", name: "O'Hare", country: "USA" },
+  { iata: "MIA", city: "Miami", name: "Miami International", country: "USA" },
+  { iata: "BOS", city: "Boston", name: "Logan", country: "USA" },
+  { iata: "ATL", city: "Atlanta", name: "Hartsfield-Jackson", country: "USA" },
+  { iata: "SEA", city: "Seattle", name: "Sea-Tac", country: "USA" },
+  { iata: "YYZ", city: "Toronto", name: "Pearson", country: "Canada" },
+  { iata: "YVR", city: "Vancouver", name: "Vancouver International", country: "Canada" },
+  // South America
+  { iata: "GRU", city: "São Paulo", name: "Guarulhos", country: "Brazil" },
+  { iata: "GIG", city: "Rio de Janeiro", name: "Galeão", country: "Brazil" },
+  { iata: "MEX", city: "Mexico City", name: "Benito Juárez", country: "Mexico" },
 ];
 
 async function fetchOffersForRoute(

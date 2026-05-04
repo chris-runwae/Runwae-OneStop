@@ -233,13 +233,18 @@ export default function SearchScreen() {
           className="flex-1">
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}>
+            keyboardDismissMode="interactive"
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 14,
+              paddingBottom: 32,
+            }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              className="flex h-[35px] w-[35px] items-center justify-center rounded-full bg-gray-200 dark:bg-dark-seconndary">
+              className="h-[38px] w-[38px] items-center justify-center rounded-full bg-gray-100 dark:bg-dark-seconndary">
               <ArrowLeft
                 size={18}
-                strokeWidth={1.5}
+                strokeWidth={1.8}
                 color={dark ? '#ffffff' : '#000000'}
               />
             </TouchableOpacity>

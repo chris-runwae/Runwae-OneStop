@@ -1,6 +1,9 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
+import { useBoarding } from "@/context/BoardingContext";
+import { api } from "@runwae/convex/convex/_generated/api";
+import { useMutation } from "convex/react";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -9,7 +12,9 @@ import { Text, TouchableOpacity, View } from "react-native";
 const BoardingStep5 = () => {
   const router = useRouter();
   const { completeBoarding, setCurrentBoardingStep } = useAuth();
-  const [selectedBudget, setSelectedBudget] = useState<string>("");
+  const { budget, setBudget, collectedTags, reset } = useBoarding();
+  const updateProfile = useMutation(api.users.updateProfile);
+  const [selectedBudget, setSelectedBudget] = useState<string>(budget ?? "");
 
   const budgetOptions = [
     "💸 Free & budget-friendly",
@@ -19,6 +24,21 @@ const BoardingStep5 = () => {
 
   const handleComplete = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (selectedBudget) setBudget(selectedBudget);
+    const tags = collectedTags();
+    // Persist tags before navigating; falls through silently if the
+    // profile mutation fails so onboarding still completes.
+    try {
+      const finalTags = selectedBudget && !tags.includes(selectedBudget.trim())
+        ? [...tags, selectedBudget.trim()]
+        : tags;
+      if (finalTags.length > 0) {
+        await updateProfile({ travellerTags: finalTags });
+      }
+    } catch (err) {
+      console.warn('[boarding] failed to persist travellerTags', err);
+    }
+    reset();
     await completeBoarding();
     router.replace("/(tabs)");
   };

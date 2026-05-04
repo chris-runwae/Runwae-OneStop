@@ -12,8 +12,8 @@ export default function HomeQuickActions({ dark }: Props) {
   const router = useRouter();
 
   return (
-    <View className="gap-y-6">
-      <View className="flex-row justify-between px-2">
+    <View className="gap-y-6 px-5">
+      <View className="flex-row justify-between">
         <CategoryItem
           imageSrc={require('@/assets/images/plane.png')}
           label="Flights"
@@ -43,7 +43,7 @@ export default function HomeQuickActions({ dark }: Props) {
       <View className="h-[1px] w-full bg-gray-100 dark:bg-dark-seconndary" />
 
       <Pressable
-        className="flex-row items-center gap-x-2 px-2"
+        className="flex-row items-center gap-x-2"
         onPress={() => router.push('/search')}>
         <View className="flex-row items-center gap-x-1">
           <Sparkles size={12} fill="#ec4899" stroke="#ec4899" />
@@ -56,7 +56,7 @@ export default function HomeQuickActions({ dark }: Props) {
       </Pressable>
 
       <Pressable
-        className="h-14 flex-row items-center gap-x-3 rounded-full bg-white px-4 dark:bg-dark-seconndary"
+        className="h-14 flex-row items-center gap-x-3 rounded-full bg-white px-5 dark:bg-dark-seconndary"
         style={{
           shadowColor: dark ? '#ffffff' : '#000000',
           shadowOffset: { width: 0, height: 2 },

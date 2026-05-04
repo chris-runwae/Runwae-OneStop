@@ -1,6 +1,7 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
+import { useBoarding } from "@/context/BoardingContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -9,7 +10,8 @@ import { Text, TouchableOpacity, View } from "react-native";
 const BoardingStep4 = () => {
   const router = useRouter();
   const { setCurrentBoardingStep } = useAuth();
-  const [selectedCompanion, setSelectedCompanion] = useState<string>("");
+  const { companion, setCompanion } = useBoarding();
+  const [selectedCompanion, setSelectedCompanion] = useState<string>(companion ?? "");
 
   const companionOptions = [
     "🙋🏽 Just Me (Solo)",
@@ -21,6 +23,7 @@ const BoardingStep4 = () => {
 
   const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCompanion(selectedCompanion || null);
     await setCurrentBoardingStep(5);
     router.push("/boarding/step-5");
   };

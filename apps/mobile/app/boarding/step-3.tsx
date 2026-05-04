@@ -1,6 +1,7 @@
 import BoardingHeader from "@/components/boarding/boardingHeader";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { useAuth } from "@/context/AuthContext";
+import { useBoarding } from "@/context/BoardingContext";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -9,7 +10,8 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 const BoardingStep3 = () => {
   const router = useRouter();
   const { setCurrentBoardingStep } = useAuth();
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const { interests, setInterests } = useBoarding();
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(interests);
 
   const interestOptions = [
     " 🎵 Music Festivals",
@@ -41,6 +43,7 @@ const BoardingStep3 = () => {
 
   const handleNext = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setInterests(selectedInterests);
     await setCurrentBoardingStep(4);
     router.push("/boarding/step-4");
   };

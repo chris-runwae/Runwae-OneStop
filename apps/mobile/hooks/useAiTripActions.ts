@@ -1,0 +1,14 @@
+import { api } from "@runwae/convex/convex/_generated/api";
+import { useAction, useQuery } from "convex/react";
+
+export function useGenerateFreeFormTrip() {
+  return useAction(api.ai.generateFreeFormTrip);
+}
+
+export function useAiQuota() {
+  return useQuery(api.ai.getQuota, {});
+}
+
+export function useMyAiTrips() {
+  return useQuery(api.ai.getMyAiTrips, {});
+}

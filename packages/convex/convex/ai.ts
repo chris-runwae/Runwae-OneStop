@@ -877,3 +877,480 @@ export const generateTripPlan = action({
     }
   },
 });
+
+// ── Free-form (mobile) AI trip generation ────────────────────────────────
+// Parallel to generateTripFromEvent, but driven by destination + dates +
+// preferences rather than an event. Used by the mobile /create-trip-ai flow.
+
+function fallbackFreeFormDays(args: {
+  start: string;
+  end: string;
+  destinationLabel: string;
+}): AiDay[] {
+  const startMs = Date.parse(args.start);
+  const endMs = Date.parse(args.end);
+  const out: AiDay[] = [];
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return out;
+  const days = Math.max(1, Math.floor((endMs - startMs) / 86400000) + 1);
+  const cityShort = args.destinationLabel.split(",")[0];
+  for (let i = 0; i < days; i++) {
+    const date = new Date(startMs + i * 86400000).toISOString().slice(0, 10);
+    out.push({
+      date,
+      dayNumber: i + 1,
+      title:
+        i === 0
+          ? "Arrival"
+          : i === days - 1
+            ? "Departure"
+            : `Explore ${cityShort}`,
+      items: [],
+    });
+  }
+  return out;
+}
+
+async function callClaudeForFreeFormItinerary(args: {
+  apiKey: string;
+  destinationLabel: string;
+  startDate: string;
+  endDate: string;
+  groupSize: GroupSize;
+  preferences: string[];
+  candidateTours: Array<{ apiRef: string; title: string; price?: number; currency?: string; description?: string }>;
+  candidateHotels: Array<{ apiRef: string; title: string; price?: number; currency?: string; description?: string }>;
+}): Promise<AiDay[] | null> {
+  const groupCopy =
+    args.groupSize === "solo"
+      ? "a solo traveller"
+      : args.groupSize === "small"
+        ? "a small group of 2–4 friends/partners"
+        : "a large group of 5+ (think bachelor / birthday / crew)";
+
+  const prefCopy =
+    args.preferences.length > 0
+      ? `Traveller preferences for THIS trip: ${args.preferences.join(", ")}. Bias day picks toward these vibes.`
+      : "No specific preferences — keep picks broadly appealing.";
+
+  const tourCatalog =
+    args.candidateTours.length > 0
+      ? `\n\nAvailable Viator tours (use \`apiSource: "viator"\` and the matching \`apiRef\` when picking these — DO NOT invent new ones outside this list):\n${args.candidateTours
+          .map(
+            (t) =>
+              `- [viator:${t.apiRef}] ${t.title}${t.price ? ` (${t.currency ?? "GBP"} ${t.price})` : ""}${t.description ? ` — ${t.description.slice(0, 120)}` : ""}`,
+          )
+          .join("\n")}`
+      : "";
+  const hotelCatalog =
+    args.candidateHotels.length > 0
+      ? `\n\nAvailable LiteAPI hotels (use \`apiSource: "liteapi"\` + the \`apiRef\` for the chosen hotel; pick exactly ONE for the whole stay):\n${args.candidateHotels
+          .map(
+            (h) =>
+              `- [liteapi:${h.apiRef}] ${h.title}${h.price ? ` (${h.currency ?? "GBP"} ${h.price}/night)` : ""}`,
+          )
+          .join("\n")}`
+      : "";
+
+  const sysPrompt = `You are a trip planner producing strict JSON itineraries.
+Output ONLY a JSON object with shape:
+{
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "dayNumber": 1,
+      "title": "Short headline for the day",
+      "items": [
+        {
+          "type": "flight"|"hotel"|"tour"|"event"|"restaurant"|"activity"|"transport"|"other",
+          "title": "...",
+          "startTime": "HH:MM",
+          "description": "Why this fits",
+          "locationName": "Place, City",
+          "apiSource": "viator"|"liteapi",
+          "apiRef": "...",
+          "price": 0,
+          "currency": "GBP"
+        }
+      ]
+    }
+  ]
+}
+No markdown, no commentary.`;
+
+  const userPrompt = `Plan a trip for ${groupCopy} to ${args.destinationLabel}.
+Trip dates: ${args.startDate} to ${args.endDate}.
+${prefCopy}
+
+Day-shape rules:
+- Day 1: arrival + check-in to the chosen hotel.
+- Middle days: 2–4 items mixing tour/restaurant/activity around the destination.
+- Final day: departure.
+- Pick exactly ONE hotel from the LiteAPI catalogue (when available) and reuse it across the stay.
+- Prefer Viator tours from the catalogue over invented activities; keep the rest as natural \`activity\` / \`restaurant\` items without apiSource.${tourCatalog}${hotelCatalog}`;
+
+  try {
+    const res = await fetch(ANTHROPIC_API, {
+      method: "POST",
+      headers: {
+        "x-api-key": args.apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 3200,
+        system: sysPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+    });
+    if (!res.ok) {
+      console.warn("[ai] Claude (free-form) returned", res.status);
+      return null;
+    }
+    const json = (await res.json()) as {
+      content?: Array<{ type: string; text?: string }>;
+    };
+    const text = json.content?.find((c) => c.type === "text")?.text ?? "";
+    const cleaned = text
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```\s*$/, "")
+      .trim();
+    const parsed = JSON.parse(cleaned) as { days?: AiDay[] };
+    if (!Array.isArray(parsed.days)) return null;
+    return parsed.days;
+  } catch (err) {
+    console.error("[ai] Claude (free-form) call failed", err);
+    return null;
+  }
+}
+
+export const _materializeFreeFormTrip = internalMutation({
+  args: {
+    aiIdempotencyKey: v.optional(v.string()),
+    title: v.string(),
+    description: v.optional(v.string()),
+    destinationLabel: v.string(),
+    destinationCoords: v.optional(
+      v.object({ lat: v.number(), lng: v.number() }),
+    ),
+    coverImageUrl: v.optional(v.string()),
+    visibility: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("invite_only"),
+        v.literal("friends"),
+        v.literal("public"),
+      ),
+    ),
+    startDate: v.string(),
+    endDate: v.string(),
+    groupSize: v.union(
+      v.literal("solo"),
+      v.literal("small"),
+      v.literal("large"),
+    ),
+    days: v.array(
+      v.object({
+        date: v.string(),
+        dayNumber: v.number(),
+        title: v.optional(v.string()),
+        items: v.array(
+          v.object({
+            type: v.string(),
+            title: v.string(),
+            startTime: v.optional(v.string()),
+            description: v.optional(v.string()),
+            locationName: v.optional(v.string()),
+            coords: v.optional(
+              v.object({ lat: v.number(), lng: v.number() }),
+            ),
+            apiSource: v.optional(v.string()),
+            apiRef: v.optional(v.string()),
+            price: v.optional(v.number()),
+            currency: v.optional(v.string()),
+            imageUrl: v.optional(v.string()),
+          }),
+        ),
+      }),
+    ),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ tripId: Id<"trips">; slug: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const ALPHABET =
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijklmnopqrstuvwxyz";
+    let suffix = "";
+    for (let i = 0; i < 8; i++)
+      suffix += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    const slugBase = args.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40);
+    const slug = `${slugBase || "trip"}-${suffix.slice(0, 8)}`;
+
+    const now = Date.now();
+    const tripId = await ctx.db.insert("trips", {
+      title: args.title,
+      description:
+        args.description ?? `AI-planned trip to ${args.destinationLabel}.`,
+      destinationLabel: args.destinationLabel,
+      destinationCoords: args.destinationCoords,
+      creatorId: userId,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      visibility: args.visibility ?? "private",
+      status: "planning",
+      coverImageUrl: args.coverImageUrl,
+      slug,
+      joinCode: suffix,
+      currency: "GBP",
+      aiIdempotencyKey: args.aiIdempotencyKey,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("trip_members", {
+      tripId,
+      userId,
+      role: "owner",
+      status: "accepted",
+      joinedAt: now,
+    });
+
+    const VALID_TYPES = new Set([
+      "flight",
+      "hotel",
+      "tour",
+      "car_rental",
+      "event",
+      "restaurant",
+      "activity",
+      "transport",
+      "other",
+    ]);
+
+    for (const day of args.days) {
+      const dayId = await ctx.db.insert("itinerary_days", {
+        tripId,
+        date: day.date,
+        dayNumber: day.dayNumber,
+        title: day.title,
+        createdAt: now,
+      });
+      for (let i = 0; i < day.items.length; i++) {
+        const it = day.items[i];
+        const safeType = (
+          VALID_TYPES.has(it.type) ? it.type : "activity"
+        ) as Doc<"itinerary_items">["type"];
+        await ctx.db.insert("itinerary_items", {
+          tripId,
+          dayId,
+          addedByUserId: userId,
+          type: safeType,
+          apiSource: it.apiSource,
+          apiRef: it.apiRef,
+          title: it.title,
+          description: it.description,
+          startTime: it.startTime,
+          locationName: it.locationName,
+          coords: it.coords,
+          price: it.price,
+          currency: it.currency,
+          imageUrl: it.imageUrl,
+          isCompleted: false,
+          sortOrder: i,
+          canBeEditedBy: "editors",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    return { tripId, slug };
+  },
+});
+
+export const generateFreeFormTrip = action({
+  args: {
+    destinationLabel: v.string(),
+    destinationCoords: v.optional(
+      v.object({ lat: v.number(), lng: v.number() }),
+    ),
+    startDate: v.string(),
+    endDate: v.string(),
+    groupSize: v.union(
+      v.literal("solo"),
+      v.literal("small"),
+      v.literal("large"),
+    ),
+    preferences: v.array(v.string()),
+    idempotencyKey: v.optional(v.string()),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    coverImageUrl: v.optional(v.string()),
+    visibility: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("invite_only"),
+        v.literal("friends"),
+        v.literal("public"),
+      ),
+    ),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    | { ok: true; tripId: Id<"trips">; slug: string; remaining: number; reused?: boolean }
+    | { ok: false; reason: "not_authenticated" | "quota_exhausted" | "ai_failed" }
+  > => {
+    const idempotencyKey =
+      args.idempotencyKey ??
+      `ai_srv_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    // Idempotency dedupe.
+    const existing = await ctx.runQuery(internal.ai._findExistingByIdempotency, {
+      aiIdempotencyKey: idempotencyKey,
+    });
+    if (existing) {
+      const limit = quotaLimit();
+      const userId = await getAuthUserId(ctx);
+      const used =
+        userId === null
+          ? 0
+          : (await ctx.runQuery(internal.ai.getQuotaInternal, {})).used;
+      return {
+        ok: true,
+        tripId: existing.tripId,
+        slug: existing.slug,
+        remaining: Math.max(0, limit - used),
+        reused: true,
+      };
+    }
+
+    // Reserve quota.
+    const reserved = await ctx.runMutation(internal.ai._checkAndReserveQuota, {});
+    if (!reserved.ok) {
+      return {
+        ok: false,
+        reason: reserved.reason as "not_authenticated" | "quota_exhausted",
+      };
+    }
+
+    try {
+      // Provider candidates — destination-only, no event-day filter.
+      const candidates = await ctx.runAction(
+        internal.ai._fetchProviderCandidates,
+        {
+          destinationName: args.destinationLabel,
+          coords: args.destinationCoords,
+          checkin: args.startDate,
+          checkout: args.endDate,
+        },
+      );
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      let days: AiDay[] | null = null;
+      if (apiKey) {
+        days = await callClaudeForFreeFormItinerary({
+          apiKey,
+          destinationLabel: args.destinationLabel,
+          startDate: args.startDate,
+          endDate: args.endDate,
+          groupSize: args.groupSize,
+          preferences: args.preferences,
+          candidateTours: candidates.tours,
+          candidateHotels: candidates.hotels,
+        });
+      }
+      if (!days || days.length === 0) {
+        days = fallbackFreeFormDays({
+          start: args.startDate,
+          end: args.endDate,
+          destinationLabel: args.destinationLabel,
+        });
+      }
+
+      // Provider backfill.
+      const tourByRef = new Map(candidates.tours.map((t) => [t.apiRef, t]));
+      const hotelByRef = new Map(candidates.hotels.map((h) => [h.apiRef, h]));
+      for (const d of days) {
+        for (const it of d.items) {
+          if (it.apiSource === "viator" && it.apiRef) {
+            const t = tourByRef.get(it.apiRef);
+            if (t) {
+              it.imageUrl = it.imageUrl ?? t.imageUrl;
+              it.price = it.price ?? t.price;
+              it.currency = it.currency ?? t.currency;
+            }
+          } else if (it.apiSource === "liteapi" && it.apiRef) {
+            const h = hotelByRef.get(it.apiRef);
+            if (h) {
+              it.imageUrl = it.imageUrl ?? h.imageUrl;
+              it.price = it.price ?? h.price;
+              it.currency = it.currency ?? h.currency;
+            }
+          }
+        }
+      }
+
+      // Unsplash backfill.
+      const itemsMissingImages: Array<{
+        item: AiDay["items"][number];
+        query: string;
+      }> = [];
+      const queries = new Set<string>();
+      for (const d of days) {
+        for (const it of d.items) {
+          if (it.imageUrl) continue;
+          const q = it.locationName ?? it.title ?? args.destinationLabel;
+          if (!q) continue;
+          itemsMissingImages.push({ item: it, query: q });
+          queries.add(q);
+        }
+      }
+      if (queries.size > 0) {
+        const photoMap = await ctx.runAction(internal.ai._unsplashBackfill, {
+          queries: Array.from(queries),
+        });
+        for (const { item, query } of itemsMissingImages) {
+          if (!item.imageUrl && photoMap[query]) {
+            item.imageUrl = photoMap[query];
+          }
+        }
+      }
+
+      const result = await ctx.runMutation(internal.ai._materializeFreeFormTrip, {
+        aiIdempotencyKey: idempotencyKey,
+        title: args.title?.trim() || `Trip to ${args.destinationLabel}`,
+        description: args.description,
+        destinationLabel: args.destinationLabel,
+        destinationCoords: args.destinationCoords,
+        coverImageUrl: args.coverImageUrl,
+        visibility: args.visibility,
+        startDate: args.startDate,
+        endDate: args.endDate,
+        groupSize: args.groupSize,
+        days,
+      });
+
+      const limit = quotaLimit();
+      return {
+        ok: true,
+        tripId: result.tripId,
+        slug: result.slug,
+        remaining: Math.max(0, limit - reserved.used),
+      };
+    } catch (err) {
+      console.error("[ai] generateFreeFormTrip failed", err);
+      await ctx.runMutation(internal.ai._refundQuota, {});
+      return { ok: false, reason: "ai_failed" };
+    }
+  },
+});

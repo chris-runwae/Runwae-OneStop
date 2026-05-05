@@ -1,6 +1,6 @@
 "use client";
 
-import { resendVerification, signIn, signUp } from "@/api/onboarding";
+import { resendVerification, signIn, signInWithGoogle, signUp } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { PhoneInput } from "@/components/shared/phone-input";
@@ -15,7 +15,17 @@ import { toast } from "sonner";
 export default function SignUp() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [phone, setPhone] = useState("");
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast.error(error);
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,8 +116,12 @@ export default function SignUp() {
       </p>
 
       <div className="mt-12 space-y-3">
-        <SocialAuthButton provider="google">
-          Continue with Google
+        <SocialAuthButton
+          provider="google"
+          onClick={handleGoogleSignIn}
+          isLoading={isGoogleLoading}
+        >
+          {isGoogleLoading ? "Redirecting..." : "Continue with Google"}
         </SocialAuthButton>
         <SocialAuthButton provider="apple">
           Continue with Apple

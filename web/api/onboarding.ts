@@ -76,6 +76,17 @@ export const signUp = async ({
   return { error: null, needsVerification };
 };
 
+export const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+  if (error) return { error: error.message };
+  return { error: null };
+};
+
 export const signIn = async (
   email: string,
   password: string,

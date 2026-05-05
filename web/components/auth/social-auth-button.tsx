@@ -5,6 +5,8 @@ interface SocialAuthButtonProps {
   provider: "google" | "apple";
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
+  isLoading?: boolean;
 }
 
 const icons = {
@@ -39,6 +41,8 @@ export function SocialAuthButton({
   provider,
   children,
   className,
+  onClick,
+  isLoading,
 }: SocialAuthButtonProps) {
   return (
     <Button
@@ -46,6 +50,8 @@ export function SocialAuthButton({
       variant="outline"
       size="full"
       className={cn("h-12", className)}
+      onClick={onClick}
+      disabled={isLoading}
     >
       <span className="text-muted-foreground">{children}</span>
       {icons[provider]}

@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn } from "@/api/onboarding";
+import { signIn, signInWithGoogle } from "@/api/onboarding";
 import { ROUTES } from "@/app/routes";
 import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,18 @@ import { toast } from "sonner";
 export default function Login() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useAuthRedirect(ROUTES.host.overview);
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast.error(error);
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,8 +50,12 @@ export default function Login() {
       </h1>
 
       <div className="mt-12 space-y-3">
-        <SocialAuthButton provider="google">
-          Continue with Google
+        <SocialAuthButton
+          provider="google"
+          onClick={handleGoogleSignIn}
+          isLoading={isGoogleLoading}
+        >
+          {isGoogleLoading ? "Redirecting..." : "Continue with Google"}
         </SocialAuthButton>
         <SocialAuthButton provider="apple">
           Continue with Apple

@@ -56,16 +56,16 @@ const ItineraryCard = ({
           className="flex-1 justify-between p-3"
           style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
         >
-          <View className="flex-row justify-end">
-            <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
-              <Heart
-                size={20}
-                color={isFavorite ? "#FF2E92" : "#fff"}
-                fill={isFavorite ? "#FF2E92" : "transparent"}
-                strokeWidth={1.5}
-              />
-            </TouchableOpacity>
-          </View>
+{/* <View className="flex-row justify-end">
+  <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
+    <Heart
+      size={20}
+      color={isFavorite ? "#FF2E92" : "#fff"}
+      fill={isFavorite ? "#FF2E92" : "transparent"}
+      strokeWidth={1.5}
+    />
+  </TouchableOpacity>
+</View> */}
 
           <View>
             <Text

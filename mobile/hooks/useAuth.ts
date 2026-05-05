@@ -106,6 +106,7 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
       email: authUser.data.user.email || "",
       avatar_url: data.avatar_url,
       role: data.role || "user",
+      email_verified: !!authUser.data.user.email_confirmed_at,
     };
   } catch (error) {
     console.error("Error in fetchUserProfile:", error);

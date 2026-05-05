@@ -14,10 +14,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ItineraryTemplate } from "@/types/content.types";
+
 const ItineraryDetail = () => {
-  const { id, item: itinerary } = useDetailItem("itinerary") as {
+  const { id, item: itinerary, loading } = useDetailItem("itinerary") as {
     id: string;
-    item: any;
+    item: ItineraryTemplate | null;
+    loading: boolean;
   };
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
@@ -31,6 +34,10 @@ const ItineraryDetail = () => {
   const moreTrips = useMemo(() => {
     return FEATURED_ITINERARIES.slice(0, 3);
   }, []);
+
+  if (loading) {
+    return null;
+  }
 
   if (!itinerary) {
     return <DetailNotFound type="itinerary" />;
@@ -62,6 +69,9 @@ const ItineraryDetail = () => {
           activitiesCount={itinerary.activities}
           duration={itinerary.duration}
           description={itinerary.description || ""}
+          durationMinutes={itinerary.durationMinutes}
+          cost={itinerary.cost}
+          currency={itinerary.currency}
         />
 
         <View className="h-2 bg-gray-100 dark:bg-dark-seconndary/20 mt-8" />

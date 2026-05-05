@@ -3,14 +3,10 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import { AddOnCardSkeleton } from "@/components/ui/CardSkeletons";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import {
-  ADD_ONS_FOR_YOU,
-  EXPERIENCE_HIGHLIGHTS,
-} from "@/constants/home.constant";
+import { Experience } from "@/types/content.types";
+import { getExperiences } from "@/utils/supabase/experiences.service";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
-
-const ALL_EXPERIENCES = [...ADD_ONS_FOR_YOU, ...EXPERIENCE_HIGHLIGHTS];
 
 const EmptyState = () => (
   <View className="flex-1 items-center justify-center w-full bg-gray-200 dark:bg-dark-seconndary/50">
@@ -33,24 +29,34 @@ const EmptyState = () => (
 
 const ExperienceScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await getExperiences();
+        setExperiences(data);
+      } catch (err) {
+        console.error("ExperienceScreen: Error fetching experiences:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredExperiences = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return ALL_EXPERIENCES.filter(
+    return experiences.filter(
       (item) =>
         item.title.toLowerCase().includes(query) ||
         item.category.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query),
+        item.description.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, experiences]);
 
   const displayData = loading ? Array(5).fill({}) : filteredExperiences;
 

@@ -1,19 +1,14 @@
-import {
-  Calendar,
-  toDateId,
-  useDateRange,
-} from "@marceloterreiro/flash-calendar";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
-import { MonthYearModal } from "./MonthYearModal";
-import { MonthYearSelector } from "./MonthYearSelector";
+import { Calendar, toDateId } from '@marceloterreiro/flash-calendar';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { MonthYearModal } from './MonthYearModal';
+import { MonthYearSelector } from './MonthYearSelector';
 import {
   createYearMonthId,
   generateMonths,
   generateYears,
   getCurrentYear,
-} from "./calendarUtils";
-
+} from './calendarUtils';
 
 interface CalendarContainerProps {
   theme: any;
@@ -35,7 +30,7 @@ export const CalendarContainer: React.FC<CalendarContainerProps> = ({
 
   const months = useMemo(
     () => generateMonths(currentMonthId),
-    [currentMonthId],
+    [currentMonthId]
   );
   const years = useMemo(() => generateYears(currentMonthId), [currentMonthId]);
 
@@ -50,20 +45,17 @@ export const CalendarContainer: React.FC<CalendarContainerProps> = ({
       const yearMonthId = createYearMonthId(parseInt(yearId), currentMonth);
       setCurrentMonthId(yearMonthId);
     },
-    [currentMonthId],
+    [currentMonthId]
   );
-
-
 
   return (
     <View
       style={{
-        width: "100%",
-        height: "auto",
+        width: '100%',
+        height: 'auto',
         padding: 0,
-        overflow: "hidden",
-      }}
-    >
+        overflow: 'hidden',
+      }}>
       <MonthYearSelector
         currentMonthId={currentMonthId}
         onMonthPress={() => setShowMonthModal(true)}
@@ -98,7 +90,6 @@ export const CalendarContainer: React.FC<CalendarContainerProps> = ({
         title="Select Year"
         items={years}
         currentId={getCurrentYear(currentMonthId)}
-
         theme={theme}
         backgroundColor={backgroundColor}
       />

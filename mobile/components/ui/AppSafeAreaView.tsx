@@ -1,8 +1,8 @@
-import React from "react";
+import React from 'react';
 import {
   SafeAreaView,
   type SafeAreaViewProps,
-} from "react-native-safe-area-context";
+} from 'react-native-safe-area-context';
 
 interface AppSafeAreaViewProps extends SafeAreaViewProps {
   className?: string;
@@ -11,14 +11,13 @@ interface AppSafeAreaViewProps extends SafeAreaViewProps {
 
 const AppSafeAreaView: React.FC<AppSafeAreaViewProps> = ({
   children,
-  className = "",
+  className = '',
   ...props
 }) => {
   return (
     <SafeAreaView
-      className={`flex-1 bg-white dark:bg-black ${className}`}
-      {...props}
-    >
+      className={`flex-1 bg-gray-50 dark:bg-black ${className}`}
+      {...props}>
       {children}
     </SafeAreaView>
   );

@@ -19,6 +19,7 @@ interface TextInputProps {
   labelStyle?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  onBlur?: () => void;
 }
 
 const CustomTextInput = ({
@@ -38,6 +39,7 @@ const CustomTextInput = ({
   labelStyle = "mb-2 text-black dark:text-gray-400",
   leftIcon,
   rightIcon,
+  onBlur,
 }: TextInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const isSecure = isPassword ? !showPassword : secureTextEntry;
@@ -78,6 +80,7 @@ const CustomTextInput = ({
           autoCorrect={autoCorrect}
           multiline={textarea}
           textAlignVertical={textarea ? "top" : "center"}
+          onBlur={onBlur}
           style={inputStyle}
         />
         {isPassword && !textarea && (

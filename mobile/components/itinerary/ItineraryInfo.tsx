@@ -6,6 +6,9 @@ interface ItineraryInfoProps {
   activitiesCount: number;
   duration: string;
   description: string;
+  durationMinutes?: number;
+  cost?: number;
+  currency?: string;
 }
 
 const ItineraryInfo = ({
@@ -13,6 +16,9 @@ const ItineraryInfo = ({
   activitiesCount,
   duration,
   description,
+  durationMinutes,
+  cost,
+  currency,
 }: ItineraryInfoProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -33,9 +39,16 @@ const ItineraryInfo = ({
         </View>
         <View className="flex-row items-center bg-gray-100 dark:bg-dark-seconndary px-3 py-2 rounded-full border border-gray-200 dark:border-white/10">
           <Text className="text-xs font-medium dark:text-gray-300">
-            🗓️ {duration}
+            🗓️ {durationMinutes ? `${durationMinutes} mins` : duration}
           </Text>
         </View>
+        {cost && (
+          <View className="flex-row items-center bg-green-100 dark:bg-green-900/30 px-3 py-2 rounded-full border border-green-200 dark:border-green-700/50">
+            <Text className="text-xs font-bold text-green-700 dark:text-green-400">
+              💰 ${cost} {currency || ""}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View>

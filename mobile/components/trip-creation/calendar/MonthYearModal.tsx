@@ -1,11 +1,6 @@
 import CustomModal from '@/components/ui/CustomModal';
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  ScrollView,
-} from 'react-native';
+import { ScrollView, Text, TouchableOpacity } from 'react-native';
 
 interface MonthYearModalProps {
   visible: boolean;
@@ -50,7 +45,7 @@ export const MonthYearModal: React.FC<MonthYearModalProps> = ({
               onSelect(item.id);
               onClose();
             }}
-            className="flex-row items-center px-2 py-4 border-b border-gray-50 dark:border-white/5 last:border-0">
+            className="flex-row items-center border-b border-gray-50 px-2 py-4 last:border-0 dark:border-white/5">
             <Text
               className={`text-base ${
                 item.id === currentId
@@ -66,4 +61,3 @@ export const MonthYearModal: React.FC<MonthYearModalProps> = ({
     </CustomModal>
   );
 };
-

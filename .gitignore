@@ -1,0 +1,12 @@
+node_modules
+.turbo
+.next
+dist
+out
+*.tsbuildinfo
+.env.local
+.env*.local
+.DS_Store
+
+# Local worktrees
+.worktrees/

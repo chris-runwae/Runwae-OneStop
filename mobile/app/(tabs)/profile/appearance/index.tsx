@@ -4,12 +4,13 @@ import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { View } from "react-native";
+import { saveThemePreference, ThemePreference } from "@/utils/storage";
 
 const Appearance = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const [selectedTheme, setSelectedTheme] = React.useState<
-    "light" | "dark" | "system"
-  >((colorScheme as "light" | "dark" | "system") || "system");
+  const [selectedTheme, setSelectedTheme] = React.useState<ThemePreference>(
+    (colorScheme as ThemePreference) || "system"
+  );
 
   React.useEffect(() => {
     if (colorScheme) {
@@ -30,9 +31,10 @@ const Appearance = () => {
     { label: "Dark", value: "dark", subtitle: "Always use dark mode" },
   ];
 
-  const handleThemeChange = (theme: "light" | "dark" | "system") => {
+  const handleThemeChange = (theme: ThemePreference) => {
     setSelectedTheme(theme);
     setColorScheme(theme);
+    saveThemePreference(theme);
   };
 
   return (

@@ -3,7 +3,8 @@ import { ItineraryCardSkeleton } from "@/components/ui/CardSkeletons";
 import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import SearchInput from "@/components/ui/SearchInput";
-import { ITINERARIES_FOR_YOU } from "@/constants/home.constant";
+import { getItineraryTemplates } from "@/utils/supabase/itinerary-templates.service";
+import { ItineraryTemplate } from "@/types/content.types";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
@@ -31,23 +32,34 @@ const Itineraries = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [itineraries, setItineraries] = useState<ItineraryTemplate[]>([]);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await getItineraryTemplates();
+        setItineraries(data);
+      } catch (err) {
+        console.error("ItinerariesScreen: Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredItineraries = useMemo(() => {
-    return ITINERARIES_FOR_YOU.filter(
+    return itineraries.filter(
       (itinerary) =>
         itinerary.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        itinerary.activities.toString().includes(searchQuery.toLowerCase()),
+        itinerary.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        itinerary.category.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-  }, [searchQuery]);
+  }, [searchQuery, itineraries]);
 
-  const displayData = loading ? Array(5).fill({}) : filteredItineraries;
+  const displayData = (loading ? Array(5).fill({}) : filteredItineraries) as ItineraryTemplate[];
 
   return (
     <AppSafeAreaView edges={["top"]}>

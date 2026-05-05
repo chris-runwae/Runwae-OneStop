@@ -1,10 +1,10 @@
-import { ItineraryCardSkeleton } from "@/components/ui/CardSkeletons";
-import SectionHeader from "@/components/ui/SectionHeader";
-import { Itinerary } from "@/constants/home.constant";
-import { useRouter } from "expo-router";
-import React from "react";
-import { FlatList, Text, View } from "react-native";
-import ItineraryCard from "./ItineraryCard";
+import { ItineraryCardSkeleton } from '@/components/ui/CardSkeletons';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { Itinerary } from '@/constants/home.constant';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { FlatList, Text, View } from 'react-native';
+import ItineraryCard from './ItineraryCard';
 
 interface ItineraryForYouProps {
   data: Itinerary[];
@@ -17,11 +17,11 @@ interface ItineraryForYouProps {
 
 const ItineraryForYou = ({
   data,
-  title = "Itineraries for you",
-  subtitle = "Curated specially for you based on your preferences",
+  title = 'Trip Suggestions',
+  subtitle = '',
   loading = false,
-  showSubtitle = true,
-  showBorder = true,
+  showSubtitle = false,
+  showBorder = false,
 }: ItineraryForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
   const router = useRouter();
@@ -30,7 +30,7 @@ const ItineraryForYou = ({
   const handleHeaderPress = () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    router.navigate("/itinerary");
+    router.navigate('/itinerary');
     setTimeout(() => {
       isNavigating.current = false;
     }, 1000);
@@ -38,8 +38,7 @@ const ItineraryForYou = ({
 
   return (
     <View
-      className={`mt-5 ${showBorder ? "border-b-[3px] border-b-gray-200 dark:border-b-dark-seconndary pb-5" : ""}`}
-    >
+      className={`mt-5 ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
       <SectionHeader
         title={title}
         subtitle={subtitle}
@@ -53,7 +52,7 @@ const ItineraryForYou = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: 1,
-          marginTop: 16,
+          marginTop: 10,
           paddingHorizontal: 20,
         }}
         keyExtractor={(item, index) =>
@@ -64,15 +63,14 @@ const ItineraryForYou = ({
           loading ? <ItineraryCardSkeleton /> : <ItineraryCard item={item} />
         }
         ListEmptyComponent={
-          <View className="flex items-center justify-center w-full py-8">
-            <Text className="text-3xl mb-3">🗺️</Text>
+          <View className="flex w-full items-center justify-center py-8">
+            <Text className="mb-3 text-3xl">🗺️</Text>
             <Text
-              className="font-semibold text-base dark:text-white"
-              style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-            >
+              className="text-base font-semibold dark:text-white"
+              style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
               No itineraries yet
             </Text>
-            <Text className="text-xs text-gray-400 mt-1 text-center">
+            <Text className="mt-1 text-center text-xs text-gray-400">
               Check back soon for curated travel ideas!
             </Text>
           </View>

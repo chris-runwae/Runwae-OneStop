@@ -1,7 +1,7 @@
 import { useTheme } from '@react-navigation/native';
 import { ChevronDown } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 interface MonthYearSelectorProps {
   currentMonthId: string;
@@ -52,4 +52,3 @@ export const MonthYearSelector: React.FC<MonthYearSelectorProps> = ({
     </View>
   );
 };
-

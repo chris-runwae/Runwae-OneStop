@@ -1,0 +1,10 @@
+{
+  "name": "@runwae/ui",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./tokens.ts",
+  "exports": {
+    ".": "./tokens.ts",
+    "./tokens": "./tokens.ts"
+  }
+}

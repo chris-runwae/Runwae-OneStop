@@ -1,0 +1,23 @@
+{
+  "name": "@runwae/convex",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@auth/core": "^0.37.4",
+    "@convex-dev/auth": "^0.0.87",
+    "convex": "^1.23.0",
+    "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "20",
+    "convex-test": "^0.0.50",
+    "typescript": "5.5.4",
+    "vitest": "^3.2.0"
+  }
+}

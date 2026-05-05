@@ -8,6 +8,7 @@ export interface User {
   username?: string;
   avatar_url?: string;
   role?: "vendor" | "user";
+  email_verified?: boolean;
 }
 
 interface AuthStore {
@@ -197,6 +198,7 @@ async function fetchUserProfile(userId: string): Promise<User | null> {
       full_name: data.full_name,
       email: authUser.data.user.email || "",
       avatar_url: data.avatar_url,
+      email_verified: !!authUser.data.user.email_confirmed_at,
     };
   } catch (error) {
     console.error("Error in fetchUserProfile:", error);

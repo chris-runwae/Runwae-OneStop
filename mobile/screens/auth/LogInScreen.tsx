@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { Link } from "expo-router";
 import React, { useState } from "react";
-import {
+import { 
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -36,6 +36,20 @@ const LogInScreen = () => {
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const handleBlur = (field: keyof LoginFormData) => {
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path[0] === field);
+      if (issue) {
+        setErrors((prev) => ({ ...prev, [field]: issue.message }));
+      } else {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -104,6 +118,7 @@ const LogInScreen = () => {
             placeholder="example@email.com"
             value={formData.email}
             onChangeText={(value) => handleInputChange("email", value)}
+            onBlur={() => handleBlur("email")}
             error={errors.email}
           />
           <Spacer size={16} vertical />
@@ -113,6 +128,7 @@ const LogInScreen = () => {
             isPassword
             value={formData.password}
             onChangeText={(value) => handleInputChange("password", value)}
+            onBlur={() => handleBlur("password")}
             error={errors.password}
           />
           <Spacer size={5} vertical />

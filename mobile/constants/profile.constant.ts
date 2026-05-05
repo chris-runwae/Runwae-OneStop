@@ -1,5 +1,6 @@
 import {
   BrushCleaning,
+  Calendar,
   FileText,
   Lock,
   MessageCircleQuestionMark,
@@ -37,6 +38,11 @@ export const MOCK_REWARDS: MOCK_REWARDS_PROPS[] = [
 ];
 
 export const MENU_OPTIONS: MENU_OPTIONS_PROPS[] = [
+  {
+    title: "My Events",
+    route: "/profile/events",
+    icon: Calendar,
+  },
   {
     title: "Get Help",
     route: "/profile/support",

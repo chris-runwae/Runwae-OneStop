@@ -1,6 +1,5 @@
 import AddToTripContent from '@/components/home/AddToTripContent';
 import CustomModal from '@/components/ui/CustomModal';
-import { ExternalLink } from '@/components/ui/external-link';
 import { useTrips } from '@/context/TripsContext';
 import { savedItemFromDiscoveryItem } from '@/utils/savedIdeaInputs';
 import { api } from '@runwae/convex/convex/_generated/api';
@@ -287,6 +286,9 @@ const RecommendationsSection = ({
       CATEGORIES.find((c) => c.id === activeCategory)?.name ?? activeCategory,
     [activeCategory]
   );
+
+  console.log('Active Category', activeCategory);
+  console.log('Items', JSON.stringify(items, null, 2));
 
   return (
     <View className="mt-8">

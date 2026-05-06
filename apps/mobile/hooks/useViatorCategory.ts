@@ -16,13 +16,12 @@ export interface MappedViatorIdea {
   categoryLabel: string;
   price: number | null;
   currency: string | null;
+  externalUrl?: string | null;
 }
 
 // Convex `discovery.searchByCategory` accepts a single discovery
 // category string. Map mobile's curated categories to that vocabulary.
-function toDiscoveryCategory(
-  cat: Exclude<CategoryKey, 'All'>,
-): string {
+function toDiscoveryCategory(cat: Exclude<CategoryKey, 'All'>): string {
   switch (cat) {
     case 'Eat/Drink':
       return 'eat';
@@ -35,10 +34,7 @@ function toDiscoveryCategory(
   }
 }
 
-function toIdea(
-  item: any,
-  category: CategoryKey,
-): MappedViatorIdea {
+function toIdea(item: any, category: CategoryKey): MappedViatorIdea {
   return {
     id: item.apiRef,
     title: item.title,
@@ -48,12 +44,13 @@ function toIdea(
     categoryLabel: CATEGORY_LABELS[category],
     price: item.price ?? null,
     currency: item.currency ?? null,
+    externalUrl: item.externalUrl ?? null,
   };
 }
 
 export function useViatorCategory(
   category: CategoryKey,
-  destinationId?: string | null,
+  destinationId?: string | null
 ): {
   products: MappedViatorIdea[];
   loading: boolean;
@@ -76,7 +73,7 @@ export function useViatorCategory(
           ? await searchByCategory({ category: 'tour', term, limit: 30 })
           : await searchByCategory({
               category: toDiscoveryCategory(
-                category as Exclude<CategoryKey, 'All'>,
+                category as Exclude<CategoryKey, 'All'>
               ),
               term,
               limit: 30,

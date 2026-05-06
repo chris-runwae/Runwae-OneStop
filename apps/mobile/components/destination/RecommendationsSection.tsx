@@ -1,5 +1,6 @@
 import AddToTripContent from '@/components/home/AddToTripContent';
 import CustomModal from '@/components/ui/CustomModal';
+import { ExternalLink } from '@/components/ui/external-link';
 import { useTrips } from '@/context/TripsContext';
 import { savedItemFromDiscoveryItem } from '@/utils/savedIdeaInputs';
 import { api } from '@runwae/convex/convex/_generated/api';
@@ -7,6 +8,10 @@ import { useAction } from 'convex/react';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
+import {
+  openBrowserAsync,
+  WebBrowserPresentationStyle,
+} from 'expo-web-browser';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -83,16 +88,29 @@ function DiscoveryRecommendationCard({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const isNavigating = React.useRef(false);
 
-  const handlePress = () => {
-    if (isNavigating.current) return;
-    isNavigating.current = true;
-    setTimeout(() => {
-      isNavigating.current = false;
-    }, 1000);
+  const handlePress = async () => {
+    console.log('item', JSON.stringify(item, null, 2));
+
+    // if (isNavigating.current) return;
+    // isNavigating.current = true;
+    // setTimeout(() => {
+    //   isNavigating.current = false;
+    // }, 1000);
 
     if (item.provider === 'viator') {
-      router.navigate(`/viator/${item.apiRef}`);
-      return;
+      // TODO: Implement this, the bug is on [productCode] route
+      if (item.externalUrl) {
+        await openBrowserAsync(item.externalUrl, {
+          presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+        });
+        return;
+      } else {
+        router.push({
+          pathname: '/viator/[productCode]',
+          params: { productCode: item.apiRef },
+        });
+        return;
+      }
     }
     if (item.provider === 'liteapi') {
       const { checkin, checkout } = defaultCheckinCheckout();
@@ -134,15 +152,18 @@ function DiscoveryRecommendationCard({
 
   return (
     <>
-      <Pressable onPress={handlePress} className="mb-6 mr-4" style={{ width: 177 }}>
+      <Pressable
+        onPress={handlePress}
+        className="mb-6 mr-4"
+        style={{ width: 177 }}>
         <View className="relative">
           <Image
             source={{ uri: item.imageUrl ?? undefined }}
-            className="w-full aspect-square rounded-t-2xl"
+            className="aspect-square w-full rounded-t-2xl"
             resizeMode="cover"
           />
-          <View className="absolute top-2 left-2 bg-black/50 px-2.5 py-1 rounded-full flex-row items-center">
-            <Text className="text-[10px] text-white font-medium">
+          <View className="absolute left-2 top-2 flex-row items-center rounded-full bg-black/50 px-2.5 py-1">
+            <Text className="text-[10px] font-medium text-white">
               {categoryLabel}
             </Text>
           </View>
@@ -158,28 +179,28 @@ function DiscoveryRecommendationCard({
           {item.description ? (
             <Text
               numberOfLines={2}
-              className="text-sm text-gray-500 dark:text-gray-400 mt-1"
+              className="mt-1 text-sm text-gray-500 dark:text-gray-400"
               style={{ fontFamily: 'Inter' }}>
               {item.description}
             </Text>
           ) : null}
           {priceLabel ? (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               {priceLabel}
             </Text>
           ) : null}
 
-          <View className="flex-row items-end justify-between mt-4">
+          <View className="mt-4 flex-row items-end justify-between">
             <TouchableOpacity onPress={handlePress}>
-              <Text className="text-primary text-sm font-semibold underline">
+              <Text className="text-sm font-semibold text-primary underline">
                 View Details
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setIsModalVisible(true)}
-              className="bg-primary flex-row items-center gap-x-1 h-[35px] w-[66px] justify-center rounded-[6px]">
+              className="h-[35px] w-[66px] flex-row items-center justify-center gap-x-1 rounded-[6px] bg-primary">
               <Plus size={14} color="#fff" />
-              <Text className="text-white text-sm">Add</Text>
+              <Text className="text-sm text-white">Add</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -262,7 +283,8 @@ const RecommendationsSection = ({
   }, [activeCategory, destination.title, lat, lng, search]);
 
   const categoryLabel = useMemo(
-    () => CATEGORIES.find((c) => c.id === activeCategory)?.name ?? activeCategory,
+    () =>
+      CATEGORIES.find((c) => c.id === activeCategory)?.name ?? activeCategory,
     [activeCategory]
   );
 

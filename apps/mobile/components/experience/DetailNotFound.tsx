@@ -35,10 +35,12 @@ const DetailNotFound = ({ type }: DetailNotFoundProps) => {
         incorrect.
       </Text>
       <TouchableOpacity
-        onPress={() => router.replace('/explore')}
+        onPress={() =>
+          router.canGoBack() ? router.back() : router.replace('/explore')
+        }
         className="rounded-full bg-[#FF2E92] px-10 py-4 shadow-lg"
         style={{ elevation: 5 }}>
-        <Text className="text-lg font-bold text-white">Return to Explore</Text>
+        <Text className="text-lg font-bold text-white">Go back</Text>
       </TouchableOpacity>
     </View>
   );

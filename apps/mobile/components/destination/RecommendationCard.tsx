@@ -1,5 +1,6 @@
 import AddToTripContent from '@/components/home/AddToTripContent';
 import CustomModal from '@/components/ui/CustomModal';
+import { ExternalLink } from '@/components/ui/external-link';
 import { useTrips } from '@/context/TripsContext';
 import { savedItemFromViatorIdea } from '@/utils/savedIdeaInputs';
 import type { MappedViatorIdea } from '@/hooks/useViatorCategory';
@@ -49,15 +50,18 @@ const RecommendationCard = ({ item }: RecommendationCardProps) => {
 
   return (
     <>
-      <Pressable onPress={handlePress} className="mb-6 mr-4" style={{ width: 177 }}>
+      <Pressable
+        onPress={handlePress}
+        className="mb-6 mr-4"
+        style={{ width: 177 }}>
         <View className="relative">
           <Image
             source={{ uri: item.imageUri }}
-            className="w-full aspect-square rounded-t-2xl"
+            className="aspect-square w-full rounded-t-2xl"
             resizeMode="cover"
           />
-          <View className="absolute top-2 left-2 bg-black/50 px-2.5 py-1 rounded-full flex-row items-center">
-            <Text className="text-[10px] text-white font-medium">
+          <View className="absolute left-2 top-2 flex-row items-center rounded-full bg-black/50 px-2.5 py-1">
+            <Text className="text-[10px] font-medium text-white">
               {item.categoryLabel}
             </Text>
           </View>
@@ -72,28 +76,28 @@ const RecommendationCard = ({ item }: RecommendationCardProps) => {
           </Text>
           <Text
             numberOfLines={2}
-            className="text-sm text-gray-500 dark:text-gray-400 mt-1"
+            className="mt-1 text-sm text-gray-500 dark:text-gray-400"
             style={{ fontFamily: 'Inter' }}>
             {item.description}
           </Text>
           {item.price != null && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               From {item.currency === 'USD' ? '$' : `${item.currency} `}
               {item.price.toFixed(0)}
             </Text>
           )}
 
-          <View className="flex-row items-end justify-between mt-4">
+          <View className="mt-4 flex-row items-end justify-between">
             <TouchableOpacity onPress={handlePress}>
-              <Text className="text-primary text-sm font-semibold underline">
+              <Text className="text-sm font-semibold text-primary underline">
                 View Details
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setIsModalVisible(true)}
-              className="bg-primary flex-row items-center gap-x-1 h-[35px] w-[66px] justify-center rounded-[6px]">
+              className="h-[35px] w-[66px] flex-row items-center justify-center gap-x-1 rounded-[6px] bg-primary">
               <Plus size={14} color="#fff" />
-              <Text className="text-white text-sm">Add</Text>
+              <Text className="text-sm text-white">Add</Text>
             </TouchableOpacity>
           </View>
         </View>

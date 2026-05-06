@@ -1,10 +1,6 @@
 import FloatingTabBar from '@/components/floating-tab';
 import { Tabs } from 'expo-router';
-import {
-  Icon,
-  Label,
-  NativeTabs,
-} from 'expo-router/unstable-native-tabs';
+import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
 import { Platform, View } from 'react-native';
 
@@ -51,7 +47,7 @@ export default function TabLayout() {
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
         <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
         <Tabs.Screen name="(trips)" options={{ title: 'Trips' }} />
-        <Tabs.Screen name="saved" options={{ title: 'Saved' }} />
+        <Tabs.Screen name="create" options={{ title: 'Create' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       </Tabs>
       <FloatingTabBar />

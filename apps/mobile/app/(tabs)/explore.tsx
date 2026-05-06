@@ -320,7 +320,8 @@ const ExploreScreen = () => {
             <View className="mx-5 mb-2 overflow-hidden rounded-2xl bg-primary">
               <TouchableOpacity
                 activeOpacity={0.9}
-                onPress={() => router.push('/create-trip-options' as any)}
+                // onPress={() => router.push('/create-trip-options' as any)}
+                onPress={() => router.push('/create' as any)}
                 className="flex-row items-center justify-between px-5 py-5">
                 <View className="flex-1 pr-4">
                   <Text className="text-lg font-bold text-white">

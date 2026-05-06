@@ -220,7 +220,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
     },
     updates: {
-      url: 'https://u.expo.dev/06ce5302-3e4b-43dd-bcdc-7ea53aa4e45d',
+      url: 'https://u.expo.dev/d77a53ae-5728-4c93-a97a-18343cee6777',
       enabled: true,
       fallbackToCacheTimeout: 0,
       checkAutomatically: 'ON_LOAD',

@@ -29,6 +29,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Spacer } from '@/components';
+
+const SECTION_GAP = 32;
 
 const ExploreScreen = () => {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -98,6 +101,14 @@ const ExploreScreen = () => {
         matchesSubCategory(item, selectedSubCategory)
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, itineraries]);
+
+  // Featured row tops out at 5 — backend sort already surfaces
+  // `isFeatured` first, with `timesCopied` and recency as tie-breakers.
+  // Section header arrow links to /itinerary for the full list.
+  const featuredItinerariesForFeed = useMemo(
+    () => filteredItineraries.slice(0, 5),
+    [filteredItineraries]
+  );
 
   const filteredEvents = useMemo(() => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Experiences')
@@ -225,63 +236,85 @@ const ExploreScreen = () => {
               }}
             />
 
-            {filteredItineraries.length > 0 && (
-              <ItineraryForYou
-                data={filteredItineraries}
-                title="Featured Trip Itineraries"
-                subtitle="Recommended by Runwae"
-                loading={loading}
-              />
+            {featuredItinerariesForFeed.length > 0 && (
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <ItineraryForYou
+                  data={featuredItinerariesForFeed}
+                  title="Featured Trip Itineraries"
+                  subtitle="Recommended by Runwae"
+                  loading={loading}
+                  noTopMargin
+                />
+              </>
             )}
 
             {/* Public trips arrive on a separate query than the main
                 explore feed, so keep the row mounted while it loads to
                 avoid a layout pop when results stream in. */}
             {(publicTripsLoading || filteredPublicTrips.length > 0) && (
-              <PublicTripsSection
-                data={filteredPublicTrips}
-                loading={publicTripsLoading}
-              />
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <PublicTripsSection
+                  data={filteredPublicTrips}
+                  loading={publicTripsLoading}
+                  noTopMargin
+                />
+              </>
             )}
 
             {filteredEvents.length > 0 && (
-              <UpcomingEvents data={filteredEvents} loading={loading} />
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <UpcomingEvents data={filteredEvents} loading={loading} />
+              </>
             )}
 
             {filteredExperiences.length > 0 && (
-              <AddOnsForYou
-                data={filteredExperiences}
-                title="Experience Highlights"
-                subtitle="Top picks for you"
-                loading={loading}
-              />
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <AddOnsForYou
+                  data={filteredExperiences}
+                  title="Experience Highlights"
+                  subtitle="Top picks for you"
+                  loading={loading}
+                />
+              </>
             )}
 
             {/* Viator hits an external API; render a skeleton row while
                 it's still resolving instead of a blank gap. */}
             {(viatorLoading || mappedViatorExperiences.length > 0) && (
-              <AddOnsForYou
-                data={mappedViatorExperiences}
-                title="Tours & Activities"
-                subtitle="powered by viator"
-                loading={viatorLoading}
-                itemPathPrefix="/viator"
-                headerPath="/viator"
-              />
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <AddOnsForYou
+                  data={mappedViatorExperiences}
+                  title="Tours & Activities"
+                  subtitle="powered by viator"
+                  loading={viatorLoading}
+                  itemPathPrefix="/viator"
+                  headerPath="/viator"
+                />
+              </>
             )}
 
             {filteredDestinations.length > 0 && (
-              <DestinationsForYou
-                data={filteredDestinations}
-                title="Popular Destinations"
-                subtitle="Places that everyone else is crazy about"
-                loading={loading}
-              />
+              <>
+                <Spacer size={SECTION_GAP} vertical />
+                <DestinationsForYou
+                  data={filteredDestinations}
+                  title="Popular Destinations"
+                  subtitle="Places that everyone else is crazy about"
+                  loading={loading}
+                  noTopMargin
+                />
+              </>
             )}
 
             {/* Plan-a-trip CTA — mirrors the bottom strip on web Explore so
                 discovery flows always have a clear way back to creation. */}
-            <View className="mx-5 mt-6 mb-2 overflow-hidden rounded-2xl bg-primary">
+            <Spacer size={SECTION_GAP} vertical />
+            <View className="mx-5 mb-2 overflow-hidden rounded-2xl bg-primary">
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() =>

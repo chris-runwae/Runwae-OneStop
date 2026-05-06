@@ -49,8 +49,9 @@ async function assertTripAccess(
 }
 
 // Lightweight feed for the mobile create-trip entry point's
-// "Start from a template" row. Returns the most popular templates
-// first; we cap at 24 so the call stays bounded as the catalogue grows.
+// "Start from a template" row and the Explore Featured Itineraries row.
+// Featured templates float to the top so curated picks always lead;
+// non-featured fill in by popularity, then recency.
 export const listTemplates = query({
   args: {
     limit: v.optional(v.number()),
@@ -60,14 +61,50 @@ export const listTemplates = query({
     const templates = await ctx.db
       .query("itinerary_templates")
       .take(max);
-    // Sort by `timesCopied` desc; newest first when tied.
     templates.sort((a, b) => {
+      const af = a.isFeatured ? 1 : 0;
+      const bf = b.isFeatured ? 1 : 0;
+      if (bf !== af) return bf - af;
       const ac = a.timesCopied ?? 0;
       const bc = b.timesCopied ?? 0;
       if (bc !== ac) return bc - ac;
       return b._creationTime - a._creationTime;
     });
     return templates;
+  },
+});
+
+// Templates linked to a single destination. Used by the destination
+// detail screen's "Featured Itineraries" row and the itinerary detail
+// screen's "More itineraries from <destination>" carousel.
+export const listByDestination = query({
+  args: {
+    destinationId: v.id("destinations"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const max = Math.min(args.limit ?? 12, 50);
+    const templates = await ctx.db
+      .query("itinerary_templates")
+      .withIndex("by_destination", (q) => q.eq("destinationId", args.destinationId))
+      .take(max);
+    templates.sort((a, b) => {
+      const af = a.isFeatured ? 1 : 0;
+      const bf = b.isFeatured ? 1 : 0;
+      if (bf !== af) return bf - af;
+      return (b.timesCopied ?? 0) - (a.timesCopied ?? 0);
+    });
+    return templates;
+  },
+});
+
+// Fetch a single template by id. Mirrors what `useDetailItem("itinerary")`
+// does today via list-and-find, but lets a future detail screen subscribe
+// to a single doc directly without paying for the full templates list.
+export const getTemplateById = query({
+  args: { templateId: v.id("itinerary_templates") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.templateId);
   },
 });
 

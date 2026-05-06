@@ -105,3 +105,41 @@ export function savedItemFromHotel(
     isManual: false,
   };
 }
+
+// Generic adapter for the discovery.searchByCategory action's items.
+// Maps each provider's category to an itinerary item type so the saved
+// item shows up under the right rail in the trip Ideas tab.
+type DiscoveryItemLike = {
+  provider: string;
+  apiRef: string;
+  category: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+};
+
+export function savedItemFromDiscoveryItem(
+  item: DiscoveryItemLike,
+): CreateSavedItemInput {
+  const typeByCategory: Record<string, CreateSavedItemInput['type']> = {
+    stay: 'hotel',
+    tour: 'activity',
+    adventure: 'activity',
+    explore: 'activity',
+    event: 'event',
+    attend: 'event',
+    eat: 'restaurant',
+    ride: 'car_rental',
+    fly: 'flight',
+  };
+  return {
+    title: item.title,
+    type: typeByCategory[item.category] ?? 'activity',
+    locationName: item.category,
+    apiSource: item.provider,
+    apiRef: item.apiRef,
+    imageUrl: item.imageUrl ?? undefined,
+    notes: item.description,
+    isManual: false,
+  };
+}

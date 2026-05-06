@@ -13,6 +13,7 @@ interface ItineraryForYouProps {
   loading?: boolean;
   showSubtitle?: boolean;
   showBorder?: boolean;
+  noTopMargin?: boolean;
 }
 
 const ItineraryForYou = ({
@@ -22,6 +23,7 @@ const ItineraryForYou = ({
   loading = false,
   showSubtitle = false,
   showBorder = false,
+  noTopMargin = false,
 }: ItineraryForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
   const router = useRouter();
@@ -38,7 +40,7 @@ const ItineraryForYou = ({
 
   return (
     <View
-      className={`mt-5 ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
+      className={`${noTopMargin ? '' : 'mt-5'} ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
       <SectionHeader
         title={title}
         subtitle={subtitle}

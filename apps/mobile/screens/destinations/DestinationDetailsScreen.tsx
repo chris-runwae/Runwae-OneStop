@@ -3,17 +3,12 @@ import RecommendationsSection from '@/components/destination/RecommendationsSect
 import DetailNotFound from '@/components/experience/DetailNotFound';
 import AddToTripContent from '@/components/home/AddToTripContent';
 import CustomModal from '@/components/ui/CustomModal';
-import AddOnsForYou from '@/components/home/AddOnsForYou';
 import DestinationCard from '@/components/home/DestinationCard';
 import ItineraryForYou from '@/components/home/IteneryForYou';
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
-import {
-  ADD_ONS_FOR_YOU,
-  EXPERIENCE_HIGHLIGHTS,
-  FEATURED_ITINERARIES,
-} from '@/constants/home.constant';
 import { useTrips } from '@/context/TripsContext';
 import { savedItemFromDestination } from '@/utils/savedIdeaInputs';
+import { toItineraryTemplate } from '@/utils/adapters/toItineraryTemplate';
 import React, { useMemo, useState } from 'react';
 import { Alert, Image, Text, View } from 'react-native';
 import Animated, {
@@ -25,6 +20,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { useDestinationById, useDestinations } from '@/hooks/useDestinations';
 import { FlashList } from '@shopify/flash-list';
 import { Spacer } from '@/components';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 
 const DestinationDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,10 +42,16 @@ const DestinationDetailScreen = () => {
     },
   });
 
-  const featuredItineraries = useMemo(
-    () => FEATURED_ITINERARIES.slice(0, 4),
-    []
+  const templatesRaw = useQuery(
+    api.itinerary.listByDestination,
+    id ? { destinationId: id as Id<'destinations'>, limit: 8 } : 'skip'
   );
+
+  const destinationItineraries = useMemo(() => {
+    if (!templatesRaw) return [];
+    const location = destination?.location ?? '';
+    return templatesRaw.map((t: any) => toItineraryTemplate(t, { location }));
+  }, [templatesRaw, destination?.location]);
 
   const similarDestinations = useMemo(() => {
     if (!id) return destinations;
@@ -105,25 +109,19 @@ const DestinationDetailScreen = () => {
           description={destination.description ?? ''}
         />
 
-        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
+        {destinationItineraries.length > 0 && (
+          <>
+            <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
-        <ItineraryForYou
-          data={featuredItineraries}
-          title="Featured Itineraries"
-          showSubtitle={false}
-          showBorder={false}
-          loading={loading}
-        />
-
-        <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
-
-        {/* <AddOnsForYou
-          data={EXPERIENCE_HIGHLIGHTS}
-          title="Book an experience"
-          subtitle="Unique tours and activities to enrich your adventure"
-          loading={loading}
-          showBorder={false}
-        /> */}
+            <ItineraryForYou
+              data={destinationItineraries}
+              title="Featured Itineraries"
+              showSubtitle={false}
+              showBorder={false}
+              loading={templatesRaw === undefined}
+            />
+          </>
+        )}
 
         <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
 
@@ -131,6 +129,7 @@ const DestinationDetailScreen = () => {
           destination={{
             title: destination.title,
             location: destination.location ?? '',
+            coords: destination.coords,
           }}
         />
 

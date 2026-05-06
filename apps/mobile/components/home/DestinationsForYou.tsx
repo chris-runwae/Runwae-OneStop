@@ -11,6 +11,7 @@ interface DestinationsForYouProps {
   title?: string;
   subtitle?: string;
   loading?: boolean;
+  noTopMargin?: boolean;
 }
 
 const DestinationsForYou = ({
@@ -18,12 +19,13 @@ const DestinationsForYou = ({
   title = "Destinations you might like",
   subtitle = "Places that everyone else is crazy about",
   loading = false,
+  noTopMargin = false,
 }: DestinationsForYouProps) => {
   const displayData = loading ? Array(5).fill({}) : data;
   const router = useRouter();
 
   return (
-    <View className="mt-5">
+    <View className={noTopMargin ? '' : 'mt-5'}>
       <SectionHeader
         title={title}
         subtitle={subtitle}

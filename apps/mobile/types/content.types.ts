@@ -23,6 +23,7 @@ export interface Destination {
   description?: string;
   featured?: boolean;
   tags?: string[] | null;
+  coords?: { lat: number; lng: number };
   createdAt?: string;
   updatedAt?: string;
 }

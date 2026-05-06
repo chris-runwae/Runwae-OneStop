@@ -11,6 +11,7 @@ interface PublicTripsSectionProps {
   title?: string;
   subtitle?: string;
   loading?: boolean;
+  noTopMargin?: boolean;
 }
 
 const PublicTripsSection = ({
@@ -18,12 +19,13 @@ const PublicTripsSection = ({
   title = 'Public Trips',
   subtitle = 'Check out what others are planning',
   loading = false,
+  noTopMargin = false,
 }: PublicTripsSectionProps) => {
   const displayData = loading ? Array(3).fill({}) : data;
   const router = useRouter();
 
   return (
-    <View className="mt-5">
+    <View className={noTopMargin ? '' : 'mt-5'}>
       <SectionHeader
         title={title}
         subtitle={subtitle}

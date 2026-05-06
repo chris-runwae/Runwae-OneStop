@@ -16,6 +16,7 @@ function toDestination(d: any): Destination {
     description: d.description,
     featured: d.isFeatured,
     tags: d.tags,
+    coords: d.coords,
   };
 }
 

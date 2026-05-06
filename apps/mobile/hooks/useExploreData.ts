@@ -8,6 +8,7 @@ import {
   Experience,
   ItineraryTemplate,
 } from '@/types/content.types';
+import { toItineraryTemplate } from '@/utils/adapters/toItineraryTemplate';
 
 interface ExploreData {
   itineraries: ItineraryTemplate[];
@@ -42,6 +43,7 @@ function toDestination(d: any): Destination {
     description: d.description,
     featured: d.isFeatured,
     tags: d.tags,
+    coords: d.coords,
   };
 }
 
@@ -97,28 +99,6 @@ function toExperience(e: any): Experience {
   };
 }
 
-function toItineraryTemplate(t: any): ItineraryTemplate {
-  return {
-    id: t._id as unknown as string,
-    title: t.title,
-    location: '',
-    duration: `${t.durationDays} day${t.durationDays === 1 ? '' : 's'}`,
-    category: t.category ?? '',
-    image: t.coverImageUrl ?? '',
-    rating: 0,
-    reviewCount: 0,
-    activities: t.days?.reduce(
-      (acc: number, d: any) => acc + (d.items?.length ?? 0),
-      0,
-    ) ?? 0,
-    description: t.description,
-    featured: false,
-    included: [],
-    dailyItinerary: [],
-    currency: t.currency,
-  };
-}
-
 export const useExploreData = (): UseExploreDataResult => {
   const destinationsRaw = useQuery(api.destinations.list, {});
   const eventsRaw = useQuery(api.events.listPublished, {});
@@ -140,7 +120,7 @@ export const useExploreData = (): UseExploreDataResult => {
       destinations: (destinationsRaw ?? []).map(toDestination),
       events: (eventsRaw ?? []).map(toEvent),
       experiences: (experiencesRaw ?? []).map(toExperience),
-      itineraries: (templatesRaw ?? []).map(toItineraryTemplate),
+      itineraries: (templatesRaw ?? []).map((t) => toItineraryTemplate(t)),
     }),
     [destinationsRaw, eventsRaw, experiencesRaw, templatesRaw],
   );

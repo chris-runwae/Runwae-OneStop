@@ -287,9 +287,6 @@ const RecommendationsSection = ({
     [activeCategory]
   );
 
-  console.log('Active Category', activeCategory);
-  console.log('Items', JSON.stringify(items, null, 2));
-
   return (
     <View className="mt-8">
       <Text

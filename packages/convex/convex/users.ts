@@ -221,6 +221,64 @@ export const getUserByUsername = query({
   },
 });
 
+// ── Host onboarding ────────────────────────────────────────────────────────
+
+export const applyForHost = mutation({
+  args: {
+    bio: v.optional(v.string()),
+    payoutCountry: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const existing = await ctx.db
+      .query("host_applications")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const now = Date.now();
+    const bio = args.bio?.trim() || undefined;
+    const payoutCountry = args.payoutCountry?.trim() || undefined;
+
+    if (existing) {
+      // If a previous application was rejected, the user can re-apply by
+      // overwriting the row in place. Approved applications shouldn't be
+      // re-submitted — caller can just check users.isHost first.
+      if (existing.status === "approved") return existing;
+      await ctx.db.patch(existing._id, {
+        bio,
+        payoutCountry,
+        status: "pending",
+        rejectionReason: undefined,
+        updatedAt: now,
+      });
+      return await ctx.db.get(existing._id);
+    }
+
+    const id = await ctx.db.insert("host_applications", {
+      userId,
+      bio,
+      payoutCountry,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+    return await ctx.db.get(id);
+  },
+});
+
+export const getMyHostApplication = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
+    return await ctx.db
+      .query("host_applications")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+  },
+});
+
 // One-shot: assigns usernames to any existing rows that don't have one.
 // Run via the Convex dashboard's "Run a function" panel after the schema deploy.
 // Idempotent — safe to run repeatedly.

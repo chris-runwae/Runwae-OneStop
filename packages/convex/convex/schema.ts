@@ -814,6 +814,71 @@ export default defineSchema({
     .index("by_key", ["provider", "category", "queryKey"])
     .index("by_category_key", ["category", "queryKey"]),
 
+  // ── SUPPORT ──────────────────────────────────────────────────
+  // User-opened tickets for booking/payment/event/account issues.
+  // Resolution flow: open → in_progress (admin assigned) → resolved → closed.
+  support_tickets: defineTable({
+    reporterId: v.id("users"),
+    category: v.union(
+      v.literal("booking"),
+      v.literal("payment"),
+      v.literal("event"),
+      v.literal("account"),
+      v.literal("other")
+    ),
+    subject: v.string(),
+    description: v.string(),
+    status: v.union(
+      v.literal("open"),
+      v.literal("in_progress"),
+      v.literal("resolved"),
+      v.literal("closed")
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent")
+    ),
+    assignedToAdminId: v.optional(v.id("users")),
+    relatedBookingId: v.optional(v.id("bookings")),
+    relatedEventId: v.optional(v.id("events")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_reporter", ["reporterId"])
+    .index("by_assignee", ["assignedToAdminId"]),
+
+  support_ticket_messages: defineTable({
+    ticketId: v.id("support_tickets"),
+    authorId: v.id("users"),
+    authorRole: v.union(v.literal("user"), v.literal("admin")),
+    body: v.string(),
+    createdAt: v.number(),
+  }).index("by_ticket", ["ticketId"]),
+
+  // ── HOST APPLICATIONS ────────────────────────────────────────
+  // Approval flow for users who want to host events. Today, the gate is
+  // simply users.isHost === true; this table primary-keys the eventual
+  // review UI so we don't need a future schema break.
+  host_applications: defineTable({
+    userId: v.id("users"),
+    bio: v.optional(v.string()),
+    payoutCountry: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    reviewedByAdminId: v.optional(v.id("users")),
+    rejectionReason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+
   // ── PUSH NOTIFICATIONS ───────────────────────────────────────
   // One row per device per user. Multiple rows per user is normal —
   // they install on phone + tablet. We dedupe on (userId, deviceId)

@@ -17,6 +17,7 @@ export const listAll = query({
     paginationOpts: paginationOptsValidator,
     suspended: v.optional(v.union(v.literal("any"), v.literal("only"), v.literal("none"))),
     admins: v.optional(v.union(v.literal("any"), v.literal("only"), v.literal("none"))),
+    hosts: v.optional(v.union(v.literal("any"), v.literal("only"), v.literal("none"))),
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -41,6 +42,11 @@ export const listAll = query({
       page = page.filter((u) => u.isAdmin === true);
     } else if (args.admins === "none") {
       page = page.filter((u) => u.isAdmin !== true);
+    }
+    if (args.hosts === "only") {
+      page = page.filter((u) => u.isHost === true);
+    } else if (args.hosts === "none") {
+      page = page.filter((u) => u.isHost !== true);
     }
     if (args.search && args.search.trim()) {
       const needle = args.search.trim().toLowerCase();

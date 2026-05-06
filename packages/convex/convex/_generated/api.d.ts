@@ -9,10 +9,15 @@
  */
 
 import type * as account_deletion from "../account_deletion.js";
+import type * as admin_analytics from "../admin/analytics.js";
+import type * as admin_bookings from "../admin/bookings.js";
 import type * as admin_collections from "../admin/collections.js";
 import type * as admin_destinations from "../admin/destinations.js";
 import type * as admin_events from "../admin/events.js";
+import type * as admin_host_applications from "../admin/host_applications.js";
 import type * as admin_itinerary_templates from "../admin/itinerary_templates.js";
+import type * as admin_payouts from "../admin/payouts.js";
+import type * as admin_support from "../admin/support.js";
 import type * as admin_users from "../admin/users.js";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
@@ -26,6 +31,9 @@ import type * as events from "../events.js";
 import type * as expenses from "../expenses.js";
 import type * as experiences from "../experiences.js";
 import type * as flights from "../flights.js";
+import type * as host_analytics from "../host/analytics.js";
+import type * as host_events from "../host/events.js";
+import type * as host_payouts from "../host/payouts.js";
 import type * as hotels from "../hotels.js";
 import type * as http from "../http.js";
 import type * as itinerary from "../itinerary.js";
@@ -33,6 +41,7 @@ import type * as lib_admin from "../lib/admin.js";
 import type * as lib_coverImage from "../lib/coverImage.js";
 import type * as lib_email from "../lib/email.js";
 import type * as lib_event_sanitize from "../lib/event_sanitize.js";
+import type * as lib_host from "../lib/host.js";
 import type * as lib_slug from "../lib/slug.js";
 import type * as lib_user_sanitize from "../lib/user_sanitize.js";
 import type * as lib_username from "../lib/username.js";
@@ -61,6 +70,7 @@ import type * as saved_items from "../saved_items.js";
 import type * as search from "../search.js";
 import type * as social from "../social.js";
 import type * as stripeWebhook from "../stripeWebhook.js";
+import type * as support from "../support.js";
 import type * as trips from "../trips.js";
 import type * as unsplash from "../unsplash.js";
 import type * as user_saves from "../user_saves.js";
@@ -75,10 +85,15 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   account_deletion: typeof account_deletion;
+  "admin/analytics": typeof admin_analytics;
+  "admin/bookings": typeof admin_bookings;
   "admin/collections": typeof admin_collections;
   "admin/destinations": typeof admin_destinations;
   "admin/events": typeof admin_events;
+  "admin/host_applications": typeof admin_host_applications;
   "admin/itinerary_templates": typeof admin_itinerary_templates;
+  "admin/payouts": typeof admin_payouts;
+  "admin/support": typeof admin_support;
   "admin/users": typeof admin_users;
   ai: typeof ai;
   auth: typeof auth;
@@ -92,6 +107,9 @@ declare const fullApi: ApiFromModules<{
   expenses: typeof expenses;
   experiences: typeof experiences;
   flights: typeof flights;
+  "host/analytics": typeof host_analytics;
+  "host/events": typeof host_events;
+  "host/payouts": typeof host_payouts;
   hotels: typeof hotels;
   http: typeof http;
   itinerary: typeof itinerary;
@@ -99,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   "lib/coverImage": typeof lib_coverImage;
   "lib/email": typeof lib_email;
   "lib/event_sanitize": typeof lib_event_sanitize;
+  "lib/host": typeof lib_host;
   "lib/slug": typeof lib_slug;
   "lib/user_sanitize": typeof lib_user_sanitize;
   "lib/username": typeof lib_username;
@@ -127,6 +146,7 @@ declare const fullApi: ApiFromModules<{
   search: typeof search;
   social: typeof social;
   stripeWebhook: typeof stripeWebhook;
+  support: typeof support;
   trips: typeof trips;
   unsplash: typeof unsplash;
   user_saves: typeof user_saves;

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@/convex/_generated/api";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminSidebar } from "@/components/layout/sidebar";
+import { AdminHeader } from "@/components/layout/header";
 import { Button } from "@runwae/ui/components/button";
 
 export default function AdminLayout({
@@ -25,17 +26,14 @@ export default function AdminLayout({
     if (!isLoading && !isAuthenticated) router.replace("/sign-in");
   }, [isLoading, isAuthenticated, router]);
 
-  // Auth still resolving, or query not yet returned. Render nothing —
-  // middleware already gates the SSR pass, so this only flashes for the
-  // sub-second window between hydration and the viewer query landing.
   if (isLoading || !isAuthenticated || viewer === undefined) {
     return null;
   }
 
   if (viewer === null || viewer.isAdmin !== true) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-        <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-page px-4">
+        <div className="w-full max-w-md space-y-4 rounded-xl border border-border bg-surface p-8 text-center shadow-sm">
           <h1 className="text-xl font-semibold tracking-tight">Forbidden</h1>
           <p className="text-sm text-muted-foreground">
             This account is not an admin. Sign in with a different Google
@@ -60,9 +58,18 @@ export default function AdminLayout({
     );
   }
 
+  const user = {
+    name: viewer.name ?? undefined,
+    email: viewer.email ?? undefined,
+  };
+
   return (
-    <AdminShell user={{ name: viewer.name, email: viewer.email }}>
-      {children}
-    </AdminShell>
+    <div className="flex min-h-screen bg-page">
+      <AdminSidebar user={user} />
+      <div className="ml-64 flex flex-1 min-w-0 flex-col">
+        <AdminHeader user={user} />
+        <main className="flex-1">{children}</main>
+      </div>
+    </div>
   );
 }

@@ -1,0 +1,12 @@
+# Build artifacts
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Env
+.env*.local
+.env
+
+# OS
+.DS_Store

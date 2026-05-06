@@ -32,6 +32,7 @@ import type * as expenses from "../expenses.js";
 import type * as experiences from "../experiences.js";
 import type * as flights from "../flights.js";
 import type * as host_analytics from "../host/analytics.js";
+import type * as host_bookings from "../host/bookings.js";
 import type * as host_events from "../host/events.js";
 import type * as host_payouts from "../host/payouts.js";
 import type * as hotels from "../hotels.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   experiences: typeof experiences;
   flights: typeof flights;
   "host/analytics": typeof host_analytics;
+  "host/bookings": typeof host_bookings;
   "host/events": typeof host_events;
   "host/payouts": typeof host_payouts;
   hotels: typeof hotels;

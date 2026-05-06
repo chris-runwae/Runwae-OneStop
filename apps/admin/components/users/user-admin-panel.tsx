@@ -8,8 +8,8 @@ import { Loader2, ShieldCheck, ShieldOff, UserCog, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@runwae/ui/components/badge";
+import { Button } from "@runwae/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -17,10 +17,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+} from "@runwae/ui/components/dialog";
+import { Label } from "@runwae/ui/components/label";
+import { Switch } from "@runwae/ui/components/switch";
+import { Textarea } from "@runwae/ui/components/textarea";
 
 type User = Doc<"users">;
 

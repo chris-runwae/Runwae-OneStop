@@ -7,9 +7,9 @@ import { usePaginatedQuery } from "convex/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Badge } from "@runwae/ui/components/badge";
 import { DataTable } from "@/components/data-table/data-table";
 
 type User = Doc<"users">;

@@ -5,8 +5,8 @@ import Image from "next/image";
 import { GripVertical, X } from "lucide-react";
 import { toast } from "sonner";
 import { UploadDropzone } from "@/lib/uploadthing";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@runwae/ui/lib/cn";
+import { Button } from "@runwae/ui/components/button";
 
 interface SingleImageUploadProps {
   value: string | null;

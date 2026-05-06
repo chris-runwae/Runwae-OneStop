@@ -9,9 +9,9 @@ import { ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Label } from "@runwae/ui/components/label";
 
 type EntityType = Doc<"collections">["entityType"];
 

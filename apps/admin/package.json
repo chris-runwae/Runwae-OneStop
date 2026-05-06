@@ -21,6 +21,7 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-switch": "^1.2.6",
     "@runwae/convex": "workspace:*",
+    "@runwae/ui": "workspace:*",
     "@tanstack/react-table": "^8.20.5",
     "@uploadthing/react": "^7.3.3",
     "class-variance-authority": "^0.7.1",

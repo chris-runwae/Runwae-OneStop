@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@runwae/ui/components/table";
 
 interface DataTableProps<T> {
   data: T[];

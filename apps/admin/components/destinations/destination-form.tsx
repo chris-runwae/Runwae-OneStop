@@ -13,13 +13,13 @@ import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ISO_COUNTRIES, ISO_CURRENCIES } from "@/lib/iso-data";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@runwae/ui/lib/cn";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Textarea } from "@runwae/ui/components/textarea";
+import { Label } from "@runwae/ui/components/label";
+import { Switch } from "@runwae/ui/components/switch";
+import { Badge } from "@runwae/ui/components/badge";
 import { GalleryUpload, SingleImageUpload } from "@/components/image-upload";
 
 const destinationSchema = z.object({

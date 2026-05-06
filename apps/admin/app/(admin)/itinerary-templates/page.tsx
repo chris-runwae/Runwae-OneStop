@@ -19,18 +19,18 @@ import {
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Switch } from "@runwae/ui/components/switch";
+import { Label } from "@runwae/ui/components/label";
+import { Badge } from "@runwae/ui/components/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@runwae/ui/components/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@runwae/ui/components/dialog";
 import { DataTable } from "@/components/data-table/data-table";
 
 type Row = NonNullable<

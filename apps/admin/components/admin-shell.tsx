@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from "@runwae/ui/lib/cn";
+import { Button } from "@runwae/ui/components/button";
 import type { ReactNode } from "react";
 
 const NAV = [

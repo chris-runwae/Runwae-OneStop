@@ -21,11 +21,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Loader2, MapPin, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ISO_CURRENCIES } from "@/lib/iso-data";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { cn } from "@runwae/ui/lib/cn";
+import { Input } from "@runwae/ui/components/input";
+import { Textarea } from "@runwae/ui/components/textarea";
+import { Button } from "@runwae/ui/components/button";
+import { Label } from "@runwae/ui/components/label";
 import { SingleImageUpload } from "@/components/image-upload";
 import { ITEM_TYPE_OPTIONS, type ItemType, type TemplateItem } from "./types";
 

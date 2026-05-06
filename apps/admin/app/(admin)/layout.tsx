@@ -6,7 +6,7 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "@/convex/_generated/api";
 import { AdminShell } from "@/components/admin-shell";
-import { Button } from "@/components/ui/button";
+import { Button } from "@runwae/ui/components/button";
 
 export default function AdminLayout({
   children,

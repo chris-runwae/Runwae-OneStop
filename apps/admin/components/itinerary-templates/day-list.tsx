@@ -19,9 +19,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, GripVertical } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { cn } from "@runwae/ui/lib/cn";
+import { Input } from "@runwae/ui/components/input";
+import { Button } from "@runwae/ui/components/button";
 import { ItemList } from "./item-list";
 import type { TemplateDay } from "./types";
 

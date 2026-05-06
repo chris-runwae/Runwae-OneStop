@@ -8,12 +8,12 @@ import { Flame, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@runwae/ui/components/badge";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Label } from "@runwae/ui/components/label";
+import { Switch } from "@runwae/ui/components/switch";
+import { Textarea } from "@runwae/ui/components/textarea";
 
 type EventStatus = Doc<"events">["status"];
 

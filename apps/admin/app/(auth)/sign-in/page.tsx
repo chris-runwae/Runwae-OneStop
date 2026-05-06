@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@runwae/ui/components/button";
 
 export default function AdminSignInPage() {
   const { signIn } = useAuthActions();

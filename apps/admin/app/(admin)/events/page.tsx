@@ -10,17 +10,17 @@ import { Flame, FlameKindling, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@runwae/ui/components/button";
+import { Input } from "@runwae/ui/components/input";
+import { Switch } from "@runwae/ui/components/switch";
+import { Label } from "@runwae/ui/components/label";
+import { Badge } from "@runwae/ui/components/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@runwae/ui/components/dropdown-menu";
 import { DataTable } from "@/components/data-table/data-table";
 
 type EventStatus = Doc<"events">["status"];

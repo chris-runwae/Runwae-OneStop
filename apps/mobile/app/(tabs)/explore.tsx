@@ -80,8 +80,11 @@ const ExploreScreen = () => {
   // "Food & Drink" rarely match a single canonical `category` string in the
   // data, so we substring-match (case-insensitive) against category + tags.
   const matchesSubCategory = (
-    item: { category?: string | null; tags?: readonly string[] | string[] | null },
-    selected: string,
+    item: {
+      category?: string | null;
+      tags?: readonly string[] | string[] | null;
+    },
+    selected: string
   ) => {
     if (selected === 'All') return true;
     const needle = selected.toLowerCase();
@@ -172,7 +175,7 @@ const ExploreScreen = () => {
     return destinations.filter(
       (item) =>
         matchesSearch(item.title + item.location, searchQuery) &&
-        matchesSubCategory(item, selectedSubCategory),
+        matchesSubCategory(item, selectedSubCategory)
     );
   }, [searchQuery, selectedSubCategory, selectedTopCategory, destinations]);
 
@@ -180,7 +183,7 @@ const ExploreScreen = () => {
     if (selectedTopCategory !== 'All' && selectedTopCategory !== 'Trips')
       return [];
     return publicTrips.filter((item) =>
-      matchesSearch(item.title + (item.destinationLabel ?? ''), searchQuery),
+      matchesSearch(item.title + (item.destinationLabel ?? ''), searchQuery)
     );
   }, [searchQuery, selectedTopCategory, publicTrips]);
 
@@ -317,9 +320,7 @@ const ExploreScreen = () => {
             <View className="mx-5 mb-2 overflow-hidden rounded-2xl bg-primary">
               <TouchableOpacity
                 activeOpacity={0.9}
-                onPress={() =>
-                  router.push('/create-trip-options' as any)
-                }
+                onPress={() => router.push('/create-trip-options' as any)}
                 className="flex-row items-center justify-between px-5 py-5">
                 <View className="flex-1 pr-4">
                   <Text className="text-lg font-bold text-white">
@@ -341,7 +342,7 @@ const ExploreScreen = () => {
               filteredDestinations.length === 0 && (
                 <View className="items-center justify-center px-5 py-10">
                   <Text className="text-center text-lg font-medium text-gray-400">
-                    No results found for "{searchQuery}"
+                    No results found for &quot;{searchQuery}&quot;
                   </Text>
                   <TouchableOpacity
                     onPress={() => {

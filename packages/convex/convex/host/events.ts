@@ -28,6 +28,27 @@ const HOST_ALLOWED_TRANSITIONS: Record<string, string[]> = {
   completed: ["completed"],
 };
 
+// Lightweight list for selector UIs (e.g. chart dropdowns). Returns just
+// {_id, name, status, startDateUtc} for every event the host owns.
+export const listAllForHost = query({
+  args: {},
+  handler: async (ctx) => {
+    const host = await requireHost(ctx);
+    const rows = await ctx.db
+      .query("events")
+      .withIndex("by_host", (q) => q.eq("hostUserId", host._id))
+      .collect();
+    return rows
+      .sort((a, b) => b.startDateUtc - a.startDateUtc)
+      .map((e) => ({
+        _id: e._id,
+        name: e.name,
+        status: e.status,
+        startDateUtc: e.startDateUtc,
+      }));
+  },
+});
+
 export const getMyEvents = query({
   args: {
     paginationOpts: paginationOptsValidator,

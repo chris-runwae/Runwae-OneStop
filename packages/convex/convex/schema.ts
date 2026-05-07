@@ -619,6 +619,19 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_event", ["eventId"]),
 
+  event_views: defineTable({
+    eventId: v.id("events"),
+    viewerUserId: v.optional(v.id("users")),
+    sessionHash: v.optional(v.string()),
+    ua: v.optional(v.string()),
+    ts: v.number(),
+    dayKey: v.string(),
+  })
+    .index("by_event_ts", ["eventId", "ts"])
+    .index("by_event_day", ["eventId", "dayKey"])
+    .index("by_event_session", ["eventId", "sessionHash"])
+    .index("by_event_user", ["eventId", "viewerUserId"]),
+
   // ── REVIEWS ────────────────────────────────────────────────
   reviews: defineTable({
     entityType: v.union(

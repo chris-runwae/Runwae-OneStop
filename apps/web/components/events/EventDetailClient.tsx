@@ -76,6 +76,38 @@ export function EventDetailClient({
   const [toast, setToast] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Record a view exactly once per mount. The mutation dedupes by
+  // viewerUserId or sessionHash within a 24h window server-side.
+  const recordView = useMutation(api.events.recordView);
+  useEffect(() => {
+    let sessionHash: string | undefined;
+    if (typeof window !== "undefined") {
+      try {
+        const KEY = "runwae:viewSessionId";
+        sessionHash = window.sessionStorage.getItem(KEY) ?? undefined;
+        if (!sessionHash) {
+          sessionHash =
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : Math.random().toString(36).slice(2);
+          window.sessionStorage.setItem(KEY, sessionHash);
+        }
+      } catch {
+        // sessionStorage may be unavailable (private mode, sandboxed iframes)
+      }
+    }
+    void recordView({
+      eventId: event._id,
+      sessionHash,
+      ua:
+        typeof navigator !== "undefined"
+          ? navigator.userAgent.slice(0, 200)
+          : undefined,
+    }).catch(() => {
+      // view tracking is best-effort
+    });
+  }, [event._id, recordView]);
+
   // Quota guard: if the user has already used all their AI plans, swap the
   // plan modal for the paywall before they fill in any state.
   const aiQuota = useQuery(api.ai.getQuota, {});

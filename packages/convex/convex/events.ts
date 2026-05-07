@@ -89,6 +89,64 @@ export const incrementViewCount = mutation({
   },
 });
 
+const VIEW_DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function dayKeyFromTs(ts: number): string {
+  const d = new Date(ts);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export const recordView = mutation({
+  args: {
+    eventId: v.id("events"),
+    sessionHash: v.optional(v.string()),
+    ua: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId);
+    if (!event) return { recorded: false };
+
+    const viewerUserId = await getAuthUserId(ctx);
+    const now = Date.now();
+    const windowStart = now - VIEW_DEDUP_WINDOW_MS;
+
+    // Dedup by signed-in user within the 24h window
+    if (viewerUserId !== null) {
+      const recent = await ctx.db
+        .query("event_views")
+        .withIndex("by_event_user", (q) =>
+          q.eq("eventId", args.eventId).eq("viewerUserId", viewerUserId)
+        )
+        .order("desc")
+        .first();
+      if (recent && recent.ts >= windowStart) return { recorded: false };
+    } else if (args.sessionHash) {
+      const recent = await ctx.db
+        .query("event_views")
+        .withIndex("by_event_session", (q) =>
+          q.eq("eventId", args.eventId).eq("sessionHash", args.sessionHash)
+        )
+        .order("desc")
+        .first();
+      if (recent && recent.ts >= windowStart) return { recorded: false };
+    }
+
+    await ctx.db.insert("event_views", {
+      eventId: args.eventId,
+      viewerUserId: viewerUserId ?? undefined,
+      sessionHash: args.sessionHash,
+      ua: args.ua,
+      ts: now,
+      dayKey: dayKeyFromTs(now),
+    });
+    await ctx.db.patch(args.eventId, { viewCount: event.viewCount + 1 });
+    return { recorded: true };
+  },
+});
+
 export const rsvp = mutation({
   args: {
     eventId: v.id("events"),

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -54,14 +55,19 @@ export function HostSidebar({
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-surface border-r border-border">
       <div className="flex h-16 shrink-0 items-center px-6">
-        <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg font-display">
-            R
-          </div>
-          <span className="font-display text-base font-semibold tracking-tight text-heading">
-            Hosts
+        <Link href="/overview" className="flex items-center gap-2">
+          <Image
+            src="/logo-dark.png"
+            alt="Runwae"
+            width={120}
+            height={30}
+            priority
+            className="h-7 w-auto"
+          />
+          <span className="font-display text-base font-semibold tracking-tight text-muted-foreground">
+            / Hosts
           </span>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">

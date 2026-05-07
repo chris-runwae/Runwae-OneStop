@@ -1,15 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "convex/react";
-import {
-  CalendarDays,
-  TrendingUp,
-  Users,
-  Eye,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
+import { TrendingUp, Wallet } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import {
   Card,
@@ -19,10 +13,29 @@ import {
 } from "@runwae/ui/components/card";
 import { Skeleton } from "@runwae/ui/components/skeleton";
 import { Button } from "@runwae/ui/components/button";
+import { EventMetrics } from "@/components/overview/event-metrics";
+import { EventPerformanceChart } from "@/components/overview/event-performance-chart";
+import { computeChange, type Period } from "@/lib/period-utils";
 
 export default function HostOverviewPage() {
-  const overview = useQuery(api.host.analytics.getMyOverview, {});
+  const [viewsPeriod, setViewsPeriod] = useState<Period>("this_month");
+  const [tripsPeriod, setTripsPeriod] = useState<Period>("this_month");
+  const [bookingsPeriod, setBookingsPeriod] = useState<Period>("this_month");
+
+  const viewsTrends = useQuery(api.host.analytics.getMyOverviewWithTrends, {
+    period: viewsPeriod,
+  });
+  const tripsTrends = useQuery(api.host.analytics.getMyOverviewWithTrends, {
+    period: tripsPeriod,
+  });
+  const bookingsTrends = useQuery(api.host.analytics.getMyOverviewWithTrends, {
+    period: bookingsPeriod,
+  });
+
   const earnings = useQuery(api.commissions.getHostEarnings, {});
+  const viewsCard = trendCard(viewsTrends, "views", viewsPeriod);
+  const tripsCard = trendCard(tripsTrends, "tripPlans", tripsPeriod);
+  const bookingsCard = trendCard(bookingsTrends, "bookings", bookingsPeriod);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -35,46 +48,46 @@ export default function HostOverviewPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi
-          label="Pending earnings"
-          value={
-            earnings
-              ? `£${earnings.pending.toFixed(2)}`
-              : null
-          }
-          icon={Wallet}
-          loading={earnings === undefined}
-          accent
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <EventMetrics
+          label="Views"
+          value={viewsCard.value}
+          change={viewsCard.change}
+          trend={viewsCard.trend}
+          period={viewsPeriod}
+          onPeriodChange={setViewsPeriod}
         />
-        <Kpi
-          label="Upcoming events"
-          value={overview ? `${overview.upcomingEvents}` : null}
-          icon={CalendarDays}
-          loading={overview === undefined}
+        <EventMetrics
+          label="Trip Plans"
+          value={tripsCard.value}
+          change={tripsCard.change}
+          trend={tripsCard.trend}
+          period={tripsPeriod}
+          onPeriodChange={setTripsPeriod}
         />
-        <Kpi
-          label="Going attendees"
-          value={overview ? `${overview.totalParticipants}` : null}
-          icon={Users}
-          loading={overview === undefined}
-        />
-        <Kpi
-          label="Total views"
-          value={overview ? `${overview.totalViews}` : null}
-          icon={Eye}
-          loading={overview === undefined}
+        <EventMetrics
+          label="Bookings"
+          value={bookingsCard.value}
+          change={bookingsCard.change}
+          trend={bookingsCard.trend}
+          period={bookingsPeriod}
+          onPeriodChange={setBookingsPeriod}
         />
       </div>
+
+      <EventPerformanceChart />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Get started</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="size-4 text-primary" />
+              Get started
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
-              {overview?.eventCount === 0
+              {viewsTrends?.eventCount === 0
                 ? "Create your first event to start tracking performance and revenue."
                 : "Manage your existing events or publish a new one."}
             </p>
@@ -118,42 +131,33 @@ export default function HostOverviewPage() {
   );
 }
 
-function Kpi({
-  label,
-  value,
-  icon: Icon,
-  loading,
-  accent,
-}: {
-  label: string;
-  value: string | null;
-  icon: LucideIcon;
-  loading: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4 p-6">
-        <div
-          className={`flex size-10 items-center justify-center rounded-lg ${
-            accent ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
-          }`}
-        >
-          <Icon className="size-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {label}
-          </p>
-          {loading ? (
-            <Skeleton className="mt-1 h-6 w-20" />
-          ) : (
-            <p className="mt-0.5 font-display text-xl font-semibold tabular-nums text-heading">
-              {value}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+type TrendsCard = {
+  value: string;
+  change: string;
+  trend: "up" | "down";
+};
+
+type Trends = {
+  cards: {
+    views: { current: number; previous: number };
+    bookings: { current: number; previous: number };
+    tripPlans: { current: number; previous: number };
+  };
+} | undefined;
+
+function trendCard(
+  data: Trends,
+  key: "views" | "bookings" | "tripPlans",
+  period: Period
+): TrendsCard {
+  if (!data) {
+    return { value: "—", change: "", trend: "up" };
+  }
+  const card = data.cards[key];
+  const change = computeChange(card.current, card.previous, period);
+  return {
+    value: card.current.toLocaleString(),
+    change: change.change,
+    trend: change.trend,
+  };
 }

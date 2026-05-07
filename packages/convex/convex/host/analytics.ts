@@ -282,11 +282,23 @@ export const getMyOverviewWithTrends = query({
       }
     }
 
-    // Trip-plans = itinerary items the host's user owns. Falls back to 0
-    // if the table doesn't have an index by user — we'll keep this cheap
-    // for now and refine once we wire actual trip-plan instrumentation.
-    const tripPlansCurrent = 0;
-    const tripPlansPrev = 0;
+    // Trip-plans = trips that were planned around one of this host's
+    // events. The trips table records that link via the optional `eventId`
+    // field, indexed by `by_event`, so we count one event at a time and
+    // bucket each match by trip.createdAt into the current/previous window.
+    let tripPlansCurrent = 0;
+    let tripPlansPrev = 0;
+    for (const e of events) {
+      const trips = await ctx.db
+        .query("trips")
+        .withIndex("by_event", (q) => q.eq("eventId", e._id))
+        .collect();
+      for (const t of trips) {
+        if (t.createdAt >= start && t.createdAt < end) tripPlansCurrent += 1;
+        else if (t.createdAt >= prevStart && t.createdAt < prevEnd)
+          tripPlansPrev += 1;
+      }
+    }
 
     const totalViewsAllTime = events.reduce((s, e) => s + e.viewCount, 0);
     const totalParticipants = events.reduce(

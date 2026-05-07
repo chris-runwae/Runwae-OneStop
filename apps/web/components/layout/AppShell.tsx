@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
@@ -152,11 +153,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="h-5 w-5 text-foreground" />
           </button>
-          <Link
-            href="/home"
-            className="font-display text-xl font-bold text-primary"
-          >
-            Runwae
+          <Link href="/home" className="flex items-center">
+            <Image
+              src="/logo-dark.png"
+              alt="Runwae"
+              width={120}
+              height={30}
+              priority
+              className="h-7 w-auto"
+            />
           </Link>
           <div className="flex items-center gap-3">
             <Link
@@ -246,17 +251,28 @@ function SidebarContent({
             type="button"
             onClick={onToggleCollapsed}
             aria-label="Expand sidebar"
-            className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 font-display text-2xl font-bold text-primary transition-transform hover:scale-105 active:scale-95"
+            className="grid h-10 w-10 place-items-center rounded-xl transition-transform hover:scale-105 active:scale-95"
           >
-            R
+            <Image
+              src="/logo-dark.png"
+              alt="Runwae"
+              width={40}
+              height={40}
+              priority
+              className="h-8 w-auto"
+            />
           </button>
         ) : (
           <>
-            <Link
-              href="/home"
-              className="font-display text-2xl font-bold text-primary"
-            >
-              Runwae
+            <Link href="/home" className="flex items-center">
+              <Image
+                src="/logo-dark.png"
+                alt="Runwae"
+                width={140}
+                height={36}
+                priority
+                className="h-8 w-auto"
+              />
             </Link>
             {onToggleCollapsed && (
               <button

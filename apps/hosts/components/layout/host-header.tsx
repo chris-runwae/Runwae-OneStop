@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Bell } from "lucide-react";
+import { Plus, Bell, Menu } from "lucide-react";
 import { Button } from "@runwae/ui/components/button";
 
 export function HostHeader({
   user,
+  onMenuClick,
 }: {
   user: { name?: string; email?: string };
+  onMenuClick?: () => void;
 }) {
   const displayName = user.name ?? "Host";
   const initials = displayName
@@ -18,10 +20,22 @@ export function HostHeader({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-6 border-b border-border bg-surface px-6">
-      <p className="font-display text-lg font-bold text-heading">
-        Welcome {displayName.split(" ")[0]}&nbsp;👋
-      </p>
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-border bg-surface px-4 sm:gap-6 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open menu"
+            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-heading transition-colors lg:hidden"
+          >
+            <Menu className="size-5" />
+          </button>
+        )}
+        <p className="truncate font-display text-lg font-bold text-heading">
+          Welcome {displayName.split(" ")[0]}&nbsp;👋
+        </p>
+      </div>
 
       <div className="flex shrink-0 items-center gap-3">
         <Button asChild size="sm" className="gap-1.5">

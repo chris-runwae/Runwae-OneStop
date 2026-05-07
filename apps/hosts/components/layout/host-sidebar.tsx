@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   BookOpen,
   Settings,
   LogOut,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@runwae/ui/lib/cn";
@@ -31,8 +33,12 @@ const NAV: NavItem[] = [
 
 export function HostSidebar({
   user,
+  open = false,
+  onClose,
 }: {
   user: { name?: string; email?: string };
+  open?: boolean;
+  onClose?: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -52,23 +58,75 @@ export function HostSidebar({
     router.replace("/sign-in");
   };
 
+  // Close drawer on route change.
+  useEffect(() => {
+    if (open && onClose) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // ESC closes the drawer.
+  useEffect(() => {
+    if (!open || !onClose) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Lock body scroll while drawer is open on mobile.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   return (
-    <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-surface border-r border-border">
-      <div className="flex h-16 shrink-0 items-center px-6">
-        <Link href="/overview" className="flex items-center gap-2">
-          <Image
-            src="/logo-dark.png"
-            alt="Runwae"
-            width={120}
-            height={30}
-            priority
-            className="h-7 w-auto"
-          />
-          <span className="font-display text-base font-semibold tracking-tight text-muted-foreground">
-            / Hosts
-          </span>
-        </Link>
-      </div>
+    <>
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden",
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+      />
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-surface border-r border-border transition-transform duration-200 ease-out",
+          open ? "translate-x-0" : "-translate-x-full",
+          "lg:translate-x-0 lg:z-30"
+        )}
+        aria-label="Main menu"
+      >
+        <div className="flex h-16 shrink-0 items-center px-6">
+          <Link href="/overview" className="flex items-center gap-2">
+            <Image
+              src="/logo-dark.png"
+              alt="Runwae"
+              width={120}
+              height={30}
+              priority
+              className="h-7 w-auto"
+            />
+            <span className="font-display text-base font-semibold tracking-tight text-muted-foreground">
+              / Hosts
+            </span>
+          </Link>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close menu"
+              className="ml-auto grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-heading transition-colors lg:hidden"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         {NAV.map((item) => {
@@ -130,6 +188,7 @@ export function HostSidebar({
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

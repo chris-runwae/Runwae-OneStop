@@ -1,11 +1,13 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Menu } from "lucide-react";
 
 export function AdminHeader({
   user,
+  onMenuClick,
 }: {
   user: { name?: string; email?: string };
+  onMenuClick?: () => void;
 }) {
   const displayName = user.name ?? "Admin";
   const email = user.email ?? "";
@@ -17,8 +19,18 @@ export function AdminHeader({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-6 border-b border-border bg-surface px-6">
-      <p className="shrink-0 font-display text-lg font-bold text-heading">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-surface px-4 sm:gap-6 sm:px-6">
+      {onMenuClick && (
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Open menu"
+          className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-heading transition-colors lg:hidden"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
+      <p className="hidden shrink-0 font-display text-lg font-bold text-heading sm:block">
         Welcome {displayName.split(" ")[0]}&nbsp;👋
       </p>
 

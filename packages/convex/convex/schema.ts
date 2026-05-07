@@ -54,7 +54,8 @@ export default defineSchema({
     .index("phone", ["phone"])
     .index("by_username", ["username"])
     .index("by_deletion_scheduled", ["deletionScheduledFor"])
-    .index("by_admin", ["isAdmin"]),
+    .index("by_admin", ["isAdmin"])
+    .index("by_host", ["isHost"]),
 
   // Admin console audit log. Records every privileged action (suspension,
   // admin grant/revoke). No UI surfaces this yet — written for forensics

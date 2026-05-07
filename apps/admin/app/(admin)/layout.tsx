@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -21,6 +21,7 @@ export default function AdminLayout({
     isAuthenticated ? {} : "skip"
   );
   const { signOut } = useAuthActions();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace("/sign-in");
@@ -65,9 +66,13 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-page">
-      <AdminSidebar user={user} />
-      <div className="ml-64 flex flex-1 min-w-0 flex-col">
-        <AdminHeader user={user} />
+      <AdminSidebar
+        user={user}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+      <div className="flex flex-1 min-w-0 flex-col lg:ml-64">
+        <AdminHeader user={user} onMenuClick={() => setDrawerOpen(true)} />
         <main className="flex-1">{children}</main>
       </div>
     </div>

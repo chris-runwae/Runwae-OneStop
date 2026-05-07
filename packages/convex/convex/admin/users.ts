@@ -23,10 +23,21 @@ export const listAll = query({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
-    const result = await ctx.db
-      .query("users")
-      .order("desc")
-      .paginate(args.paginationOpts);
+    // Push the host filter into the index when narrowing to hosts only.
+    // Without this, paginate() returns N raw users and the post-filter
+    // strips most of them out, so each "page" looks near-empty even when
+    // the underlying table has plenty of hosts further along the cursor.
+    const result =
+      args.hosts === "only"
+        ? await ctx.db
+            .query("users")
+            .withIndex("by_host", (q) => q.eq("isHost", true))
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : await ctx.db
+            .query("users")
+            .order("desc")
+            .paginate(args.paginationOpts);
 
     let page = result.page;
     // Hide system sentinels from the admin UI — they aren't real users and
@@ -43,9 +54,8 @@ export const listAll = query({
     } else if (args.admins === "none") {
       page = page.filter((u) => u.isAdmin !== true);
     }
-    if (args.hosts === "only") {
-      page = page.filter((u) => u.isHost === true);
-    } else if (args.hosts === "none") {
+    if (args.hosts === "none") {
+      // "only" is already handled by the index above.
       page = page.filter((u) => u.isHost !== true);
     }
     if (args.search && args.search.trim()) {

@@ -59,7 +59,10 @@ export const search = internalAction({
         url.searchParams.set("longitude", String(lng));
         url.searchParams.set("radius", "20000"); // 20 km
       } else if (term) {
-        url.searchParams.set("destinationName", term);
+        // `destinationName` is not a v3 parameter — LiteAPI silently returns
+        // nothing. `aiSearch` accepts a natural-language string ("Dubai",
+        // "Hotels near Burj Khalifa") and resolves it server-side.
+        url.searchParams.set("aiSearch", term);
       } else {
         return [];
       }
@@ -69,11 +72,22 @@ export const search = internalAction({
         headers: { "X-API-Key": apiKey, Accept: "application/json" },
       });
       if (!res.ok) {
-        console.warn("[liteapi] response not ok", res.status);
+        const txt = await res.text();
+        console.warn("[liteapi] data/hotels not ok", {
+          status: res.status,
+          url: url.toString(),
+          body: txt.slice(0, 400),
+        });
         return [];
       }
-      const data = (await res.json()) as { data?: any[] };
+      const data = (await res.json()) as { data?: any[]; error?: any; message?: string };
       const hotels = data.data ?? [];
+      console.log("[liteapi] data/hotels result", {
+        url: url.toString(),
+        rawCount: hotels.length,
+        error: data.error,
+        message: data.message,
+      });
       const items: DiscoveryItem[] = hotels.slice(0, limit).map((h: any) => ({
         provider: "liteapi" as const,
         apiRef: String(h.id ?? ""),
@@ -107,6 +121,13 @@ export const search = internalAction({
           it.currency = r.currency;
           filtered.push(it);
         }
+        console.log("[liteapi] rate-filter result", {
+          itemsBefore: items.length,
+          itemsAfter: filtered.length,
+          ratesReturned: Object.keys(rates).length,
+          checkin,
+          checkout,
+        });
         return filtered;
       }
       return items;

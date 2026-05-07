@@ -53,3 +53,40 @@ export const searchAll = query({
     };
   },
 });
+
+// Powers the Experiences chip's local-DB pass. Returns published events +
+// curated experiences that match the term. Hotels and flights deliberately
+// have no representation here — they live behind their own chips.
+// Substring matching only; swap for `withSearchIndex` once content scales.
+export const searchExperiences = query({
+  args: { term: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const needle = args.term.trim().toLowerCase();
+    if (needle.length === 0) {
+      return { events: [], experiences: [] };
+    }
+    const limit = args.limit ?? 10;
+
+    const experiences = await ctx.db.query("experiences").collect();
+    const events = await ctx.db.query("events").collect();
+
+    return {
+      events: events
+        .filter(
+          (e) =>
+            e.status === "published" &&
+            (matches(e.name, needle) ||
+              matches(e.description, needle) ||
+              matches(e.locationName, needle) ||
+              matches(e.category, needle))
+        )
+        .slice(0, limit)
+        .map(toPublicEvent),
+      experiences: experiences
+        .filter(
+          (e) => matches(e.title, needle) || matches(e.description, needle)
+        )
+        .slice(0, limit),
+    };
+  },
+});

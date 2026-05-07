@@ -55,10 +55,16 @@ export const searchByCategory = action({
     // Pass true from the client to bypass the 24h cache after a no-result
     // session, e.g. after a user has just set their home location.
     forceRefresh: v.optional(v.boolean()),
+    // Viator-specific bucket controls. Forwarded only to the viator action;
+    // ignored by other providers. Included in the cache key so different
+    // sections (Most popular vs Sights to see) don't collide on the same
+    // (provider, category, queryKey) row.
+    tags: v.optional(v.array(v.number())),
+    sortBy: v.optional(v.string()),
   },
   handler: async (
     ctx,
-    { category, term, lat, lng, limit, checkin, checkout, originIata, destinationIata, forceRefresh },
+    { category, term, lat, lng, limit, checkin, checkout, originIata, destinationIata, forceRefresh, tags, sortBy },
   ): Promise<DiscoveryItem[]> => {
     const cap = limit ?? 12;
     const coordsKey =
@@ -69,10 +75,12 @@ export const searchByCategory = action({
     const iataKey = originIata || destinationIata
       ? `|iata=${originIata ?? ""}~${destinationIata ?? ""}`
       : "";
+    const tagsKey = tags && tags.length > 0 ? `|tags=${[...tags].sort().join(",")}` : "";
+    const sortKey = sortBy ? `|sort=${sortBy}` : "";
     // Bump CACHE_VERSION when changing item shape (e.g. URL rewrites) so
     // stale entries don't keep serving old data after a deploy.
-    const CACHE_VERSION = "v4";
-    const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}|limit=${cap}|${CACHE_VERSION}`;
+    const CACHE_VERSION = "v5";
+    const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}${tagsKey}${sortKey}|limit=${cap}|${CACHE_VERSION}`;
     const provider = providerFor(category);
 
     if (!forceRefresh) {
@@ -87,7 +95,7 @@ export const searchByCategory = action({
       switch (provider) {
         case "viator":
           items = await ctx.runAction(internal.providers.viator.search, {
-            category, term, lat, lng, limit: cap,
+            category, term, lat, lng, limit: cap, tags, sortBy,
           });
           break;
         case "liteapi":

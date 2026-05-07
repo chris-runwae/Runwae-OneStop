@@ -155,6 +155,14 @@ export const search = internalAction({
     lat: v.optional(v.number()),
     lng: v.optional(v.number()),
     limit: v.number(),
+    // Viator standard tag IDs (e.g. 11930 = Sightseeing, 21972 = Adventure).
+    // When set, we forward as `filtering.tags` so different sections of
+    // the UI can request different product buckets without firing extra
+    // calls or filtering client-side.
+    tags: v.optional(v.array(v.number())),
+    // "POPULARITY" | "PRICE" | "DEFAULT". Default omits the `sorting`
+    // block so Viator returns relevance-ranked results.
+    sortBy: v.optional(v.string()),
   },
   // Viator v2.0 /products/search requires `filtering.destination` (a
   // destinationId from /destinations), not a free-text search term. We
@@ -162,7 +170,7 @@ export const search = internalAction({
   // then pass it through.
   handler: async (
     ctx,
-    { category, term, lat, lng, limit },
+    { category, term, lat, lng, limit, tags, sortBy },
   ): Promise<DiscoveryItem[]> => {
     const apiKey = process.env.VIATOR_KEY;
     if (!apiKey) {
@@ -180,6 +188,22 @@ export const search = internalAction({
     }
 
     try {
+      const filtering: Record<string, unknown> = {
+        destination: String(dest.destinationId),
+      };
+      if (tags && tags.length > 0) filtering.tags = tags;
+
+      const body: Record<string, unknown> = {
+        filtering,
+        pagination: { start: 1, count: Math.min(limit, 12) },
+        currency: "GBP",
+      };
+      // Viator rejects `{ sort: "DEFAULT", order: ASCENDING }` with 400.
+      // Only attach `sorting` for explicit non-default sorts.
+      if (sortBy && sortBy !== "DEFAULT") {
+        body.sorting = { sort: sortBy, order: "DESCENDING" };
+      }
+
       const res = await fetch(`${VIATOR_BASE_URL}/products/search`, {
         method: "POST",
         headers: {
@@ -188,13 +212,7 @@ export const search = internalAction({
           "Accept-Language": "en-US",
           "Content-Type": "application/json",
         },
-        // Viator rejects `{ sort: "DEFAULT", order: ASCENDING }` with 400.
-        // For default relevance ranking, omit `sorting` entirely.
-        body: JSON.stringify({
-          filtering: { destination: String(dest.destinationId) },
-          pagination: { start: 1, count: Math.min(limit, 12) },
-          currency: "GBP",
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");

@@ -171,9 +171,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyles.textHeading16,
-    fontSize: 17,
   },
-  done: { color: '#FF1F8C', fontWeight: '700', fontSize: 15 },
+  done: { ...textStyles.textBody14, color: '#FF1F8C', fontWeight: '700' },
   body: { padding: 20, gap: 8 },
   row: {
     flexDirection: 'row',
@@ -183,7 +182,6 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     ...textStyles.textHeading16,
-    fontSize: 16,
   },
   rowSub: {
     ...textStyles.textBody12,
@@ -199,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  count: { minWidth: 24, textAlign: 'center', fontSize: 16, fontWeight: '700' },
+  count: { ...textStyles.textHeading16, minWidth: 24, textAlign: 'center' },
   note: {
     ...textStyles.textBody12,
     marginTop: 8,

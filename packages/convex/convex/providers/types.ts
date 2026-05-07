@@ -15,6 +15,9 @@ export type DiscoveryItem = {
   description?: string;
   imageUrl?: string;
   price?: number;
+  // The pre-discount/MSRP price if the provider exposes one and it's
+  // higher than `price`. The UI strikes this through next to `price`.
+  originalPrice?: number;
   currency?: string;
   externalUrl?: string;
   locationName?: string;

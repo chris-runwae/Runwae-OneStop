@@ -63,10 +63,16 @@ type LiteApiRate = {
   bedTypes?: string[];
   refundable: boolean;
   cancellationPolicy?: string;
+  photos?: string[];
   pricePerNight: number;
   totalPrice: number;
+  // Pre-discount total when LiteAPI exposes a higher MSRP for this rate.
+  originalTotalPrice?: number;
   currency: string;
 };
+
+const ROOM_FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
 
 function amenityIcon(facility: string): React.ReactNode {
   const lower = facility.toLowerCase();
@@ -187,6 +193,10 @@ export default function HotelsSearchHotelScreen() {
   }, [detail, params, adults]);
 
   const handleSelectRate = (rate: LiteApiRate) => {
+    const originalPerNight =
+      rate.originalTotalPrice && rate.originalTotalPrice > rate.totalPrice
+        ? rate.originalTotalPrice / nights
+        : undefined;
     router.push({
       pathname: '/hotel/book',
       params: {
@@ -201,7 +211,7 @@ export default function HotelsSearchHotelScreen() {
         checkin: params.checkin,
         checkout: params.checkout,
         adults: String(adults),
-        rateId: rate.rateId,
+        ...(originalPerNight ? { originalPrice: String(originalPerNight) } : {}),
         ...(params.tripId ? { tripId: params.tripId } : {}),
         ...(params.eventId ? { eventId: params.eventId } : {}),
       },
@@ -252,14 +262,17 @@ export default function HotelsSearchHotelScreen() {
           pointerEvents="none"
         />
 
+        {/* Modal presentation — see app/_layout.tsx. Don't add `insets.top`
+            on top of the iOS modal offset or the floating buttons sit too
+            low over the gallery. */}
         <Pressable
           onPress={() => router.back()}
-          style={[styles.headerCircle, styles.backBtn, { top: insets.top + 8 }]}>
+          style={[styles.headerCircle, styles.backBtn, { top: 12 }]}>
           <ArrowLeft size={20} color="#fff" />
         </Pressable>
         <Pressable
           onPress={handleShare}
-          style={[styles.headerCircle, styles.shareBtn, { top: insets.top + 8 }]}>
+          style={[styles.headerCircle, styles.shareBtn, { top: 12 }]}>
           <Share2 size={18} color="#fff" />
         </Pressable>
 
@@ -426,80 +439,106 @@ export default function HotelsSearchHotelScreen() {
               </Text>
             </View>
           ) : (
-            rates.map((rate, idx) => (
-              <Pressable
-                key={`${rate.offerId}-${idx}`}
-                style={[
-                  styles.rateCard,
-                  { borderColor: colors.borderColors.subtle },
-                ]}
-                onPress={() => handleSelectRate(rate)}>
-                <View style={styles.rateInfo}>
-                  <Text
-                    numberOfLines={2}
-                    style={[
-                      styles.roomName,
-                      { color: colors.textColors.default },
-                    ]}>
-                    {rate.roomName}
-                  </Text>
-                  {rate.boardName ? (
+            rates.map((rate, idx) => {
+              const roomPhoto = rate.photos?.[0] ?? ROOM_FALLBACK_IMAGE;
+              const hasDiscount =
+                typeof rate.originalTotalPrice === 'number' &&
+                rate.originalTotalPrice > rate.totalPrice;
+              const originalPerNight = hasDiscount
+                ? (rate.originalTotalPrice as number) / nights
+                : 0;
+              return (
+                <Pressable
+                  key={`${rate.offerId}-${idx}`}
+                  style={[
+                    styles.rateCard,
+                    { borderColor: colors.borderColors.subtle },
+                  ]}
+                  onPress={() => handleSelectRate(rate)}>
+                  <Image
+                    source={{ uri: roomPhoto }}
+                    style={styles.rateThumb}
+                    contentFit="cover"
+                  />
+                  <View style={styles.rateInfo}>
                     <Text
+                      numberOfLines={2}
                       style={[
-                        styles.boardName,
-                        { color: colors.textColors.subtle },
+                        styles.roomName,
+                        { color: colors.textColors.default },
                       ]}>
-                      {rate.boardName}
-                      {rate.bedTypes && rate.bedTypes.length > 0
-                        ? ` · ${rate.bedTypes.join(', ')}`
-                        : ''}
+                      {rate.roomName}
                     </Text>
-                  ) : null}
-                  <View style={styles.refundRow}>
-                    {rate.refundable ? (
-                      <>
-                        <ShieldCheck size={12} color="#22C55E" />
-                        <Text style={styles.refundText}>
-                          Free cancellation
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldOff size={12} color="#EF4444" />
+                    {rate.boardName ? (
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          styles.boardName,
+                          { color: colors.textColors.subtle },
+                        ]}>
+                        {rate.boardName}
+                        {rate.bedTypes && rate.bedTypes.length > 0
+                          ? ` · ${rate.bedTypes.join(', ')}`
+                          : ''}
+                      </Text>
+                    ) : null}
+                    <View style={styles.refundRow}>
+                      {rate.refundable ? (
+                        <>
+                          <ShieldCheck size={12} color="#22C55E" />
+                          <Text style={styles.refundText}>
+                            Free cancellation
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldOff size={12} color="#EF4444" />
+                          <Text
+                            style={[styles.refundText, { color: '#EF4444' }]}>
+                            Non-refundable
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                    <View style={styles.rateFooter}>
+                      <View style={styles.ratePriceCol}>
+                        {hasDiscount ? (
+                          <Text style={styles.ratePriceStrike}>
+                            {rate.currency} {Math.round(originalPerNight)}
+                          </Text>
+                        ) : null}
                         <Text
-                          style={[styles.refundText, { color: '#EF4444' }]}>
-                          Non-refundable
+                          style={[
+                            styles.ratePrice,
+                            { color: colors.textColors.default },
+                          ]}>
+                          {rate.currency} {Math.round(rate.pricePerNight)}
+                          <Text
+                            style={[
+                              styles.perNight,
+                              { color: colors.textColors.subtle },
+                            ]}>
+                            {' / night'}
+                          </Text>
                         </Text>
-                      </>
-                    )}
+                        {nights > 1 ? (
+                          <Text
+                            style={[
+                              styles.totalForStay,
+                              { color: colors.textColors.subtle },
+                            ]}>
+                            {rate.currency} {Math.round(rate.totalPrice)} total
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.selectBtn}>
+                        <Text style={styles.selectText}>Select</Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.ratePriceCol}>
-                  <Text style={styles.ratePrice}>
-                    {rate.currency} {Math.round(rate.pricePerNight)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.perNight,
-                      { color: colors.textColors.subtle },
-                    ]}>
-                    / night
-                  </Text>
-                  {nights > 1 ? (
-                    <Text
-                      style={[
-                        styles.totalForStay,
-                        { color: colors.textColors.subtle },
-                      ]}>
-                      {rate.currency} {Math.round(rate.totalPrice)} total
-                    </Text>
-                  ) : null}
-                  <View style={styles.selectBtn}>
-                    <Text style={styles.selectText}>Select</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))
+                </Pressable>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -610,16 +649,19 @@ const styles = StyleSheet.create({
   // Rate cards
   rateCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     borderWidth: 1,
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     gap: 12,
+  },
+  rateThumb: {
+    width: 96,
+    height: 96,
+    borderRadius: 8,
   },
   rateInfo: { flex: 1, gap: 4 },
   roomName: {
     ...textStyles.textHeading16,
-    fontSize: 14,
   },
   boardName: {
     ...textStyles.textBody12,
@@ -632,34 +674,42 @@ const styles = StyleSheet.create({
   },
   refundText: {
     ...textStyles.textBody12,
-    fontSize: 11,
     color: '#22C55E',
   },
-  ratePriceCol: { alignItems: 'flex-end', gap: 2 },
+  rateFooter: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 8,
+  },
+  ratePriceCol: { gap: 2, flex: 1 },
   ratePrice: {
     ...textStyles.textHeading16,
-    fontSize: 16,
-    color: '#FF1F8C',
+  },
+  // Strikethrough red price shown above the offer price when LiteAPI's
+  // `suggestedSellingPrice` exposes a higher MSRP for the same room.
+  ratePriceStrike: {
+    ...textStyles.textBody12,
+    color: '#DA2020',
+    textDecorationLine: 'line-through',
   },
   perNight: {
     ...textStyles.textBody12,
-    fontSize: 11,
   },
   totalForStay: {
     ...textStyles.textBody12,
-    fontSize: 11,
   },
   selectBtn: {
     backgroundColor: '#FF1F8C',
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 8,
-    marginTop: 6,
   },
   selectText: {
-    ...textStyles.textHeading16,
+    ...textStyles.textBody14,
     color: '#fff',
-    fontSize: 12,
+    fontWeight: '700',
   },
   emptyRates: {
     borderWidth: 1,

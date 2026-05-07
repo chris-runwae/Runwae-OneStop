@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,12 +32,12 @@ export default function BookingScreen() {
     roomName,
     boardName,
     price: priceStr,
+    originalPrice: originalPriceStr,
     currency,
     checkin,
     checkout,
     adults: adultsStr,
     tripId,
-    rateId,
     eventId,
   } = useLocalSearchParams<{
     hotelId: string;
@@ -46,13 +47,13 @@ export default function BookingScreen() {
     roomName: string;
     boardName: string;
     price: string;
+    /** Per-night MSRP / pre-discount price; rendered as red strikethrough. */
+    originalPrice?: string;
     currency: string;
     checkin: string;
     checkout: string;
     adults: string;
     tripId: string;
-    /** Carried from room selection for reconciliation with the vendor rate. */
-    rateId?: string;
     eventId?: string;
   }>();
 
@@ -78,6 +79,10 @@ export default function BookingScreen() {
   })();
   const pricePerNight = parseFloat(priceStr ?? '0');
   const totalPrice = pricePerNight * nights;
+  const originalPerNight = originalPriceStr ? parseFloat(originalPriceStr) : 0;
+  // Only treat as a discount when the value plausibly beats the offer price.
+  const hasDiscount = originalPerNight > pricePerNight && originalPerNight > 0;
+  const originalTotal = hasDiscount ? originalPerNight * nights : 0;
 
   const fmt = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -133,6 +138,11 @@ export default function BookingScreen() {
       });
     } catch (err) {
       console.error('Prebook failed:', err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'This room could not be held. Please pick another or try again.';
+      Alert.alert('Booking unavailable', msg);
     } finally {
       setLoading(false);
     }
@@ -166,28 +176,6 @@ export default function BookingScreen() {
           <Text style={[styles.roomLabel, { color: colors.textColors.subtle }]}>
             {roomName} · {boardName}
           </Text>
-          {rateId ? (
-            <>
-              <Spacer size={8} vertical />
-              <Text
-                selectable
-                style={{ fontSize: 10, color: colors.textColors.subtle }}
-                numberOfLines={4}>
-                Rate ID: {rateId}
-              </Text>
-            </>
-          ) : null}
-          {offerId ? (
-            <>
-              <Spacer size={6} vertical />
-              <Text
-                selectable
-                style={{ fontSize: 10, color: colors.textColors.subtle }}
-                numberOfLines={4}>
-                Offer ID: {offerId}
-              </Text>
-            </>
-          ) : null}
 
           <Spacer size={20} vertical />
 
@@ -283,30 +271,45 @@ export default function BookingScreen() {
               },
             ]}>
             <View style={styles.priceRow}>
-              <Text style={{ color: colors.textColors.subtle }}>
+              <Text style={[styles.priceRowText, { color: colors.textColors.subtle }]}>
                 {currency} {pricePerNight.toFixed(0)} × {nights}{' '}
                 {nights === 1 ? 'night' : 'nights'}
               </Text>
-              <Text>
-                {currency} {totalPrice.toFixed(0)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                {hasDiscount ? (
+                  <Text style={styles.originalPrice}>
+                    {currency} {originalTotal.toFixed(0)}
+                  </Text>
+                ) : null}
+                <Text style={styles.priceRowText}>
+                  {currency} {totalPrice.toFixed(0)}
+                </Text>
+              </View>
             </View>
             {bookingType === 'group' && groupSize > 1 && (
               <View style={styles.priceRow}>
-                <Text style={{ color: colors.textColors.subtle }}>
+                <Text style={[styles.priceRowText, { color: colors.textColors.subtle }]}>
                   Rooms ({groupSize} guests)
                 </Text>
-                <Text>{groupSize} rooms</Text>
+                <Text style={styles.priceRowText}>{groupSize} rooms</Text>
               </View>
             )}
             <View style={[styles.priceRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>
-                {currency}{' '}
-                {(
-                  totalPrice * (bookingType === 'group' ? groupSize : 1)
-                ).toFixed(0)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                {hasDiscount ? (
+                  <Text style={styles.originalPrice}>
+                    {currency}{' '}
+                    {(originalTotal * (bookingType === 'group' ? groupSize : 1)).toFixed(0)}
+                  </Text>
+                ) : null}
+                <Text style={[styles.totalValue, { color: colors.textColors.default }]}>
+                  {currency}{' '}
+                  {(
+                    totalPrice * (bookingType === 'group' ? groupSize : 1)
+                  ).toFixed(0)}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -355,8 +358,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    ...textStyles.bold_20,
-    fontSize: 16,
+    ...textStyles.textHeading16,
     flex: 1,
     textAlign: 'center',
   },
@@ -366,9 +368,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '100%',
   },
-  hotelName: { ...textStyles.bold_20, fontSize: 18 },
-  roomLabel: { ...textStyles.regular_14, fontSize: 13, marginTop: 3 },
-  sectionLabel: { ...textStyles.bold_20, fontSize: 14 },
+  hotelName: { ...textStyles.textHeading20 },
+  roomLabel: { ...textStyles.textBody14, marginTop: 3 },
+  sectionLabel: { ...textStyles.textHeading16 },
   infoCard: {
     borderWidth: 1,
     borderRadius: 12,
@@ -381,12 +383,11 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   infoLabel: {
-    fontSize: 11,
+    ...textStyles.textBody12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    color: '#FF1F8C',
   },
-  infoValue: { ...textStyles.bold_20, fontSize: 14, marginTop: 2 },
+  infoValue: { ...textStyles.textHeading16, marginTop: 2 },
   divider: { height: 1, backgroundColor: '#E9ECEF' },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleBtn: {
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleBtnActive: { backgroundColor: '#FF1F8C10' },
-  toggleText: { fontSize: 13 },
+  toggleText: { ...textStyles.textBody14 },
   toggleTextActive: { fontWeight: '700' },
   priceCard: {
     borderWidth: 1,
@@ -409,14 +410,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
   },
+  priceRowText: { ...textStyles.textBody14 },
   totalRow: {
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#E9ECEF',
   },
-  totalLabel: { ...textStyles.bold_20, fontSize: 14 },
-  totalValue: { ...textStyles.bold_20, fontSize: 16, color: '#FF1F8C' },
+  totalLabel: { ...textStyles.textHeading16 },
+  totalValue: { ...textStyles.textHeading20 },
+  // Strikethrough red — used next to the offer price when LiteAPI's
+  // `suggestedSellingPrice` exposes a higher pre-discount total.
+  originalPrice: {
+    ...textStyles.textBody14,
+    color: '#DA2020',
+    textDecorationLine: 'line-through',
+  },
   cta: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -428,5 +438,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  ctaBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  ctaBtnText: { ...textStyles.textHeading16, color: '#fff' },
 });

@@ -118,6 +118,7 @@ export const search = internalAction({
           const r = rates[it.apiRef];
           if (!r) continue;
           it.price = r.price;
+          it.originalPrice = r.originalPrice;
           it.currency = r.currency;
           filtered.push(it);
         }
@@ -198,6 +199,9 @@ export type LiteApiRate = {
   remarks?: string;
   pricePerNight: number;
   totalPrice: number;
+  // MSRP / pre-discount total when LiteAPI exposes `suggestedSellingPrice`.
+  // Only set when it's strictly greater than `totalPrice`.
+  originalTotalPrice?: number;
   currency: string;
 };
 
@@ -288,6 +292,15 @@ export const getRoomRates = internalAction({
           if (typeof total !== "number") continue;
           const currency: string =
             rate.retailRate?.total?.[0]?.currency ?? rate.currency ?? "GBP";
+          // LiteAPI exposes a `suggestedSellingPrice` on retailRate when the
+          // contracted rate undercuts the public retail price — we surface
+          // that as the strikethrough/original price on the room card.
+          const suggested =
+            rate.retailRate?.suggestedSellingPrice?.[0]?.amount;
+          const originalTotal =
+            typeof suggested === "number" && suggested > total
+              ? suggested
+              : undefined;
 
           const refundable = !!(
             rate.cancellationPolicies?.refundableTag === "RFN" ||
@@ -316,6 +329,7 @@ export const getRoomRates = internalAction({
             remarks: typeof rate.remarks === "string" && rate.remarks.length > 0 ? rate.remarks : undefined,
             pricePerNight: total / nights,
             totalPrice: total,
+            originalTotalPrice: originalTotal,
             currency,
           });
         }
@@ -454,7 +468,9 @@ async function fetchRates(
   hotelIds: string[],
   checkin: string,
   checkout: string,
-): Promise<Record<string, { price: number; currency: string }>> {
+): Promise<
+  Record<string, { price: number; originalPrice?: number; currency: string }>
+> {
   try {
     const res = await fetch("https://api.liteapi.travel/v3.0/hotels/rates", {
       method: "POST",
@@ -477,14 +493,19 @@ async function fetchRates(
       return {};
     }
     const json = (await res.json()) as { data?: any[] };
-    const out: Record<string, { price: number; currency: string }> = {};
+    const out: Record<
+      string,
+      { price: number; originalPrice?: number; currency: string }
+    > = {};
     for (const row of json.data ?? []) {
       const id = String(row.hotelId ?? row.id ?? "");
       if (!id) continue;
 
       // Walk every rate in every room and keep only the cheapest one that
       // would actually pass our prebook filter.
-      let cheapest: { price: number; currency: string } | null = null;
+      let cheapest:
+        | { price: number; originalPrice?: number; currency: string }
+        | null = null;
       for (const room of row.roomTypes ?? []) {
         for (const rate of room.rates ?? []) {
           if (!isBookableRate(rate)) continue;
@@ -493,8 +514,14 @@ async function fetchRates(
           if (typeof price !== "number") continue;
           const currency: string =
             rate.retailRate?.total?.[0]?.currency ?? rate.currency ?? "GBP";
+          const suggested =
+            rate.retailRate?.suggestedSellingPrice?.[0]?.amount;
+          const originalPrice =
+            typeof suggested === "number" && suggested > price
+              ? suggested
+              : undefined;
           if (cheapest === null || price < cheapest.price) {
-            cheapest = { price, currency };
+            cheapest = { price, originalPrice, currency };
           }
         }
       }

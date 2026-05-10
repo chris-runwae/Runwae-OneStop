@@ -1,10 +1,9 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Star } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import type { DiscoveryItem } from './types';
-import { PROVIDER_LABELS } from './types';
 
 interface DiscoverAddOnCardProps {
   item: DiscoveryItem;
@@ -22,30 +21,15 @@ const DiscoverAddOnCard: React.FC<DiscoverAddOnCardProps> = ({
 }) => {
   const isNavigating = React.useRef(false);
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (isNavigating.current) return;
+    if (!item.externalUrl) return;
     isNavigating.current = true;
-    if (item.provider === 'viator') {
-      router.push({
-        pathname: '/viator/[productCode]',
-        params: { productCode: item.apiRef },
-      });
-    } else {
-      router.push({
-        pathname: '/experiences-search/detail',
-        params: {
-          provider: item.provider,
-          apiRef: item.apiRef,
-          category: item.category,
-          title: item.title,
-          imageUrl: item.imageUrl ?? '',
-          externalUrl: item.externalUrl ?? '',
-        },
-      });
-    }
-    setTimeout(() => {
+    try {
+      await WebBrowser.openBrowserAsync(item.externalUrl);
+    } finally {
       isNavigating.current = false;
-    }, 1000);
+    }
   };
 
   const isEven = index % 2 === 0;
@@ -99,13 +83,7 @@ const DiscoverAddOnCard: React.FC<DiscoverAddOnCardProps> = ({
       </View>
 
       <Text
-        className="px-2 text-[11px] font-bold uppercase tracking-wide text-pink-500"
-        numberOfLines={1}>
-        via {PROVIDER_LABELS[item.provider] ?? item.provider}
-      </Text>
-
-      <Text
-        className="mb-1.5 mt-1 px-2 text-[14px] leading-tight text-black dark:text-white"
+        className="mb-1.5 mt-2 px-2 text-[14px] leading-tight text-black dark:text-white"
         numberOfLines={2}>
         {item.title}
       </Text>

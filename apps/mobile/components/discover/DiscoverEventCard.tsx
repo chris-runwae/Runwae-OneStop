@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useMemo } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import type { DiscoveryItem } from './types';
@@ -85,31 +86,26 @@ const DiscoverEventCard: React.FC<DiscoverEventCardProps> = ({
           location: input.item.locationName,
         };
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (isNavigating.current) return;
     isNavigating.current = true;
-    if (input.kind === 'db') {
-      router.push({
-        pathname: '/events/[slug]' as any,
-        params: { slug: input.slug },
-      });
-    } else {
-      const item = input.item;
-      router.push({
-        pathname: '/experiences-search/detail',
-        params: {
-          provider: item.provider,
-          apiRef: item.apiRef,
-          category: item.category,
-          title: item.title,
-          imageUrl: item.imageUrl ?? '',
-          externalUrl: item.externalUrl ?? '',
-        },
-      });
+    try {
+      if (input.kind === 'db') {
+        // DB events don't have an external URL; use the in-app deep link.
+        router.push({
+          pathname: '/events/[slug]' as any,
+          params: { slug: input.slug },
+        });
+        return;
+      }
+      const url = input.item.externalUrl;
+      if (!url) return;
+      await WebBrowser.openBrowserAsync(url);
+    } finally {
+      setTimeout(() => {
+        isNavigating.current = false;
+      }, 600);
     }
-    setTimeout(() => {
-      isNavigating.current = false;
-    }, 1000);
   };
 
   const rotation = index % 2 === 0 ? '-1.5deg' : '1.5deg';

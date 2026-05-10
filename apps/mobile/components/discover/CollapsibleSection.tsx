@@ -43,10 +43,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   return (
     <Animated.View
       layout={LinearTransition.springify().damping(18).stiffness(180)}
-      style={{ marginBottom: 8 }}>
+      style={{ marginTop: 24 }}>
       <View
         className="flex-row items-center justify-between px-[20px]"
-        style={{ paddingVertical: 6 }}>
+        style={{ paddingVertical: 4 }}>
         <Pressable
           onPress={toggle}
           hitSlop={6}
@@ -91,7 +91,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         <Animated.View
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(140)}
-          style={{ paddingTop: 12 }}>
+          style={{ paddingTop: 16 }}>
           {children}
         </Animated.View>
       ) : null}

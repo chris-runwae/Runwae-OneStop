@@ -36,6 +36,11 @@ function fallbackProviderFor(category: string): Provider | null {
     case "event":
     case "attend":
       return "tiqets";
+    case "eat":
+      // Geoapify supports catering.restaurant POIs. Only kicks in when
+      // coords are passed (term-only Yelp fallback); otherwise we still
+      // land on the static seed.
+      return "geoapify";
     default:
       return null;
   }

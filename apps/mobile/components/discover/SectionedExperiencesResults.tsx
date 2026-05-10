@@ -47,11 +47,15 @@ const SectionedExperiencesResults: React.FC<
     const calls: { key: SectionKey; promise: Promise<DiscoveryItem[]> }[] = [
       {
         key: 'mostPopular',
+        // No tag, no sort — Viator's default ranking is relevance/popularity.
+        // Don't pass sortBy here: "POPULARITY" isn't a valid Viator v2.0 sort
+        // value (valid values are TRAVELER_RATING, PRICE_FROM_A_Z, etc.) and
+        // sending it returns a 400, which we'd then mask with the static
+        // fallback.
         promise: searchByCategory({
           category: 'tour',
           term,
           limit: 10,
-          sortBy: 'POPULARITY',
         }) as Promise<DiscoveryItem[]>,
       },
       {

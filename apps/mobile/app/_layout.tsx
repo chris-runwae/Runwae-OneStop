@@ -1,3 +1,7 @@
+// Side-effect import: initialises Sentry before anything else loads so
+// early-boot errors are captured. Must stay at the very top of this file.
+import '@/lib/sentry';
+import * as Sentry from '@sentry/react-native';
 import {
   Inter_100Thin,
   Inter_200ExtraLight,
@@ -261,7 +265,7 @@ function RouteGuard() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
 
   useEffect(() => {
@@ -324,3 +328,8 @@ export default function RootLayout() {
     </ConvexAuthProvider>
   );
 }
+
+// Sentry.wrap adds the navigation/render auto-instrumentation that the
+// @sentry/react-native SDK ships. Must wrap the root layout's default
+// export so it owns the React tree.
+export default Sentry.wrap(RootLayout);

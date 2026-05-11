@@ -31,6 +31,7 @@ export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 import SplashScreen from '@/components/ui/splash-screen';
 import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { useAppleCredentialsRevoke } from '@/hooks/useAppleCredentialsRevoke';
 import { TripsProvider } from '@/context/TripsContext';
 import { convex } from '@/lib/convex';
 import {
@@ -71,6 +72,9 @@ function RouteGuard() {
     isAuthenticated,
     initialize,
   } = useAuth();
+
+  // Sign the user out if they revoke Apple credentials in iOS Settings.
+  useAppleCredentialsRevoke();
 
   useEffect(() => {
     initialize();

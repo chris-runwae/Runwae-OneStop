@@ -160,7 +160,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-maps',
         {
           requestLocationPermission: true,
-          locationPermission: 'Allow Runwae to use your location',
+          locationPermission:
+            'Runwae needs your location to show you nearby destinations and events',
         },
       ],
       [

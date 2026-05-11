@@ -75,6 +75,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
       },
+      usesAppleSignIn: true,
     },
     android: {
       adaptiveIcon: {
@@ -159,7 +160,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'expo-maps',
         {
           requestLocationPermission: true,
-          locationPermission: 'Allow Runwae to use your location',
+          locationPermission:
+            'Runwae needs your location to show you nearby destinations and events',
         },
       ],
       [
@@ -168,6 +170,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           merchantIdentifier: v.stripeMerchantIdentifier,
         },
       ],
+      'expo-apple-authentication',
     ],
     experiments: {
       typedRoutes: true,

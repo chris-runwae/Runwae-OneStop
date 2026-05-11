@@ -29,6 +29,8 @@ type DiscoveryItem = {
   description?: string;
   imageUrl?: string;
   price?: number;
+  // Pre-discount price exposed by the provider when the offer beats MSRP.
+  originalPrice?: number;
   currency?: string;
   locationName?: string;
   rating?: number;
@@ -140,6 +142,11 @@ export default function HotelsResultsScreen() {
         </View>
         {item.price ? (
           <View style={styles.priceRow}>
+            {item.originalPrice && item.originalPrice > item.price ? (
+              <Text style={styles.originalPrice}>
+                {item.currency ?? 'USD'} {Math.round(item.originalPrice)}
+              </Text>
+            ) : null}
             <Text style={[styles.price, { color: colors.textColors.default }]}>
               {item.currency ?? 'USD'} {Math.round(item.price)}
             </Text>
@@ -159,7 +166,10 @@ export default function HotelsResultsScreen() {
         styles.container,
         { backgroundColor: colors.backgroundColors.default },
       ]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      {/* This screen is presented as a modal (see app/_layout.tsx) — iOS
+          already drops the sheet below the status bar, so don't add
+          `insets.top` on top or the header floats too far down. */}
+      <View style={[styles.header, { paddingTop: 12 }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
@@ -340,12 +350,19 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
+    gap: 6,
     marginTop: 'auto',
+    flexWrap: 'wrap',
   },
   price: {
     ...textStyles.textHeading16,
-    fontSize: 16,
+  },
+  // Strikethrough red price shown next to the offer price when the
+  // provider exposes an MSRP higher than `price`.
+  originalPrice: {
+    ...textStyles.textBody12,
+    color: '#DA2020',
+    textDecorationLine: 'line-through',
   },
   perNight: {
     ...textStyles.textBody12,

@@ -13,7 +13,7 @@ export const recordForBooking = internalMutation({
     hostId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const hostShare = Math.round(args.totalCommission * args.splitPct) / 1;
+    const hostShare = Math.round(args.totalCommission * (args.splitPct / 100));
     const runwaeShare = args.totalCommission - hostShare;
     return await ctx.db.insert("commissions", {
       bookingId: args.bookingId,

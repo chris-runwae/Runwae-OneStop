@@ -182,12 +182,11 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyles.textHeading16,
-    fontSize: 17,
   },
   done: {
+    ...textStyles.textBody14,
     color: '#FF1F8C',
     fontWeight: '700',
-    fontSize: 15,
   },
   searchRow: {
     marginHorizontal: 20,
@@ -203,7 +202,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...textStyles.textBody14,
-    fontSize: 15,
   },
   recentsBlock: {
     paddingHorizontal: 20,
@@ -222,7 +220,6 @@ const styles = StyleSheet.create({
   },
   rowText: {
     ...textStyles.textBody14,
-    fontSize: 15,
     flex: 1,
   },
   separator: {

@@ -1,6 +1,7 @@
 import DestinationInput from '@/components/search/DestinationInput';
 import GuestRoomsStepper from '@/components/search/GuestRoomsStepper';
 import DateModal from '@/components/trips/edit/DateModal';
+import { textStyles } from '@/constants';
 import { useHotelSearchState } from '@/hooks/useHotelSearchState';
 import { useTheme } from '@react-navigation/native';
 import { format } from 'date-fns';
@@ -13,7 +14,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -322,17 +323,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   heading: {
+    ...textStyles.textHeading20,
     fontSize: 22,
-    fontWeight: '800',
+    lineHeight: 26,
     letterSpacing: -0.4,
-    fontFamily: Platform.select({
-      ios: 'BricolageGrotesque-ExtraBold',
-      android: 'BricolageGrotesque-ExtraBold',
-    }),
   },
   subheading: {
-    fontSize: 13.5,
-    fontWeight: '500',
+    ...textStyles.textBody14,
   },
   routeCard: {
     borderRadius: 18,
@@ -353,7 +350,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontSize: 11.5,
+    ...textStyles.textBody12,
     color: '#9ca3af',
     fontWeight: '600',
     letterSpacing: 0.4,
@@ -361,7 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   value: {
-    fontSize: 16,
+    ...textStyles.textHeading16,
   },
   splitRow: {
     flexDirection: 'row',
@@ -381,7 +378,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cellValue: {
-    fontSize: 15.5,
+    ...textStyles.textBody14,
+    fontWeight: '600',
   },
   searchBtnWrap: {
     marginTop: 4,
@@ -401,9 +399,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   searchBtnText: {
+    ...textStyles.textHeading16,
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
     letterSpacing: 0.2,
   },
 });

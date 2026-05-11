@@ -1,3 +1,4 @@
+import SectionedExperiencesResults from '@/components/discover/SectionedExperiencesResults';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { Colors, textStyles } from '@/constants';
 import { api } from '@runwae/convex/convex/_generated/api';
@@ -58,7 +59,7 @@ const PROVIDER_LABELS: Partial<Record<Provider, string>> = {
   viator: 'Viator',
   tiqets: 'Tiqets',
   ticketmaster: 'Ticketmaster',
-  yelp: 'OpenTable',
+  yelp: 'Yelp',
   geoapify: 'Geoapify',
 };
 
@@ -79,20 +80,19 @@ export default function ExperiencesResultsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchResults = useCallback(async () => {
+    // The "all" branch is owned by <SectionedExperiencesResults>, which
+    // makes its own per-section calls. Skip the merged fetch here so we
+    // don't fire 4 redundant requests behind the sectioned UI.
+    if (category === 'all') return;
     setError(null);
     setItems(null);
     try {
-      const cats: ('tour' | 'event' | 'eat' | 'adventure')[] =
-        category === 'all'
-          ? ['tour', 'event', 'eat', 'adventure']
-          : [category as 'tour' | 'event' | 'eat' | 'adventure'];
-
       const results = await Promise.all(
-        cats.map((c) =>
+        [category as 'tour' | 'event' | 'eat' | 'adventure'].map((c) =>
           searchByCategory({
             category: c,
             term: params.term ?? '',
-            limit: category === 'all' ? 6 : 20,
+            limit: 20,
           })
             .then((res) => res as DiscoveryItem[])
             .catch(() => [] as DiscoveryItem[]),
@@ -235,7 +235,12 @@ export default function ExperiencesResultsScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      {items === null ? (
+      {category === 'all' ? (
+        <SectionedExperiencesResults
+          term={params.term ?? ''}
+          bottomInset={insets.bottom}
+        />
+      ) : items === null ? (
         <View style={styles.list}>
           {Array.from({ length: 5 }).map((_, i) => (
             <View key={i} style={styles.skelCard}>

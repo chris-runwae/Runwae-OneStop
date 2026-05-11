@@ -83,12 +83,18 @@ export const POPULAR_DESTINATIONS: ReadonlyArray<Airport> = [
   { iata: "MEX", city: "Mexico City", name: "Benito Juárez", country: "Mexico" },
 ];
 
+// Two-step fetch: create the offer request without inlining offers, then GET
+// `/air/offers` with server-side sort + limit. The inline form
+// (`return_offers=true`) returns the full offers list for the route — easily
+// 20–50 MB of JSON for popular routes — which exceeds Convex's 64 MB action
+// memory cap. Asking Duffel to paginate keeps memory bounded.
 async function fetchOffersForRoute(
   apiKey: string,
   origin: string,
   destination: string,
   checkin: string,
-  checkout?: string,
+  checkout: string | undefined,
+  limit: number,
 ): Promise<any[]> {
   const body = {
     data: {
@@ -102,7 +108,7 @@ async function fetchOffersForRoute(
       cabin_class: "economy",
     },
   };
-  const res = await fetch(`${BASE}/air/offer_requests?return_offers=true`, {
+  const reqRes = await fetch(`${BASE}/air/offer_requests?return_offers=false`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -112,15 +118,38 @@ async function fetchOffersForRoute(
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
+  if (!reqRes.ok) {
     console.warn("[duffel] offer_request not ok", {
-      status: res.status, origin, destination,
+      status: reqRes.status, origin, destination,
     });
     return [];
   }
-  const json = (await res.json()) as { data?: any };
-  const offers: any[] = json.data?.offers ?? [];
-  return offers.sort((a, b) => Number(a.total_amount) - Number(b.total_amount));
+  const reqJson = (await reqRes.json()) as { data?: { id?: string } };
+  const offerRequestId = reqJson.data?.id;
+  if (!offerRequestId) return [];
+
+  // Duffel caps `limit` at 200; clamp defensively. Sorting server-side avoids
+  // pulling pages we don't need for the cheapest-first UI.
+  const params = new URLSearchParams({
+    offer_request_id: offerRequestId,
+    sort: "total_amount",
+    limit: String(Math.min(Math.max(limit, 1), 200)),
+  });
+  const offersRes = await fetch(`${BASE}/air/offers?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+      "Duffel-Version": VERSION,
+    },
+  });
+  if (!offersRes.ok) {
+    console.warn("[duffel] offers list not ok", {
+      status: offersRes.status, origin, destination,
+    });
+    return [];
+  }
+  const offersJson = (await offersRes.json()) as { data?: any[] };
+  return offersJson.data ?? [];
 }
 
 function offerToItem(
@@ -177,11 +206,11 @@ export const search = internalAction({
       // Discover tab). Return up to `limit` cheapest offers for that route.
       if (explicitDest) {
         const offers = await fetchOffersForRoute(
-          apiKey, origin, explicitDest, checkin, checkout,
+          apiKey, origin, explicitDest, checkin, checkout, limit,
         );
-        return offers
-          .slice(0, limit)
-          .map((o) => offerToItem(o, origin, explicitDest, undefined, checkin));
+        return offers.map((o) =>
+          offerToItem(o, origin, explicitDest, undefined, checkin),
+        );
       }
 
       // Mode 2 — Exploration. No destination supplied (home Discover). Fan
@@ -192,7 +221,7 @@ export const search = internalAction({
         .slice(0, limit);
       const settled = await Promise.allSettled(
         targets.map((d) =>
-          fetchOffersForRoute(apiKey, origin, d.iata, checkin, checkout),
+          fetchOffersForRoute(apiKey, origin, d.iata, checkin, checkout, 1),
         ),
       );
       const items: DiscoveryItem[] = [];

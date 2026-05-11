@@ -33,7 +33,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
   const { myTrips, joinedTrips } = useTrips();
-  const { data: exploreData, loading } = useExploreData();
+  const { data: exploreData, loading, refresh: refreshExplore } =
+    useExploreData();
   const featuredEvents = exploreData.events;
   const featuredExperiences = exploreData.experiences;
 
@@ -69,12 +70,32 @@ export default function HomeScreen() {
     ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' }).catch(() => {});
   }, [featuredEvents, featuredExperiences, upcomingTrips]);
 
-  const onRefresh = useCallback(() => {
+  // Convex queries are reactive, so the listed data is already live. Pull-
+  // to-refresh re-runs the explore hook (acts as a confirmation gesture)
+  // and re-prefetches any hero images that failed to load on first paint.
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      const urls = [
+        ...featuredEvents.map((e) => e.image),
+        ...featuredExperiences.map((x) => x.image),
+        ...upcomingTrips.map((t) => t.coverImageUrl ?? ''),
+      ].filter((u): u is string => typeof u === 'string' && u.length > 0);
+      await Promise.all([
+        refreshExplore(),
+        urls.length > 0
+          ? ExpoImage.prefetch(urls, { cachePolicy: 'memory-disk' })
+          : Promise.resolve(),
+      ]);
+    } finally {
       setRefreshing(false);
-    }, 1500);
-  }, []);
+    }
+  }, [
+    refreshExplore,
+    featuredEvents,
+    featuredExperiences,
+    upcomingTrips,
+  ]);
 
   return (
     <AppSafeAreaView edges={['top']}>

@@ -24,6 +24,11 @@ export default defineSchema({
     isAdmin: v.optional(v.boolean()),
     preferredCurrency: v.optional(v.string()),
     preferredTimezone: v.optional(v.string()),
+    // BCP 47 locale tag chosen via Profile → Appearance → Language.
+    // When null, the client falls back to the device locale, then to
+    // en-GB. Validated against the supported list in @runwae/i18n at
+    // write time.
+    locale: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
     stripeConnectId: v.optional(v.string()),
     onboardingComplete: v.optional(v.boolean()),

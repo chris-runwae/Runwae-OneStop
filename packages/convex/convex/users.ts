@@ -145,6 +145,33 @@ export const completeOnboarding = mutation({
   },
 });
 
+// Supported locales mirror packages/i18n/src/locales.ts. Kept inline here
+// to avoid making the Convex backend depend on the i18n package's build
+// output. If the supported list grows there, add the new tag here too.
+const SUPPORTED_LOCALES = new Set([
+  "en-GB",
+  "en-US",
+  "fr-FR",
+  "es-MX",
+  "es-ES",
+  "pt-BR",
+  "it-IT",
+]);
+
+export const setLocale = mutation({
+  args: { locale: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    if (!SUPPORTED_LOCALES.has(args.locale)) {
+      throw new Error(`Unsupported locale: ${args.locale}`);
+    }
+    await ctx.db.patch(userId, { locale: args.locale });
+    const u = await ctx.db.get(userId);
+    return toPublicUserSelfOrNull(u);
+  },
+});
+
 // ── Usernames ──────────────────────────────────────────────────────────────
 
 export const isUsernameAvailable = query({

@@ -3,6 +3,7 @@ import { api } from "@runwae/convex/convex/_generated/api";
 import type { Doc } from "@runwae/convex/convex/_generated/dataModel";
 import * as Sentry from "@sentry/react-native";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
@@ -393,19 +394,45 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithApple = useCallback(async () => {
     try {
-      const r = await runOAuthFlow("apple");
-      if (r.cancelled) return { success: false, error: "Sign-in cancelled." };
-      if (!r.success)
-        return { success: false, error: r.error ?? "Apple sign-in failed." };
+      // Native iOS sheet. The Apple button is iOS-only (SocialAuthButtons.tsx
+      // gates on Platform.OS === "ios"), so we don't need a web fallback here.
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        return {
+          success: false,
+          error: "Apple didn't return an identity token.",
+        };
+      }
+
+      // Convex Auth's Apple provider accepts the Apple-issued ID token
+      // directly — it validates the JWT against Apple's JWKS server-side.
+      await convexSignIn("apple", { id_token: credential.identityToken });
       await rememberAuthMethod("apple");
       return { success: true };
     } catch (err) {
+      // ERR_REQUEST_CANCELED is what expo-apple-authentication throws when
+      // the user dismisses the sheet. Surface that as a cancellation, not
+      // an error toast.
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: string }).code === "ERR_REQUEST_CANCELED"
+      ) {
+        return { success: false, error: "Sign-in cancelled." };
+      }
       return {
         success: false,
         error: friendlyAuthError(err, "apple"),
       };
     }
-  }, [runOAuthFlow, rememberAuthMethod]);
+  }, [convexSignIn, rememberAuthMethod]);
 
   const signUp = useCallback(
     async (email: string, password: string, fullName?: string) => {

@@ -410,9 +410,14 @@ export function useAuth(): UseAuthReturn {
         };
       }
 
-      // Convex Auth's Apple provider accepts the Apple-issued ID token
-      // directly — it validates the JWT against Apple's JWKS server-side.
-      await convexSignIn("apple", { id_token: credential.identityToken });
+      // The "apple-native" provider is a ConvexCredentials provider in
+      // packages/convex/convex/lib/appleNative.ts that validates the JWT
+      // against Apple's JWKS, then finds-or-creates the user. The OIDC
+      // "apple" provider is reserved for web OAuth — it cannot accept
+      // an identity token directly.
+      await convexSignIn("apple-native", {
+        identityToken: credential.identityToken,
+      });
       await rememberAuthMethod("apple");
 
       // Sizing signal for "Hide My Email" duplicate-account risk: Apple

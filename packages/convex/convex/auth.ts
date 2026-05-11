@@ -3,6 +3,7 @@ import Apple from "@auth/core/providers/apple";
 import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { Email } from "@convex-dev/auth/providers/Email";
+import { AppleNative } from "./lib/appleNative";
 import { buildCandidate } from "./lib/username";
 import {
   sendEmailVerification,
@@ -83,6 +84,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       clientId: process.env.AUTH_APPLE_ID,
       clientSecret: process.env.AUTH_APPLE_SECRET,
     }),
+    // Native iOS Apple sign-in. The OIDC provider above is for web-based
+    // OAuth (apps/web, when wired). Mobile uses expo-apple-authentication
+    // to get the identity token directly and posts it here for validation.
+    AppleNative,
     Password({
       // Email-verification on sign-up: users must confirm an OTP before
       // their account is provisioned. Comment out `verify` to skip the

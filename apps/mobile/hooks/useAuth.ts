@@ -414,6 +414,20 @@ export function useAuth(): UseAuthReturn {
       // directly — it validates the JWT against Apple's JWKS server-side.
       await convexSignIn("apple", { id_token: credential.identityToken });
       await rememberAuthMethod("apple");
+
+      // Sizing signal for "Hide My Email" duplicate-account risk: Apple
+      // only returns credential.email on the FIRST sign-in for a given
+      // user; if that email is a privaterelay address, we cannot link
+      // them to any existing password account with the same real email,
+      // so they get a fresh user row. Counting these tells us how big
+      // the account-linking problem is before we invest in a fix.
+      if (credential.email?.endsWith("@privaterelay.appleid.com")) {
+        Sentry.captureMessage("apple-signin-relay-email", {
+          level: "info",
+          tags: { auth_method: "apple", email_type: "relay" },
+        });
+      }
+
       return { success: true };
     } catch (err) {
       // ERR_REQUEST_CANCELED is what expo-apple-authentication throws when

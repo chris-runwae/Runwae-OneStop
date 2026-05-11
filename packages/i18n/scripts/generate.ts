@@ -69,20 +69,19 @@ Hard rules:
 Tone: warm, energetic travel-platform voice. Confident but not pushy. The app is for adults aged 18-50 planning trips with friends.`;
 }
 
-function buildUserPrompt(
-  sourceJson: string,
-  target: (typeof TARGET_LOCALES)[number],
-): string {
-  // Stable content (the source JSON) is placed FIRST so the prefix is identical
-  // across every target-locale run; the per-locale instructions go LAST. With
-  // top-level cache_control, the source prefix caches once and every subsequent
-  // locale run pays ~0.1x for it.
+function buildStableUserBlock(sourceJson: string): string {
+  // Identical across every target-locale run — this is the cache prefix.
   return `Source content (en-GB):
 ${sourceJson}
 
----
+---`;
+}
 
-Translate the JSON above to ${target.name} (locale code: ${target.code}).
+function buildPerLocaleInstructions(
+  target: (typeof TARGET_LOCALES)[number],
+): string {
+  // Varies per locale — sits AFTER the cache breakpoint.
+  return `Translate the JSON above to ${target.name} (locale code: ${target.code}).
 
 Locale-specific notes:
 ${target.notes}
@@ -129,18 +128,30 @@ async function translateLocale(
   sourceJson: string,
   target: (typeof TARGET_LOCALES)[number],
 ): Promise<unknown> {
-  // Top-level cache_control auto-places on the last cacheable block — caches
-  // the (stable, large) system prompt + source JSON across all 5 locale runs.
-  // Only the per-locale instructions change at the end of the user message.
+  // Cache breakpoint sits at the end of the stable content block (system +
+  // source JSON). The system prompt is identical across every locale, the
+  // first user-message block is identical across every locale, and the second
+  // user-message block (per-locale instructions) varies. With the breakpoint
+  // placed on the first user-message block, the cached prefix covers system +
+  // stable user block, and locales 2-5 pay ~0.1x for that prefix.
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 16384,
-    cache_control: { type: "ephemeral" },
     system: buildSystemPrompt(),
     messages: [
       {
         role: "user",
-        content: buildUserPrompt(sourceJson, target),
+        content: [
+          {
+            type: "text",
+            text: buildStableUserBlock(sourceJson),
+            cache_control: { type: "ephemeral" },
+          },
+          {
+            type: "text",
+            text: buildPerLocaleInstructions(target),
+          },
+        ],
       },
     ],
   });

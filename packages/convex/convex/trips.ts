@@ -593,6 +593,71 @@ export const joinByCode = mutation({
   },
 });
 
+// Remove a member from a trip. Owner-only; the owner cannot be removed.
+// To leave a trip as a non-owner, use `leaveTrip` instead.
+export const removeMember = mutation({
+  args: {
+    tripId: v.id("trips"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const { userId: callerId, role } = await assertTripAccess(ctx, args.tripId);
+    if (role !== "owner") {
+      throw new Error("Only the trip owner can remove members");
+    }
+    if (args.userId === callerId) {
+      throw new Error("The owner cannot remove themselves. Transfer ownership or delete the trip.");
+    }
+
+    const target = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+    if (!target) throw new Error("Member not found on this trip");
+    if (target.role === "owner") {
+      throw new Error("Cannot remove the trip owner");
+    }
+
+    await ctx.db.delete(target._id);
+    return { ok: true };
+  },
+});
+
+// Change a member's role on a trip. Owner-only; the owner's role cannot be
+// changed via this mutation (use a dedicated ownership-transfer flow when
+// that exists).
+export const updateMemberRole = mutation({
+  args: {
+    tripId: v.id("trips"),
+    userId: v.id("users"),
+    role: v.union(v.literal("editor"), v.literal("viewer")),
+  },
+  handler: async (ctx, args) => {
+    const { userId: callerId, role } = await assertTripAccess(ctx, args.tripId);
+    if (role !== "owner") {
+      throw new Error("Only the trip owner can change member roles");
+    }
+    if (args.userId === callerId) {
+      throw new Error("The owner cannot change their own role here");
+    }
+
+    const target = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+    if (!target) throw new Error("Member not found on this trip");
+    if (target.role === "owner") {
+      throw new Error("Cannot change the owner's role");
+    }
+    if (target.role === args.role) return { ok: true, unchanged: true };
+
+    await ctx.db.patch(target._id, { role: args.role });
+    return { ok: true };
+  },
+});
+
 // Plan-a-trip from an itinerary_template. Spins up a brand-new private trip
 // owned by the caller, then materialises the template's days/items into the
 // real itinerary tables so the new trip detail page is immediately useful.

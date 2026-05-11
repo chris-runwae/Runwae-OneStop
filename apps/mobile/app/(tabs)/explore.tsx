@@ -66,7 +66,6 @@ const ExploreScreen = () => {
   }, [refresh]);
 
   const handleApplyFilters = () => {
-    console.log('Applying filters:', { selectedTopCategory, selectedPrice });
     setIsFilterModalVisible(false);
   };
 

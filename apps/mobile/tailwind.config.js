@@ -23,6 +23,9 @@ module.exports = {
         "muted-200": "#E9ECEF",
         muted: "#F8F9FA",
         "dark-bg": "#212529",
+        "dark-secondary": "#212529",
+        // Historical misspelling kept as an alias so existing callsites
+        // (100+ files) keep rendering while we migrate to "dark-secondary".
         "dark-seconndary": "#212529",
       },
     },

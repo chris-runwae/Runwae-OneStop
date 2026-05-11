@@ -92,6 +92,11 @@ export default function FlightPaymentScreen() {
       });
     } catch (err) {
       console.error('[FlightPayment] error:', err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong while processing your payment. Your card was not charged. Please try again.';
+      Alert.alert('Payment failed', msg);
     } finally {
       setLoading(false);
     }

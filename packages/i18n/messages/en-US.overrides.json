@@ -1,0 +1,12 @@
+{
+  "boarding": {
+    "step2": {
+      "subtitle": "Pick a few to personalize your feed"
+    }
+  },
+  "home": {
+    "locationPrompt": {
+      "subtitle": "Get personalized recommendations near you"
+    }
+  }
+}

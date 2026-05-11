@@ -177,6 +177,8 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
   const deleteTripMut = useDeleteTrip();
   const joinByCodeMut = useJoinByCode();
   const respondToInviteMut = useMutation(api.trips.respondToInvite);
+  const removeMemberMut = useMutation(api.trips.removeMember);
+  const updateMemberRoleMut = useMutation(api.trips.updateMemberRole);
 
   const appendDayMut = useAppendDay();
   const updateDayMut = useMutation(api.itinerary.updateDay);
@@ -276,21 +278,41 @@ export const TripsProvider = ({ children }: { children: ReactNode }) => {
     [activeTripId, respondToInviteMut],
   );
 
-  // Member-management endpoints aren't yet exposed from the Convex
-  // backend (the existing `members.ts` module is read-only). These
-  // stubs preserve the legacy interface and surface a clear error so
-  // we can wire them up alongside the friends/social work in Phase 6.
   const removeMember = useCallback(
-    async (_tripId: string, _userId: string) => ({
-      error: "Member removal isn't wired up yet",
-    }),
-    [],
+    async (tripId: string, userId: string) => {
+      try {
+        await removeMemberMut({
+          tripId: tripId as Id<"trips">,
+          userId: userId as Id<"users">,
+        });
+        return { error: null };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to remove member";
+        setError(msg);
+        return { error: msg };
+      }
+    },
+    [removeMemberMut],
   );
   const updateMemberRole = useCallback(
-    async (_tripId: string, _userId: string, _role: TripMemberRole) => ({
-      error: "Role updates aren't wired up yet",
-    }),
-    [],
+    async (tripId: string, userId: string, role: TripMemberRole) => {
+      if (role === "owner") {
+        return { error: "Cannot assign owner role via this action" };
+      }
+      try {
+        await updateMemberRoleMut({
+          tripId: tripId as Id<"trips">,
+          userId: userId as Id<"users">,
+          role,
+        });
+        return { error: null };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to update role";
+        setError(msg);
+        return { error: msg };
+      }
+    },
+    [updateMemberRoleMut],
   );
 
   // ----------------------------------------------------------------

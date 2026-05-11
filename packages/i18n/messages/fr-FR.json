@@ -1,0 +1,215 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "done": "Done",
+      "back": "Back",
+      "next": "Next",
+      "continue": "Continue",
+      "skip": "Skip",
+      "submit": "Submit",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "remove": "Remove",
+      "share": "Share",
+      "retry": "Try again",
+      "close": "Close",
+      "search": "Search",
+      "filter": "Filter",
+      "apply": "Apply",
+      "clear": "Clear",
+      "loading": "Loading…"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "network": "You're offline. Please check your connection.",
+      "unauthorized": "Please sign in to continue.",
+      "notFound": "We couldn't find that.",
+      "validation": "Please check the details above."
+    },
+    "labels": {
+      "optional": "Optional",
+      "required": "Required",
+      "from": "From",
+      "to": "To",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "phone": "Phone",
+      "currency": "Currency",
+      "language": "Language"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{count, plural, one {1 minute ago} other {# minutes ago}}",
+      "hoursAgo": "{count, plural, one {1 hour ago} other {# hours ago}}",
+      "daysAgo": "{count, plural, one {1 day ago} other {# days ago}}"
+    }
+  },
+  "tabs": {
+    "home": "Home",
+    "explore": "Explore",
+    "trips": "Trips",
+    "create": "Create",
+    "profile": "Profile",
+    "saved": "Saved"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to keep planning",
+      "submit": "Sign in",
+      "withGoogle": "Continue with Google",
+      "withApple": "Continue with Apple",
+      "forgotPassword": "Forgot your password?",
+      "switchToSignUp": "Don't have an account? Sign up",
+      "errors": {
+        "invalidCredentials": "Email or password is incorrect.",
+        "tooManyAttempts": "Too many attempts. Please try again in a few minutes."
+      }
+    },
+    "signUp": {
+      "title": "Create your account",
+      "subtitle": "Plan trips, attend events, and travel with friends",
+      "submit": "Sign up",
+      "withGoogle": "Continue with Google",
+      "withApple": "Continue with Apple",
+      "switchToSignIn": "Already have an account? Sign in",
+      "errors": {
+        "emailTaken": "An account with this email already exists.",
+        "weakPassword": "Please use at least 8 characters."
+      }
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "We'll send you a link to reset it",
+      "submit": "Send reset link"
+    },
+    "verifyEmail": {
+      "title": "Check your email",
+      "subtitle": "We sent a verification code to {email}",
+      "codePlaceholder": "Verification code",
+      "submit": "Verify",
+      "resend": "Resend code"
+    }
+  },
+  "boarding": {
+    "step1": {
+      "title": "What should we call you?",
+      "namePlaceholder": "Your name",
+      "addPhoto": "Add a photo"
+    },
+    "step2": {
+      "title": "How do you travel?",
+      "subtitle": "Pick a few to personalise your feed"
+    },
+    "step3": {
+      "title": "Where are you based?",
+      "subtitle": "We use this to suggest nearby trips and events"
+    },
+    "step4": {
+      "title": "Pick a default currency",
+      "subtitle": "You can change this any time in Profile"
+    },
+    "step5": {
+      "title": "You're all set",
+      "subtitle": "Let's start planning your first trip",
+      "submit": "Get started"
+    }
+  },
+  "home": {
+    "greeting": "Hello, {name}",
+    "anonGreeting": "Welcome to Runwae",
+    "sections": {
+      "upcomingTrips": "Upcoming trips",
+      "featuredEvents": "Featured events",
+      "addOnsForYou": "Experiences for you",
+      "openPolls": "Open polls",
+      "friendsActivity": "Friends activity"
+    },
+    "locationPrompt": {
+      "title": "Set your home base",
+      "subtitle": "Get personalised recommendations near you",
+      "action": "Set location"
+    }
+  },
+  "trip": {
+    "members": {
+      "remove": "Remove member",
+      "changeRole": "Change role",
+      "roleOwner": "Owner",
+      "roleEditor": "Editor",
+      "roleViewer": "Viewer",
+      "errors": {
+        "onlyOwner": "Only the trip owner can do that.",
+        "cantRemoveOwner": "You can't remove the trip owner.",
+        "cantChangeOwnerRole": "The owner's role can't be changed here.",
+        "cantRemoveSelf": "Owners can't remove themselves. Transfer ownership or delete the trip.",
+        "notMember": "That person isn't on this trip.",
+        "removeFailed": "We couldn't remove that member. Please try again.",
+        "roleUpdateFailed": "We couldn't update their role. Please try again."
+      }
+    }
+  },
+  "payment": {
+    "title": "Payment",
+    "summary": {
+      "checkInOut": "{checkin} → {checkout}",
+      "guests": "{count, plural, one {1 guest} other {# guests}}",
+      "total": "Total"
+    },
+    "guestDetails": "Guest details",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "payNow": "Pay now",
+    "secure": "Secure payment by Stripe",
+    "errors": {
+      "missingDetails": "Please fill in your name and email.",
+      "initFailed": "Could not load payment. Please try again.",
+      "failed": "Something went wrong while processing your payment. Your card was not charged. Please try again.",
+      "cardDeclined": "The payment could not be processed. Please check your card details."
+    }
+  },
+  "saved": {
+    "title": "Saved",
+    "subtitle": "Things you've hearted across Discover",
+    "empty": {
+      "title": "Nothing saved yet",
+      "subtitle": "Tap the heart on a hotel, tour or destination to start a wishlist."
+    },
+    "categories": {
+      "hotel": "Stays",
+      "flight": "Flights",
+      "tour": "Tours",
+      "activity": "Activities",
+      "restaurant": "Eat & Drink",
+      "event": "Events",
+      "destination": "Destinations",
+      "trip": "Trips",
+      "other": "Other"
+    }
+  },
+  "profile": {
+    "appearance": {
+      "title": "Appearance",
+      "theme": {
+        "title": "Theme",
+        "system": "Match system",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "language": {
+        "title": "Language",
+        "subtitle": "Choose how the app speaks to you",
+        "betaNotice": "Translations are machine-generated. Help us improve them by reporting issues.",
+        "reportIssue": "Report a translation issue"
+      },
+      "currency": {
+        "title": "Display currency",
+        "subtitle": "Used to show prices across the app"
+      }
+    }
+  }
+}

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -13,6 +12,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import { ActivityMemberSkeleton } from '@/components/ui/CardSkeletons';
 
 type SavedRow = {
   _id: string;
@@ -69,8 +69,12 @@ export default function SavedScreen() {
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#FF1F8C" />
+        <View className="px-5 pt-2">
+          <ActivityMemberSkeleton />
+          <ActivityMemberSkeleton />
+          <ActivityMemberSkeleton />
+          <ActivityMemberSkeleton />
+          <ActivityMemberSkeleton />
         </View>
       ) : isEmpty ? (
         <View className="flex-1 items-center justify-center px-10">

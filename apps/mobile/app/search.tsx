@@ -84,8 +84,7 @@ export default function SearchScreen() {
       try {
         const data = await getLinkPreview(urls[0]);
         setPreviewData(data);
-      } catch (e) {
-        console.log('Preview error', e);
+      } catch {
         setPreviewData(null);
       } finally {
         setIsLoadingPreview(false);

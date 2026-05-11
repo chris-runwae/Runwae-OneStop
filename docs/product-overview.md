@@ -1,6 +1,8 @@
 # Runwae — Product Overview & Platform Audit
 
 > Generated 2026-05-11. Covers the full monorepo: mobile app, consumer web app, admin console, host dashboard, and Convex backend.
+>
+> **Audit corrections — 2026-05-11 (post-verification):** several claims below were later verified against the source and proved inaccurate or out of date. See `docs/launch-readiness-spec.md` for the full corrections table. Bug IDs to disregard or re-read: **C2** (email verification is wired, not disabled), **C5** (schema index spelled correctly), **C7** (`.env` is not git-tracked; secrets are local-only but should still be rotated), "Social login hidden" (Google + Apple are rendered, gated by platform), "Mobile event ticket purchase not built" (already implemented), and several Critical/High bugs (C8, C3, H1, H4, H6, H7, H8) that have since been fixed in this branch.
 
 ---
 

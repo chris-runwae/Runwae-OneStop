@@ -74,6 +74,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: ['applinks:app.runwae.io'],
       infoPlist: {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
+        NSLocationWhenInUseUsageDescription:
+          'Runwae uses your location to suggest nearby trips, events, and experiences on your home feed.',
       },
       usesAppleSignIn: true,
     },
@@ -161,7 +163,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           requestLocationPermission: true,
           locationPermission:
-            'Runwae needs your location to show you nearby destinations and events',
+            'Runwae uses your location to suggest nearby trips, events, and experiences on your home feed.',
         },
       ],
       [

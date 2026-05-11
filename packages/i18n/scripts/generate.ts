@@ -21,7 +21,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const MESSAGES_DIR = join(__dirname, "..", "messages");
 const SOURCE_PATH = join(MESSAGES_DIR, "en-GB.json");
 
-const MODEL = "claude-haiku-4-5-20251001";
+// Translation benefits from higher-fidelity models — Opus 4.7 produces more
+// natural locale-specific phrasing than Haiku, and the build-time cost is
+// negligible (one run regenerates 5 locales, cached against the source).
+const MODEL = "claude-opus-4-7";
 
 const TARGET_LOCALES = [
   { code: "fr-FR", name: "French (France)", notes: "Use formal `vous` in business surfaces (payment, errors); informal `tu` in friendly onboarding copy. Standard metropolitan French." },
@@ -70,15 +73,21 @@ function buildUserPrompt(
   sourceJson: string,
   target: (typeof TARGET_LOCALES)[number],
 ): string {
-  return `Translate the following en-GB messages to ${target.name} (locale code: ${target.code}).
+  // Stable content (the source JSON) is placed FIRST so the prefix is identical
+  // across every target-locale run; the per-locale instructions go LAST. With
+  // top-level cache_control, the source prefix caches once and every subsequent
+  // locale run pays ~0.1x for it.
+  return `Source content (en-GB):
+${sourceJson}
+
+---
+
+Translate the JSON above to ${target.name} (locale code: ${target.code}).
 
 Locale-specific notes:
 ${target.notes}
 
-Output the translated JSON object only. Same structure as the input.
-
-Input:
-${sourceJson}`;
+Output the translated JSON object only. Same structure as the input.`;
 }
 
 interface CliArgs {
@@ -120,25 +129,18 @@ async function translateLocale(
   sourceJson: string,
   target: (typeof TARGET_LOCALES)[number],
 ): Promise<unknown> {
+  // Top-level cache_control auto-places on the last cacheable block — caches
+  // the (stable, large) system prompt + source JSON across all 5 locale runs.
+  // Only the per-locale instructions change at the end of the user message.
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 8192,
-    system: [
-      {
-        type: "text",
-        text: buildSystemPrompt(),
-        cache_control: { type: "ephemeral" },
-      },
-    ],
+    max_tokens: 16384,
+    cache_control: { type: "ephemeral" },
+    system: buildSystemPrompt(),
     messages: [
       {
         role: "user",
-        content: [
-          {
-            type: "text",
-            text: buildUserPrompt(sourceJson, target),
-          },
-        ],
+        content: buildUserPrompt(sourceJson, target),
       },
     ],
   });

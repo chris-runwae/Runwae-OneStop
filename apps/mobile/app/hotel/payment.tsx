@@ -149,7 +149,11 @@ export default function PaymentScreen() {
       });
     } catch (err) {
       console.error('[PaymentFlow] Error:', err);
-      // Main error handler for everything else
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong while processing your payment. Your card was not charged. Please try again.';
+      Alert.alert('Payment failed', msg);
     } finally {
       setLoading(false);
       setBookingStatus(null);
@@ -203,7 +207,11 @@ export default function PaymentScreen() {
                 {checkin} → {checkout}
               </Text>
               <Text style={styles.summaryPrice}>
-                {currency} {price.toFixed(0)}
+                {new Intl.NumberFormat(undefined, {
+                  style: 'currency',
+                  currency: currency || 'GBP',
+                  maximumFractionDigits: 0,
+                }).format(price)}
               </Text>
             </View>
           </View>

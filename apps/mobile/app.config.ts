@@ -75,6 +75,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       infoPlist: {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
       },
+      usesAppleSignIn: true,
     },
     android: {
       adaptiveIcon: {
@@ -168,6 +169,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           merchantIdentifier: v.stripeMerchantIdentifier,
         },
       ],
+      'expo-apple-authentication',
     ],
     experiments: {
       typedRoutes: true,

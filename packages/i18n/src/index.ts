@@ -19,7 +19,8 @@ import ptBR from "../messages/pt-BR.json" assert { type: "json" };
 import itIT from "../messages/it-IT.json" assert { type: "json" };
 
 import { applyOverrides } from "./overrides";
-import type { Messages, SupportedLocale } from "./types";
+import type { Messages } from "./types";
+import type { SupportedLocale } from "./locales";
 
 // en-US is en-GB merged with a small overrides file. We compute it at
 // module load so consumers can treat all locales uniformly.

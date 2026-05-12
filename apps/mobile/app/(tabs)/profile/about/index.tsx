@@ -3,11 +3,31 @@ import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
 import MenuItem from "@/components/ui/MenuItem";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import { RelativePathString, router } from "expo-router";
 import React from "react";
 import { Text, View } from "react-native";
 
+// Updates.createdAt is the publish date of the currently-loaded JS
+// bundle (an OTA update, when one has been applied; null on the
+// embedded bundle that ships with the build). Showing it tells the
+// user how fresh their installed code is — much more useful than a
+// hardcoded marketing date.
+function formatBundleDate(): string {
+  const updateDate = Updates.createdAt;
+  if (!updateDate) return "Embedded with build";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "long",
+  }).format(updateDate);
+}
+
 const AboutScreen = () => {
+  const version = Constants.expoConfig?.version || "1.0.0";
+  const buildNumber =
+    Constants.expoConfig?.ios?.buildNumber ||
+    Constants.expoConfig?.android?.versionCode ||
+    "1";
+
   return (
     <AppSafeAreaView>
       <ScreenHeader title="About Us" />
@@ -29,13 +49,11 @@ const AboutScreen = () => {
             App Version
           </Text>
           <Text className="text-sm text-gray-400 mt-0.5">
-            Version {Constants.expoConfig?.version || "1.0.0"} (Build{" "}
-            {Constants.expoConfig?.ios?.buildNumber ||
-              Constants.expoConfig?.android?.versionCode ||
-              "1"}
-            )
+            Version {version} (Build {buildNumber})
           </Text>
-          <Text className="text-sm text-gray-400">Updated: March 2026</Text>
+          <Text className="text-sm text-gray-400">
+            Updated: {formatBundleDate()}
+          </Text>
         </View>
       </View>
     </AppSafeAreaView>

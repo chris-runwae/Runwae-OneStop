@@ -67,6 +67,7 @@ const stripeMerchantIdentifier =
 
 function RouteGuard() {
   const segments = useSegments();
+  const { colorScheme } = useColorScheme();
   const {
     user,
     isLoading,
@@ -76,6 +77,14 @@ function RouteGuard() {
     isAuthenticated,
     initialize,
   } = useAuth();
+
+  // Native stack screens default to a white content background. During
+  // the iOS swipe-back gesture (and during the brief moment a new
+  // screen is mounting), that white edge bleeds out around the rounded
+  // corners on dark mode — the artifact reported as "white edge on
+  // transition." Match the screen content background to the active
+  // theme so the underlay is invisible.
+  const screenBackgroundColor = colorScheme === "dark" ? "#000000" : "#FFFFFF";
 
   // Sign the user out if they revoke Apple credentials in iOS Settings.
   useAppleCredentialsRevoke();
@@ -207,7 +216,11 @@ function RouteGuard() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: screenBackgroundColor },
+      }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

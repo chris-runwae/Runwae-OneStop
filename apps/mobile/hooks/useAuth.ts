@@ -410,27 +410,6 @@ export function useAuth(): UseAuthReturn {
   }, [runOAuthFlow, rememberAuthMethod]);
 
   const signInWithApple = useCallback(async () => {
-    // TODO(debug): remove these Sentry breadcrumbs once the sign-in
-    // flow is verified end-to-end. Wrapped in a function so an
-    // un-initialised Sentry can't blow up our auth flow.
-    const breadcrumb = (step: string, data?: Record<string, unknown>) => {
-      try {
-        Sentry.addBreadcrumb({
-          category: "auth.apple",
-          message: step,
-          level: "info",
-          data,
-        });
-        Sentry.captureMessage(`apple-signin/${step}`, {
-          level: "info",
-          tags: { auth_method: "apple", step },
-        });
-      } catch {
-        // never let observability break the flow
-      }
-    };
-
-    breadcrumb("00-start");
     try {
       // Native iOS sheet. The Apple button is iOS-only (SocialAuthButtons.tsx
       // gates on Platform.OS === "ios"), so we don't need a web fallback here.
@@ -440,13 +419,8 @@ export function useAuth(): UseAuthReturn {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      breadcrumb("10-sheet-returned", {
-        hasIdentityToken: !!credential.identityToken,
-        hasEmail: !!credential.email,
-      });
 
       if (!credential.identityToken) {
-        breadcrumb("11-no-identity-token");
         return {
           success: false,
           error: "Apple didn't return an identity token.",
@@ -458,13 +432,10 @@ export function useAuth(): UseAuthReturn {
       // against Apple's JWKS, then finds-or-creates the user. The OIDC
       // "apple" provider is reserved for web OAuth — it cannot accept
       // an identity token directly.
-      breadcrumb("20-before-convex-signin");
       await convexSignIn("apple-native", {
         identityToken: credential.identityToken,
       });
-      breadcrumb("30-after-convex-signin");
       await rememberAuthMethod("apple");
-      breadcrumb("40-after-remember-method");
 
       // Sizing signal for "Hide My Email" duplicate-account risk: Apple
       // only returns credential.email on the FIRST sign-in for a given

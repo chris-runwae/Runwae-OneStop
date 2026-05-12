@@ -8,6 +8,7 @@ import { useTheme } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { ExternalPathString, RelativePathString, router } from 'expo-router';
 import {
   Check,
@@ -39,6 +40,16 @@ const ProfileScreen = () => {
   const VERSION = pjson.version;
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+
+  // Updates.createdAt is the publish date of the running JS bundle.
+  // null means we're on the embedded bundle that shipped with the
+  // build — show the version alone in that case.
+  const updateDate = Updates.createdAt;
+  const versionLine = updateDate
+    ? `Version ${VERSION} · ${new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+      }).format(updateDate)}`
+    : `Version ${VERSION}`;
 
   return (
     <AppSafeAreaView>
@@ -216,7 +227,7 @@ const ProfileScreen = () => {
             textAlign: 'center',
             marginTop: 32,
           }}>
-          Version {VERSION}
+          {versionLine}
         </RNText>
       </View>
 

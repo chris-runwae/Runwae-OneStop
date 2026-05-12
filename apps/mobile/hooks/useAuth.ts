@@ -88,6 +88,32 @@ const CURRENT_BOARDING_STEP_KEY = "@current_boarding_step";
 const WELCOME_MODAL_TRIGGER_KEY = "@show_welcome_modal";
 const LAST_AUTH_METHOD_KEY = "@last_auth_method";
 
+// Ceiling on how long any single Convex auth round-trip is allowed to
+// hang before we throw an error the user can actually see. Without this
+// a network-stuck convexSignIn() would spin the button forever — that
+// failure mode is what we hit in v0.8.7 and tracking down required a
+// rebuild. Errors thrown here surface via friendlyAuthError -> Sentry,
+// so we get a captured event instead of silent hang.
+const AUTH_REQUEST_TIMEOUT_MS = 15_000;
+
+async function withAuthTimeout<T>(
+  promise: Promise<T>,
+  label: string,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`auth_timeout:${label}`)),
+      AUTH_REQUEST_TIMEOUT_MS,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const storage = {
   async getItem(key: string): Promise<string | null> {
     try {
@@ -349,10 +375,23 @@ export function useAuth(): UseAuthReturn {
     async (
       provider: "google" | "apple",
     ): Promise<{ success: boolean; error?: string; cancelled?: boolean }> => {
+      Sentry.captureMessage('diag:auth:oauth:flow-start', {
+        level: 'info',
+        tags: { provider },
+      });
       const redirectTo = buildOAuthRedirect();
-      const startResult = (await convexSignIn(provider as any, {
-        redirectTo,
-      })) as unknown as { redirect?: URL | string } | undefined;
+      Sentry.captureMessage('diag:auth:oauth:pre-convex-signin-start', {
+        level: 'info',
+        tags: { provider },
+      });
+      const startResult = (await withAuthTimeout(
+        convexSignIn(provider as any, { redirectTo }),
+        `oauth-start:${provider}`,
+      )) as unknown as { redirect?: URL | string } | undefined;
+      Sentry.captureMessage('diag:auth:oauth:post-convex-signin-start', {
+        level: 'info',
+        tags: { provider, has_redirect: String(!!startResult?.redirect) },
+      });
 
       // If the SDK already completed the sign-in (rare on RN, common on web),
       // there's nothing else to do.
@@ -387,7 +426,18 @@ export function useAuth(): UseAuthReturn {
         };
       }
 
-      await convexSignIn(provider as any, { code });
+      Sentry.captureMessage('diag:auth:oauth:pre-convex-signin-code', {
+        level: 'info',
+        tags: { provider },
+      });
+      await withAuthTimeout(
+        convexSignIn(provider as any, { code }),
+        `oauth-code:${provider}`,
+      );
+      Sentry.captureMessage('diag:auth:oauth:post-convex-signin-code', {
+        level: 'info',
+        tags: { provider },
+      });
       return { success: true };
     },
     [convexSignIn, buildOAuthRedirect],
@@ -410,14 +460,20 @@ export function useAuth(): UseAuthReturn {
   }, [runOAuthFlow, rememberAuthMethod]);
 
   const signInWithApple = useCallback(async () => {
+    Sentry.captureMessage('diag:auth:apple:flow-start', { level: 'info' });
     try {
       // Native iOS sheet. The Apple button is iOS-only (SocialAuthButtons.tsx
       // gates on Platform.OS === "ios"), so we don't need a web fallback here.
+      Sentry.captureMessage('diag:auth:apple:pre-sheet', { level: 'info' });
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+      });
+      Sentry.captureMessage('diag:auth:apple:post-sheet', {
+        level: 'info',
+        tags: { has_token: String(!!credential.identityToken) },
       });
 
       if (!credential.identityToken) {
@@ -432,9 +488,12 @@ export function useAuth(): UseAuthReturn {
       // against Apple's JWKS, then finds-or-creates the user. The OIDC
       // "apple" provider is reserved for web OAuth — it cannot accept
       // an identity token directly.
-      await convexSignIn("apple-native", {
-        identityToken: credential.identityToken,
-      });
+      Sentry.captureMessage('diag:auth:apple:pre-convex-signin', { level: 'info' });
+      await withAuthTimeout(
+        convexSignIn("apple-native", { identityToken: credential.identityToken }),
+        'apple-native',
+      );
+      Sentry.captureMessage('diag:auth:apple:post-convex-signin', { level: 'info' });
       await rememberAuthMethod("apple");
 
       // Sizing signal for "Hide My Email" duplicate-account risk: Apple

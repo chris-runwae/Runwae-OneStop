@@ -39,6 +39,7 @@ import type * as hotels from "../hotels.js";
 import type * as http from "../http.js";
 import type * as itinerary from "../itinerary.js";
 import type * as lib_admin from "../lib/admin.js";
+import type * as lib_appleNative from "../lib/appleNative.js";
 import type * as lib_coverImage from "../lib/coverImage.js";
 import type * as lib_email from "../lib/email.js";
 import type * as lib_event_sanitize from "../lib/event_sanitize.js";
@@ -116,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   itinerary: typeof itinerary;
   "lib/admin": typeof lib_admin;
+  "lib/appleNative": typeof lib_appleNative;
   "lib/coverImage": typeof lib_coverImage;
   "lib/email": typeof lib_email;
   "lib/event_sanitize": typeof lib_event_sanitize;

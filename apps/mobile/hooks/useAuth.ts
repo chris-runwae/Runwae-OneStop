@@ -3,6 +3,7 @@ import { api } from "@runwae/convex/convex/_generated/api";
 import type { Doc } from "@runwae/convex/convex/_generated/dataModel";
 import * as Sentry from "@sentry/react-native";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
@@ -294,6 +295,23 @@ export function useAuth(): UseAuthReturn {
     }
   }, [isAuthenticated, hasSeenOnboarding]);
 
+  // Server is the source of truth for whether the user has finished the
+  // 5-step boarding flow. Without this sync, an existing user signing
+  // back in on this device (after signOut, which wipes local boarding
+  // state) would be sent through boarding again because the SecureStore
+  // value defaults to false. Mirror users.onboardingComplete -> local
+  // state once the viewer record loads.
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      viewer?.onboardingComplete === true &&
+      !hasCompletedBoarding
+    ) {
+      setHasCompletedBoarding(true);
+      void storage.setItem(BOARDING_STORAGE_KEY, "true");
+    }
+  }, [isAuthenticated, viewer?.onboardingComplete, hasCompletedBoarding]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
@@ -393,19 +411,64 @@ export function useAuth(): UseAuthReturn {
 
   const signInWithApple = useCallback(async () => {
     try {
-      const r = await runOAuthFlow("apple");
-      if (r.cancelled) return { success: false, error: "Sign-in cancelled." };
-      if (!r.success)
-        return { success: false, error: r.error ?? "Apple sign-in failed." };
+      // Native iOS sheet. The Apple button is iOS-only (SocialAuthButtons.tsx
+      // gates on Platform.OS === "ios"), so we don't need a web fallback here.
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        return {
+          success: false,
+          error: "Apple didn't return an identity token.",
+        };
+      }
+
+      // The "apple-native" provider is a ConvexCredentials provider in
+      // packages/convex/convex/lib/appleNative.ts that validates the JWT
+      // against Apple's JWKS, then finds-or-creates the user. The OIDC
+      // "apple" provider is reserved for web OAuth — it cannot accept
+      // an identity token directly.
+      await convexSignIn("apple-native", {
+        identityToken: credential.identityToken,
+      });
       await rememberAuthMethod("apple");
+
+      // Sizing signal for "Hide My Email" duplicate-account risk: Apple
+      // only returns credential.email on the FIRST sign-in for a given
+      // user; if that email is a privaterelay address, we cannot link
+      // them to any existing password account with the same real email,
+      // so they get a fresh user row. Counting these tells us how big
+      // the account-linking problem is before we invest in a fix.
+      if (credential.email?.endsWith("@privaterelay.appleid.com")) {
+        Sentry.captureMessage("apple-signin-relay-email", {
+          level: "info",
+          tags: { auth_method: "apple", email_type: "relay" },
+        });
+      }
+
       return { success: true };
     } catch (err) {
+      // ERR_REQUEST_CANCELED is what expo-apple-authentication throws when
+      // the user dismisses the sheet. Surface that as a cancellation, not
+      // an error toast.
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code?: string }).code === "ERR_REQUEST_CANCELED"
+      ) {
+        return { success: false, error: "Sign-in cancelled." };
+      }
       return {
         success: false,
         error: friendlyAuthError(err, "apple"),
       };
     }
-  }, [runOAuthFlow, rememberAuthMethod]);
+  }, [convexSignIn, rememberAuthMethod]);
 
   const signUp = useCallback(
     async (email: string, password: string, fullName?: string) => {

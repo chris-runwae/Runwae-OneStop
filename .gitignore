@@ -10,3 +10,9 @@ out
 
 # Local worktrees
 .worktrees/
+
+# Claude Code local state (sessions, worktrees, plans)
+.claude/
+
+# Apple .p8 keys — keep these well away from git
+*.p8

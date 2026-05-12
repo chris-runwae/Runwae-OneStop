@@ -21,6 +21,11 @@ const SECURITY_ITEMS: { title: string; subtitle: string; route: string }[] = [
     subtitle: "Control who can see your trips or invites",
     route: "/profile/security/privacy-settings",
   },
+  {
+    title: "Delete account",
+    subtitle: "Permanently remove your account after a 30-day grace period.",
+    route: "/profile/security/delete-account",
+  },
 ];
 
 const SecurityScreen = () => {

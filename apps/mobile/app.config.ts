@@ -74,6 +74,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: ['applinks:app.runwae.io'],
       infoPlist: {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
+        NSLocationWhenInUseUsageDescription:
+          'Runwae uses your location to suggest nearby trips, events, and experiences on your home feed.',
       },
       usesAppleSignIn: true,
     },
@@ -139,10 +141,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           image: './assets/images/splash-icon.png',
           imageWidth: 200,
           resizeMode: 'contain',
-          backgroundColor: '#ffffff',
-          dark: {
-            backgroundColor: '#000000',
-          },
+          // Always black so the OS splash matches the in-app
+          // SplashScreen component (apps/mobile/components/ui/splash-screen.tsx).
+          // Consistent visual identity from cold launch through first
+          // render.
+          backgroundColor: '#000000',
         },
       ],
       'expo-sqlite',
@@ -161,7 +164,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           requestLocationPermission: true,
           locationPermission:
-            'Runwae needs your location to show you nearby destinations and events',
+            'Runwae uses your location to suggest nearby trips, events, and experiences on your home feed.',
         },
       ],
       [

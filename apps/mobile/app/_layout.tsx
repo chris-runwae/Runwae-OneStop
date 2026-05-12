@@ -1,3 +1,7 @@
+// Side-effect import: initialises Sentry before anything else loads so
+// early-boot errors are captured. Must stay at the very top of this file.
+import '@/lib/sentry';
+import * as Sentry from '@sentry/react-native';
 import {
   Inter_100Thin,
   Inter_200ExtraLight,
@@ -31,6 +35,7 @@ export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 import SplashScreen from '@/components/ui/splash-screen';
 import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { useAppleCredentialsRevoke } from '@/hooks/useAppleCredentialsRevoke';
 import { TripsProvider } from '@/context/TripsContext';
 import { convex } from '@/lib/convex';
 import {
@@ -62,6 +67,7 @@ const stripeMerchantIdentifier =
 
 function RouteGuard() {
   const segments = useSegments();
+  const { colorScheme } = useColorScheme();
   const {
     user,
     isLoading,
@@ -71,6 +77,17 @@ function RouteGuard() {
     isAuthenticated,
     initialize,
   } = useAuth();
+
+  // Native stack screens default to a white content background. During
+  // the iOS swipe-back gesture (and during the brief moment a new
+  // screen is mounting), that white edge bleeds out around the rounded
+  // corners on dark mode — the artifact reported as "white edge on
+  // transition." Match the screen content background to the active
+  // theme so the underlay is invisible.
+  const screenBackgroundColor = colorScheme === "dark" ? "#000000" : "#FFFFFF";
+
+  // Sign the user out if they revoke Apple credentials in iOS Settings.
+  useAppleCredentialsRevoke();
 
   useEffect(() => {
     initialize();
@@ -199,7 +216,11 @@ function RouteGuard() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: screenBackgroundColor },
+      }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="boarding" />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -257,7 +278,7 @@ function RouteGuard() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const { colorScheme, setColorScheme } = useColorScheme();
 
   useEffect(() => {
@@ -320,3 +341,8 @@ export default function RootLayout() {
     </ConvexAuthProvider>
   );
 }
+
+// Sentry.wrap adds the navigation/render auto-instrumentation that the
+// @sentry/react-native SDK ships. Must wrap the root layout's default
+// export so it owns the React tree.
+export default Sentry.wrap(RootLayout);

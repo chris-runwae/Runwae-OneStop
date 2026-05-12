@@ -549,6 +549,9 @@ importers:
       convex:
         specifier: ^1.23.0
         version: 1.36.1(react@19.2.5)
+      jose:
+        specifier: ^5.10.0
+        version: 5.10.0
       stripe:
         specifier: ^17.7.0
         version: 17.7.0

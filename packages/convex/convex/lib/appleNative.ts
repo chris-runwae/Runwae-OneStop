@@ -100,10 +100,23 @@ export const AppleNative = ConvexCredentials({
 
     // First, look up an existing apple-native account. On every sign-in
     // after the first, this is the path that hits.
-    const existing = await retrieveAccount(ctx, {
-      provider: "apple-native",
-      account: { id: claims.sub },
-    });
+    //
+    // retrieveAccount's @returns docstring claims it returns `null` when
+    // no account exists, but the actual implementation throws an Error
+    // with message "InvalidAccountId" instead. Catch that case and treat
+    // it as "no account → fall through to createAccount". Any other
+    // error rethrows.
+    let existing: Awaited<ReturnType<typeof retrieveAccount>> | null = null;
+    try {
+      existing = await retrieveAccount(ctx, {
+        provider: "apple-native",
+        account: { id: claims.sub },
+      });
+    } catch (err) {
+      if (!(err instanceof Error && err.message === "InvalidAccountId")) {
+        throw err;
+      }
+    }
     if (existing) {
       return { userId: existing.user._id };
     }

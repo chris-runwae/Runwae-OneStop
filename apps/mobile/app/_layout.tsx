@@ -2,10 +2,6 @@
 // early-boot errors are captured. Must stay at the very top of this file.
 import '@/lib/sentry';
 import * as Sentry from '@sentry/react-native';
-
-// DIAGNOSTIC: confirms Sentry transport is alive in this build, and
-// that the JS bundle reached the top-level module evaluation.
-Sentry.captureMessage('diag:boot:_layout-module-loaded', { level: 'info' });
 // PostHog client is constructed at module-eval time; importing it here
 // makes the singleton ready before any screen mounts so the first
 // `identify()` call in RouteGuard isn't racing the SDK boot.

@@ -41,19 +41,3 @@ Sentry.init({
   // can opt-in per-event.
   sendDefaultPii: false,
 });
-
-// On every cold launch surface the Updates module's view of the world.
-// Helps diagnose why OTAs are or aren't landing on a build: if
-// `isEmbeddedLaunch` is false on a fresh install, OTAs are applying;
-// if it stays true forever, the device isn't fetching/applying. The
-// channel and runtimeVersion confirm the build is on the channel and
-// version we think it is.
-Sentry.captureMessage('diag:boot:updates-status', {
-  level: 'info',
-  tags: {
-    update_id: Updates.updateId ?? 'null',
-    channel: Updates.channel ?? 'null',
-    runtime_version: Updates.runtimeVersion ?? 'null',
-    is_embedded_launch: String(Updates.isEmbeddedLaunch),
-  },
-});

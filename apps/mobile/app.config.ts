@@ -141,10 +141,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           image: './assets/images/splash-icon.png',
           imageWidth: 200,
           resizeMode: 'contain',
-          backgroundColor: '#ffffff',
-          dark: {
-            backgroundColor: '#000000',
-          },
+          // Always black so the OS splash matches the in-app
+          // SplashScreen component (apps/mobile/components/ui/splash-screen.tsx).
+          // Consistent visual identity from cold launch through first
+          // render.
+          backgroundColor: '#000000',
         },
       ],
       'expo-sqlite',

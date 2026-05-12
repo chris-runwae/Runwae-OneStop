@@ -295,6 +295,23 @@ export function useAuth(): UseAuthReturn {
     }
   }, [isAuthenticated, hasSeenOnboarding]);
 
+  // Server is the source of truth for whether the user has finished the
+  // 5-step boarding flow. Without this sync, an existing user signing
+  // back in on this device (after signOut, which wipes local boarding
+  // state) would be sent through boarding again because the SecureStore
+  // value defaults to false. Mirror users.onboardingComplete -> local
+  // state once the viewer record loads.
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      viewer?.onboardingComplete === true &&
+      !hasCompletedBoarding
+    ) {
+      setHasCompletedBoarding(true);
+      void storage.setItem(BOARDING_STORAGE_KEY, "true");
+    }
+  }, [isAuthenticated, viewer?.onboardingComplete, hasCompletedBoarding]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {

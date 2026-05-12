@@ -8,6 +8,10 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import {
+  mapBookingTypeToAnalytics,
+  scheduleServerTrack,
+} from "./lib/posthog";
 
 const BOOKING_TYPE = v.union(
   v.literal("flight"),
@@ -394,6 +398,22 @@ async function confirmBookingPostPayment(
 ): Promise<void> {
   if (booking.status === "confirmed") return; // Idempotent
 
+  // Top-of-conversion-funnel event. Fires at Stripe confirmation, before
+  // supplier-side finalisation (LiteAPI book / Duffel order). If supplier
+  // confirmation fails later, the booking stays in a partially-confirmed
+  // state — Sentry catches that, and analytics treats it as a quality
+  // issue, not a separate "failed" event.
+  // NOTE: `amount_gbp` carries `booking.grossAmount` verbatim — currency
+  // conversion is out of scope here. See docs/analytics-events.md for the
+  // GBP normalisation caveat.
+  await scheduleServerTrack(ctx, String(booking.userId), {
+    name: "booking_completed",
+    properties: {
+      type: mapBookingTypeToAnalytics(booking.type),
+      amount_gbp: booking.grossAmount,
+    },
+  });
+
   if (booking.type === "event_ticket" && booking.eventId) {
     await ctx.db.patch(booking._id, {
       status: "confirmed",
@@ -566,5 +586,17 @@ export const failByPaymentIntent = mutation({
       .first();
     if (!booking || booking.status === "cancelled") return;
     await ctx.db.patch(booking._id, { status: "cancelled" });
+
+    // failure_reason is hardcoded because Stripe's payment_intent.payment_failed
+    // webhook doesn't currently forward the failure code into this mutation.
+    // If we ever surface the Stripe failure_code/decline_code, plumb it
+    // through and replace this literal.
+    await scheduleServerTrack(ctx, String(booking.userId), {
+      name: "booking_failed",
+      properties: {
+        type: mapBookingTypeToAnalytics(booking.type),
+        failure_reason: "stripe_payment_failed",
+      },
+    });
   },
 });

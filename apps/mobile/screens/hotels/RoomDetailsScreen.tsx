@@ -32,6 +32,7 @@ import type {
 } from '@/types/liteapi.types';
 import { getCurrencySymbol } from '@/utils/currency';
 import { ratePriceParts, roomGalleryForMappedRoom } from '@/utils/hotelRates';
+import { track } from '@/lib/analytics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -160,6 +161,13 @@ export default function RoomDetailsScreen() {
   /** Booking still uses full `roomType` + `rate` from the bundle (params). */
   const handleBook = () => {
     if (!bundle || !price) return;
+    // Top-of-funnel intent. Server-side `booking_completed` (Commit 3) is
+    // the truthful conversion measurement, so we do NOT fire again from
+    // the confirmation screen to avoid double-counting.
+    track({
+      name: 'booking_started',
+      properties: { type: 'hotel', amount_gbp: price.amount },
+    });
     const { hotel, roomType, rate } = bundle;
     router.push({
       pathname: '/hotel/book',

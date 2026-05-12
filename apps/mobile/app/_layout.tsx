@@ -6,6 +6,10 @@ import * as Sentry from '@sentry/react-native';
 // makes the singleton ready before any screen mounts so the first
 // `identify()` call in RouteGuard isn't racing the SDK boot.
 import * as analytics from '@/lib/analytics';
+// Side-effect import: i18next is initialised at module load with the
+// device locale as default. LocaleSync (below) re-syncs from
+// `users.locale` once the viewer is authenticated.
+import '@/lib/i18n';
 import {
   Inter_100Thin,
   Inter_200ExtraLight,
@@ -37,6 +41,7 @@ import ToastManager from 'toastify-react-native';
 export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 
 import SplashScreen from '@/components/ui/splash-screen';
+import LocaleSync from '@/components/i18n/LocaleSync';
 import { StripeProviderSafe } from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useAppleCredentialsRevoke } from '@/hooks/useAppleCredentialsRevoke';
@@ -349,6 +354,7 @@ function RootLayout() {
                     style={{ borderRadius: 20, boxShadow: 'none' }}
                     theme={colorScheme === 'dark' ? 'dark' : 'light'}
                   />
+                  <LocaleSync />
                   <RouteGuard />
                 </TripsProvider>
               </AuthProvider>

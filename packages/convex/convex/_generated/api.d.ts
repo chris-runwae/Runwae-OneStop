@@ -44,6 +44,7 @@ import type * as lib_coverImage from "../lib/coverImage.js";
 import type * as lib_email from "../lib/email.js";
 import type * as lib_event_sanitize from "../lib/event_sanitize.js";
 import type * as lib_host from "../lib/host.js";
+import type * as lib_posthog from "../lib/posthog.js";
 import type * as lib_slug from "../lib/slug.js";
 import type * as lib_user_sanitize from "../lib/user_sanitize.js";
 import type * as lib_username from "../lib/username.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "lib/email": typeof lib_email;
   "lib/event_sanitize": typeof lib_event_sanitize;
   "lib/host": typeof lib_host;
+  "lib/posthog": typeof lib_posthog;
   "lib/slug": typeof lib_slug;
   "lib/user_sanitize": typeof lib_user_sanitize;
   "lib/username": typeof lib_username;

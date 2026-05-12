@@ -9,6 +9,28 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
 } from "./lib/email";
+import { scheduleServerTrack } from "./lib/posthog";
+
+// Map Convex Auth's internal provider ids to the 3-value analytics enum.
+// `apple-native` is the custom ConvexCredentials provider in lib/appleNative;
+// the OIDC "apple" provider is reserved for the (not-yet-wired) web flow.
+// Verification-only "providers" (password-reset-otp, email-verification-otp)
+// return null so we don't fire signup/signin events for OTP steps.
+function mapProviderIdToAnalytics(
+  providerId: string,
+): "apple" | "google" | "password" | null {
+  switch (providerId) {
+    case "google":
+      return "google";
+    case "apple":
+    case "apple-native":
+      return "apple";
+    case "password":
+      return "password";
+    default:
+      return null;
+  }
+}
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_REDIRECT_ORIGINS ?? "")
   .split(",")
@@ -111,7 +133,20 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       throw new Error(`Redirect to ${redirectTo} not allowed`);
     },
     async createOrUpdateUser(ctx, args) {
+      // Analytics: distinguish "linked to an existing user" (sign-in) from
+      // "new row about to be inserted" (sign-up). Skip the OTP-verification
+      // step (`type === "verification"`) — it fires a second time during
+      // sign-up but isn't a separate session start.
+      const analyticsProvider = mapProviderIdToAnalytics(args.provider.id);
+      const isVerificationStep = args.type === "verification";
+
       if (args.existingUserId) {
+        if (analyticsProvider && !isVerificationStep) {
+          await scheduleServerTrack(ctx, String(args.existingUserId), {
+            name: "signin_succeeded",
+            properties: { provider: analyticsProvider },
+          });
+        }
         return args.existingUserId;
       }
 
@@ -152,7 +187,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       }
 
       try {
-        return await ctx.db.insert("users", {
+        const newUserId = await ctx.db.insert("users", {
           email: profile.email,
           name: profile.name,
           image: profile.image,
@@ -164,6 +199,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           username,
           createdAt: Date.now(),
         });
+        if (analyticsProvider && !isVerificationStep) {
+          await scheduleServerTrack(ctx, String(newUserId), {
+            name: "signup_completed",
+            properties: { provider: analyticsProvider },
+          });
+        }
+        return newUserId;
       } catch (err) {
         console.error("[auth:createOrUpdateUser] insert failed", {
           profile,

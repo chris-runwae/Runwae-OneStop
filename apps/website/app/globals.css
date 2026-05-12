@@ -1,0 +1,18 @@
+@import "@runwae/ui/styles/globals.css";
+
+@source "../app/**/*.{ts,tsx}";
+@source "../content/**/*.{md,mdx}";
+
+@theme {
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-bricolage);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}

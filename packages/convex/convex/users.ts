@@ -7,6 +7,7 @@ import {
   toPublicUserOther,
   toPublicUserOtherOrNull,
 } from "./lib/user_sanitize";
+import { scheduleServerTrack } from "./lib/posthog";
 
 export const getCurrentUser = query({
   args: {},
@@ -139,7 +140,23 @@ export const completeOnboarding = mutation({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
+
+    // Read current state before patching so we only fire the event on
+    // the FIRST transition (false/undefined → true). Re-calling this
+    // mutation (e.g. the 5-step boarding screen retrying on stale state)
+    // mustn't refire the event.
+    const current = await ctx.db.get(userId);
+    const wasAlreadyComplete = current?.onboardingComplete === true;
+
     await ctx.db.patch(userId, { onboardingComplete: true });
+
+    if (!wasAlreadyComplete) {
+      await scheduleServerTrack(ctx, String(userId), {
+        name: "onboarding_completed",
+        properties: {},
+      });
+    }
+
     const u = await ctx.db.get(userId);
     return toPublicUserSelfOrNull(u);
   },

@@ -3,6 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation, internalMutation, type MutationCtx } from "./_generated/server";
 import type { Id, Doc } from "./_generated/dataModel";
 import { pickDefaultCover } from "./lib/coverImage";
+import { scheduleServerTrack } from "./lib/posthog";
 
 // Shared cascade: deletes a trip and every dependent row across all child
 // tables. Called by the user-facing `deleteTrip` mutation AND by the
@@ -176,6 +177,16 @@ export const createTrip = mutation({
     const joinCode = randomId(JOIN_CODE_ALPHABET, 8);
     const finalCover = args.coverImageUrl ?? pickDefaultCover(slug);
 
+    // Check BEFORE the insert so the per-user "first trip ever" event
+    // only fires once. Convex's transactional model handles the race for
+    // us — two concurrent createTrip calls from the same user serialise,
+    // and the loser's check sees the winner's row.
+    const priorTrip = await ctx.db
+      .query("trips")
+      .withIndex("by_creator", (q) => q.eq("creatorId", userId))
+      .first();
+    const isFirstTrip = priorTrip === null;
+
     const tripId = await ctx.db.insert("trips", {
       title: args.title,
       description: args.description,
@@ -220,6 +231,13 @@ export const createTrip = mutation({
         date: iso,
         dayNumber: i + 1,
         createdAt: now,
+      });
+    }
+
+    if (isFirstTrip) {
+      await scheduleServerTrack(ctx, String(userId), {
+        name: "first_trip_created",
+        properties: {},
       });
     }
 
@@ -550,10 +568,33 @@ export const respondToInvite = mutation({
     if (member.status === "accepted") return { alreadyAccepted: true };
 
     if (args.accept) {
+      // Check BEFORE the patch so first_invite_accepted only fires once
+      // per user. We look for any prior accepted non-owner membership —
+      // owners create their own trips and shouldn't gate the activation
+      // signal for joining someone else's.
+      const priorAcceptedMembership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("status"), "accepted"),
+            q.neq(q.field("role"), "owner"),
+          ),
+        )
+        .first();
+      const isFirstInvite = priorAcceptedMembership === null;
+
       await ctx.db.patch(member._id, {
         status: "accepted",
         joinedAt: Date.now(),
       });
+
+      if (isFirstInvite) {
+        await scheduleServerTrack(ctx, String(userId), {
+          name: "first_invite_accepted",
+          properties: {},
+        });
+      }
     } else {
       await ctx.db.delete(member._id);
     }

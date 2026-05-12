@@ -2,6 +2,10 @@
 // early-boot errors are captured. Must stay at the very top of this file.
 import '@/lib/sentry';
 import * as Sentry from '@sentry/react-native';
+// PostHog client is constructed at module-eval time; importing it here
+// makes the singleton ready before any screen mounts so the first
+// `identify()` call in RouteGuard isn't racing the SDK boot.
+import * as analytics from '@/lib/analytics';
 import {
   Inter_100Thin,
   Inter_200ExtraLight,
@@ -101,6 +105,20 @@ function RouteGuard() {
     if (!isAuthenticated) return;
     void registerPushNotifications(convex);
   }, [isAuthenticated]);
+
+  // Tie PostHog's distinct_id to the Convex user id whenever auth state
+  // changes. The Convex _id is the same identifier the server-side
+  // PostHog wrapper (Commit 3) will use, so events from mobile and from
+  // Convex mutations line up on one timeline per user. On sign-out we
+  // call reset() so the next user doesn't inherit the previous user's
+  // events or super-properties.
+  useEffect(() => {
+    if (user?.id) {
+      analytics.identify(user.id);
+    } else {
+      analytics.reset();
+    }
+  }, [user?.id]);
 
   if (isLoading) {
     return <SplashScreen />;

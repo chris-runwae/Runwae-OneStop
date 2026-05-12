@@ -51,6 +51,13 @@ const ProfileScreen = () => {
       }).format(updateDate)}`
     : `Version ${VERSION}`;
 
+  // updateId is non-null only when the running bundle came from `eas update`;
+  // matches the embedded-vs-OTA check in lib/sentry.ts so this pill is the
+  // visible counterpart to the `dist` tag attached to Sentry events.
+  const otaUpdateId = Updates.updateId;
+  const isOTA = otaUpdateId != null;
+  const otaShortId = otaUpdateId ? otaUpdateId.slice(0, 8) : '';
+
   return (
     <AppSafeAreaView>
       <MainTabHeader title="Profile" />
@@ -229,6 +236,37 @@ const ProfileScreen = () => {
           }}>
           {versionLine}
         </RNText>
+
+        <View style={{ alignItems: 'center', marginTop: 8 }}>
+          <View
+            style={{
+              paddingHorizontal: 10,
+              paddingVertical: 3,
+              borderRadius: 999,
+              backgroundColor: isOTA
+                ? 'rgba(255, 31, 140, 0.12)'
+                : 'rgba(108, 117, 125, 0.12)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: isOTA ? '#FF1F8C' : '#6C757D',
+              }}
+            />
+            <RNText
+              style={{
+                ...textStyles.regular_12,
+                color: isOTA ? '#FF1F8C' : colors.textColors.subtle,
+              }}>
+              {isOTA ? `OTA · ${otaShortId}` : 'Embedded build'}
+            </RNText>
+          </View>
+        </View>
       </View>
 
       {/* Full Screen Image Preview Modal */}

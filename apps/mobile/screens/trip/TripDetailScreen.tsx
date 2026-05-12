@@ -5,7 +5,7 @@ import { useTheme } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -21,6 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTripDetailActions } from '@/hooks/useTripDetailActions';
 import { useCloneTrip } from '@/hooks/useTripActions';
+import { track } from '@/lib/analytics';
+import { hashTripId } from '@/lib/analytics-helpers';
 import TripDetailSkeleton from './components/TripDetailSkeleton';
 import TripItineraryTab from './tabs/TripItineraryTab';
 import TripOverviewTab from './tabs/TripOverviewTab';
@@ -62,6 +64,25 @@ export default function TripDetailScreen() {
       scrollY.value = event.contentOffset.y;
     },
   });
+
+  // Fire `trip_viewed` once per active trip id. sha256 the raw id so the
+  // event payload can't be reversed back to a Convex row without joining
+  // through a separate identified-user mapping in PostHog.
+  const activeTripId = activeTrip?._id as unknown as string | undefined;
+  useEffect(() => {
+    if (!activeTripId) return;
+    let cancelled = false;
+    void hashTripId(activeTripId).then((hash) => {
+      if (cancelled) return;
+      track({
+        name: 'trip_viewed',
+        properties: { trip_id_hash: hash },
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTripId]);
 
   if (isLoading || !activeTrip) {
     return <TripDetailSkeleton insetTop={insets.top} />;

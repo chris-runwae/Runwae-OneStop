@@ -35,6 +35,8 @@ import { AppFonts, Colors } from '@/constants';
 import { useMutation } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import { uploadImageFromUri } from '@/lib/uploadImage';
+import { track } from '@/lib/analytics';
+import { mapItineraryItemTypeToAnalyticsBucket } from '@/lib/analytics-helpers';
 
 const DATE_COLUMN_WIDTH = 55;
 
@@ -534,6 +536,15 @@ export default function TripItineraryTab({
     dayId: string,
     input: CreateItineraryItemInput,
   ) => {
+    // Fire analytics before the upload + mutation. PostHog convention is to
+    // measure user intent — a later mutation failure is a separate Sentry
+    // signal, not a reason to drop the funnel event.
+    track({
+      name: 'itinerary_item_added',
+      properties: {
+        item_type: mapItineraryItemTypeToAnalyticsBucket(input.type),
+      },
+    });
     let imageUrl = input.imageUrl;
     if (imageUrl?.startsWith('file://')) {
       try {

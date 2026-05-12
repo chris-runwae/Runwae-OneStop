@@ -9,6 +9,9 @@ import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
 
+import { track } from "@/lib/analytics";
+import { extractAuthErrorCode } from "@/lib/analytics-helpers";
+
 // Required so the in-app browser can hand the auth response back to the JS
 // runtime. No-op on native, but documented to be called at module load.
 WebBrowser.maybeCompleteAuthSession();
@@ -345,6 +348,13 @@ export function useAuth(): UseAuthReturn {
         await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "password",
+            error_code: extractAuthErrorCode(err),
+          },
+        });
         return { success: false, error: friendlyAuthError(err, "signIn") };
       }
     },
@@ -446,12 +456,33 @@ export function useAuth(): UseAuthReturn {
   const signInWithGoogle = useCallback(async () => {
     try {
       const r = await runOAuthFlow("google");
-      if (r.cancelled) return { success: false, error: "Sign-in cancelled." };
-      if (!r.success)
+      if (r.cancelled) {
+        track({
+          name: "signin_failed",
+          properties: { provider: "google", error_code: "cancelled" },
+        });
+        return { success: false, error: "Sign-in cancelled." };
+      }
+      if (!r.success) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "google",
+            error_code: extractAuthErrorCode(r.error),
+          },
+        });
         return { success: false, error: r.error ?? "Google sign-in failed." };
+      }
       await rememberAuthMethod("google");
       return { success: true };
     } catch (err) {
+      track({
+        name: "signin_failed",
+        properties: {
+          provider: "google",
+          error_code: extractAuthErrorCode(err),
+        },
+      });
       return {
         success: false,
         error: friendlyAuthError(err, "google"),
@@ -511,6 +542,15 @@ export function useAuth(): UseAuthReturn {
 
       return { success: true };
     } catch (err) {
+      // extractAuthErrorCode normalises ERR_REQUEST_CANCELED to "cancelled"
+      // so the PostHog property surface is consistent with the Google flow.
+      track({
+        name: "signin_failed",
+        properties: {
+          provider: "apple",
+          error_code: extractAuthErrorCode(err),
+        },
+      });
       // ERR_REQUEST_CANCELED is what expo-apple-authentication throws when
       // the user dismisses the sheet. Surface that as a cancellation, not
       // an error toast.
@@ -550,6 +590,13 @@ export function useAuth(): UseAuthReturn {
         await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "password",
+            error_code: extractAuthErrorCode(err),
+          },
+        });
         return { success: false, error: friendlyAuthError(err, "signUp") };
       }
     },
@@ -610,6 +657,13 @@ export function useAuth(): UseAuthReturn {
         await convexSignIn("password", { email, flow: "reset" });
         return { success: true };
       } catch (err) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "password",
+            error_code: extractAuthErrorCode(err),
+          },
+        });
         return {
           success: false,
           error: friendlyAuthError(err, "reset"),
@@ -631,6 +685,13 @@ export function useAuth(): UseAuthReturn {
         await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "password",
+            error_code: extractAuthErrorCode(err),
+          },
+        });
         return {
           success: false,
           error: friendlyAuthError(err, "reset-verification"),
@@ -665,6 +726,13 @@ export function useAuth(): UseAuthReturn {
         await rememberAuthMethod("password");
         return { success: true };
       } catch (err) {
+        track({
+          name: "signin_failed",
+          properties: {
+            provider: "password",
+            error_code: extractAuthErrorCode(err),
+          },
+        });
         return {
           success: false,
           error: friendlyAuthError(err, "email-verification"),

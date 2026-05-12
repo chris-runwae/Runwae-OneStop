@@ -25,15 +25,16 @@ Sentry.init({
   release,
   dist,
   environment: variant,
-  // Sentry's automatic URLSession swizzle (default-on in SDK v8) is
-  // turned off here because it appears to interfere with the Convex
-  // client's WebSocket upgrade on iOS — the symptom is `WebSocket
-  // closed with code 1006: Received bad response code from server:
-  // 404` despite Convex's server returning 400 for any /api/*/sync
-  // path (so the 404 is being injected somewhere between iOS's
-  // URLSession layer and Convex's app server). Errors, messages and
-  // breadcrumbs still flow — only auto-performance HTTP transactions
-  // are off. If/when the conflict is resolved upstream we can revert.
+  // DIAGNOSTIC (v0.8.10): the previous build with
+  // enableAutoPerformanceTracing:false did NOT fix the Convex WebSocket
+  // 404 — the JS flag turns off Sentry's auto-instrumentation tracing
+  // but the native iOS SDK installs its URLSession swizzle at native
+  // init regardless. enableNative:false is the only way to keep the
+  // native SDK from loading at all, which prevents the swizzle from
+  // ever touching URLSession. If WS connects with this off, the swizzle
+  // was the cause; if WS still 404s, Sentry is innocent.
+  enableNative: false,
+  autoInitializeNativeSdk: false,
   enableAutoPerformanceTracing: false,
   tracesSampleRate: 0,
   // Keep PII off by default. Future explicit user identification (setUser)

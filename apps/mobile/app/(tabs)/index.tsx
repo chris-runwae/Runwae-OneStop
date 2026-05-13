@@ -1,15 +1,18 @@
 import AddOnsForYou from '@/components/home/AddOnsForYou';
+import DiscoverGrid from '@/components/discover/DiscoverGrid';
 import FindFriendsSheet from '@/components/social/FindFriendsSheet';
 import FriendsActivity from '@/components/home/FriendsActivity';
 import HeroFeatured from '@/components/home/HeroFeatured';
 import HomeQuickActions from '@/components/home/HomeQuickActions';
 import HomeTopSection from '@/components/home/HomeTopSection';
+import ImportsInProgressPill from '@/components/home/ImportsInProgressPill';
 import LocationPrompt from '@/components/home/LocationPrompt';
 import OpenPollCard from '@/components/home/OpenPollCard';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
+import { useFeatureFlag } from '@/lib/featureFlags';
 import { NATIVE_TABS_ENABLED } from '@/app/(tabs)/_layout';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
@@ -41,6 +44,7 @@ export default function HomeScreen() {
   const viewer = useQuery(api.users.getCurrentUser, {});
   const showLocationPrompt =
     viewer !== undefined && viewer !== null && !viewer.homeCoords;
+  const discoverEnabled = useFeatureFlag('flag_discover_grid');
 
   function isActive(trip: Trip): boolean {
     if (!trip.endDate) return true;
@@ -121,6 +125,7 @@ export default function HomeScreen() {
         )}
 
         <View style={{ gap: SECTION_GAP }}>
+          <ImportsInProgressPill />
           <HomeQuickActions dark={dark} />
 
           <HeroFeatured />
@@ -133,6 +138,13 @@ export default function HomeScreen() {
             headerPath="/events/featured"
           />
           <AddOnsForYou data={featuredExperiences} loading={loading} />
+          {discoverEnabled ? (
+            <DiscoverGrid
+              city={viewer?.homeCity ?? viewer?.homeCountry ?? 'London'}
+              coords={viewer?.homeCoords ?? undefined}
+              originIata={viewer?.homeIata ?? null}
+            />
+          ) : null}
           <OpenPollCard />
           <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
         </View>

@@ -12,3 +12,11 @@ export function useAiQuota() {
 export function useMyAiTrips() {
   return useQuery(api.ai.getMyAiTrips, {});
 }
+
+export function useGenerateTripFromUrl() {
+  return useAction(api.media.generateTripFromUrl);
+}
+
+export function useMyActiveImports() {
+  return useQuery(api.media.myActiveImports, {});
+}

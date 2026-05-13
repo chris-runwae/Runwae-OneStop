@@ -165,6 +165,7 @@ function RouteGuard() {
     'create-trip',
     'create-trip-options',
     'create-trip-ai',
+    'create-trip-from-link',
     'events',
     'search',
     'flights',
@@ -204,6 +205,7 @@ function RouteGuard() {
     'create-trip',
     'create-trip-options',
     'create-trip-ai',
+    'create-trip-from-link',
     'events',
     'search',
     'flights',
@@ -285,6 +287,16 @@ function RouteGuard() {
       />
       <Stack.Screen
         name="create-trip-ai"
+        options={{
+          headerShown: false,
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.85, 1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
+      <Stack.Screen
+        name="create-trip-from-link"
         options={{
           headerShown: false,
           presentation: 'formSheet',

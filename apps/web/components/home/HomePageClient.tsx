@@ -56,6 +56,15 @@ export function HomePageClient() {
   const friendActivity = useQuery(api.social.getFriendActivityHydrated, { limit: 5 });
   const unreadCount = useQuery(api.notifications.unreadCount, {});
   const polls = useQuery(api.polls.getOpenForUser, { limit: 1 });
+  // Top-featured destination acts as the "top-of-month" pick — admins
+  // promote one destination to featuredRank 1 each cycle, and the hero
+  // rotates with it. Skeleton renders while loading; static Lisbon
+  // fallback only if no featured destination exists at all.
+  const featuredDestinations = useQuery(api.destinations.list, {
+    featuredOnly: true,
+    limit: 1,
+  });
+  const heroDestination = featuredDestinations?.[0] ?? null;
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
 
   const homeCoords = viewer?.homeCoords;
@@ -69,7 +78,7 @@ export function HomePageClient() {
         <div className="min-w-0">
           <Greeting viewer={viewer} unread={unreadCount ?? 0} />
           {showLocationPrompt && <LocationPrompt />}
-          <HeroFeatured />
+          <HeroFeatured destination={heroDestination} loading={featuredDestinations === undefined} />
           <MyTripsRow trips={trips} />
           <FriendsActivity
             activity={friendActivity}
@@ -146,19 +155,69 @@ function Greeting({
 /*  Hero featured                                             */
 /* ────────────────────────────────────────────────────────── */
 
-function HeroFeatured() {
-  // The "Plan a trip" CTA used to route to /trips/new — we now open the
-  // unified CreateTripModal directly so users land in the modal flow that
-  // matches the AI plan path. The modal optionally pre-seeds the
-  // destination so step 1 already shows Lisbon selected.
+type HeroDestination = FunctionReturnType<typeof api.destinations.list>[number];
+
+function HeroFeatured({
+  destination,
+  loading,
+}: {
+  destination: HeroDestination | null;
+  loading: boolean;
+}) {
   const [createOpen, setCreateOpen] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="px-4 pt-1.5 pb-2 lg:px-0">
+        <Skeleton className="aspect-[16/9] w-full rounded-[20px]" />
+      </div>
+    );
+  }
+
+  // No featured destination configured — render an evergreen "plan a trip"
+  // card so the home page never shows a blank hero. Admins should publish
+  // at least one featured destination to take over this slot.
+  if (!destination) {
+    return (
+      <div className="px-4 pt-1.5 pb-2 lg:px-0">
+        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-gradient-to-br from-primary/20 via-card to-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)]">
+          <div className="absolute inset-0 flex flex-col items-start justify-end gap-3 p-5 lg:p-7">
+            <h2 className="font-display text-[26px] font-bold leading-[1.05] tracking-tight text-foreground lg:text-[32px]">
+              Where to next?
+            </h2>
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(255,61,127,0.4)] transition-all hover:bg-primary/90 active:scale-[0.97]"
+            >
+              Plan a trip
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </button>
+          </div>
+        </div>
+        <CreateTripModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  const monthLabel = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+  }).format(new Date());
+  const title = `${destination.name} in ${monthLabel}`;
+  const seedLabel = `${destination.name}, ${destination.country}`;
 
   return (
     <div className="px-4 pt-1.5 pb-2 lg:px-0">
-      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)]">
+      <Link
+        href={`/destinations/${destination.slug}`}
+        className="relative block aspect-[16/9] w-full overflow-hidden rounded-[20px] bg-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)]"
+      >
         <Image
-          src="https://picsum.photos/seed/lisbon-tram-runwae/1200/675"
-          alt="Lisbon trams"
+          src={destination.heroImageUrl}
+          alt={destination.name}
           fill
           priority
           className="object-cover"
@@ -173,32 +232,39 @@ function HeroFeatured() {
         <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3.5 text-white lg:inset-x-5 lg:bottom-5">
           <div className="min-w-0 flex-1">
             <div className="font-display text-[28px] font-bold leading-[1.05] tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)] lg:text-[34px]">
-              Lisbon in Spring
+              {title}
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
-              <HeroPill icon={<Calendar className="h-3 w-3" />}>
-                Apr 18 — 24
+              <HeroPill icon={<MapPin className="h-3 w-3" />}>
+                {destination.country}
               </HeroPill>
-              <HeroPill icon={<MapPin className="h-3 w-3" />}>Portugal</HeroPill>
+              {destination.ratingAverage > 0 && (
+                <HeroPill icon={<Calendar className="h-3 w-3" />}>
+                  ★ {destination.ratingAverage.toFixed(1)}
+                </HeroPill>
+              )}
             </div>
           </div>
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              setCreateOpen(true);
+            }}
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(255,61,127,0.4)] transition-all hover:bg-primary/90 active:scale-[0.97]"
           >
             Plan a trip
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.4} />
           </button>
         </div>
-      </div>
+      </Link>
 
       <CreateTripModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         seedDestination={{
-          destinationLabel: "Lisbon, Portugal",
-          coords: { lat: 38.7223, lng: -9.1393 },
+          destinationLabel: seedLabel,
+          coords: destination.coords,
         }}
       />
     </div>
@@ -537,6 +603,14 @@ function RightRail({
 }
 
 function RailNextTrip({ trip }: { trip: TripDoc | undefined }) {
+  // Live activity count for the "X activities planned" stat. Skip the
+  // query entirely until we have a trip — Convex `'skip'` keeps the hook
+  // shape stable across renders.
+  const activityCount = useQuery(
+    api.itinerary.getItemCount,
+    trip ? { tripId: trip._id } : "skip"
+  );
+
   if (!trip) {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)]">
@@ -583,7 +657,14 @@ function RailNextTrip({ trip }: { trip: TripDoc | undefined }) {
         )}
       </h3>
       <RailStat value={`${days}`} label={`days in ${dest}`} />
-      <RailStat value={trip.status === "planning" ? "—" : "9"} label="activities planned" />
+      <RailStat
+        value={
+          activityCount === undefined
+            ? "—"
+            : String(activityCount)
+        }
+        label="activities planned"
+      />
       {budget !== undefined && (
         <RailStat
           value={new Intl.NumberFormat("en-US", {

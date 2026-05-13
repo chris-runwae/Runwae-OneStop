@@ -263,6 +263,17 @@ export default defineSchema({
     // client modal — same key returns the same trip instead of creating
     // a fresh one (and burning another quota slot).
     aiIdempotencyKey: v.optional(v.string()),
+    // Trip-from-link provenance. `sourceUrl` is the canonicalized
+    // YouTube/TikTok URL (tracking params stripped, vt.tiktok.com expanded).
+    // The pair (sourceType, sourceUrl) lets the share UI render an "Inspired
+    // by …" credit and the by_source_url index lets us short-circuit
+    // duplicate imports across users without scanning the whole table.
+    sourceUrl: v.optional(v.string()),
+    sourceType: v.optional(
+      v.union(v.literal("youtube"), v.literal("tiktok"))
+    ),
+    sourceTitle: v.optional(v.string()),
+    sourceCreator: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -270,7 +281,8 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_join_code", ["joinCode"])
     .index("by_event", ["eventId"])
-    .index("by_ai_key", ["aiIdempotencyKey"]),
+    .index("by_ai_key", ["aiIdempotencyKey"])
+    .index("by_source_url", ["sourceUrl"]),
 
   trip_members: defineTable({
     tripId: v.id("trips"),
@@ -798,6 +810,39 @@ export default defineSchema({
     ),
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
+
+  // Trip-from-link async pipeline state. Short videos resolve inline and
+  // never land here; videos > 4 min get a row that the home-screen
+  // ImportsInProgressPill subscribes to. `by_user_active` lets the pill
+  // query open imports without paginating the whole user history.
+  media_imports: defineTable({
+    userId: v.id("users"),
+    url: v.string(),
+    platform: v.union(v.literal("youtube"), v.literal("tiktok")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("extracting"),
+      v.literal("transcribing"),
+      v.literal("planning"),
+      v.literal("materializing"),
+      v.literal("done"),
+      v.literal("failed")
+    ),
+    durationSec: v.optional(v.number()),
+    transcript: v.optional(v.string()),
+    videoTitle: v.optional(v.string()),
+    videoCreator: v.optional(v.string()),
+    thumbnailUrl: v.optional(v.string()),
+    tripId: v.optional(v.id("trips")),
+    slug: v.optional(v.string()),
+    errorReason: v.optional(v.string()),
+    idempotencyKey: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_active", ["userId", "status"])
+    .index("by_idempotency", ["idempotencyKey"]),
 
   issue_reports: defineTable({
     userId: v.id("users"),

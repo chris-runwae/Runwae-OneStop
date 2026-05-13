@@ -54,21 +54,44 @@ export const searchAll = query({
   },
 });
 
-// Powers the Experiences chip's local-DB pass. Returns published events +
-// curated experiences that match the term. Hotels and flights deliberately
-// have no representation here — they live behind their own chips.
+// Powers the Experiences chip's local-DB pass. Returns published events,
+// curated experiences, and items from public trip itineraries that match
+// the term. Hotels and flights are excluded from itinerary_items because
+// they have their own chips and would crowd the experience surface.
 // Substring matching only; swap for `withSearchIndex` once content scales.
 export const searchExperiences = query({
   args: { term: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const needle = args.term.trim().toLowerCase();
     if (needle.length === 0) {
-      return { events: [], experiences: [] };
+      return { events: [], experiences: [], itineraryItems: [] };
     }
     const limit = args.limit ?? 10;
 
     const experiences = await ctx.db.query("experiences").collect();
     const events = await ctx.db.query("events").collect();
+
+    // Only surface itinerary items from PUBLIC trips so we don't leak
+    // private trip contents into the cross-trip search surface. Walk a
+    // bounded set of public trips so the read amplification stays in
+    // check (cap at 200 — far above the current public-trip count).
+    const publicTrips = (await ctx.db.query("trips").take(200)).filter(
+      (t) => t.visibility === "public"
+    );
+    const publicTripIds = new Set<string>(
+      publicTrips.map((t) => t._id as unknown as string),
+    );
+    const itineraryItems = publicTripIds.size
+      ? (await ctx.db.query("itinerary_items").take(1000)).filter(
+          (i) =>
+            publicTripIds.has(i.tripId as unknown as string) &&
+            i.type !== "flight" &&
+            i.type !== "hotel" &&
+            (matches(i.title, needle) ||
+              matches(i.description, needle) ||
+              matches(i.locationName, needle))
+        )
+      : [];
 
     return {
       events: events
@@ -87,6 +110,7 @@ export const searchExperiences = query({
           (e) => matches(e.title, needle) || matches(e.description, needle)
         )
         .slice(0, limit),
+      itineraryItems: itineraryItems.slice(0, limit),
     };
   },
 });

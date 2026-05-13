@@ -108,6 +108,35 @@ export const getTemplateById = query({
   },
 });
 
+// Lightweight item count for the home-screen "your next trip" rail. Mirrors
+// getItinerary's visibility rules. Returns 0 if the viewer can't see the
+// trip rather than null so callers can render "—" or a real number without
+// branching on null.
+export const getItemCount = query({
+  args: { tripId: v.id("trips") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const trip = await ctx.db.get(args.tripId);
+    if (!trip) return 0;
+
+    if (trip.visibility !== "public") {
+      if (userId === null) return 0;
+      const membership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .first();
+      if (!membership) return 0;
+    }
+
+    const items = await ctx.db
+      .query("itinerary_items")
+      .withIndex("by_trip", (q) => q.eq("tripId", args.tripId))
+      .collect();
+    return items.length;
+  },
+});
+
 export const getItinerary = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, args) => {

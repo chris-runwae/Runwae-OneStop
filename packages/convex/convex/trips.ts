@@ -297,6 +297,84 @@ export const getTripById = query({
   },
 });
 
+// Public share view for /t/[slug]. Returns the trip plus the trimmed
+// itinerary preview, creator name/avatar, and member count needed by the
+// public marketing page. Visibility rules mirror getBySlug — non-public
+// trips only resolve for accepted or pending members; outside viewers see
+// null and the page renders a sign-in nudge.
+export const getPublicShareView = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const trip = await ctx.db
+      .query("trips")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (!trip) return null;
+
+    if (trip.visibility !== "public") {
+      const userId = await getAuthUserId(ctx);
+      if (userId === null) return null;
+      const membership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .first();
+      if (!membership) return null;
+    }
+
+    const days = await ctx.db
+      .query("itinerary_days")
+      .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
+      .collect();
+    days.sort((a, b) => a.dayNumber - b.dayNumber);
+
+    const items = await ctx.db
+      .query("itinerary_items")
+      .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
+      .collect();
+    items.sort((a, b) => a.sortOrder - b.sortOrder);
+
+    const acceptedMembers = await ctx.db
+      .query("trip_members")
+      .withIndex("by_trip", (q) => q.eq("tripId", trip._id))
+      .filter((q) => q.eq(q.field("status"), "accepted"))
+      .collect();
+
+    const creator = await ctx.db.get(trip.creatorId);
+
+    return {
+      trip,
+      days: days.map((d) => ({
+        _id: d._id,
+        date: d.date,
+        dayNumber: d.dayNumber,
+        title: d.title,
+        items: items
+          .filter((i) => i.dayId === d._id)
+          .map((i) => ({
+            _id: i._id,
+            type: i.type,
+            title: i.title,
+            description: i.description,
+            imageUrl: i.imageUrl,
+            locationName: i.locationName,
+            startTime: i.startTime,
+            price: i.price,
+            currency: i.currency,
+          })),
+      })),
+      itemCount: items.length,
+      memberCount: acceptedMembers.length,
+      creator: creator
+        ? {
+            name: creator.name ?? null,
+            image: creator.image ?? null,
+          }
+        : null,
+    };
+  },
+});
+
 // Public-facing preview for the join-code landing page. Returns just the
 // fields the recipient needs to recognise the trip before joining; member
 // count is denormalised so we don't ship the full member list.

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -27,6 +28,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { detectPlatform } from '@/lib/urlPlatform';
 import Animated, {
   FadeIn,
   FadeInRight,
@@ -210,7 +212,34 @@ export default function SearchScreen() {
 
           <Pressable
             className="h-[45px] w-full flex-row items-center justify-center gap-x-2 rounded-full bg-black dark:bg-white"
-            onPress={() => router.push('/trips')}>
+            onPress={() => {
+              const url: string | undefined = previewData?.url;
+              if (!url) return;
+              const platform = detectPlatform(url);
+              if (platform === 'unknown') {
+                Alert.alert(
+                  'Unsupported link',
+                  'Only YouTube and TikTok links are supported right now.'
+                );
+                return;
+              }
+              const idempotencyKey = `link_${Date.now()}_${Math.random()
+                .toString(36)
+                .slice(2, 10)}`;
+              router.push({
+                pathname: '/create-trip-from-link',
+                params: {
+                  url,
+                  title: String(previewData?.title ?? ''),
+                  image: String(
+                    previewData?.images?.[0] ??
+                      previewData?.favicons?.[0] ??
+                      ''
+                  ),
+                  idempotencyKey,
+                },
+              });
+            }}>
             <Sparkles size={13} color="#ffffff" />
             <Text className="text-base font-semibold text-white dark:text-black">
               Create Itinerary

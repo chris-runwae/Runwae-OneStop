@@ -1024,6 +1024,133 @@ Day-shape rules:
   }
 }
 
+// Trip-from-link extraction. Reads a creator's video transcript (and any
+// available metadata) and produces a strict-JSON itinerary plus a guess
+// at the destination. Lives behind an internalAction so media.ts can
+// reuse it without crossing runtimes.
+export const _callClaudeForUrlItinerary = internalAction({
+  args: {
+    transcript: v.string(),
+    platform: v.union(v.literal("youtube"), v.literal("tiktok")),
+    videoTitle: v.optional(v.string()),
+    videoDescription: v.optional(v.string()),
+    videoCreator: v.optional(v.string()),
+    todayIso: v.string(),
+    tripLengthDaysOverride: v.optional(v.number()),
+  },
+  handler: async (
+    _ctx,
+    args,
+  ): Promise<{
+    destinationLabel: string;
+    destinationCoords?: { lat: number; lng: number };
+    suggestedTripLengthDays: number;
+    preferences: string[];
+    days: AiDay[];
+  } | null> => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.warn("[ai] ANTHROPIC_API_KEY not set");
+      return null;
+    }
+
+    const sysPrompt = `You are extracting a travel itinerary from a creator's video. Treat the transcript as ground truth for places mentioned. Infer the destination from the most-mentioned city/region. When the creator names specific restaurants, viewpoints, or activities, include them as items with locationName set to the actual venue name (not a generic descriptor) so we can geocode them. Never invent named venues that aren't in the transcript or video metadata.
+
+Output STRICT JSON only, no markdown, no commentary:
+{
+  "destinationLabel": "City, Country",
+  "destinationCoords": { "lat": 0, "lng": 0 } | null,
+  "suggestedTripLengthDays": 4,
+  "preferences": ["3-6 short vibe tags"],
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "dayNumber": 1,
+      "title": "Short headline",
+      "items": [
+        {
+          "type": "flight"|"hotel"|"tour"|"event"|"restaurant"|"activity"|"transport"|"other",
+          "title": "...",
+          "startTime": "HH:MM",
+          "description": "Why this fits",
+          "locationName": "Venue, City"
+        }
+      ]
+    }
+  ]
+}`;
+
+    const userPrompt = `Today's date: ${args.todayIso}
+Source: ${args.platform} — "${args.videoTitle ?? "(no title)"}" by ${args.videoCreator ?? "unknown"}
+${args.videoDescription ? `Description: ${args.videoDescription}\n` : ""}
+Transcript:
+${args.transcript}
+
+Constraints:
+- Output strict JSON as specified.
+- Trip length: 2–7 days, default 4. ${args.tripLengthDaysOverride ? `Override = ${args.tripLengthDaysOverride}.` : ""}
+- Date inference: if the video doesn't fix dates, set day1 = first Monday at least 30 days after today.
+- Bias item types to what the creator actually does (food → restaurant, museum/hike → activity, club → event).
+- Each item.locationName MUST be a real, geocodable name from the transcript when possible.`;
+
+    try {
+      const res = await fetch(ANTHROPIC_API, {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 3200,
+          system: sysPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        }),
+      });
+      if (!res.ok) {
+        console.warn("[ai] Claude (url) returned", res.status);
+        return null;
+      }
+      const json = (await res.json()) as {
+        content?: Array<{ type: string; text?: string }>;
+      };
+      const text = json.content?.find((c) => c.type === "text")?.text ?? "";
+      const cleaned = text
+        .replace(/^```(?:json)?/i, "")
+        .replace(/```\s*$/, "")
+        .trim();
+      const parsed = JSON.parse(cleaned) as {
+        destinationLabel?: string;
+        destinationCoords?: { lat: number; lng: number } | null;
+        suggestedTripLengthDays?: number;
+        preferences?: string[];
+        days?: AiDay[];
+      };
+      if (
+        !parsed.destinationLabel ||
+        !Array.isArray(parsed.days) ||
+        parsed.days.length === 0
+      ) {
+        return null;
+      }
+      return {
+        destinationLabel: parsed.destinationLabel,
+        destinationCoords: parsed.destinationCoords ?? undefined,
+        suggestedTripLengthDays:
+          parsed.suggestedTripLengthDays && parsed.suggestedTripLengthDays >= 2
+            ? Math.min(7, parsed.suggestedTripLengthDays)
+            : 4,
+        preferences: Array.isArray(parsed.preferences) ? parsed.preferences : [],
+        days: parsed.days,
+      };
+    } catch (err) {
+      console.error("[ai] Claude (url) call failed", err);
+      return null;
+    }
+  },
+});
+
 export const _materializeFreeFormTrip = internalMutation({
   args: {
     aiIdempotencyKey: v.optional(v.string()),
@@ -1042,6 +1169,15 @@ export const _materializeFreeFormTrip = internalMutation({
         v.literal("public"),
       ),
     ),
+    // Trip-from-link provenance, forwarded into the trip row so the
+    // share UI can render "Inspired by …" credit. All optional so
+    // event-driven + free-form callers don't need to know about them.
+    sourceUrl: v.optional(v.string()),
+    sourceType: v.optional(
+      v.union(v.literal("youtube"), v.literal("tiktok"))
+    ),
+    sourceTitle: v.optional(v.string()),
+    sourceCreator: v.optional(v.string()),
     startDate: v.string(),
     endDate: v.string(),
     groupSize: v.union(
@@ -1111,6 +1247,10 @@ export const _materializeFreeFormTrip = internalMutation({
       joinCode: suffix,
       currency: "GBP",
       aiIdempotencyKey: args.aiIdempotencyKey,
+      sourceUrl: args.sourceUrl,
+      sourceType: args.sourceType,
+      sourceTitle: args.sourceTitle,
+      sourceCreator: args.sourceCreator,
       createdAt: now,
       updatedAt: now,
     });

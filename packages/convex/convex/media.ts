@@ -233,20 +233,17 @@ export const generateTripFromUrl = action({
         await ctx.runMutation(internal.ai._refundQuota, {});
         return { ok: false, reason: "transcript_unavailable" };
       }
-      const audio = await ctx.runAction(internal.media._callExtractor, {
-        url: canonical,
-        probeOnly: false,
-      });
+      const audio = await ctx.runAction(
+        internal.media._fetchExtractorAudio,
+        { url: canonical },
+      );
       if (!audio.ok) {
         await ctx.runMutation(internal.ai._refundQuota, {});
         return { ok: false, reason: "extractor_unreachable" };
       }
-      if (!audio.audioUrl) {
-        await ctx.runMutation(internal.ai._refundQuota, {});
-        return { ok: false, reason: "transcript_unavailable" };
-      }
       const whisper = await ctx.runAction(internal.media._callGroqWhisper, {
-        audioUrl: audio.audioUrl,
+        audioBytes: audio.audioBytes,
+        contentType: audio.contentType,
       });
       if (!whisper.ok) {
         await ctx.runMutation(internal.ai._refundQuota, {});
@@ -308,6 +305,9 @@ export const generateTripFromUrl = action({
 
 // ── Internal: extractor wrapper ─────────────────────────────────────────
 
+// Probe-mode extractor — returns metadata JSON. Audio bytes go through
+// the separate `_fetchExtractorAudio` action below so the two contracts
+// (JSON vs binary) don't share a type signature.
 type ExtractorResult =
   | {
       ok: true;
@@ -316,7 +316,6 @@ type ExtractorResult =
       description: string;
       uploader: string;
       thumbnail: string;
-      audioUrl?: string;
     }
   | { ok: false; reason: "extractor_unreachable" };
 
@@ -332,7 +331,11 @@ export const _callExtractor = internalAction({
       console.warn("[media] MEDIA_EXTRACTOR_URL/SECRET not set");
       return { ok: false, reason: "extractor_unreachable" };
     }
-    const url = args.probeOnly ? `${endpoint}?probe=1` : endpoint;
+    // Probe-only is the supported shape for this action; audio-mode is
+    // served by `_fetchExtractorAudio`. The probeOnly arg is kept for
+    // backward-compat with the existing call sites.
+    const url = `${endpoint}?probe=1`;
+    void args.probeOnly;
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -352,7 +355,6 @@ export const _callExtractor = internalAction({
         description?: string;
         uploader?: string;
         thumbnail?: string;
-        audioUrl?: string;
       };
       return {
         ok: true,
@@ -361,10 +363,53 @@ export const _callExtractor = internalAction({
         description: data.description ?? "",
         uploader: data.uploader ?? "",
         thumbnail: data.thumbnail ?? "",
-        audioUrl: data.audioUrl,
       };
     } catch (err) {
       console.warn("[media] extractor fetch failed", err);
+      return { ok: false, reason: "extractor_unreachable" };
+    }
+  },
+});
+
+// Downloads the audio file via the extractor and returns the bytes
+// directly. We can't return a URL because YouTube/TikTok bind their
+// signed audio URLs to the IP that requested them — yt-dlp on the
+// extractor host = same IP = works; Convex cloud fetch = different IP =
+// 403. By having the extractor download and stream the bytes back, the
+// IP-bound fetch happens on the right machine.
+export const _fetchExtractorAudio = internalAction({
+  args: { url: v.string() },
+  handler: async (
+    _ctx,
+    args,
+  ): Promise<
+    | { ok: true; audioBytes: ArrayBuffer; contentType: string }
+    | { ok: false; reason: "extractor_unreachable" }
+  > => {
+    const endpoint = process.env.MEDIA_EXTRACTOR_URL;
+    const secret = process.env.MEDIA_EXTRACTOR_SECRET;
+    if (!endpoint || !secret) {
+      console.warn("[media] MEDIA_EXTRACTOR_URL/SECRET not set");
+      return { ok: false, reason: "extractor_unreachable" };
+    }
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${secret}`,
+        },
+        body: JSON.stringify({ url: args.url }),
+      });
+      if (!res.ok) {
+        console.warn(`[media] extractor audio returned ${res.status}`);
+        return { ok: false, reason: "extractor_unreachable" };
+      }
+      const contentType = res.headers.get("content-type") ?? "audio/mp4";
+      const audioBytes = await res.arrayBuffer();
+      return { ok: true, audioBytes, contentType };
+    } catch (err) {
+      console.warn("[media] extractor audio fetch failed", err);
       return { ok: false, reason: "extractor_unreachable" };
     }
   },
@@ -447,10 +492,13 @@ export const _fetchYouTubeCaptions = internalAction({
 // ── Internal: Groq Whisper fallback ─────────────────────────────────────
 
 export const _callGroqWhisper = internalAction({
-  args: { audioUrl: v.string() },
+  args: {
+    audioBytes: v.bytes(),
+    contentType: v.optional(v.string()),
+  },
   handler: async (
     _ctx,
-    { audioUrl }
+    { audioBytes, contentType: ctIn }
   ): Promise<{ ok: true; text: string } | { ok: false }> => {
     const groqKey = process.env.GROQ_API_KEY;
     if (!groqKey) {
@@ -458,19 +506,7 @@ export const _callGroqWhisper = internalAction({
       return { ok: false };
     }
     try {
-      // Groq's /openai/v1/audio/transcriptions follows OpenAI's spec —
-      // requires `file` (multipart upload), no URL shortcut. Fetch the
-      // signed audio URL yt-dlp returned and forward the bytes. For
-      // inline videos (<4 min) audio is typically 3–6 MB, well under
-      // Convex action memory limits.
-      const audioRes = await fetch(audioUrl);
-      if (!audioRes.ok) {
-        console.warn("[media] audio fetch failed", audioRes.status);
-        return { ok: false };
-      }
-      const audioBytes = await audioRes.arrayBuffer();
-      const contentType =
-        audioRes.headers.get("content-type") ?? "audio/mp4";
+      const contentType = ctIn ?? "audio/mp4";
       // Pick a filename suffix Groq accepts. The actual codec doesn't
       // matter — Whisper sniffs the bytes — but a sensible extension
       // avoids edge cases.
@@ -615,11 +651,11 @@ export const _processImport = internalAction({
     }
 
     if (!transcriptText) {
-      const audio = await ctx.runAction(internal.media._callExtractor, {
-        url: row.url,
-        probeOnly: false,
-      });
-      if (!audio.ok || !audio.audioUrl) {
+      const audio = await ctx.runAction(
+        internal.media._fetchExtractorAudio,
+        { url: row.url },
+      );
+      if (!audio.ok) {
         await ctx.runMutation(internal.ai._refundQuota, {});
         await ctx.runMutation(internal.media._setImportStatus, {
           importId: args.importId,
@@ -633,7 +669,8 @@ export const _processImport = internalAction({
         status: "transcribing",
       });
       const whisper = await ctx.runAction(internal.media._callGroqWhisper, {
-        audioUrl: audio.audioUrl,
+        audioBytes: audio.audioBytes,
+        contentType: audio.contentType,
       });
       if (!whisper.ok) {
         await ctx.runMutation(internal.ai._refundQuota, {});

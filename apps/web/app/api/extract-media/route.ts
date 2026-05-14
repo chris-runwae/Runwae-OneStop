@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { readFile, unlink } from "node:fs/promises";
 
 // yt-dlp wrapper. The npm package bundles a Python-zipapp version of
 // yt-dlp that requires python3 on PATH — fragile in serverless environments
@@ -23,10 +27,6 @@ type ProbeResult = {
   description: string;
   uploader: string;
   thumbnail: string;
-};
-
-type ExtractResult = ProbeResult & {
-  audioUrl: string;
 };
 
 function isAuthorized(req: NextRequest): boolean {
@@ -57,68 +57,59 @@ export async function POST(req: NextRequest) {
   const probeOnly = req.nextUrl.searchParams.get("probe") === "1";
 
   try {
-    // --skip-download keeps yt-dlp from streaming bytes — we only need
-    // metadata for both probe and audio-url responses. The audio URL
-    // itself is a short-lived signed CDN URL that Whisper can fetch
-    // directly, so we never proxy the audio through our own infra.
-    const info = (await youtubeDl(url, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      skipDownload: true,
-      noCheckCertificates: true,
-      preferFreeFormats: true,
-      addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
-    })) as {
-      duration?: number;
-      title?: string;
-      description?: string;
-      uploader?: string;
-      thumbnail?: string;
-      formats?: Array<{
-        url?: string;
-        acodec?: string;
-        vcodec?: string;
-        abr?: number;
-      }>;
-      url?: string;
-    };
-
-    const probe: ProbeResult = {
-      durationSec: typeof info.duration === "number" ? info.duration : 0,
-      title: info.title ?? "",
-      description: info.description ?? "",
-      uploader: info.uploader ?? "",
-      thumbnail: info.thumbnail ?? "",
-    };
-
     if (probeOnly) {
+      const info = (await youtubeDl(url, {
+        dumpSingleJson: true,
+        noWarnings: true,
+        skipDownload: true,
+        noCheckCertificates: true,
+        preferFreeFormats: true,
+        addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
+      })) as {
+        duration?: number;
+        title?: string;
+        description?: string;
+        uploader?: string;
+        thumbnail?: string;
+      };
+
+      const probe: ProbeResult = {
+        durationSec: typeof info.duration === "number" ? info.duration : 0,
+        title: info.title ?? "",
+        description: info.description ?? "",
+        uploader: info.uploader ?? "",
+        thumbnail: info.thumbnail ?? "",
+      };
       return NextResponse.json(probe);
     }
 
-    // Pick the best audio-only format. `bestaudio` is what yt-dlp would
-    // pick with `-f bestaudio`, but we have to do the selection ourselves
-    // here because we asked for dumpSingleJson (which returns the full
-    // formats list).
-    const audioFormat = (info.formats ?? [])
-      .filter(
-        (f) =>
-          typeof f.url === "string" &&
-          f.acodec &&
-          f.acodec !== "none" &&
-          (!f.vcodec || f.vcodec === "none")
-      )
-      .sort((a, b) => (b.abr ?? 0) - (a.abr ?? 0))[0];
-
-    const audioUrl = audioFormat?.url ?? info.url;
-    if (!audioUrl) {
-      return NextResponse.json(
-        { error: "no_audio_format" },
-        { status: 502 }
-      );
+    // Audio path: download the audio file on this machine (where yt-dlp
+    // resolved the signed URL — YouTube/TikTok bind these URLs to the
+    // requesting IP, so a remote Convex fetch returns 403) and stream
+    // the bytes back. The caller can forward them straight to Whisper
+    // without ever touching the bound URL.
+    const outputPath = join(tmpdir(), `runwae-${randomUUID()}.m4a`);
+    try {
+      await youtubeDl(url, {
+        output: outputPath,
+        format: "bestaudio[ext=m4a]/bestaudio",
+        noWarnings: true,
+        noCheckCertificates: true,
+        preferFreeFormats: true,
+        addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
+      });
+      const bytes = await readFile(outputPath);
+      return new NextResponse(bytes, {
+        status: 200,
+        headers: {
+          "content-type": "audio/mp4",
+          "content-length": String(bytes.length),
+        },
+      });
+    } finally {
+      // Best-effort cleanup. /tmp gets garbage collected anyway.
+      await unlink(outputPath).catch(() => {});
     }
-
-    const result: ExtractResult = { ...probe, audioUrl };
-    return NextResponse.json(result);
   } catch (err) {
     // youtube-dl-exec throws an object with `stderr` / `stdout` on
     // failure — not a plain Error. Pull whatever shape it actually has

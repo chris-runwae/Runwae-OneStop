@@ -118,17 +118,47 @@ export const generateTripFromUrl = action({
       uploader: string;
       thumbnail: string;
     };
+    // True when probe couldn't reach a working extractor and we fell
+    // through to oEmbed. Downstream: skip the Whisper retry, because the
+    // extractor is the only way to get audio and we already know it's
+    // broken.
+    let extractorBroken = false;
 
     if (extractorConfigured) {
       const r = await ctx.runAction(internal.media._callExtractor, {
         url: canonical,
         probeOnly: true,
       });
-      if (!r.ok) {
+      if (r.ok) {
+        probe = r;
+      } else if (platform === "youtube") {
+        // Extractor is misconfigured or rate-limited. For YouTube we have
+        // a zero-auth oEmbed path that can still succeed if the video has
+        // captions. Don't refund the quota yet — the inline captions path
+        // below will refund if captions also fail.
+        console.warn(
+          "[media] extractor probe failed; falling back to YT oEmbed",
+        );
+        extractorBroken = true;
+        const meta = await ctx.runAction(internal.media._fetchYouTubeOembed, {
+          url: canonical,
+        });
+        if (!meta.ok) {
+          await ctx.runMutation(internal.ai._refundQuota, {});
+          return { ok: false, reason: "extractor_unreachable" };
+        }
+        probe = {
+          durationSec: 0,
+          title: meta.title,
+          description: "",
+          uploader: meta.uploader,
+          thumbnail: meta.thumbnail,
+        };
+      } else {
+        // TikTok with broken extractor — no fallback available.
         await ctx.runMutation(internal.ai._refundQuota, {});
         return { ok: false, reason: r.reason };
       }
-      probe = r;
     } else if (platform === "youtube") {
       const meta = await ctx.runAction(internal.media._fetchYouTubeOembed, {
         url: canonical,
@@ -195,10 +225,11 @@ export const generateTripFromUrl = action({
     }
     if (!transcriptText) {
       // No captions. Whisper is our only fallback, and it needs the
-      // extractor for the audio URL. If the extractor isn't configured
-      // we surface a clean "couldn't read this video" rather than the
-      // generic "extractor_unreachable".
-      if (!extractorConfigured) {
+      // extractor for the audio URL. Skip the retry if we already
+      // discovered the extractor was broken during the probe — surface a
+      // clean "couldn't read this video" instead of the generic
+      // "extractor_unreachable" they'd get from hitting it again.
+      if (!extractorConfigured || extractorBroken) {
         await ctx.runMutation(internal.ai._refundQuota, {});
         return { ok: false, reason: "transcript_unavailable" };
       }

@@ -113,9 +113,32 @@ export async function POST(req: NextRequest) {
     const result: ExtractResult = { ...probe, audioUrl };
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "extractor_failed";
+    // youtube-dl-exec throws an object with `stderr` / `stdout` on
+    // failure — not a plain Error. Pull whatever shape it actually has
+    // so we can see WHY yt-dlp didn't run (binary missing, rate-limit,
+    // 403, etc.) instead of returning a blank `detail`.
+    const e = err as {
+      message?: string;
+      stderr?: string;
+      stdout?: string;
+      shortMessage?: string;
+      code?: string | number;
+    } | null;
+    const detail =
+      e?.stderr?.slice(0, 800) ||
+      e?.message ||
+      e?.shortMessage ||
+      e?.stdout?.slice(0, 400) ||
+      (typeof err === "string" ? err : "unknown");
+    console.error("[extract-media] yt-dlp failed", {
+      code: e?.code,
+      message: e?.message,
+      shortMessage: e?.shortMessage,
+      stderr: e?.stderr?.slice(0, 2000),
+      stdout: e?.stdout?.slice(0, 1000),
+    });
     return NextResponse.json(
-      { error: "extractor_failed", detail: message.slice(0, 400) },
+      { error: "extractor_failed", detail: String(detail).slice(0, 800) },
       { status: 502 }
     );
   }

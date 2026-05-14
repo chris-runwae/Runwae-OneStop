@@ -448,20 +448,50 @@ export const _fetchYouTubeCaptions = internalAction({
 
 export const _callGroqWhisper = internalAction({
   args: { audioUrl: v.string() },
-  handler: async (_ctx, { audioUrl }): Promise<{ ok: true; text: string } | { ok: false }> => {
+  handler: async (
+    _ctx,
+    { audioUrl }
+  ): Promise<{ ok: true; text: string } | { ok: false }> => {
     const groqKey = process.env.GROQ_API_KEY;
     if (!groqKey) {
       console.warn("[media] GROQ_API_KEY not set");
       return { ok: false };
     }
     try {
-      // Groq's /openai/v1/audio/transcriptions takes multipart form data
-      // where `file` can be a remote URL via the `url` field. We use the
-      // file-by-URL helper to skip proxying the audio bytes through us.
+      // Groq's /openai/v1/audio/transcriptions follows OpenAI's spec —
+      // requires `file` (multipart upload), no URL shortcut. Fetch the
+      // signed audio URL yt-dlp returned and forward the bytes. For
+      // inline videos (<4 min) audio is typically 3–6 MB, well under
+      // Convex action memory limits.
+      const audioRes = await fetch(audioUrl);
+      if (!audioRes.ok) {
+        console.warn("[media] audio fetch failed", audioRes.status);
+        return { ok: false };
+      }
+      const audioBytes = await audioRes.arrayBuffer();
+      const contentType =
+        audioRes.headers.get("content-type") ?? "audio/mp4";
+      // Pick a filename suffix Groq accepts. The actual codec doesn't
+      // matter — Whisper sniffs the bytes — but a sensible extension
+      // avoids edge cases.
+      const ext =
+        contentType.includes("webm")
+          ? "webm"
+          : contentType.includes("ogg")
+            ? "ogg"
+            : contentType.includes("mpeg")
+              ? "mp3"
+              : "m4a";
+
       const form = new FormData();
       form.append("model", "whisper-large-v3-turbo");
-      form.append("url", audioUrl);
+      form.append(
+        "file",
+        new Blob([audioBytes], { type: contentType }),
+        `audio.${ext}`
+      );
       form.append("response_format", "text");
+
       const res = await fetch(
         "https://api.groq.com/openai/v1/audio/transcriptions",
         {
@@ -471,7 +501,12 @@ export const _callGroqWhisper = internalAction({
         }
       );
       if (!res.ok) {
-        console.warn("[media] groq whisper returned", res.status);
+        const detail = await res.text().catch(() => "");
+        console.warn(
+          "[media] groq whisper returned",
+          res.status,
+          detail.slice(0, 300)
+        );
         return { ok: false };
       }
       const text = (await res.text()).trim();

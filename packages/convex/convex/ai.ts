@@ -139,9 +139,15 @@ export const _checkAndReserveQuota = internalMutation({
 });
 
 export const _refundQuota = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+  // `userId` is optional so existing call sites that run inside a
+  // user-initiated action (free-form, event-driven flows) keep working
+  // without changes — `getAuthUserId` resolves the viewer for them.
+  // The trip-from-link background path schedules `_processImport` via
+  // `ctx.scheduler.runAfter`, which drops the auth context — callers
+  // there must pass the userId explicitly from the media_imports row.
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    const userId = args.userId ?? (await getAuthUserId(ctx));
     if (userId === null) return;
     const user = await ctx.db.get(userId);
     const used = user?.aiTripsUsed ?? 0;
@@ -1178,6 +1184,12 @@ export const _materializeFreeFormTrip = internalMutation({
     ),
     sourceTitle: v.optional(v.string()),
     sourceCreator: v.optional(v.string()),
+    // Optional — only the scheduled background path of trip-from-link
+    // needs to pass this, because ctx.scheduler.runAfter strips the
+    // auth context. Existing user-initiated callers (generateFreeFormTrip,
+    // generateTripFromEvent) leave it unset and getAuthUserId resolves
+    // the viewer as before.
+    creatorId: v.optional(v.id("users")),
     startDate: v.string(),
     endDate: v.string(),
     groupSize: v.union(
@@ -1214,7 +1226,7 @@ export const _materializeFreeFormTrip = internalMutation({
     ctx,
     args,
   ): Promise<{ tripId: Id<"trips">; slug: string }> => {
-    const userId = await getAuthUserId(ctx);
+    const userId = args.creatorId ?? (await getAuthUserId(ctx));
     if (userId === null) throw new Error("Not authenticated");
 
     const ALPHABET =

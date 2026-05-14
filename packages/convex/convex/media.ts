@@ -658,7 +658,7 @@ export const _processImport = internalAction({
         { url: row.url },
       );
       if (!audio.ok) {
-        await ctx.runMutation(internal.ai._refundQuota, {});
+        await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
         await ctx.runMutation(internal.media._setImportStatus, {
           importId: args.importId,
           status: "failed",
@@ -675,7 +675,7 @@ export const _processImport = internalAction({
         contentType: audio.contentType,
       });
       if (!whisper.ok) {
-        await ctx.runMutation(internal.ai._refundQuota, {});
+        await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
         await ctx.runMutation(internal.media._setImportStatus, {
           importId: args.importId,
           status: "failed",
@@ -701,7 +701,7 @@ export const _processImport = internalAction({
       tripLengthDaysOverride: args.tripLengthDaysOverride,
     });
     if (!plan) {
-      await ctx.runMutation(internal.ai._refundQuota, {});
+      await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
       await ctx.runMutation(internal.media._setImportStatus, {
         importId: args.importId,
         status: "failed",
@@ -741,6 +741,9 @@ export const _processImport = internalAction({
         sourceType: row.platform,
         sourceTitle: row.videoTitle,
         sourceCreator: row.videoCreator,
+        // Scheduler-invoked path: pass userId explicitly because
+        // getAuthUserId returns null here.
+        creatorId: row.userId,
         days: plan.days,
       });
 

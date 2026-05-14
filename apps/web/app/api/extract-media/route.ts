@@ -92,17 +92,31 @@ export async function POST(req: NextRequest) {
     try {
       await youtubeDl(url, {
         output: outputPath,
-        format: "bestaudio[ext=m4a]/bestaudio",
+        // YouTube exposes audio-only streams (bestaudio); TikTok does not,
+        // so fall back to the best combined video. Whisper accepts mp4
+        // containers and just transcodes the audio track — no quality
+        // loss for our purposes since we throw the audio away after
+        // transcription.
+        format: "bestaudio[ext=m4a]/bestaudio/best",
         noWarnings: true,
         noCheckCertificates: true,
         preferFreeFormats: true,
         addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
       });
       const bytes = await readFile(outputPath);
+      // Sniff actual extension from the path yt-dlp produced. Whisper
+      // doesn't strictly need the right Content-Type but the
+      // filename-on-disk extension carries the codec hint Groq Whisper
+      // uses to pick its decoder.
+      const contentType = outputPath.endsWith(".mp4")
+        ? "video/mp4"
+        : outputPath.endsWith(".webm")
+          ? "video/webm"
+          : "audio/mp4";
       return new NextResponse(bytes, {
         status: 200,
         headers: {
-          "content-type": "audio/mp4",
+          "content-type": contentType,
           "content-length": String(bytes.length),
         },
       });

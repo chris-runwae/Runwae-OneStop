@@ -519,7 +519,9 @@ export const _callGroqWhisper = internalAction({
             ? "ogg"
             : contentType.includes("mpeg")
               ? "mp3"
-              : "m4a";
+              : contentType.startsWith("video/mp4")
+                ? "mp4"
+                : "m4a";
 
       const form = new FormData();
       form.append("model", "whisper-large-v3-turbo");
@@ -791,10 +793,27 @@ export const _getImport = internalQuery({
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 // Mutates `days` in place, assigning an Unsplash image URL to every
-// item that doesn't already have one. Same approach the free-form and
-// event-driven AI flows use ([ai.ts:1443]) — one deduped Unsplash
-// search per unique (locationName ?? title) so a trip with N items
-// makes O(unique terms) API calls instead of N.
+// item. Differences from the free-form flow:
+//   - Always overrides any imageUrl Claude produced. The URL prompt
+//     never asks for image URLs, but Claude occasionally hallucinates
+//     ones that 404 — safer to always pick the photo ourselves.
+//   - Fallback chain per item: locationName → title → "<type-keyword>
+//     <destination>" → destinationLabel. Specific venue names often
+//     return zero Unsplash hits, so the broader keywords catch them.
+//   - Queries are still deduped across items so a Barcelona trip with
+//     six restaurants makes ≤ 6 + 1 fallback Unsplash calls, not 12.
+const TYPE_KEYWORD: Record<string, string> = {
+  restaurant: "restaurant",
+  hotel: "hotel",
+  tour: "tourism",
+  activity: "travel",
+  event: "concert",
+  flight: "airplane",
+  transport: "transit",
+  car_rental: "road trip",
+  other: "travel",
+};
+
 async function backfillItemImages(
   ctx: { runAction: (ref: any, args: any) => Promise<any> },
   days: Array<{
@@ -802,32 +821,47 @@ async function backfillItemImages(
       imageUrl?: string;
       locationName?: string;
       title: string;
+      type: string;
     }>;
   }>,
   destinationLabel: string,
 ): Promise<void> {
   const queries = new Set<string>();
-  const missing: Array<{
+  const chains: Array<{
     item: { imageUrl?: string };
-    query: string;
+    chain: string[];
   }> = [];
+
   for (const d of days) {
     for (const it of d.items) {
-      if (it.imageUrl) continue;
-      const q = it.locationName ?? it.title ?? destinationLabel;
-      if (!q) continue;
-      missing.push({ item: it, query: q });
-      queries.add(q);
+      const typeKw = TYPE_KEYWORD[it.type] ?? "travel";
+      const chain = [
+        it.locationName,
+        it.title,
+        destinationLabel ? `${typeKw} ${destinationLabel}` : null,
+        destinationLabel,
+        typeKw,
+      ]
+        .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+        .map((q) => q.trim());
+      chains.push({ item: it, chain });
+      for (const q of chain) queries.add(q);
     }
   }
+
   if (queries.size === 0) return;
+
   const photoMap: Record<string, string> = await ctx.runAction(
     internal.ai._unsplashBackfill,
     { queries: Array.from(queries) },
   );
-  for (const { item, query } of missing) {
-    if (!item.imageUrl && photoMap[query]) {
-      item.imageUrl = photoMap[query];
+
+  for (const { item, chain } of chains) {
+    for (const q of chain) {
+      if (photoMap[q]) {
+        item.imageUrl = photoMap[q];
+        break;
+      }
     }
   }
 }

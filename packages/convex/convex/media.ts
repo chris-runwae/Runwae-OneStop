@@ -5,6 +5,7 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  mutation,
   query,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
@@ -233,23 +234,15 @@ export const generateTripFromUrl = action({
         await ctx.runMutation(internal.ai._refundQuota, {});
         return { ok: false, reason: "transcript_unavailable" };
       }
-      const audio = await ctx.runAction(
-        internal.media._fetchExtractorAudio,
+      const transcript = await ctx.runAction(
+        internal.media._fetchExtractorTranscript,
         { url: canonical },
       );
-      if (!audio.ok) {
+      if (!transcript.ok) {
         await ctx.runMutation(internal.ai._refundQuota, {});
-        return { ok: false, reason: "extractor_unreachable" };
+        return { ok: false, reason: transcript.reason };
       }
-      const whisper = await ctx.runAction(internal.media._callGroqWhisper, {
-        audioBytes: audio.audioBytes,
-        contentType: audio.contentType,
-      });
-      if (!whisper.ok) {
-        await ctx.runMutation(internal.ai._refundQuota, {});
-        return { ok: false, reason: "transcript_empty" };
-      }
-      transcriptText = whisper.text;
+      transcriptText = transcript.text;
     }
 
     const plan = await ctx.runAction(internal.ai._callClaudeForUrlItinerary, {
@@ -308,8 +301,8 @@ export const generateTripFromUrl = action({
 // ── Internal: extractor wrapper ─────────────────────────────────────────
 
 // Probe-mode extractor — returns metadata JSON. Audio bytes go through
-// the separate `_fetchExtractorAudio` action below so the two contracts
-// (JSON vs binary) don't share a type signature.
+// the separate `_fetchExtractorTranscript` action below so the two
+// contracts (probe JSON vs transcript JSON) stay independent.
 type ExtractorResult =
   | {
       ok: true;
@@ -334,7 +327,7 @@ export const _callExtractor = internalAction({
       return { ok: false, reason: "extractor_unreachable" };
     }
     // Probe-only is the supported shape for this action; audio-mode is
-    // served by `_fetchExtractorAudio`. The probeOnly arg is kept for
+    // served by `_fetchExtractorTranscript`. The probeOnly arg is kept for
     // backward-compat with the existing call sites.
     const url = `${endpoint}?probe=1`;
     void args.probeOnly;
@@ -373,20 +366,22 @@ export const _callExtractor = internalAction({
   },
 });
 
-// Downloads the audio file via the extractor and returns the bytes
-// directly. We can't return a URL because YouTube/TikTok bind their
-// signed audio URLs to the IP that requested them — yt-dlp on the
-// extractor host = same IP = works; Convex cloud fetch = different IP =
-// 403. By having the extractor download and stream the bytes back, the
-// IP-bound fetch happens on the right machine.
-export const _fetchExtractorAudio = internalAction({
+// Asks the extractor to download the audio AND transcribe it via Groq
+// in a single round-trip. Audio bytes never cross the Convex boundary
+// — TikTok's combined-video downloads regularly exceed Convex's 16
+// MiB action-return limit, so streaming bytes through us is a
+// non-starter. Only the transcript text (typically < 5 KB) flows back.
+export const _fetchExtractorTranscript = internalAction({
   args: { url: v.string() },
   handler: async (
     _ctx,
     args,
   ): Promise<
-    | { ok: true; audioBytes: ArrayBuffer; contentType: string }
-    | { ok: false; reason: "extractor_unreachable" }
+    | { ok: true; text: string }
+    | {
+        ok: false;
+        reason: "extractor_unreachable" | "transcript_empty";
+      }
   > => {
     const endpoint = process.env.MEDIA_EXTRACTOR_URL;
     const secret = process.env.MEDIA_EXTRACTOR_SECRET;
@@ -404,14 +399,22 @@ export const _fetchExtractorAudio = internalAction({
         body: JSON.stringify({ url: args.url }),
       });
       if (!res.ok) {
-        console.warn(`[media] extractor audio returned ${res.status}`);
+        const body = await res.text().catch(() => "");
+        console.warn(
+          `[media] extractor transcript returned ${res.status}`,
+          body.slice(0, 200),
+        );
+        if (body.includes("transcript_empty")) {
+          return { ok: false, reason: "transcript_empty" };
+        }
         return { ok: false, reason: "extractor_unreachable" };
       }
-      const contentType = res.headers.get("content-type") ?? "audio/mp4";
-      const audioBytes = await res.arrayBuffer();
-      return { ok: true, audioBytes, contentType };
+      const data = (await res.json()) as { transcript?: string };
+      const text = (data.transcript ?? "").trim();
+      if (text.length < 30) return { ok: false, reason: "transcript_empty" };
+      return { ok: true, text };
     } catch (err) {
-      console.warn("[media] extractor audio fetch failed", err);
+      console.warn("[media] extractor transcript fetch failed", err);
       return { ok: false, reason: "extractor_unreachable" };
     }
   },
@@ -486,74 +489,6 @@ export const _fetchYouTubeCaptions = internalAction({
       return { ok: true, text };
     } catch (err) {
       console.warn("[media] yt timedtext failed", err);
-      return { ok: false };
-    }
-  },
-});
-
-// ── Internal: Groq Whisper fallback ─────────────────────────────────────
-
-export const _callGroqWhisper = internalAction({
-  args: {
-    audioBytes: v.bytes(),
-    contentType: v.optional(v.string()),
-  },
-  handler: async (
-    _ctx,
-    { audioBytes, contentType: ctIn }
-  ): Promise<{ ok: true; text: string } | { ok: false }> => {
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      console.warn("[media] GROQ_API_KEY not set");
-      return { ok: false };
-    }
-    try {
-      const contentType = ctIn ?? "audio/mp4";
-      // Pick a filename suffix Groq accepts. The actual codec doesn't
-      // matter — Whisper sniffs the bytes — but a sensible extension
-      // avoids edge cases.
-      const ext =
-        contentType.includes("webm")
-          ? "webm"
-          : contentType.includes("ogg")
-            ? "ogg"
-            : contentType.includes("mpeg")
-              ? "mp3"
-              : contentType.startsWith("video/mp4")
-                ? "mp4"
-                : "m4a";
-
-      const form = new FormData();
-      form.append("model", "whisper-large-v3-turbo");
-      form.append(
-        "file",
-        new Blob([audioBytes], { type: contentType }),
-        `audio.${ext}`
-      );
-      form.append("response_format", "text");
-
-      const res = await fetch(
-        "https://api.groq.com/openai/v1/audio/transcriptions",
-        {
-          method: "POST",
-          headers: { authorization: `Bearer ${groqKey}` },
-          body: form,
-        }
-      );
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        console.warn(
-          "[media] groq whisper returned",
-          res.status,
-          detail.slice(0, 300)
-        );
-        return { ok: false };
-      }
-      const text = (await res.text()).trim();
-      if (text.length < 30) return { ok: false };
-      return { ok: true, text };
-    } catch (err) {
-      console.warn("[media] groq whisper fetch failed", err);
       return { ok: false };
     }
   },
@@ -655,37 +590,24 @@ export const _processImport = internalAction({
     }
 
     if (!transcriptText) {
-      const audio = await ctx.runAction(
-        internal.media._fetchExtractorAudio,
-        { url: row.url },
-      );
-      if (!audio.ok) {
-        await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
-        await ctx.runMutation(internal.media._setImportStatus, {
-          importId: args.importId,
-          status: "failed",
-          errorReason: "extractor_unreachable",
-        });
-        return;
-      }
       await ctx.runMutation(internal.media._setImportStatus, {
         importId: args.importId,
         status: "transcribing",
       });
-      const whisper = await ctx.runAction(internal.media._callGroqWhisper, {
-        audioBytes: audio.audioBytes,
-        contentType: audio.contentType,
-      });
-      if (!whisper.ok) {
+      const transcript = await ctx.runAction(
+        internal.media._fetchExtractorTranscript,
+        { url: row.url },
+      );
+      if (!transcript.ok) {
         await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
         await ctx.runMutation(internal.media._setImportStatus, {
           importId: args.importId,
           status: "failed",
-          errorReason: "transcript_unavailable",
+          errorReason: transcript.reason,
         });
         return;
       }
-      transcriptText = whisper.text;
+      transcriptText = transcript.text;
     }
 
     await ctx.runMutation(internal.media._setImportStatus, {
@@ -724,37 +646,51 @@ export const _processImport = internalAction({
       planDays: plan.days,
     });
 
-    await backfillItemImages(ctx, plan.days, plan.destinationLabel);
+    // Wrap the materialise step so any unexpected throw (auth, schema,
+    // network) flips the row to `failed` instead of leaving it stuck
+    // in `materializing` forever. Without this guard, a bug here means
+    // the import sits as an undismissable pill on every home reload.
+    try {
+      await backfillItemImages(ctx, plan.days, plan.destinationLabel);
 
-    const materialized: { tripId: Id<"trips">; slug: string } =
-      await ctx.runMutation(internal.ai._materializeFreeFormTrip, {
-        aiIdempotencyKey: row.idempotencyKey,
-        title:
-          args.title ?? row.videoTitle ?? `Trip to ${plan.destinationLabel}`,
-        destinationLabel: plan.destinationLabel,
-        destinationCoords: plan.destinationCoords,
-        coverImageUrl: args.coverImageUrl ?? row.thumbnailUrl,
-        visibility:
-          args.visibility === "public" ? "public" : "private",
-        startDate,
-        endDate,
-        groupSize: "small",
-        sourceUrl: row.url,
-        sourceType: row.platform,
-        sourceTitle: row.videoTitle,
-        sourceCreator: row.videoCreator,
-        // Scheduler-invoked path: pass userId explicitly because
-        // getAuthUserId returns null here.
-        creatorId: row.userId,
-        days: plan.days,
+      const materialized: { tripId: Id<"trips">; slug: string } =
+        await ctx.runMutation(internal.ai._materializeFreeFormTrip, {
+          aiIdempotencyKey: row.idempotencyKey,
+          title:
+            args.title ?? row.videoTitle ?? `Trip to ${plan.destinationLabel}`,
+          destinationLabel: plan.destinationLabel,
+          destinationCoords: plan.destinationCoords,
+          coverImageUrl: args.coverImageUrl ?? row.thumbnailUrl,
+          visibility:
+            args.visibility === "public" ? "public" : "private",
+          startDate,
+          endDate,
+          groupSize: "small",
+          sourceUrl: row.url,
+          sourceType: row.platform,
+          sourceTitle: row.videoTitle,
+          sourceCreator: row.videoCreator,
+          // Scheduler-invoked path: pass userId explicitly because
+          // getAuthUserId returns null here.
+          creatorId: row.userId,
+          days: plan.days,
+        });
+
+      await ctx.runMutation(internal.media._setImportStatus, {
+        importId: args.importId,
+        status: "done",
+        tripId: materialized.tripId,
+        slug: materialized.slug,
       });
-
-    await ctx.runMutation(internal.media._setImportStatus, {
-      importId: args.importId,
-      status: "done",
-      tripId: materialized.tripId,
-      slug: materialized.slug,
-    });
+    } catch (err) {
+      console.error("[media] materialize failed", err);
+      await ctx.runMutation(internal.ai._refundQuota, { userId: row.userId });
+      await ctx.runMutation(internal.media._setImportStatus, {
+        importId: args.importId,
+        status: "failed",
+        errorReason: err instanceof Error ? err.message.slice(0, 200) : "ai_failed",
+      });
+    }
   },
 });
 
@@ -787,6 +723,28 @@ export const _getImport = internalQuery({
   args: { importId: v.id("media_imports") },
   handler: async (ctx, { importId }) => {
     return await ctx.db.get(importId);
+  },
+});
+
+// User-initiated dismissal for a stuck or done pill. Marks the row
+// failed (myActiveImports filters those out, so the pill disappears).
+// Auth-gated to the import's owner so one user can't dismiss another's.
+export const dismissImport = mutation({
+  args: { importId: v.id("media_imports") },
+  handler: async (ctx, { importId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const row = await ctx.db.get(importId);
+    if (!row) return { ok: true };
+    if (row.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+    await ctx.db.patch(importId, {
+      status: "failed",
+      errorReason: row.errorReason ?? "dismissed",
+      updatedAt: Date.now(),
+    });
+    return { ok: true };
   },
 });
 

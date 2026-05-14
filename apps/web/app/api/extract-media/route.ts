@@ -83,20 +83,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(probe);
     }
 
-    // Audio path: download the audio file on this machine (where yt-dlp
-    // resolved the signed URL — YouTube/TikTok bind these URLs to the
-    // requesting IP, so a remote Convex fetch returns 403) and stream
-    // the bytes back. The caller can forward them straight to Whisper
-    // without ever touching the bound URL.
+    // Transcript path: download the audio on this machine (where yt-dlp
+    // resolved the IP-bound CDN URL), forward bytes straight to Groq
+    // Whisper, return the transcript as JSON. The audio bytes never
+    // cross the Convex boundary — important because TikTok lacks
+    // audio-only formats and the combined video file can exceed
+    // Convex's 16 MiB action-return limit (a 21 MiB TikTok mp4 fails
+    // there). Groq accepts files up to 25 MiB, well above what yt-dlp
+    // returns for inline-eligible (<4 min) clips.
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+      return NextResponse.json(
+        { error: "groq_not_configured" },
+        { status: 503 },
+      );
+    }
+
     const outputPath = join(tmpdir(), `runwae-${randomUUID()}.m4a`);
     try {
       await youtubeDl(url, {
         output: outputPath,
-        // YouTube exposes audio-only streams (bestaudio); TikTok does not,
-        // so fall back to the best combined video. Whisper accepts mp4
-        // containers and just transcodes the audio track — no quality
-        // loss for our purposes since we throw the audio away after
-        // transcription.
         format: "bestaudio[ext=m4a]/bestaudio/best",
         noWarnings: true,
         noCheckCertificates: true,
@@ -104,24 +110,51 @@ export async function POST(req: NextRequest) {
         addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
       });
       const bytes = await readFile(outputPath);
-      // Sniff actual extension from the path yt-dlp produced. Whisper
-      // doesn't strictly need the right Content-Type but the
-      // filename-on-disk extension carries the codec hint Groq Whisper
-      // uses to pick its decoder.
-      const contentType = outputPath.endsWith(".mp4")
-        ? "video/mp4"
-        : outputPath.endsWith(".webm")
-          ? "video/webm"
-          : "audio/mp4";
-      return new NextResponse(bytes, {
-        status: 200,
-        headers: {
-          "content-type": contentType,
-          "content-length": String(bytes.length),
+
+      const form = new FormData();
+      form.append("model", "whisper-large-v3-turbo");
+      form.append(
+        "file",
+        new Blob([bytes], { type: "audio/mp4" }),
+        // Filename extension just hints to Whisper's codec sniffer. Use
+        // .mp4 since combined-video fallback gives us mp4 containers
+        // and audio-only m4a is also handled under the mp4 family.
+        "audio.mp4",
+      );
+      form.append("response_format", "text");
+
+      const whisperRes = await fetch(
+        "https://api.groq.com/openai/v1/audio/transcriptions",
+        {
+          method: "POST",
+          headers: { authorization: `Bearer ${groqKey}` },
+          body: form,
         },
-      });
+      );
+      if (!whisperRes.ok) {
+        const detail = await whisperRes.text().catch(() => "");
+        console.error("[extract-media] groq whisper failed", {
+          status: whisperRes.status,
+          detail: detail.slice(0, 400),
+        });
+        return NextResponse.json(
+          {
+            error: "transcription_failed",
+            status: whisperRes.status,
+            detail: detail.slice(0, 400),
+          },
+          { status: 502 },
+        );
+      }
+      const transcript = (await whisperRes.text()).trim();
+      if (transcript.length < 30) {
+        return NextResponse.json(
+          { error: "transcript_empty" },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json({ transcript });
     } finally {
-      // Best-effort cleanup. /tmp gets garbage collected anyway.
       await unlink(outputPath).catch(() => {});
     }
   } catch (err) {

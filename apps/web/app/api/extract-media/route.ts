@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// yt-dlp wrapper. Bundles a static yt-dlp binary and exposes a typed CLI
-// surface. We use the `exec` helper rather than the JSON-emit shortcut so
-// failures surface with stderr we can grep in logs.
-import youtubeDl from "youtube-dl-exec";
+// yt-dlp wrapper. The npm package bundles a Python-zipapp version of
+// yt-dlp that requires python3 on PATH — fragile in serverless environments
+// and on macOS where python3 isn't always available to Node-spawned
+// processes. We prefer a real native binary when YT_DLP_BIN is set
+// (e.g. `brew install yt-dlp` → /opt/homebrew/bin/yt-dlp) and fall back
+// to the bundled zipapp otherwise.
+import youtubeDlDefault, { create as createYoutubeDl } from "youtube-dl-exec";
+
+const youtubeDl = process.env.YT_DLP_BIN
+  ? createYoutubeDl(process.env.YT_DLP_BIN)
+  : youtubeDlDefault;
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

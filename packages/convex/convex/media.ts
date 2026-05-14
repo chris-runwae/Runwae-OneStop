@@ -273,6 +273,8 @@ export const generateTripFromUrl = action({
       planDays: plan.days,
     });
 
+    await backfillItemImages(ctx, plan.days, plan.destinationLabel);
+
     const materialized: { tripId: Id<"trips">; slug: string } =
       await ctx.runMutation(internal.ai._materializeFreeFormTrip, {
         aiIdempotencyKey: args.idempotencyKey,
@@ -720,6 +722,8 @@ export const _processImport = internalAction({
       planDays: plan.days,
     });
 
+    await backfillItemImages(ctx, plan.days, plan.destinationLabel);
+
     const materialized: { tripId: Id<"trips">; slug: string } =
       await ctx.runMutation(internal.ai._materializeFreeFormTrip, {
         aiIdempotencyKey: row.idempotencyKey,
@@ -782,6 +786,48 @@ export const _getImport = internalQuery({
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────
+
+// Mutates `days` in place, assigning an Unsplash image URL to every
+// item that doesn't already have one. Same approach the free-form and
+// event-driven AI flows use ([ai.ts:1443]) — one deduped Unsplash
+// search per unique (locationName ?? title) so a trip with N items
+// makes O(unique terms) API calls instead of N.
+async function backfillItemImages(
+  ctx: { runAction: (ref: any, args: any) => Promise<any> },
+  days: Array<{
+    items: Array<{
+      imageUrl?: string;
+      locationName?: string;
+      title: string;
+    }>;
+  }>,
+  destinationLabel: string,
+): Promise<void> {
+  const queries = new Set<string>();
+  const missing: Array<{
+    item: { imageUrl?: string };
+    query: string;
+  }> = [];
+  for (const d of days) {
+    for (const it of d.items) {
+      if (it.imageUrl) continue;
+      const q = it.locationName ?? it.title ?? destinationLabel;
+      if (!q) continue;
+      missing.push({ item: it, query: q });
+      queries.add(q);
+    }
+  }
+  if (queries.size === 0) return;
+  const photoMap: Record<string, string> = await ctx.runAction(
+    internal.ai._unsplashBackfill,
+    { queries: Array.from(queries) },
+  );
+  for (const { item, query } of missing) {
+    if (!item.imageUrl && photoMap[query]) {
+      item.imageUrl = photoMap[query];
+    }
+  }
+}
 
 function computeDates(args: {
   todayIso: string;

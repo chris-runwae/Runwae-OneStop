@@ -137,6 +137,39 @@ export const getItemCount = query({
   },
 });
 
+// Single-item read for the detail screen. Mirrors getItinerary's
+// visibility rules so non-members of a private trip get null. Returns
+// the parent trip's destinationLabel alongside the item so the screen
+// can compose a sensible "Find a booking" search term even when the
+// item itself has no locationName.
+export const getItem = query({
+  args: { itemId: v.id("itinerary_items") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return null;
+    const trip = await ctx.db.get(item.tripId);
+    if (!trip) return null;
+
+    if (trip.visibility !== "public") {
+      const userId = await getAuthUserId(ctx);
+      if (userId === null) return null;
+      const membership = await ctx.db
+        .query("trip_members")
+        .withIndex("by_trip", (q) => q.eq("tripId", item.tripId))
+        .filter((q) => q.eq(q.field("userId"), userId))
+        .first();
+      if (!membership) return null;
+    }
+
+    return {
+      item,
+      tripDestination: trip.destinationLabel ?? trip.title,
+      tripStartDate: trip.startDate,
+      tripEndDate: trip.endDate,
+    };
+  },
+});
+
 export const getItinerary = query({
   args: { tripId: v.id("trips") },
   handler: async (ctx, args) => {

@@ -24,6 +24,14 @@ import { join } from "node:path";
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
+// Request log — one line per request so `flyctl logs` shows which
+// endpoint was hit. Cheap (no body, no headers), and makes "did Fly
+// actually serve this?" an unambiguous read.
+app.use((req, _res, next) => {
+  console.log(`[extractor] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 const SECRET = process.env.MEDIA_EXTRACTOR_SECRET;
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const YT_DLP = process.env.YT_DLP_BIN || "/usr/local/bin/yt-dlp";

@@ -129,17 +129,29 @@ app.post("/api/extract-media", async (req, res) => {
     if (!GROQ_KEY) {
       return res.status(503).json({ error: "groq_not_configured" });
     }
-    const outputPath = join(tmpdir(), `runwae-${randomUUID()}.m4a`);
+    // yt-dlp produces $base.<actual-ext> after post-processing. We
+    // pass the template `$base.%(ext)s` and read back `$base.m4a`
+    // (post-processor target). For TikTok this means the combined
+    // mp4 is downloaded, ffmpeg strips the video track, and an
+    // audio-only m4a is left on disk — typically 5-10× smaller than
+    // the source mp4. Without this, longer TikToks blow past Groq
+    // Whisper's 25 MiB upload limit and return 413.
+    const outputBase = join(tmpdir(), `runwae-${randomUUID()}`);
+    const outputTemplate = `${outputBase}.%(ext)s`;
+    const outputPath = `${outputBase}.m4a`;
     try {
       await runYtDlp([
         "-o",
-        outputPath,
-        // YouTube exposes audio-only streams (bestaudio); TikTok
-        // does not, so fall back to the best combined video.
-        // Whisper accepts mp4 containers and just transcodes the
-        // audio track.
+        outputTemplate,
         "-f",
         "bestaudio[ext=m4a]/bestaudio/best",
+        // Extract audio track + remux as m4a. No re-encode when the
+        // source codec is already AAC (the common case for TikTok
+        // and YouTube), so this is fast and lossless. Requires
+        // ffmpeg on the host — installed in the Dockerfile.
+        "-x",
+        "--audio-format",
+        "m4a",
         "--no-warnings",
         "--no-check-certificates",
         "--prefer-free-formats",

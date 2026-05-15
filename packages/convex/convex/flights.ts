@@ -5,6 +5,17 @@ import { internal } from "./_generated/api";
 import type { DiscoveryItem } from "./providers/types";
 import { POPULAR_DESTINATIONS, type DuffelOfferDetail } from "./providers/duffel";
 
+// Markup applied on top of Duffel's airline quote when the user pays. The
+// user is charged offer.totalAmount * (1 + FLIGHT_MARKUP_PCT/100); Duffel
+// Balance is charged offer.totalAmount; the difference is Runwae's margin
+// minus Stripe fees. Match the events ticketing commission default at 5%.
+//
+// Per-event overrides happen via events.commissionSplitPct at commission-
+// recording time — that's the host split of THIS margin, not a flight-rate
+// override. If a host wants a different flight markup, it ships as a
+// follow-up (need an events.flightMarkupPct column).
+const FLIGHT_MARKUP_PCT = 5;
+
 // Curated list surfaced in the mobile flight search picker. Same source the
 // Duffel exploration mode uses, exposed publicly so the client doesn't need
 // to duplicate it.
@@ -134,8 +145,16 @@ export const startBooking = action({
       .map((s) => `${s.origin}→${s.destination}`)
       .join(" · ");
 
-    // Commission: 3% of flight revenue (Duffel partner cut).
-    const commission = Math.round(offer.totalAmount * 0.03);
+    // User pays the airline amount + Runwae's markup. The markup is the
+    // commission (real money, not a 3% bookkeeping fiction like before).
+    // Duffel Balance is later charged the raw airline amount — see
+    // finalisePaidBooking.
+    const airlineAmount = offer.totalAmount;
+    const userAmount = Math.round(
+      airlineAmount * (1 + FLIGHT_MARKUP_PCT / 100) * 100,
+    ) / 100;
+    const commission = Math.round((userAmount - airlineAmount) * 100) / 100;
+
     const bookingId: string = await ctx.runMutation(
       internal.bookings.createPendingFlight,
       {
@@ -144,14 +163,20 @@ export const startBooking = action({
         apiRef: args.offerId,
         carrier: offer.carrier,
         summary,
-        grossAmount: offer.totalAmount,
+        grossAmount: userAmount,
         currency: offer.currency,
         commissionAmount: commission,
         eventId: args.eventId,
         passengers: passengersWithIds,
+        airlineAmount,
       },
     );
-    return { bookingId, totalAmount: offer.totalAmount, currency: offer.currency, summary };
+    return {
+      bookingId,
+      totalAmount: userAmount,
+      currency: offer.currency,
+      summary,
+    };
   },
 });
 
@@ -185,6 +210,12 @@ export const finalisePaidBooking = internalAction({
       });
       return;
     }
+    // Duffel Balance is settled in the AIRLINE amount, not the user-paid
+    // amount. Fall back to grossAmount for rows created before the
+    // airlineAmount split landed — those bookings have markup = 0 anyway.
+    const airlineAmount =
+      (booking.rawResponse?.airlineAmount as number | undefined) ??
+      booking.grossAmount;
     const order = await ctx.runAction(internal.providers.duffel.createOrder, {
       offerId,
       passengers: stored.map((p) => ({
@@ -197,7 +228,7 @@ export const finalisePaidBooking = internalAction({
         email: p.email,
         phoneE164: p.phoneE164,
       })),
-      paymentAmount: booking.grossAmount,
+      paymentAmount: airlineAmount,
       paymentCurrency: booking.currency,
     });
     await ctx.runMutation(internal.bookings.finaliseFlightBooking, {

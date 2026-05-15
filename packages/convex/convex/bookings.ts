@@ -259,6 +259,11 @@ export const createPendingFlight = internalMutation({
         phoneE164: v.string(),
       })
     ),
+    // The raw airline price Duffel quoted, stored separately from
+    // grossAmount (which is what the USER pays — airline + markup). Used
+    // by finalisePaidBooking to charge Duffel Balance the airline amount,
+    // not the marked-up amount.
+    airlineAmount: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<Id<"bookings">> => {
     return await ctx.db.insert("bookings", {
@@ -276,6 +281,7 @@ export const createPendingFlight = internalMutation({
         carrier: args.carrier,
         summary: args.summary,
         passengers: args.passengers,
+        airlineAmount: args.airlineAmount,
       },
     });
   },

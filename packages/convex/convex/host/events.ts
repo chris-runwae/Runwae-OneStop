@@ -134,7 +134,10 @@ export const createEvent = mutation({
       status: "draft",
       ticketingMode: args.ticketingMode,
       externalTicketUrl: args.externalTicketUrl,
-      commissionSplitPct: args.commissionSplitPct ?? 70,
+      // Default host share of Runwae's commission. Admin can override
+      // per-event via admin.events.setCommissionSplit for promos /
+      // premium hosts; the 50% baseline matches the platform spec.
+      commissionSplitPct: args.commissionSplitPct ?? 50,
       currentParticipants: 0,
       viewCount: 0,
       isTrending: false,

@@ -1,5 +1,6 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import SkeletonBox from '@/components/ui/SkeletonBox';
+import { useFeatureFlag } from '@/lib/featureFlags';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { FunctionReturnType } from 'convex/server';
 import { useTheme } from '@react-navigation/native';
@@ -9,13 +10,37 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, ArrowRight, Plane } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { FlashList } from '@shopify/flash-list';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+
+/**
+ * Skyscanner deep-link from an IATA pair + ISO dates.
+ *   IATA  → lowercase
+ *   Dates → YYMMDD (e.g., 2026-08-15 → 260815)
+ * One-way trips omit the return date segment.
+ */
+function buildSkyscannerUrl(args: {
+  originIata: string;
+  destinationIata: string;
+  depart: string;
+  returnDate?: string;
+  adults: number;
+}): string {
+  const toYYMMDD = (iso: string) => iso.replace(/-/g, '').slice(2);
+  const o = args.originIata.toLowerCase();
+  const d = args.destinationIata.toLowerCase();
+  const depart = toYYMMDD(args.depart);
+  const ret = args.returnDate ? toYYMMDD(args.returnDate) : '';
+  const path = ret
+    ? `${o}/${d}/${depart}/${ret}`
+    : `${o}/${d}/${depart}`;
+  return `https://www.skyscanner.net/transport/flights/${path}/?adults=${args.adults}&cabinclass=economy`;
+}
 
 type FlightItem = FunctionReturnType<typeof api.flights.search>[number];
 
@@ -35,6 +60,10 @@ export default function FlightResultsScreen() {
   const search = useAction(api.flights.search);
   const [results, setResults] = useState<FlightItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // When live booking is gated off (Duffel Balance not yet funded), the
+  // offer selection deep-links to Skyscanner for the same route+dates
+  // rather than entering Runwae's Duffel order flow.
+  const liveBookingEnabled = useFeatureFlag('flag_flight_booking_live');
 
   useEffect(() => {
     let cancelled = false;
@@ -163,16 +192,28 @@ export default function FlightResultsScreen() {
               item={item}
               dark={dark}
               index={index}
-              onPress={() =>
-                router.push({
-                  pathname: '/flights/book/review',
-                  params: {
-                    offerId: item.apiRef,
-                    originIata: params.originIata,
-                    destinationIata: params.destinationIata,
-                  },
-                })
-              }
+              ctaLabel={liveBookingEnabled ? 'Select' : 'Book on Skyscanner'}
+              onPress={() => {
+                if (liveBookingEnabled) {
+                  router.push({
+                    pathname: '/flights/book/review',
+                    params: {
+                      offerId: item.apiRef,
+                      originIata: params.originIata,
+                      destinationIata: params.destinationIata,
+                    },
+                  });
+                  return;
+                }
+                const url = buildSkyscannerUrl({
+                  originIata: params.originIata,
+                  destinationIata: params.destinationIata,
+                  depart: params.depart,
+                  returnDate: params.returnDate,
+                  adults: Number(params.adults) || 1,
+                });
+                void Linking.openURL(url);
+              }}
             />
           )}
         />
@@ -186,11 +227,13 @@ function OfferRow({
   dark,
   index,
   onPress,
+  ctaLabel,
 }: {
   item: FlightItem;
   dark: boolean;
   index: number;
   onPress: () => void;
+  ctaLabel?: string;
 }) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
@@ -246,6 +289,11 @@ function OfferRow({
           <Text style={[styles.price, { color: dark ? '#fff' : '#0F1115' }]}>
             {priceLabel}
           </Text>
+          {ctaLabel ? (
+            <Text style={[styles.ctaSub, { color: dark ? '#9ca3af' : '#6B7280' }]}>
+              {ctaLabel} ↗
+            </Text>
+          ) : null}
         </View>
       </Pressable>
     </Animated.View>
@@ -325,6 +373,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.2,
+  },
+  ctaSub: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    marginTop: 6,
+    letterSpacing: 0.2,
   },
   empty: {
     flex: 1,

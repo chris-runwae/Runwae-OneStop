@@ -312,18 +312,7 @@ export const finaliseFlightBooking = internalMutation({
         duffelBookingReference: args.bookingReference,
       },
     });
-    await ctx.db.insert("commissions", {
-      bookingId: booking._id,
-      eventId: booking.eventId,
-      hostId: undefined,
-      totalCommission: booking.commissionAmount,
-      runwaeShare: booking.commissionAmount,
-      hostShare: 0,
-      splitPct: 3,
-      currency: booking.currency,
-      status: "pending",
-      createdAt: Date.now(),
-    });
+    await recordCommissionForBooking(ctx, booking);
     await ctx.db.insert("notifications", {
       userId: booking.userId,
       type: "booking_confirmed",
@@ -333,6 +322,42 @@ export const finaliseFlightBooking = internalMutation({
     });
   },
 });
+
+// Inline the host-aware commission insert. Replaces three near-identical
+// `ctx.db.insert("commissions", { hostShare: 0, … })` sites that ignored
+// the booking's eventId. When the booking is tied to an event with a host,
+// the host's slice is computed from `event.commissionSplitPct`; otherwise
+// Runwae keeps 100%. Same shape as commissions.recordForBooking — duplicated
+// here because that's an internalMutation and these call sites already run
+// inside a mutation.
+async function recordCommissionForBooking(
+  ctx: { db: any },
+  booking: Doc<"bookings">,
+): Promise<void> {
+  let hostId: Id<"users"> | undefined;
+  let hostSharePct = 0;
+  if (booking.eventId) {
+    const event = await ctx.db.get(booking.eventId);
+    if (event && event.hostUserId && (event.commissionSplitPct ?? 0) > 0) {
+      hostId = event.hostUserId;
+      hostSharePct = Math.max(0, Math.min(100, event.commissionSplitPct));
+    }
+  }
+  const hostShare = Math.round(booking.commissionAmount * (hostSharePct / 100));
+  const runwaeShare = booking.commissionAmount - hostShare;
+  await ctx.db.insert("commissions", {
+    bookingId: booking._id,
+    eventId: booking.eventId,
+    hostId,
+    totalCommission: booking.commissionAmount,
+    runwaeShare,
+    hostShare,
+    splitPct: hostSharePct,
+    currency: booking.currency,
+    status: "pending",
+    createdAt: Date.now(),
+  });
+}
 
 // Called from hotels.startBooking after a successful LiteAPI prebook. Stores
 // prebookId + dates in rawResponse so confirmByStripeSession can finalise the
@@ -464,18 +489,7 @@ async function confirmBookingPostPayment(
     return;
   }
 
-  await ctx.db.insert("commissions", {
-    bookingId: booking._id,
-    eventId: booking.eventId,
-    hostId: undefined,
-    totalCommission: booking.commissionAmount,
-    runwaeShare: booking.commissionAmount,
-    hostShare: 0,
-    splitPct: PLATFORM_TICKET_COMMISSION_PCT,
-    currency: booking.currency,
-    status: "pending",
-    createdAt: Date.now(),
-  });
+  await recordCommissionForBooking(ctx, booking);
 
   await ctx.db.insert("notifications", {
     userId: booking.userId,
@@ -555,18 +569,7 @@ export const finaliseHotelBooking = internalMutation({
         liteapiConfirmationCode: args.confirmationCode,
       },
     });
-    await ctx.db.insert("commissions", {
-      bookingId: booking._id,
-      eventId: booking.eventId,
-      hostId: undefined,
-      totalCommission: booking.commissionAmount,
-      runwaeShare: booking.commissionAmount,
-      hostShare: 0,
-      splitPct: 10,
-      currency: booking.currency,
-      status: "pending",
-      createdAt: Date.now(),
-    });
+    await recordCommissionForBooking(ctx, booking);
     await ctx.db.insert("notifications", {
       userId: booking.userId,
       type: "booking_confirmed",

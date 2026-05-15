@@ -19,4 +19,14 @@ crons.cron(
   internal.account_deletion.runScheduledDeletions
 );
 
+// Flips commission rows pending → held once the guest has actually
+// stayed / flown — that's the point at which earnings are locked in
+// from LiteAPI/Duffel's side, even though cash hasn't landed yet. Runs
+// daily; idempotent.
+crons.cron(
+  "flip pending commissions to held",
+  "0 5 * * *",
+  internal.commissions_cron.runPendingToHeld,
+);
+
 export default crons;

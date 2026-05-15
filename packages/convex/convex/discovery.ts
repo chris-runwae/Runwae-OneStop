@@ -72,9 +72,37 @@ export const searchByCategory = action({
     { category, term, lat, lng, limit, checkin, checkout, originIata, destinationIata, forceRefresh, tags, sortBy },
   ): Promise<DiscoveryItem[]> => {
     const cap = limit ?? 12;
+
+    // Resolve term-only city searches to coords so radius-based providers
+    // (Yelp, Geoapify, Tiqets) can actually run. Yelp's catalogue is thin
+    // outside North America, and Ticketmaster's is thin outside the US/UK,
+    // so when the user types "Lisbon" with no GPS context we'd otherwise
+    // dead-end at the static seed. Geocoding once and reusing the coords
+    // for the primary provider + every fallback fixes that.
+    let resolvedLat = lat;
+    let resolvedLng = lng;
+    if (
+      resolvedLat === undefined &&
+      resolvedLng === undefined &&
+      term.trim().length > 0 &&
+      // Skip geocode for chips that already use IATA codes or are pure id
+      // searches (flights, hotels via apiRef) — those don't represent a
+      // place name.
+      category !== "fly" &&
+      category !== "stay"
+    ) {
+      const geo = await ctx.runAction(internal.providers.geoapify.geocodeTerm, {
+        term,
+      });
+      if (geo) {
+        resolvedLat = geo.lat;
+        resolvedLng = geo.lng;
+      }
+    }
+
     const coordsKey =
-      lat !== undefined && lng !== undefined
-        ? `@${lat.toFixed(3)},${lng.toFixed(3)}`
+      resolvedLat !== undefined && resolvedLng !== undefined
+        ? `@${resolvedLat.toFixed(3)},${resolvedLng.toFixed(3)}`
         : "";
     const dateKey = checkin && checkout ? `|${checkin}~${checkout}` : "";
     const iataKey = originIata || destinationIata
@@ -84,7 +112,7 @@ export const searchByCategory = action({
     const sortKey = sortBy ? `|sort=${sortBy}` : "";
     // Bump CACHE_VERSION when changing item shape (e.g. URL rewrites) so
     // stale entries don't keep serving old data after a deploy.
-    const CACHE_VERSION = "v5";
+    const CACHE_VERSION = "v6";
     const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}${tagsKey}${sortKey}|limit=${cap}|${CACHE_VERSION}`;
     const provider = providerFor(category);
 
@@ -100,43 +128,43 @@ export const searchByCategory = action({
       switch (provider) {
         case "viator":
           items = await ctx.runAction(internal.providers.viator.search, {
-            category, term, lat, lng, limit: cap, tags, sortBy,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap, tags, sortBy,
           });
           break;
         case "liteapi":
           items = await ctx.runAction(internal.providers.liteapi.search, {
-            category, term, lat, lng, limit: cap, checkin, checkout,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap, checkin, checkout,
           });
           break;
         case "duffel":
           items = await ctx.runAction(internal.providers.duffel.search, {
-            category, term, lat, lng, limit: cap, checkin, checkout,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap, checkin, checkout,
             originIata, destinationIata,
           });
           break;
         case "rentalcars":
           items = await ctx.runAction(internal.providers.rentalcars.search, {
-            category, term, lat, lng, limit: cap, checkin, checkout,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap, checkin, checkout,
           });
           break;
         case "tiqets":
           items = await ctx.runAction(internal.providers.tiqets.search, {
-            category, term, lat, lng, limit: cap,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
           break;
         case "yelp":
           items = await ctx.runAction(internal.providers.yelp.search, {
-            category, term, lat, lng, limit: cap,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
           break;
         case "ticketmaster":
           items = await ctx.runAction(internal.providers.ticketmaster.search, {
-            category, term, lat, lng, limit: cap,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
           break;
         case "geoapify":
           items = await ctx.runAction(internal.providers.geoapify.search, {
-            category, term, lat, lng, limit: cap,
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
           break;
       }
@@ -144,32 +172,45 @@ export const searchByCategory = action({
       console.error("[discovery] provider call threw", { category, error: String(err) });
     }
 
-    // Secondary provider (e.g. Geoapify when Viator is empty) before falling
-    // back to the static seed.
-    if (items.length === 0) {
+    // Secondary provider — extend the primary's result set rather than only
+    // running when it's empty. Ticketmaster's international coverage is
+    // sparse (3 events for Lisbon), so we top up with Tiqets even when the
+    // primary returns *some* results. MIN_RESULTS_FOR_SHORTCIRCUIT is the
+    // threshold below which we still call the fallback.
+    const MIN_RESULTS_FOR_SHORTCIRCUIT = 5;
+    if (items.length < MIN_RESULTS_FOR_SHORTCIRCUIT) {
       const fb = fallbackProviderFor(category);
+      const seen = new Set(items.map((it) => `${it.provider}:${it.apiRef}`));
+      let extra: DiscoveryItem[] = [];
       if (fb === "geoapify") {
         try {
-          items = await ctx.runAction(internal.providers.geoapify.search, {
-            category, term, lat, lng, limit: cap,
+          extra = await ctx.runAction(internal.providers.geoapify.search, {
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
         } catch (err) {
           console.error("[discovery] geoapify fallback threw", err);
         }
       } else if (fb === "tiqets") {
         try {
-          items = await ctx.runAction(internal.providers.tiqets.search, {
-            category, term, lat, lng, limit: cap,
+          extra = await ctx.runAction(internal.providers.tiqets.search, {
+            category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
           });
         } catch (err) {
           console.error("[discovery] tiqets fallback threw", err);
         }
       }
+      for (const it of extra) {
+        const key = `${it.provider}:${it.apiRef}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push(it);
+        if (items.length >= cap) break;
+      }
     }
 
     if (items.length === 0) {
       items = await ctx.runAction(internal.providers.staticDiscovery.search, {
-        category, term, lat, lng, limit: cap,
+        category, term, lat: resolvedLat, lng: resolvedLng, limit: cap,
       });
     }
 

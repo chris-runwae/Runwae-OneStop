@@ -346,6 +346,16 @@ export const prebook = internalAction({
   // LiteAPI v3 prebook actually wants the room-level offerId + a
   // usePaymentSdk flag; rateId-only requests come back with
   // "required request field is missing or wrong input".
+  //
+  // usePaymentSdk: true puts LiteAPI in merchant-of-record mode — the
+  // response includes a Stripe client_secret (`secretKey`) and a
+  // `transactionId`. The mobile client renders @stripe/stripe-react-
+  // native's Payment Sheet against that client_secret (charging the user
+  // via LiteAPI's Stripe account, not Runwae's), then passes the
+  // transactionId to `book` with method=TRANSACTION. Runwae earns the
+  // `margin` slice of the rate (paid out weekly by LiteAPI after guest
+  // checkout) rather than the airline-level net margin from
+  // ACC_CREDIT_CARD.
   args: { offerId: v.string() },
   handler: async (
     _ctx,
@@ -355,6 +365,10 @@ export const prebook = internalAction({
     prebookId?: string;
     finalPrice?: number;
     currency?: string;
+    /** Stripe client_secret issued by LiteAPI's Stripe account. */
+    secretKey?: string;
+    /** Echoes back into `book` to settle the prebooked rate. */
+    transactionId?: string;
     reason?: string;
   }> => {
     const apiKey = process.env.LITEAPI_KEY;
@@ -367,7 +381,7 @@ export const prebook = internalAction({
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ offerId, usePaymentSdk: false }),
+        body: JSON.stringify({ offerId, usePaymentSdk: true }),
       });
       if (!res.ok) {
         const txt = await res.text();
@@ -399,6 +413,10 @@ export const prebook = internalAction({
         prebookId: String(data.prebookId),
         finalPrice: Number(data.price ?? 0),
         currency: String(data.currency ?? "GBP"),
+        secretKey: data.secretKey ? String(data.secretKey) : undefined,
+        transactionId: data.transactionId
+          ? String(data.transactionId)
+          : undefined,
       };
     } catch (err) {
       console.error("[liteapi] prebook failed", err);
@@ -408,12 +426,16 @@ export const prebook = internalAction({
 });
 
 export const book = internalAction({
+  // Settles the prebooked rate after the user has paid via LiteAPI's
+  // Payment SDK. transactionId comes from the prebook response (when
+  // usePaymentSdk: true); LiteAPI matches it against the captured Stripe
+  // payment on their side to confirm.
   args: {
     prebookId: v.string(),
     holderFirstName: v.string(),
     holderLastName: v.string(),
     holderEmail: v.string(),
-    paymentRef: v.string(),
+    transactionId: v.string(),
   },
   handler: async (
     _ctx,
@@ -436,7 +458,10 @@ export const book = internalAction({
             lastName: args.holderLastName,
             email: args.holderEmail,
           },
-          payment: { method: "ACC_CREDIT_CARD", transactionId: args.paymentRef },
+          payment: {
+            method: "TRANSACTION",
+            transactionId: args.transactionId,
+          },
         }),
       });
       if (!res.ok) {

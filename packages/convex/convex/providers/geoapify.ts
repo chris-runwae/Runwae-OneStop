@@ -107,6 +107,53 @@ export const search = internalAction({
   },
 });
 
+/**
+ * Resolves a free-text place name ("Lisbon", "Tokyo Shibuya") to a
+ * coordinate pair using Geoapify's geocoding endpoint. Lets the discovery
+ * pipeline fall through from a city-name search into radius-based provider
+ * calls (Yelp, Geoapify places, Tiqets) when the user only typed a term.
+ *
+ * Returns null when the key is missing, the geocoder failed, or the term
+ * didn't match anything — callers should keep their existing behaviour in
+ * that case.
+ */
+export const geocodeTerm = internalAction({
+  args: { term: v.string() },
+  handler: async (
+    _ctx,
+    { term },
+  ): Promise<{ lat: number; lng: number; city?: string; country?: string } | null> => {
+    const apiKey = process.env.GEOAPIFY_API_KEY;
+    if (!apiKey) return null;
+    const cleaned = term.trim();
+    if (!cleaned) return null;
+    try {
+      const url = new URL("https://api.geoapify.com/v1/geocode/search");
+      url.searchParams.set("apiKey", apiKey);
+      url.searchParams.set("text", cleaned);
+      url.searchParams.set("limit", "1");
+      const res = await fetch(url.toString());
+      if (!res.ok) return null;
+      const json = (await res.json()) as {
+        features?: Array<{
+          properties?: {
+            lat?: number;
+            lon?: number;
+            city?: string;
+            country?: string;
+          };
+        }>;
+      };
+      const p = json.features?.[0]?.properties;
+      if (!p || p.lat === undefined || p.lon === undefined) return null;
+      return { lat: p.lat, lng: p.lon, city: p.city, country: p.country };
+    } catch (err) {
+      console.error("[geoapify] geocodeTerm failed", err);
+      return null;
+    }
+  },
+});
+
 // Place details endpoint — best effort; Geoapify exposes details by place_id
 // but the surface is thinner than Viator's.
 export const getDetail = internalAction({

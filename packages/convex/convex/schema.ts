@@ -709,15 +709,25 @@ export default defineSchema({
     hostShare: v.number(),
     splitPct: v.number(),
     currency: v.string(),
+    // pending  — booking confirmed, commission recorded. Earnings not locked.
+    // held     — guest checked out / flew. Earnings locked in but cash hasn't
+    //            landed at Runwae from LiteAPI/Duffel yet.
+    // paid     — LiteAPI/Duffel has settled. Host is now owed their share.
+    // paid_out — Host has been paid (admin marks manually after bank transfer).
+    // reversed — Booking cancelled / refunded. Excluded from host earnings.
     status: v.union(
       v.literal("pending"),
       v.literal("paid"),
-      v.literal("held")
+      v.literal("held"),
+      v.literal("paid_out"),
+      v.literal("reversed")
     ),
+    statusUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_booking", ["bookingId"])
-    .index("by_host", ["hostId"]),
+    .index("by_host", ["hostId"])
+    .index("by_status", ["status"]),
 
   payouts: defineTable({
     hostId: v.id("users"),

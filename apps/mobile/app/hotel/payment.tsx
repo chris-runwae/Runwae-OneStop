@@ -1,4 +1,7 @@
 import { useStripeSafe } from '@/utils/stripe-safe';
+import { api } from '@runwae/convex/convex/_generated/api';
+import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+import { useAction } from 'convex/react';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
@@ -61,6 +64,7 @@ export default function PaymentScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
+  const confirmAfterPayment = useAction(api.hotels.confirmAfterPayment);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -137,18 +141,26 @@ export default function PaymentScreen() {
         return;
       }
 
-      // The Stripe webhook on the Convex backend
-      // (api.payments + api.bookings.finalisePaidBooking) flips the
-      // booking from "pending" to "confirmed" and persists every
-      // detail; the client just needs to navigate forward once the
-      // payment succeeds.
+      // LiteAPI is merchant of record (Payment SDK mode), so Runwae's
+      // Stripe webhook does not fire for these payments. Call the
+      // confirmation action directly — it runs LiteAPI book() and flips
+      // the booking to confirmed. Idempotent: safe to retry on network
+      // blips.
+      setBookingStatus('Confirming reservation...');
+      const confirmation = await confirmAfterPayment({
+        bookingId: bookingId as unknown as Id<'bookings'>,
+        holderFirstName: firstName.trim(),
+        holderLastName: lastName.trim(),
+        holderEmail: email.trim(),
+      });
+
       router.replace({
         pathname: '/hotel/confirmation',
         params: {
           hotelName,
           hotelThumb,
           bookingRef: bookingId,
-          confirmationCode: '',
+          confirmationCode: confirmation.confirmationCode ?? '',
           checkin,
           checkout,
           hotelId,

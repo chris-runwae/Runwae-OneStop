@@ -24,6 +24,7 @@ import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
 import type * as bookings from "../bookings.js";
 import type * as commissions from "../commissions.js";
+import type * as commissions_cron from "../commissions_cron.js";
 import type * as crons from "../crons.js";
 import type * as currency from "../currency.js";
 import type * as destinations from "../destinations.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   bookings: typeof bookings;
   commissions: typeof commissions;
+  commissions_cron: typeof commissions_cron;
   crons: typeof crons;
   currency: typeof currency;
   destinations: typeof destinations;

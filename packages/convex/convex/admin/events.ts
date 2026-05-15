@@ -208,3 +208,35 @@ export const updateAdminNotes = mutation({
     return await ctx.db.get(args.eventId);
   },
 });
+
+/**
+ * Sets the host's commission split percentage for a single event. Whole
+ * number in [0, 100] — host gets this share of Runwae's margin, Runwae
+ * keeps the rest. Default for new events is 70 ([host/events.ts:137]);
+ * the admin console overrides per-event for premium hosts or promo deals.
+ */
+export const setCommissionSplit = mutation({
+  args: {
+    eventId: v.id("events"),
+    commissionSplitPct: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const row = await ctx.db.get(args.eventId);
+    if (!row) throw new ConvexError("Event not found");
+    if (
+      !Number.isFinite(args.commissionSplitPct) ||
+      args.commissionSplitPct < 0 ||
+      args.commissionSplitPct > 100
+    ) {
+      throw new ConvexError(
+        `commissionSplitPct must be in [0, 100], got ${args.commissionSplitPct}`,
+      );
+    }
+    await ctx.db.patch(args.eventId, {
+      commissionSplitPct: args.commissionSplitPct,
+      updatedAt: Date.now(),
+    });
+    return await ctx.db.get(args.eventId);
+  },
+});

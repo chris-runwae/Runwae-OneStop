@@ -39,11 +39,16 @@ export const search = internalAction({
     url.searchParams.set("apikey", apiKey);
     url.searchParams.set("size", String(Math.min(limit, 20)));
     url.searchParams.set("sort", "date,asc");
-    if (term.trim()) url.searchParams.set("city", term.trim());
+    // When we have coords, `latlong` + `radius` gives broader hits than the
+    // city-name filter — TM's `city` requires exact venue-city matches and
+    // misses anything indexed under a neighbouring municipality. Use term
+    // as the keyword fallback only when no coords are available.
     if (lat !== undefined && lng !== undefined) {
       url.searchParams.set("latlong", `${lat},${lng}`);
-      url.searchParams.set("radius", "50");
+      url.searchParams.set("radius", "75");
       url.searchParams.set("unit", "km");
+    } else if (term.trim()) {
+      url.searchParams.set("city", term.trim());
     }
 
     try {

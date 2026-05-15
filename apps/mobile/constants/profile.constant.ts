@@ -4,6 +4,7 @@ import {
   FileText,
   Lock,
   MessageCircleQuestionMark,
+  Ticket,
 } from "lucide-react-native";
 
 interface MOCK_REWARDS_PROPS {
@@ -38,6 +39,11 @@ export const MOCK_REWARDS: MOCK_REWARDS_PROPS[] = [
 ];
 
 export const MENU_OPTIONS: MENU_OPTIONS_PROPS[] = [
+  {
+    title: "My Bookings",
+    route: "/profile/bookings",
+    icon: Ticket,
+  },
   {
     title: "My Events",
     route: "/profile/events",

@@ -1,48 +1,41 @@
-# Fly.io config for @runwae/extractor.
+# fly.toml app configuration file generated for runwae-extractor-chris on 2026-05-15T10:40:09+01:00
 #
-# Rename `app` below before the first `flyctl launch` — names are
-# globally unique across Fly. Run `flyctl launch --no-deploy
-# --copy-config` and accept this file when prompted.
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "runwae-extractor"
-primary_region = "lhr"
-kill_signal = "SIGINT"
-kill_timeout = "10s"
+app = 'runwae-extractor-chris'
+primary_region = 'lhr'
+kill_signal = 'SIGINT'
+kill_timeout = '10s'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8080"
-  NODE_ENV = "production"
+  NODE_ENV = 'production'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # Scale to zero when idle so we pay $0 for unused minutes. Convex
-  # calls the route only during a trip-from-link generation, so the
-  # ~1s cold start on the first call of an idle hour is acceptable.
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  processes = ["app"]
+  processes = ['app']
 
   [http_service.concurrency]
-    type = "requests"
-    # yt-dlp downloads are I/O-heavy and short. 10 concurrent
-    # requests on a 1 vCPU machine is comfortable; raise after
-    # measuring real traffic.
-    soft_limit = 10
+    type = 'requests'
     hard_limit = 25
+    soft_limit = 10
 
   [[http_service.checks]]
-    grace_period = "10s"
-    interval = "30s"
-    method = "GET"
-    timeout = "5s"
-    path = "/health"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/health'
 
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
   memory_mb = 512

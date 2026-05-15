@@ -16,6 +16,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="security/two-factor-auth" />
       <Stack.Screen name="about/index" />
       <Stack.Screen name="events/index" />
+      <Stack.Screen name="bookings/index" />
+      <Stack.Screen name="bookings/[bookingId]" />
     </Stack>
   );
 }

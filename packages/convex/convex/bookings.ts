@@ -366,7 +366,8 @@ async function recordCommissionForBooking(
 }
 
 // Called from hotels.startBooking after a successful LiteAPI prebook. Stores
-// prebookId + dates in rawResponse so confirmByStripeSession can finalise the
+// prebookId, transactionId and dates in rawResponse so confirmAfterPayment
+// (LiteAPI SDK mode) or confirmByStripeSession (legacy) can finalise the
 // hotel reservation via LiteAPI once payment lands.
 export const createPendingHotel = internalMutation({
   args: {
@@ -381,6 +382,10 @@ export const createPendingHotel = internalMutation({
     currency: v.string(),
     commissionAmount: v.number(),
     eventId: v.optional(v.id("events")),
+    // Returned by LiteAPI prebook when usePaymentSdk=true. Passed back
+    // into rates/book as payment.transactionId once the user has paid
+    // via LiteAPI's Stripe Payment Sheet.
+    liteapiTransactionId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<Id<"bookings">> => {
     return await ctx.db.insert("bookings", {
@@ -399,6 +404,7 @@ export const createPendingHotel = internalMutation({
         hotelName: args.hotelName,
         checkin: args.checkin,
         checkout: args.checkout,
+        liteapiTransactionId: args.liteapiTransactionId,
       },
     });
   },

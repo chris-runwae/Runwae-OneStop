@@ -1,4 +1,5 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import PaymentErrorBanner from '@/components/payment/PaymentErrorBanner';
 import { useStripeSafe } from '@/utils/stripe-safe';
 import { useTheme } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -6,7 +7,6 @@ import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +33,7 @@ export default function FlightPaymentScreen() {
   const [paymentReady, setPaymentReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!params.clientSecret) return;
@@ -63,13 +64,13 @@ export default function FlightPaymentScreen() {
   }, [params.clientSecret, initPaymentSheet]);
 
   const handlePay = async () => {
+    setPayError(null);
     setLoading(true);
     try {
       const { error: paymentError } = await presentPaymentSheet();
       if (paymentError) {
         if (paymentError.code !== 'Canceled') {
-          Alert.alert(
-            'Payment failed',
+          setPayError(
             paymentError.message ||
               'The payment could not be processed. Please check your card details.',
           );
@@ -96,7 +97,7 @@ export default function FlightPaymentScreen() {
         err instanceof Error
           ? err.message
           : 'Something went wrong while processing your payment. Your card was not charged. Please try again.';
-      Alert.alert('Payment failed', msg);
+      setPayError(msg);
     } finally {
       setLoading(false);
     }
@@ -161,6 +162,12 @@ export default function FlightPaymentScreen() {
             borderTopColor: dark ? '#27272a' : '#E5E7EB',
           },
         ]}>
+        {payError ? (
+          <PaymentErrorBanner
+            message={payError}
+            onDismiss={() => setPayError(null)}
+          />
+        ) : null}
         <View style={styles.secureRow}>
           <Lock size={12} color="#22C55E" />
           <Text style={styles.secureText}>Secured & encrypted</Text>

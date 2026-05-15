@@ -1,4 +1,4 @@
-import { useStripeSafe } from "@/utils/stripe-safe";
+import { useStripeSafe } from '@/utils/stripe-safe';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacer, Text } from '@/components';
+import PaymentErrorBanner from '@/components/payment/PaymentErrorBanner';
 import { Colors, textStyles } from '@/constants';
 import { useAuth } from '@/context/AuthContext';
 
@@ -71,6 +72,12 @@ export default function PaymentScreen() {
   const price = parseFloat(priceStr ?? '0');
   const guests = parseInt(guestsStr ?? '1', 10);
 
+  const priceLabel = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currency || 'GBP',
+    maximumFractionDigits: 0,
+  }).format(price);
+
   // The hotel-booking flow now begins on the Convex backend
   // (`api.hotels.startBooking`), which returns a Stripe PaymentIntent
   // client_secret. Initialise the Payment Sheet against that secret.
@@ -103,25 +110,26 @@ export default function PaymentScreen() {
   }, [clientSecret, initPaymentSheet]);
 
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const handlePay = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       Alert.alert('Missing info', 'Please fill in your name and email.');
       return;
     }
+    setPayError(null);
     setLoading(true);
     setBookingStatus('Confirming payment...');
-    
+
     try {
-      // 1. Present Stripe Payment Sheet
       const { error: paymentError } = await presentPaymentSheet();
-      
+
       if (paymentError) {
         if (paymentError.code !== 'Canceled') {
           console.error('[Stripe] Payment presented error:', paymentError);
-          Alert.alert(
-            'Payment failed',
-            paymentError.message || 'The payment could not be processed. Please check your card details.'
+          setPayError(
+            paymentError.message ||
+              'The payment could not be processed. Please check your card details.'
           );
         }
         setBookingStatus(null);
@@ -153,7 +161,7 @@ export default function PaymentScreen() {
         err instanceof Error
           ? err.message
           : 'Something went wrong while processing your payment. Your card was not charged. Please try again.';
-      Alert.alert('Payment failed', msg);
+      setPayError(msg);
     } finally {
       setLoading(false);
       setBookingStatus(null);
@@ -174,7 +182,7 @@ export default function PaymentScreen() {
       style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: 24 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={20} color={colors.textColors.default} />
         </Pressable>
@@ -206,13 +214,7 @@ export default function PaymentScreen() {
                 ]}>
                 {checkin} → {checkout}
               </Text>
-              <Text style={styles.summaryPrice}>
-                {new Intl.NumberFormat(undefined, {
-                  style: 'currency',
-                  currency: currency || 'GBP',
-                  maximumFractionDigits: 0,
-                }).format(price)}
-              </Text>
+              <Text style={styles.summaryPrice}>{priceLabel}</Text>
             </View>
           </View>
 
@@ -302,6 +304,12 @@ export default function PaymentScreen() {
             borderTopColor: colorScheme === 'dark' ? '#374151' : '#E9ECEF',
           },
         ]}>
+        {payError ? (
+          <PaymentErrorBanner
+            message={payError}
+            onDismiss={() => setPayError(null)}
+          />
+        ) : null}
         <View style={styles.secureRow}>
           <Lock size={12} color="#22C55E" />
           <Text style={styles.secureText}>Secured & encrypted</Text>
@@ -330,9 +338,7 @@ export default function PaymentScreen() {
             ) : !paymentReady ? (
               <Text style={styles.payBtnText}>Loading payment...</Text>
             ) : (
-              <Text style={styles.payBtnText}>
-                Pay {currency} {price.toFixed(0)}
-              </Text>
+              <Text style={styles.payBtnText}>Pay {priceLabel}</Text>
             )}
           </Pressable>
         )}

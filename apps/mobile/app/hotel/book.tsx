@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { Image, ImageBackground } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Calendar, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -19,6 +19,7 @@ import { useTrips } from '@/context/TripsContext';
 import { useAction } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+import { BlurView } from 'expo-blur';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
@@ -154,29 +155,47 @@ export default function BookingScreen() {
         styles.container,
         { backgroundColor: colors.backgroundColors.default },
       ]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={colors.textColors.default} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Booking Summary</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <ImageBackground
+        source={{ uri: hotelThumb || FALLBACK_IMAGE }}
+        style={styles.thumbBackgroundImage}
+        contentFit="cover">
+        <BlurView intensity={10} tint="light" className="flex-1">
+          {/* Header */}
+          <View style={[styles.header, { paddingTop: 24 }]}>
+            <Pressable style={styles.backBtn} onPress={() => router.back()}>
+              <ArrowLeft size={20} color={colors.backgroundColors.default} />
+            </Pressable>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.backgroundColors.default },
+              ]}>
+              Booking Summary
+            </Text>
+            <View style={{ width: 36 }} />
+          </View>
+
+          <View style={styles.hotelInfo}>
+            <Text
+              style={[
+                styles.hotelName,
+                { color: colors.backgroundColors.default },
+              ]}>
+              {hotelName}
+            </Text>
+            <Text
+              style={[
+                styles.roomLabel,
+                { color: colors.backgroundColors.default },
+              ]}>
+              {roomName} · {boardName}
+            </Text>
+          </View>
+        </BlurView>
+      </ImageBackground>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Hotel thumbnail + name */}
-          <Image
-            source={{ uri: hotelThumb || FALLBACK_IMAGE }}
-            style={styles.thumb}
-            contentFit="cover"
-          />
-          <Spacer size={14} vertical />
-          <Text style={styles.hotelName}>{hotelName}</Text>
-          <Text style={[styles.roomLabel, { color: colors.textColors.subtle }]}>
-            {roomName} · {boardName}
-          </Text>
-
           <Spacer size={20} vertical />
 
           {/* Dates */}
@@ -271,11 +290,20 @@ export default function BookingScreen() {
               },
             ]}>
             <View style={styles.priceRow}>
-              <Text style={[styles.priceRowText, { color: colors.textColors.subtle }]}>
+              <Text
+                style={[
+                  styles.priceRowText,
+                  { color: colors.textColors.subtle },
+                ]}>
                 {currency} {pricePerNight.toFixed(0)} × {nights}{' '}
                 {nights === 1 ? 'night' : 'nights'}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'baseline',
+                  gap: 6,
+                }}>
                 {hasDiscount ? (
                   <Text style={styles.originalPrice}>
                     {currency} {originalTotal.toFixed(0)}
@@ -288,7 +316,11 @@ export default function BookingScreen() {
             </View>
             {bookingType === 'group' && groupSize > 1 && (
               <View style={styles.priceRow}>
-                <Text style={[styles.priceRowText, { color: colors.textColors.subtle }]}>
+                <Text
+                  style={[
+                    styles.priceRowText,
+                    { color: colors.textColors.subtle },
+                  ]}>
                   Rooms ({groupSize} guests)
                 </Text>
                 <Text style={styles.priceRowText}>{groupSize} rooms</Text>
@@ -296,14 +328,25 @@ export default function BookingScreen() {
             )}
             <View style={[styles.priceRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'baseline',
+                  gap: 6,
+                }}>
                 {hasDiscount ? (
                   <Text style={styles.originalPrice}>
                     {currency}{' '}
-                    {(originalTotal * (bookingType === 'group' ? groupSize : 1)).toFixed(0)}
+                    {(
+                      originalTotal * (bookingType === 'group' ? groupSize : 1)
+                    ).toFixed(0)}
                   </Text>
                 ) : null}
-                <Text style={[styles.totalValue, { color: colors.textColors.default }]}>
+                <Text
+                  style={[
+                    styles.totalValue,
+                    { color: colors.textColors.default },
+                  ]}>
                   {currency}{' '}
                   {(
                     totalPrice * (bookingType === 'group' ? groupSize : 1)
@@ -363,8 +406,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   content: { paddingHorizontal: 16 },
+  hotelInfo: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
   thumb: {
     height: 160,
+    borderRadius: 12,
+    width: '100%',
+  },
+  thumbBackgroundImage: {
+    height: 320,
     borderRadius: 12,
     width: '100%',
   },

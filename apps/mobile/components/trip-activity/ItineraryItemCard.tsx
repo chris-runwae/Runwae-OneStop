@@ -153,6 +153,8 @@ const ItineraryItemCard = ({
             {
               backgroundColor: colors.backgroundColors.default,
               borderColor: dark ? COLORS.gray[750] : '#EEEEEE',
+              // borderWidth: 1,
+              // borderRadius: 12,
             },
             isActive && {
               shadowColor: '#000',

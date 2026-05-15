@@ -19,16 +19,14 @@ const TravelConnector = ({ distanceKm, durationMin }: Props) => {
     distanceKm != null
       ? `${distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm)} km`
       : null;
-  const durationLabel = durationMin != null ? `${Math.round(durationMin)} min` : null;
+  const durationLabel =
+    durationMin != null ? `${Math.round(durationMin)} min` : null;
   const text = [distanceLabel, durationLabel].filter(Boolean).join(' · ');
 
   return (
     <View style={styles.row}>
       <View
-        style={[
-          styles.line,
-          { backgroundColor: dark ? '#374151' : '#E9ECEF' },
-        ]}
+        style={[styles.line, { backgroundColor: dark ? '#374151' : '#E9ECEF' }]}
       />
       <Animated.View
         entering={FadeIn.duration(160)}
@@ -39,16 +37,8 @@ const TravelConnector = ({ distanceKm, durationMin }: Props) => {
             borderColor: dark ? '#374151' : '#FFD3E6',
           },
         ]}>
-        <Car
-          size={11}
-          color={dark ? '#FF6FB1' : '#FF1F8C'}
-          strokeWidth={2}
-        />
-        <Text
-          style={[
-            styles.text,
-            { color: dark ? '#FF6FB1' : '#FF1F8C' },
-          ]}>
+        <Car size={11} color={dark ? '#FF6FB1' : '#FF1F8C'} strokeWidth={2} />
+        <Text style={[styles.text, { color: dark ? '#FF6FB1' : '#FF1F8C' }]}>
           {text}
         </Text>
       </Animated.View>
@@ -64,7 +54,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 84,
     gap: 8,
-    marginVertical: -4,
+    marginVertical: 8,
   },
   line: {
     width: 1,

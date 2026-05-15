@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from 'convex/react';
+import { useConvex, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 
 import {
@@ -100,13 +100,12 @@ function toExperience(e: any): Experience {
 }
 
 export const useExploreData = (): UseExploreDataResult => {
+  const convex = useConvex();
   const destinationsRaw = useQuery(api.destinations.list, {});
   const eventsRaw = useQuery(api.events.listPublished, {});
   const experiencesRaw = useQuery(api.experiences.listFeatured, {});
   const templatesRaw = useQuery(api.itinerary.listTemplates, {});
 
-  // Convex's reactive cache makes manual refresh redundant; we keep a
-  // no-op `refresh()` so existing pull-to-refresh callsites keep working.
   const [refreshing, setRefreshing] = useState(false);
 
   const loading =
@@ -125,11 +124,23 @@ export const useExploreData = (): UseExploreDataResult => {
     [destinationsRaw, eventsRaw, experiencesRaw, templatesRaw],
   );
 
+  // useQuery subscriptions are already live, but pull-to-refresh wants a
+  // real network round-trip the caller can await — so the spinner doesn't
+  // disappear before anything actually happened. Imperative one-shots
+  // confirm the server is healthy and surface errors; the reactive
+  // subscriptions still push the rendered data.
   const refresh = async () => {
     setRefreshing(true);
-    // Convex auto-invalidates; nothing to do. Toggle the flag so the
-    // RefreshControl spinner cycles instead of getting stuck.
-    setTimeout(() => setRefreshing(false), 600);
+    try {
+      await Promise.all([
+        convex.query(api.destinations.list, {}),
+        convex.query(api.events.listPublished, {}),
+        convex.query(api.experiences.listFeatured, {}),
+        convex.query(api.itinerary.listTemplates, {}),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return { data, loading, refreshing, error: null, refresh };

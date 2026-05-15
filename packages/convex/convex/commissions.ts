@@ -3,17 +3,34 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalMutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
+// `hostSharePct` is the host's slice of `totalCommission`, NOT the platform
+// commission rate on the booking total. Whole-number percent in [0, 100].
+// Elsewhere in this file/codebase the column `splitPct` is overloaded — for
+// direct inserts (bookings.ts) it records the platform commission rate; only
+// `recordForBooking` interprets it as the host's share. The argument is
+// renamed here so callers can't pass the wrong meaning.
 export const recordForBooking = internalMutation({
   args: {
     bookingId: v.id("bookings"),
     totalCommission: v.number(),
-    splitPct: v.number(),
+    hostSharePct: v.number(),
     currency: v.string(),
     eventId: v.optional(v.id("events")),
     hostId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    const hostShare = Math.round(args.totalCommission * (args.splitPct / 100));
+    if (
+      !Number.isFinite(args.hostSharePct) ||
+      args.hostSharePct < 0 ||
+      args.hostSharePct > 100
+    ) {
+      throw new Error(
+        `hostSharePct must be in [0, 100], got ${args.hostSharePct}`,
+      );
+    }
+    const hostShare = Math.round(
+      args.totalCommission * (args.hostSharePct / 100),
+    );
     const runwaeShare = args.totalCommission - hostShare;
     return await ctx.db.insert("commissions", {
       bookingId: args.bookingId,
@@ -22,7 +39,7 @@ export const recordForBooking = internalMutation({
       totalCommission: args.totalCommission,
       runwaeShare,
       hostShare,
-      splitPct: args.splitPct,
+      splitPct: args.hostSharePct,
       currency: args.currency,
       status: "pending",
       createdAt: Date.now(),

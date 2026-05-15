@@ -1,0 +1,18 @@
+{
+  "name": "@runwae/extractor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "yt-dlp + Groq Whisper extractor service for trip-from-link. Deployed standalone on Fly.io so it can run on a host that isn't Vercel/AWS IP-blocked by YouTube/TikTok.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -128,10 +128,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.ACCESS_FINE_LOCATION',
       ],
     },
-    web: {
-      output: 'static',
-      favicon: './assets/images/favicon.png',
-    },
+    // No web platform — the Runwae web app lives in `apps/web` (Next.js),
+    // not in this Expo workspace. Leaving `web: { output: 'static' }` here
+    // causes `eas update` to default to --platform=all and try to bundle
+    // native-only modules (e.g. @stripe/stripe-react-native) for the web
+    // target, which silently breaks the OTA.
     plugins: [
       'expo-router',
       'expo-secure-store',

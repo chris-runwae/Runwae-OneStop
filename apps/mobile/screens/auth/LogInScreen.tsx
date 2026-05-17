@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -24,6 +24,7 @@ import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 const LogInScreen = () => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { signIn, signInWithGoogle, signInWithApple, lastAuthMethod } =
     useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +66,16 @@ const LogInScreen = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       const result = await signIn(formData.email, formData.password);
+
+      if (result.needsVerification) {
+        // Unverified email: Convex Auth emailed an OTP instead of creating
+        // a session. Route into the same verification flow sign-up uses.
+        router.push({
+          pathname: "/(auth)/verification-sent",
+          params: { email: formData.email },
+        } as any);
+        return;
+      }
 
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

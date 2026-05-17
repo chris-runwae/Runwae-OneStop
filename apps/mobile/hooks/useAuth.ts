@@ -46,7 +46,11 @@ export interface UseAuthReturn {
   signIn: (
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    needsVerification?: boolean;
+  }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signInWithApple: () => Promise<{ success: boolean; error?: string }>;
   signUp: (
@@ -344,8 +348,20 @@ export function useAuth(): UseAuthReturn {
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
-        await convexSignIn("password", { email, password, flow: "signIn" });
+        const result = await convexSignIn("password", {
+          email,
+          password,
+          flow: "signIn",
+        });
         await rememberAuthMethod("password");
+        // Password is configured with `verify`, so signing in with an
+        // unverified email does NOT create a session: Convex Auth emails
+        // an OTP and returns signingIn:false. Surface that so the screen
+        // routes into the same verification flow sign-up uses, instead of
+        // reporting a false success and stranding the user on login.
+        if (!result?.signingIn) {
+          return { success: false, needsVerification: true };
+        }
         return { success: true };
       } catch (err) {
         track({

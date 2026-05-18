@@ -24,6 +24,15 @@ import { Spacer, Text } from '@/components';
 import PaymentErrorBanner from '@/components/payment/PaymentErrorBanner';
 import { Colors, textStyles } from '@/constants';
 import { useAuth } from '@/context/AuthContext';
+import * as Sentry from '@sentry/react-native';
+
+// User-facing copy. Never surface raw Stripe / SDK error strings (e.g.
+// "No such payment intent: pi_..."): they leak internals and mean nothing
+// to a guest. Technical detail goes to Sentry instead.
+const GENERIC_PAYMENT_ERROR =
+  "Something went wrong with your payment. You haven't been charged. Please try again, or contact support if it keeps happening.";
+const GENERIC_PAYMENT_INIT_ERROR =
+  "We couldn't load the payment screen. Please go back and try again.";
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
@@ -103,12 +112,12 @@ export default function PaymentScreen() {
         if (initErr) throw new Error(initErr.message);
         setPaymentReady(true);
       } catch (e) {
-        const msg =
-          e instanceof Error
-            ? e.message
-            : 'Could not load payment. Please try again.';
         console.error('[Stripe] init failed:', e);
-        setInitError(msg);
+        Sentry.captureException(e, {
+          tags: { feature: 'hotel_payment', stage: 'init_payment_sheet' },
+          extra: { bookingId },
+        });
+        setInitError(GENERIC_PAYMENT_INIT_ERROR);
       }
     })();
   }, [clientSecret, initPaymentSheet]);
@@ -131,10 +140,18 @@ export default function PaymentScreen() {
       if (paymentError) {
         if (paymentError.code !== 'Canceled') {
           console.error('[Stripe] Payment presented error:', paymentError);
-          setPayError(
-            paymentError.message ||
-              'The payment could not be processed. Please check your card details.'
+          Sentry.captureException(
+            new Error(`Stripe payment sheet error: ${paymentError.message}`),
+            {
+              tags: { feature: 'hotel_payment', stage: 'present_payment_sheet' },
+              extra: {
+                bookingId,
+                stripeCode: paymentError.code,
+                stripeMessage: paymentError.message,
+              },
+            },
           );
+          setPayError(GENERIC_PAYMENT_ERROR);
         }
         setBookingStatus(null);
         setLoading(false);
@@ -169,11 +186,11 @@ export default function PaymentScreen() {
       });
     } catch (err) {
       console.error('[PaymentFlow] Error:', err);
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong while processing your payment. Your card was not charged. Please try again.';
-      setPayError(msg);
+      Sentry.captureException(err, {
+        tags: { feature: 'hotel_payment', stage: 'confirm_after_payment' },
+        extra: { bookingId },
+      });
+      setPayError(GENERIC_PAYMENT_ERROR);
     } finally {
       setLoading(false);
       setBookingStatus(null);

@@ -54,6 +54,7 @@ import type * as lib_username from "../lib/username.js";
 import type * as media from "../media.js";
 import type * as members from "../members.js";
 import type * as migrations_backfill_admin_fields from "../migrations/backfill_admin_fields.js";
+import type * as migrations_backfill_password_email_verified from "../migrations/backfill_password_email_verified.js";
 import type * as migrations_section7_verify from "../migrations/section7_verify.js";
 import type * as migrations_seed_dev_events from "../migrations/seed_dev_events.js";
 import type * as notifications from "../notifications.js";
@@ -137,6 +138,7 @@ declare const fullApi: ApiFromModules<{
   media: typeof media;
   members: typeof members;
   "migrations/backfill_admin_fields": typeof migrations_backfill_admin_fields;
+  "migrations/backfill_password_email_verified": typeof migrations_backfill_password_email_verified;
   "migrations/section7_verify": typeof migrations_section7_verify;
   "migrations/seed_dev_events": typeof migrations_seed_dev_events;
   notifications: typeof notifications;

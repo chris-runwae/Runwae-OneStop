@@ -360,7 +360,7 @@ export function DiscoverGrid({
       )}
 
       {active === "all" ? (
-        <div className="grid grid-cols-2 gap-3 pt-2 lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 pt-2 lg:grid-cols-4 lg:gap-3">
           {DISCOVER_SAMPLES.map((d) => {
             const payload: DiscoverPayload = {
               provider: "static",
@@ -385,7 +385,7 @@ export function DiscoverGrid({
           })}
         </div>
       ) : loading ? (
-        <div className="grid grid-cols-2 gap-3 pt-2 lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 pt-2 lg:grid-cols-4 lg:gap-3">
           <Skeleton className="aspect-[4/3] rounded-[14px]" />
           <Skeleton className="aspect-[4/3] rounded-[14px]" />
           <Skeleton className="aspect-[4/3] rounded-[14px]" />
@@ -404,7 +404,7 @@ export function DiscoverGrid({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 pt-2 lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 pt-2 lg:grid-cols-4 lg:gap-3">
           {results.map((r) => {
             const cfg = DISCOVER_CATEGORIES.find((c) => c.k === active);
             const payload: DiscoverPayload = {

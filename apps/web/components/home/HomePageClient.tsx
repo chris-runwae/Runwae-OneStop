@@ -63,6 +63,7 @@ export function HomePageClient() {
   });
   const heroDestination = featuredDestinations?.[0] ?? null;
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
+  const [createTripOpen, setCreateTripOpen] = useState(false);
 
   const homeCoords = viewer?.homeCoords;
   const homeLabel = viewer?.homeCity ?? viewer?.homeCountry ?? null;
@@ -96,7 +97,10 @@ export function HomePageClient() {
             loading={featuredDestinations === undefined}
             nextTrip={nextTrip}
           />
-          <MyTripsRow trips={trips} />
+          <MyTripsRow
+            trips={trips}
+            onCreateTrip={() => setCreateTripOpen(true)}
+          />
           <FriendsActivity
             activity={friendActivity}
             onFindFriends={() => setFindFriendsOpen(true)}
@@ -116,6 +120,10 @@ export function HomePageClient() {
       <FindFriendsSheet
         open={findFriendsOpen}
         onClose={() => setFindFriendsOpen(false)}
+      />
+      <CreateTripModal
+        open={createTripOpen}
+        onClose={() => setCreateTripOpen(false)}
       />
     </>
   );
@@ -573,19 +581,32 @@ function SectionHead({
   title,
   href,
   cta = "See all",
+  large = false,
+  ctaPill = false,
 }: {
   title: string;
   href: string;
   cta?: string;
+  large?: boolean;
+  ctaPill?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between px-4 pb-3 pt-6 lg:px-0 lg:pt-7">
-      <h2 className="font-display text-lg font-bold tracking-tight text-foreground">
+      <h2
+        className={cn(
+          "font-display font-bold tracking-tight text-foreground",
+          large ? "text-xl lg:text-2xl" : "text-lg",
+        )}
+      >
         {title}
       </h2>
       <Link
         href={href}
-        className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary"
+        className={cn(
+          "inline-flex items-center gap-1 text-[12.5px] font-semibold text-primary",
+          ctaPill &&
+            "rounded-full border border-primary px-3 py-1.5 hover:bg-primary/5",
+        )}
       >
         {cta}
         <ArrowRight className="h-3 w-3" strokeWidth={2.4} />
@@ -598,32 +619,46 @@ function SectionHead({
 /*  My Trips row                                              */
 /* ────────────────────────────────────────────────────────── */
 
-function MyTripsRow({ trips }: { trips: TripDoc[] | undefined }) {
+function MyTripsRow({
+  trips,
+  onCreateTrip,
+}: {
+  trips: TripDoc[] | undefined;
+  onCreateTrip: () => void;
+}) {
   return (
     <>
-      <SectionHead title="Your trips" href="/trips" />
-      <div className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:px-0 [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center justify-between px-4 pb-3 pt-6 lg:px-0 lg:pt-7">
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground lg:text-2xl">
+          Your Trips
+        </h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onCreateTrip}
+            className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground shadow-[0_4px_14px_rgba(255,61,127,0.3)] transition-all hover:bg-primary/90 active:scale-[0.97]"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            New trip
+          </button>
+          <Link
+            href="/trips"
+            className="inline-flex items-center gap-1 rounded-full border border-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary hover:bg-primary/5"
+          >
+            See all
+            <ArrowRight className="h-3 w-3" strokeWidth={2.4} />
+          </Link>
+        </div>
+      </div>
+      <div className="flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
         {trips === undefined ? (
           <>
-            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl" />
-            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl" />
-            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl" />
+            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl lg:h-auto lg:w-auto lg:aspect-[4/3]" />
+            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl lg:h-auto lg:w-auto lg:aspect-[4/3]" />
+            <Skeleton className="h-[180px] w-[140px] shrink-0 rounded-2xl lg:h-auto lg:w-auto lg:aspect-[4/3]" />
           </>
         ) : (
-          <>
-            {trips.map((t) => (
-              <TripCard key={t._id} trip={t} />
-            ))}
-            <Link
-              href="/trips/new"
-              className="group flex h-[180px] w-[140px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-foreground/15 bg-muted text-[12.5px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
-            >
-              <span className="grid h-[38px] w-[38px] place-items-center rounded-full bg-foreground/5 text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <Plus className="h-5 w-5" strokeWidth={2} />
-              </span>
-              New trip
-            </Link>
-          </>
+          trips.slice(0, 3).map((t) => <TripCard key={t._id} trip={t} />)
         )}
       </div>
     </>
@@ -639,7 +674,7 @@ function TripCard({ trip }: { trip: TripDoc }) {
   return (
     <Link
       href={`/trips/${trip.slug}`}
-      className="group relative h-[180px] w-[140px] shrink-0 overflow-hidden rounded-2xl bg-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)] transition-transform hover:-translate-y-0.5 hover:scale-[1.02]"
+      className="group relative h-[180px] w-[140px] shrink-0 overflow-hidden rounded-2xl bg-muted shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.04)] transition-transform hover:-translate-y-0.5 hover:scale-[1.02] lg:h-auto lg:w-auto lg:aspect-[4/3]"
     >
       {cover ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -654,14 +689,14 @@ function TripCard({ trip }: { trip: TripDoc }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/[0.05] to-black/35" />
       <span
         className={cn(
-          "absolute left-2 top-2 inline-flex items-center gap-1 rounded-md px-[7px] py-[4px] text-[9.5px] font-bold uppercase tracking-[0.06em] text-white",
+          "absolute left-2 top-2 inline-flex items-center gap-1 rounded-md px-[7px] py-[4px] text-[9.5px] font-bold uppercase tracking-[0.06em] text-white lg:hidden",
           statusBg,
         )}
       >
         <i className="block h-[5px] w-[5px] rounded-full bg-white" />
         {statusLabel}
       </span>
-      <div className="absolute inset-x-2.5 bottom-2.5 line-clamp-2 text-[13px] font-bold leading-tight text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]">
+      <div className="absolute inset-x-2.5 bottom-2.5 line-clamp-2 text-[13px] font-bold leading-tight text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)] lg:inset-x-4 lg:bottom-4 lg:text-[20px] lg:leading-snug">
         {trip.title}
       </div>
     </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -18,7 +18,6 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LocationValue } from "@/components/ui/location-picker";
 import { LocationPicker } from "@/components/ui/location-picker";
-import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { UnsplashPicker } from "./wizard/UnsplashPicker";
@@ -188,147 +187,231 @@ export function CreateTripModal({
     }
   }
 
-  // Step 4 is the post-create success screen — keep the progress bar full
-  // there so it doesn't read as "step 4 of 3".
   const totalUserSteps = 3;
-  const stepLabel = step <= totalUserSteps ? `Step ${step} of ${totalUserSteps}` : "Done";
   const progress = step <= totalUserSteps ? (step / totalUserSteps) * 100 : 100;
 
-  // Pinned footer keeps the primary action visible even when the body
-  // (Unsplash grid on step 3) needs to scroll. Hidden on step 4 — the
-  // success screen has its own CTAs.
-  const footer = step <= totalUserSteps ? (
-    <div className="flex items-center gap-2">
-      {step > 1 && (
-        <button
-          type="button"
-          onClick={back}
-          disabled={submitting}
-          aria-label="Back"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground/[0.05] text-foreground hover:bg-foreground/[0.1] disabled:opacity-40"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-      )}
-      {step < 3 ? (
-        <button
-          type="button"
-          disabled={!canNext}
-          onClick={next}
-          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-        >
-          Continue <ArrowRight className="h-4 w-4" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled={submitting || !canNext}
-          onClick={handleCreate}
-          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-        >
-          {submitting ? "Creating…" : "Create trip"}
-          {!submitting && <ArrowRight className="h-4 w-4" />}
-        </button>
-      )}
-    </div>
-  ) : undefined;
+  // Animate open/close
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    setVisible(false);
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setMounted(false), 280);
+    return () => {
+      if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mounted, onClose]);
+
+  if (!mounted) return null;
 
   return (
-    <Modal open={open} onClose={onClose} title="" footer={footer}>
-      <div className="-mx-6 -mt-2 mb-3">
-        <div className="flex items-center justify-between px-6 pb-2">
-          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {stepLabel}
-          </span>
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <div
+        aria-hidden
+        onClick={onClose}
+        className={cn(
+          "absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-[280ms] ease-out",
+          visible ? "opacity-100" : "opacity-0"
+        )}
+      />
+
+      {/* Right panel */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create Trip"
+        className={cn(
+          "relative flex h-full w-full flex-col bg-card shadow-2xl transition-transform duration-[280ms] ease-out sm:max-w-[480px]",
+          visible ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header: [← back] [━━━━ 1/2] [✕] */}
+        <div className="shrink-0 px-5 pb-4 pt-5">
+          <div className="flex items-center gap-3">
+            {step > 1 && step <= totalUserSteps ? (
+              <button
+                type="button"
+                onClick={back}
+                disabled={submitting}
+                aria-label="Back"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-foreground hover:bg-foreground/[0.06] disabled:opacity-40"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            ) : (
+              <div className="h-8 w-8 shrink-0" />
+            )}
+
+            {/* Progress bar + step counter */}
+            <div className="flex flex-1 items-center gap-2">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-foreground/[0.10]">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[12px] font-semibold tabular-nums text-muted-foreground">
+                {step <= totalUserSteps ? `${step}/${totalUserSteps}` : "Done"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <div className="mx-6 h-[3px] overflow-hidden rounded-full bg-foreground/[0.08]">
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-300"
-            style={{ width: `${progress}%` }}
-          />
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-5 pb-4 pt-1">
+          {/* Title + subtitle in the content area, matching Figma */}
+          {step <= totalUserSteps && (
+            <div className="mb-5">
+              <h2 className="font-display text-[28px] font-bold leading-tight tracking-tight text-foreground">
+                Create Trip
+              </h2>
+              <p className="mt-1 text-[13.5px] text-muted-foreground">
+                {step === 1 && "Where do you want to go? let's plan for you!"}
+                {step === 2 && "When are you travelling?"}
+                {step === 3 && "Name your trip and add a cover photo."}
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              {error}
+            </div>
+          )}
+
+          {step === 1 && (
+            <DestinationStep
+              value={destination}
+              onChange={setDestination}
+              presets={seededDestinations}
+            />
+          )}
+
+          {step === 2 && (
+            <CalendarStep
+              range={range}
+              onChange={(r) => {
+                setRange(r);
+                setQuickPick(null);
+              }}
+              quickPick={quickPick}
+              onQuickPick={(id) => {
+                setQuickPick(id);
+                const today = stripTime(new Date());
+                if (id === "weekend")
+                  setRange({
+                    start: today,
+                    end: new Date(today.getTime() + 2 * 86400000),
+                  });
+                else if (id === "week")
+                  setRange({
+                    start: today,
+                    end: new Date(today.getTime() + 6 * 86400000),
+                  });
+                else if (id === "fortnight")
+                  setRange({
+                    start: today,
+                    end: new Date(today.getTime() + 13 * 86400000),
+                  });
+              }}
+              fmtShort={fmtShort}
+              nights={nights}
+            />
+          )}
+
+          {step === 3 && (
+            <DetailsStep
+              title={title}
+              onTitleChange={setTitle}
+              coverImageUrl={coverImageUrl}
+              onCoverChange={setCoverImageUrl}
+              currency={currency}
+              onCurrencyChange={setCurrency}
+              inviteIds={inviteIds}
+              onInviteToggle={(id: Id<"users">) =>
+                setInviteIds((prev) =>
+                  prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                )
+              }
+              recentFriends={recentFriends}
+              destinationLabel={destination.destinationLabel}
+            />
+          )}
+
+          {step === 4 && resultSlug && resultTripId && (
+            <SuccessStep
+              slug={resultSlug}
+              tripId={resultTripId}
+              destinationLabel={destination.destinationLabel}
+              onView={() => {
+                const slug = resultSlug;
+                onClose();
+                router.push(`/trips/${slug}`);
+              }}
+              onClose={onClose}
+            />
+          )}
         </div>
+
+        {/* Pinned footer — hidden on success step */}
+        {step <= totalUserSteps && (
+          <div className="shrink-0 border-t border-border bg-card px-5 pb-12 pt-4">
+            {step < totalUserSteps ? (
+              <button
+                type="button"
+                disabled={!canNext}
+                onClick={next}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14.5px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+              >
+                Continue <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={submitting || !canNext}
+                onClick={handleCreate}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[14.5px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+              >
+                {submitting ? "Creating…" : "Create Trip"}
+                {!submitting && <ArrowRight className="h-4 w-4" />}
+              </button>
+            )}
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          {error}
-        </div>
-      )}
-
-      {step === 1 && (
-        <DestinationStep
-          value={destination}
-          onChange={setDestination}
-          presets={seededDestinations}
-        />
-      )}
-
-      {step === 2 && (
-        <CalendarStep
-          range={range}
-          onChange={(r) => {
-            setRange(r);
-            setQuickPick(null);
-          }}
-          quickPick={quickPick}
-          onQuickPick={(id) => {
-            setQuickPick(id);
-            const today = stripTime(new Date());
-            if (id === "weekend")
-              setRange({
-                start: today,
-                end: new Date(today.getTime() + 2 * 86400000),
-              });
-            else if (id === "week")
-              setRange({
-                start: today,
-                end: new Date(today.getTime() + 6 * 86400000),
-              });
-            else if (id === "fortnight")
-              setRange({
-                start: today,
-                end: new Date(today.getTime() + 13 * 86400000),
-              });
-          }}
-          fmtShort={fmtShort}
-          nights={nights}
-        />
-      )}
-
-      {step === 3 && (
-        <DetailsStep
-          title={title}
-          onTitleChange={setTitle}
-          coverImageUrl={coverImageUrl}
-          onCoverChange={setCoverImageUrl}
-          currency={currency}
-          onCurrencyChange={setCurrency}
-          inviteIds={inviteIds}
-          onInviteToggle={(id: Id<"users">) =>
-            setInviteIds((prev) =>
-              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-            )
-          }
-          recentFriends={recentFriends}
-          destinationLabel={destination.destinationLabel}
-        />
-      )}
-
-      {step === 4 && resultSlug && resultTripId && (
-        <SuccessStep
-          slug={resultSlug}
-          tripId={resultTripId}
-          destinationLabel={destination.destinationLabel}
-          onView={() => {
-            const slug = resultSlug;
-            onClose();
-            router.push(`/trips/${slug}`);
-          }}
-          onClose={onClose}
-        />
-      )}
-
-    </Modal>
+    </div>
   );
 }
 
@@ -349,13 +432,6 @@ function DestinationStep({
 }) {
   return (
     <>
-      <h2 className="font-display text-[22px] font-bold leading-tight">
-        Where to?
-      </h2>
-      <p className="mb-4 mt-1 text-[13px] text-muted-foreground">
-        Pick a popular destination or search for somewhere of your own.
-      </p>
-
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {presets === undefined ? (
           <>
@@ -459,13 +535,6 @@ function CalendarStep({
 
   return (
     <>
-      <h2 className="font-display text-[22px] font-bold leading-tight">
-        When are you travelling?
-      </h2>
-      <p className="mb-4 mt-1 text-[13px] text-muted-foreground">
-        Pick the arrival and departure dates.
-      </p>
-
       <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-foreground/[0.04] p-3">
         <div className="min-w-0">
           <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -644,13 +713,6 @@ function DetailsStep({
     "h-11 w-full rounded-2xl border border-border bg-background px-4 text-[14.5px] focus:border-primary focus:outline-none";
   return (
     <>
-      <h2 className="font-display text-[22px] font-bold leading-tight">
-        Final touches
-      </h2>
-      <p className="mb-4 mt-1 text-[13px] text-muted-foreground">
-        Name your trip, pick a cover photo, and (optionally) invite friends.
-      </p>
-
       <div className="space-y-3">
         <label className="block">
           <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

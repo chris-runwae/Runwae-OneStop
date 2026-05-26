@@ -47,9 +47,13 @@ export function LocationPrompt({ onDone }: { onDone?: () => void }) {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          const coords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          };
           const info = await reverseGeocode(coords);
-          const iata = nearestIata(coords, info?.city ?? undefined) ?? undefined;
+          const iata =
+            nearestIata(coords, info?.city ?? undefined) ?? undefined;
           await setHomeLocation({
             coords,
             city: info?.city ?? undefined,
@@ -67,12 +71,14 @@ export function LocationPrompt({ onDone }: { onDone?: () => void }) {
       (err) => {
         setBusy(false);
         if (err.code === err.PERMISSION_DENIED) {
-          setError("Permission denied. Set your location in profile to enable nearby suggestions.");
+          setError(
+            "Permission denied. Set your location in profile to enable nearby suggestions.",
+          );
         } else {
           setError("Could not read your location.");
         }
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 }
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 },
     );
   }
 
@@ -86,7 +92,8 @@ export function LocationPrompt({ onDone }: { onDone?: () => void }) {
           Set your home location
         </div>
         <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-          {error ?? "Better flight + nearby tour suggestions. We only use it to power Discover."}
+          {error ??
+            "Better flight + nearby tour suggestions. We only use it to power Discover."}
         </div>
       </div>
       <button

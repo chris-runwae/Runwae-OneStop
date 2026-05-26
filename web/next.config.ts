@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       new URL("https://gratisography.com/**"),
       new URL("https://res.cloudinary.com/**"),
+      new URL("pv4jymxwis.ufs.sh"),
     ],
   },
 };

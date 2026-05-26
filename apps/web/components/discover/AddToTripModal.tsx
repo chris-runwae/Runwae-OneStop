@@ -173,8 +173,8 @@ export function AddToTripModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title={step === "done" ? "Added!" : "Add to trip"}
-      description={item?.title}
+      title={step === "pick-trip" ? undefined : step === "done" ? "Added!" : "Add to trip"}
+      description={step === "pick-trip" ? undefined : item?.title}
     >
       {error && (
         <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -206,6 +206,7 @@ export function AddToTripModal({
         <PickTrip
           trips={trips}
           mode={mode}
+          itemTitle={item?.title}
           onBack={() => setStep("choose")}
           pending={pending}
           onPick={(id) => {
@@ -318,12 +319,14 @@ function ChooseStep({
 function PickTrip({
   trips,
   mode,
+  itemTitle,
   onBack,
   onPick,
   pending,
 }: {
   trips: Doc<"trips">[] | undefined;
   mode: Mode;
+  itemTitle?: string;
   onBack: () => void;
   onPick: (id: Id<"trips">) => void;
   pending: boolean;
@@ -335,17 +338,26 @@ function PickTrip({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" /> Back
-      </button>
-      <h3 className="mb-3 text-sm font-semibold">
+      <div className="mb-1 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-foreground/[0.06] text-foreground hover:bg-foreground/10"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+          Add to trip
+        </h2>
+      </div>
+      {itemTitle && (
+        <p className="mb-4 pl-10 text-sm text-muted-foreground">{itemTitle}</p>
+      )}
+      <p className="mb-3 pl-10 text-[13px] font-semibold text-foreground">
         {mode === "save" ? "Save to which trip?" : "Add to which trip?"}
-      </h3>
-      <div className="max-h-[55vh] space-y-1 overflow-y-auto">
+      </p>
+      <div className="max-h-[55vh] space-y-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {sorted === undefined ? (
           <>
             <Skeleton className="h-14" />
@@ -362,20 +374,22 @@ function PickTrip({
               type="button"
               disabled={pending}
               onClick={() => onPick(t._id)}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted/40 disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-60"
             >
               {t.coverImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={t.coverImageUrl}
                   alt=""
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                  className="h-12 w-12 shrink-0 rounded-xl object-cover"
                 />
               ) : (
-                <Avatar name={t.title} size="md" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-[18px]">
+                  ✈️
+                </div>
               )}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{t.title}</div>
+                <div className="truncate text-[13.5px] font-semibold text-foreground">{t.title}</div>
                 {t.destinationLabel && (
                   <div className="truncate text-xs text-muted-foreground">
                     {t.destinationLabel}
@@ -384,10 +398,10 @@ function PickTrip({
               </div>
               <span
                 className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                  "shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider",
                   t.status === "ongoing" && "bg-emerald-500/15 text-emerald-700",
                   t.status === "upcoming" && "bg-amber-500/15 text-amber-700",
-                  t.status === "planning" && "bg-violet-500/15 text-violet-700",
+                  t.status === "planning" && "bg-primary/10 text-primary",
                   (t.status === "completed" || t.status === "cancelled") &&
                     "bg-foreground/10 text-foreground/60"
                 )}

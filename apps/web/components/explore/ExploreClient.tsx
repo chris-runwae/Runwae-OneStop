@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventCard } from "@/components/events/EventCard";
 import { DestinationCard } from "@/components/destinations/DestinationCard";
+import { CreateTripModal } from "@/components/trips/CreateTripModal";
 
 type DiscoverItem = {
   provider: string;
@@ -42,6 +43,7 @@ export function ExploreClient() {
   const search = useAction(api.discovery.searchByCategory);
 
   const [filter, setFilter] = useState<string>("all");
+  const [createOpen, setCreateOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   // Bootstrap destinations on first visit if the table is empty.
@@ -163,7 +165,7 @@ export function ExploreClient() {
       {/* ─────────────────────────────────────────────────── */}
       {/* Featured destinations                               */}
       {/* ─────────────────────────────────────────────────── */}
-      <section className="px-4 lg:px-0">
+      <section className="mt-6 px-4 lg:px-0">
         {filtered === undefined ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
@@ -185,7 +187,7 @@ export function ExploreClient() {
                 href={`/destinations/${hero.slug}`}
                 className="group relative mb-6 block overflow-hidden rounded-[24px]"
               >
-                <div className="relative aspect-[16/8] w-full">
+                <div className="relative aspect-[5/2] w-full">
                   <Image
                     src={hero.heroImageUrl}
                     alt={hero.name}
@@ -330,15 +332,18 @@ export function ExploreClient() {
             Plan your trip in minutes — Runwae handles flights, stays, tours
             and group voting.
           </p>
-          <Link
-            href="/trips/new"
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
             className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[14px] font-semibold text-primary transition-transform hover:scale-[1.02]"
           >
             Plan a trip
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </section>
+
+      <CreateTripModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </main>
   );
 }

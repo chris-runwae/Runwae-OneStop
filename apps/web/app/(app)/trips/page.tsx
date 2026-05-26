@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Plus, MapPin } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateRange } from "@/lib/format";
+import { CreateTripModal } from "@/components/trips/CreateTripModal";
 
 export default function TripsPage() {
   const trips = useQuery(api.trips.getMyTrips, {});
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6">
@@ -17,12 +20,13 @@ export default function TripsPage() {
           <h1 className="font-display text-2xl font-bold text-foreground">My trips</h1>
           <p className="text-sm text-muted-foreground">Plans you&apos;re part of.</p>
         </div>
-        <Link
-          href="/trips/new"
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" /> New trip
-        </Link>
+        </button>
       </header>
 
       {trips === undefined ? (
@@ -37,12 +41,13 @@ export default function TripsPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Start planning your first adventure.
           </p>
-          <Link
-            href="/trips/new"
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
             className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> Create a trip
-          </Link>
+          </button>
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -86,6 +91,8 @@ export default function TripsPage() {
           })}
         </ul>
       )}
+
+      <CreateTripModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </main>
   );
 }

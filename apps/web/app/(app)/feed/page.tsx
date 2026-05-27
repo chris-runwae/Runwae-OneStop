@@ -114,20 +114,22 @@ export default function FeedPage() {
           <Skeleton className="h-14" />
         </div>
       ) : list.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center">
-          <Users className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
-          <h2 className="font-display text-base font-bold text-foreground">
+        <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-muted">
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h2 className="font-display text-[15px] font-bold text-foreground">
             No activity yet
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             Add friends to see what they&apos;re planning.
           </p>
           <button
             type="button"
             onClick={() => setFindOpen(true)}
-            className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            <Users className="h-4 w-4" /> Find friends
+            <Users className="h-3.5 w-3.5" /> Find friends
           </button>
         </div>
       ) : (

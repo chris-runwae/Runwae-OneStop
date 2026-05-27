@@ -78,7 +78,7 @@ export function TripDetailClient({ slug, initialTrip }: {
       )}
       <MembersBudget trip={trip} displayCurrency={viewer?.preferredCurrency} />
 
-      <nav className="mt-6 flex gap-2 border-b border-foreground/10" role="tablist">
+      <nav className="mt-6 flex gap-6 border-b border-foreground/10" role="tablist">
         {TABS.map(t => (
           <button
             key={t.id}
@@ -86,14 +86,17 @@ export function TripDetailClient({ slug, initialTrip }: {
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "px-3 py-3 text-xs font-semibold uppercase tracking-wider",
-              "border-b-2 -mb-px transition-colors",
+              "relative pb-3 font-display text-[22px] font-bold tracking-tight transition-colors",
+              "-mb-px",
               tab === t.id
-                ? "border-primary text-primary"
-                : "border-transparent text-foreground/40 hover:text-foreground/70",
+                ? "text-foreground"
+                : "text-foreground/35 hover:text-foreground/60",
             )}
           >
             {t.label}
+            {tab === t.id && (
+              <span className="absolute bottom-0 left-0 h-[4px] w-full rounded-full bg-primary" />
+            )}
           </button>
         ))}
       </nav>

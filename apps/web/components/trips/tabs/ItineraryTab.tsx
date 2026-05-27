@@ -142,17 +142,17 @@ export function ItineraryTab({ trip }: Props) {
 
   return (
     <>
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => setMode((m) => (m === "all" ? "day" : "all"))}
           className={cn(
-            "h-9 flex-shrink-0 rounded-full border px-4 text-xs font-semibold",
+            "h-12 flex-shrink-0 rounded-full px-6 text-[15px] font-bold transition-colors",
             mode === "all"
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-foreground/15 text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-foreground/[0.06] text-foreground hover:bg-foreground/10"
           )}
         >
-          All days
+          All Days
         </button>
         {days.map((d) => {
           const date = new Date(d.date);
@@ -169,7 +169,7 @@ export function ItineraryTab({ trip }: Props) {
                 setMode("day");
                 setActiveDayId(d._id);
               }}
-              className="flex flex-shrink-0 flex-col items-center gap-1 px-1"
+              className="flex flex-shrink-0 flex-col items-center gap-0.5"
               title={
                 weather
                   ? `${weather.label}${
@@ -182,18 +182,18 @@ export function ItineraryTab({ trip }: Props) {
             >
               <span
                 className={cn(
-                  "text-[9.5px] font-semibold tracking-wider",
-                  active ? "text-primary" : "text-foreground/40"
+                  "text-[10px] font-bold tracking-widest",
+                  active ? "text-foreground" : "text-foreground/40"
                 )}
               >
                 {dow}
               </span>
               <span
                 className={cn(
-                  "grid h-9 w-9 place-items-center rounded-full text-sm font-semibold",
+                  "grid h-11 w-11 place-items-center rounded-full text-[22px] font-bold",
                   active
                     ? "bg-primary text-primary-foreground"
-                    : "text-foreground"
+                    : "bg-foreground/[0.06] text-foreground"
                 )}
               >
                 {num}
@@ -202,7 +202,7 @@ export function ItineraryTab({ trip }: Props) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-0.5 text-[10px] font-medium leading-none",
-                    active ? "text-primary" : "text-foreground/60"
+                    active ? "text-primary" : "text-foreground/50"
                   )}
                 >
                   <span aria-hidden>{weather.emoji}</span>

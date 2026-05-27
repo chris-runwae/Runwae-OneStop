@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Plane, CalendarPlus, UserPlus } from "lucide-react";
+import { Plane, UserPlus } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import { CreateTripModal } from "@/components/trips/CreateTripModal";
 
@@ -41,12 +41,6 @@ export function CreateSheet({
             </div>
           </button>
           {[
-            {
-              href: "/events/new",
-              label: "New event",
-              sub: "Host a meetup or trip",
-              Icon: CalendarPlus,
-            },
             {
               href: "/profile/friends",
               label: "Find friends",

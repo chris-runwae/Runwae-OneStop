@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runwae — Plan Group Trips. Book Together. Split Costs.</title>
+    <meta
+      name="description"
+      content="The app for traveling to events with friends—without the chaos. Plan group trips, book together, and split costs instantly."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ====================================================
+       SITE NAV
+       ==================================================== -->
+    <nav
+      class="site-nav"
+      id="siteNav"
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <!-- Desktop pill -->
+      <div class="nav__pill">
+        <div class="nav__links">
+          <a href="#home">Home</a>
+          <a href="/partners#travel-partner">Partner</a>
+          <a href="#">About</a>
+          <a href="#" id="navContactTrigger">Contact Us</a>
+        </div>
+        <button class="btn btn--pink nav__pill-cta" id="navWaitlistTrigger">
+          Join the waitlist
+        </button>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <div class="nav__mobile-pill">
+        <button
+          class="nav__hamburger"
+          id="navHamburger"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile drawer overlay -->
+    <div class="nav__drawer" id="navDrawer" aria-hidden="true">
+      <button
+        class="nav__drawer-close"
+        id="navDrawerClose"
+        aria-label="Close menu"
+      >
+        &times;
+      </button>
+      <div class="nav__drawer-card">
+        <ul class="nav__drawer-links" role="list">
+          <li><a href="#home" class="drawer-link">Home</a></li>
+          <li>
+            <a href="/partners#travel-partner" class="drawer-link"
+              >Partner</a
+            >
+          </li>
+          <li>
+            <a href="/partners#event-host" class="drawer-link">Hosts</a>
+          </li>
+          <li><a href="#" class="drawer-link">About</a></li>
+          <li>
+            <a href="#" class="drawer-link" id="drawerContactTrigger"
+              >Contact Us</a
+            >
+          </li>
+        </ul>
+        <button
+          class="btn btn--pink btn--lg drawer-link"
+          id="drawerWaitlistTrigger"
+        >
+          Join the waitlist
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       WAITLIST MODAL
+       ==================================================== -->
+    <div
+      class="modal-overlay"
+      id="waitlistModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="waitlistModalTitle"
+    >
+      <div class="modal">
+        <button
+          class="modal__close"
+          id="waitlistClose"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+        <h2 class="modal__title" id="waitlistModalTitle">Join The Waitlist</h2>
+        <form class="modal__form" id="waitlistForm" novalidate>
+          <div class="modal__row">
+            <div class="modal__field">
+              <label class="modal__label" for="wl-first">First Name</label>
+              <input
+                id="wl-first"
+                type="text"
+                class="modal__input"
+                placeholder="Jane"
+                required
+              />
+            </div>
+            <div class="modal__field">
+              <label class="modal__label" for="wl-last">Last Name</label>
+              <input
+                id="wl-last"
+                type="text"
+                class="modal__input"
+                placeholder="Doe"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal__field">
+            <label class="modal__label" for="wl-email">Email</label>
+            <input
+              id="wl-email"
+              type="email"
+              class="modal__input"
+              placeholder="jane@example.com"
+              required
+            />
+          </div>
+          <button type="submit" class="modal__submit">Submit</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       CONTACT MODAL
+       ==================================================== -->
+    <div
+      class="modal-overlay"
+      id="contactModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contactModalTitle"
+    >
+      <div class="modal">
+        <button class="modal__close" id="contactClose" aria-label="Close modal">
+          &times;
+        </button>
+        <h2 class="modal__title" id="contactModalTitle">Contact Us</h2>
+        <form class="modal__form" id="contactForm" novalidate>
+          <div class="modal__row">
+            <div class="modal__field">
+              <label class="modal__label" for="ct-first">First Name</label>
+              <input
+                id="ct-first"
+                type="text"
+                class="modal__input"
+                placeholder="Jane"
+                required
+              />
+            </div>
+            <div class="modal__field">
+              <label class="modal__label" for="ct-last">Last Name</label>
+              <input
+                id="ct-last"
+                type="text"
+                class="modal__input"
+                placeholder="Doe"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal__field">
+            <label class="modal__label" for="ct-email">Email</label>
+            <input
+              id="ct-email"
+              type="email"
+              class="modal__input"
+              placeholder="jane@example.com"
+              required
+            />
+          </div>
+          <button type="submit" class="modal__submit">Submit</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       HERO SECTION
+       ==================================================== -->
+    <section class="hero" id="home" aria-label="Hero">
+      <!-- Decorative blobs -->
+      <div class="hero__blob hero__blob--tl" aria-hidden="true"></div>
+      <div class="hero__blob hero__blob--tr" aria-hidden="true"></div>
+      <div class="hero__blob hero__blob--bl" aria-hidden="true"></div>
+
+      <!-- Decorative stars -->
+      <img
+        src="svgs/hero-star-1.svg"
+        class="hero__star hero__star--tl"
+        aria-hidden="true"
+      />
+      <img
+        src="svgs/hero-star-2.svg"
+        class="hero__star hero__star--br"
+        aria-hidden="true"
+      />
+
+      <div class="hero__inner">
+        <img src="logo.png" class="hero__logo" />
+        <h1 class="hero__headline reveal">
+          Plan Group Trips. <br />Book Together. Split Costs.
+        </h1>
+        <p class="hero__subtitle reveal reveal--delay-1">
+          The app for traveling to events with friends—without the chaos.
+        </p>
+
+        <!-- CTA row -->
+        <div class="hero__cta-row reveal reveal--delay-2" id="download">
+          <a href="#" class="btn btn--pink btn--lg">Download the App</a>
+          <div class="btn btn--pink play">
+            <a href="#" aria-label="Download on App Store">
+              <img src="images/play.png" />
+            </a>
+            <div class="straight-line"></div>
+            <a href="#" aria-label="Get it on Google Play">
+              <img src="images/apple.png" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Phone stage with flanking cards -->
+        <div class="phone-section">
+          <img class="phone phone-left" src="images/phone-left.png" />
+          <img class="phone phone-main" src="images/main-phone.png" />
+          <img class="phone phone-right" src="images/phone-right.png" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+       FEATURES BENTO
+       ==================================================== -->
+    <section class="features-section" id="features" aria-label="Features">
+      <div class="features-section__inner">
+        <div class="features-section__header">
+          <div class="section-badge">
+            <span class="section-badge__icon section-badge__icon--text">✦</span>
+            <span class="section-badge__label">FEATURES</span>
+          </div>
+        </div>
+
+        <!-- Bento Grid -->
+        <div class="bento">
+          <!-- Card 1: Build Itineraries from Anywhere -->
+          <div class="card card--itineraries reveal relative">
+            <div class="card__text card__text--top-left">
+              <h2 class="card__title">Build Itineraries from Anywhere</h2>
+              <p class="card__body">
+                Drop a link from Instagram, TikTok, or any website. We'll add it
+                to your trip. Save places, activities, and restaurants as you
+                discover them online.
+              </p>
+            </div>
+            <!-- CSS-only illustration: suitcase + social bubbles -->
+            <img
+              src="images/itineraries.png"
+              alt="Build Itineraries from Anywhere"
+              loading="lazy"
+            />
+          </div>
+
+          <!-- Card 2: Book Flights, Hotels & Activities -->
+          <div class="card card--booking reveal reveal--delay-1">
+            <img
+              src="images/flights.png"
+              alt="Flight, hotel, yoga, and avatar booking icons"
+              loading="lazy"
+            />
+            <div class="card__text card__text--bottom-left">
+              <h2 class="card__title">Book Flights, Hotels &amp; Activities</h2>
+              <p class="card__body">
+                Search and compare options in one place. Your group can see
+                everything and decide together what to book.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 3: Plan Events Together -->
+          <div class="card card--events reveal">
+            <div class="events__avatars-wrap">
+              <img
+                src="images/plan.png"
+                alt="Four memoji avatars with pink checkmarks"
+                class="events__avatars-img"
+                loading="lazy"
+              />
+            </div>
+            <div class="card__text card__text--bottom-left">
+              <h2 class="card__title">Plan Events Together</h2>
+              <p class="card__body">
+                Going to a festival, wedding, or concert? Coordinate with your
+                crew. Vote on hotels, plan activities, make a weekend of it.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 4: Split Expenses Instantly -->
+          <div class="card card--expenses reveal reveal--delay-1">
+            <div class="card__text card__text--top-left">
+              <h2 class="card__title">Split Expenses Instantly</h2>
+              <p class="card__body card_body--min">
+                Track who paid for what. See who owes who. Request payments.
+                Keep everything clear without spreadsheets.
+              </p>
+            </div>
+            <div class="expenses__illustration">
+              <img
+                src="images/expenses.png"
+                alt="Hand holding pink card with dollar speech bubble"
+                class="expenses__hand-img"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <!-- Card 5: Invite Friends to Collaborate -->
+          <div class="card card--invite reveal">
+            <img src="images/collab.png" alt="Festival in Fiji trip card" />
+
+            <div class="card__text card__text--bottom-left">
+              <h2 class="card__title">Invite Friends to Collaborate</h2>
+              <p class="card__body">
+                Share your trip. Everyone adds ideas, votes on options, and sees
+                updates in real-time.
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 6: Earn Rewards -->
+          <div class="card card--rewards reveal reveal--delay-1">
+            <img src="images/earn.png" />
+            <div class="card__text card__text--bottom-left">
+              <h2 class="card__title">Earn Rewards</h2>
+              <p class="card__body">
+                Get points on every booking—flights, hotels, activities. Use
+                them on your next trip. No credit card needed.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- /bento -->
+      </div>
+    </section>
+
+    <!-- ====================================================
+       MARQUEE — BUILT FOR
+       ==================================================== -->
+    <section class="marquee-section" aria-label="Built for">
+      <p class="marquee-section__label">BUILT FOR</p>
+      <div class="marquee-wrapper">
+        <!-- Row 1: scrolls left -->
+        <div class="marquee-track marquee-track--left" aria-hidden="true">
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎵</span>
+            <span class="marquee-pill__label">Concerts</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🏟️</span>
+            <span class="marquee-pill__label">Sports Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🥂</span>
+            <span class="marquee-pill__label">Bachelor Parties</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🧳</span>
+            <span class="marquee-pill__label">Weekend Trips</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎭</span>
+            <span class="marquee-pill__label">Cultural Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🌍</span>
+            <span class="marquee-pill__label">Friend Vacations</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎸</span>
+            <span class="marquee-pill__label">Music Festivals</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">💍</span>
+            <span class="marquee-pill__label">Weddings</span>
+          </div>
+          <!-- Duplicate for seamless loop -->
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎵</span>
+            <span class="marquee-pill__label">Concerts</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🏟️</span>
+            <span class="marquee-pill__label">Sports Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🥂</span>
+            <span class="marquee-pill__label">Bachelor Parties</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🧳</span>
+            <span class="marquee-pill__label">Weekend Trips</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎭</span>
+            <span class="marquee-pill__label">Cultural Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🌍</span>
+            <span class="marquee-pill__label">Friend Vacations</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎸</span>
+            <span class="marquee-pill__label">Music Festivals</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">💍</span>
+            <span class="marquee-pill__label">Weddings</span>
+          </div>
+        </div>
+
+        <!-- Row 2: scrolls right -->
+        <div class="marquee-track marquee-track--right" aria-hidden="true">
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">💍</span>
+            <span class="marquee-pill__label">Weddings</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎸</span>
+            <span class="marquee-pill__label">Music Festivals</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🌍</span>
+            <span class="marquee-pill__label">Friend Vacations</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎭</span>
+            <span class="marquee-pill__label">Cultural Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🧳</span>
+            <span class="marquee-pill__label">Weekend Trips</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🥂</span>
+            <span class="marquee-pill__label">Bachelor Parties</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🏟️</span>
+            <span class="marquee-pill__label">Sports Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎵</span>
+            <span class="marquee-pill__label">Concerts</span>
+          </div>
+          <!-- Duplicate -->
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">💍</span>
+            <span class="marquee-pill__label">Weddings</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎸</span>
+            <span class="marquee-pill__label">Music Festivals</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🌍</span>
+            <span class="marquee-pill__label">Friend Vacations</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎭</span>
+            <span class="marquee-pill__label">Cultural Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🧳</span>
+            <span class="marquee-pill__label">Weekend Trips</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🥂</span>
+            <span class="marquee-pill__label">Bachelor Parties</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🏟️</span>
+            <span class="marquee-pill__label">Sports Events</span>
+          </div>
+          <div class="marquee-pill">
+            <span class="marquee-pill__icon">🎵</span>
+            <span class="marquee-pill__label">Concerts</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+       HOW IT WORKS
+       ==================================================== -->
+
+    <section class="how-section" id="how-it-works" aria-label="How it works">
+      <div class="how-section__badge">✦ HOW IT WORKS</div>
+      <div class="how-section__inner">
+        <div class="how-section__main-col">
+          <div class="how-section__title">Create a Trip</div>
+          <div class="how-section-image__2">
+            <div class="how-section-image__1">
+              <img
+                src="images/how-it-works-phone-1.png"
+                alt="How it works"
+                class="how-section__phone"
+              />
+            </div>
+          </div>
+          <div class="how-section__barcode">
+            <div class="how-section__barcode--number">1</div>
+            <img src="images/how-section-barcode.png" alt="" />
+          </div>
+        </div>
+        <div class="how-section__ghost-col">
+          <div class="how-section__ghost-card">
+            <img
+              src="images/how-it-works-phone-2.png"
+              alt=""
+              class="how-section__ghost-phone"
+            />
+          </div>
+          <div class="how-section__ghost-card how-section__ghost-card--far">
+            <img
+              src="images/how-it-works-phone-3.png"
+              alt=""
+              class="how-section__ghost-phone"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+       FEATURES GRID
+       ==================================================== -->
+    <section class="features-grid" aria-label="Features">
+      <div class="features-grid__inner">
+        <div class="features-grid__item">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="19"
+            height="26"
+            viewBox="0 0 19 26"
+            fill="none"
+          >
+            <g clip-path="url(#clip0_220_56210)">
+              <path
+                d="M0.95038 0H1.67685C1.78145 0.0732246 2.02204 0.105299 2.15427 0.139542C3.32313 0.442248 4.49422 0.76302 5.67818 1.00238C5.76936 1.02082 5.87557 1.08207 5.975 1.1082L8.08323 1.64215L15.1378 3.37785C15.4928 3.46526 15.8388 3.53026 16.1936 3.63254C16.9765 3.85825 18.2295 3.84376 18.4111 4.87033C18.4185 4.91114 18.4252 4.95211 18.431 4.9932C18.4529 5.48524 18.4334 5.93866 18.433 6.43047L18.4325 9.11883C18.4325 9.56905 18.4303 10.0196 18.4366 10.4698C18.439 10.6443 18.4566 10.8004 18.5404 10.9564V11.3352C18.4084 11.4801 18.2864 11.5176 18.1316 11.6307C17.8304 11.8509 17.5285 12.272 17.2361 12.4812C16.7092 12.8583 16.6065 13.781 17.1247 14.2022C17.7042 14.6732 18.3003 14.4287 18.4506 15.4266C18.4835 15.6736 18.4357 16.1296 18.4337 16.4235L18.4323 19.6199C18.4323 20.181 18.4231 20.7649 18.4444 21.326C18.4497 21.4598 18.4859 21.5568 18.5404 21.6761V21.9533C18.3148 22.3225 17.9304 22.5568 17.6347 22.8764C17.4458 23.0804 17.1755 23.2676 16.9701 23.4605L15.4995 24.8374C15.075 25.2381 14.5987 25.7201 14.0873 26H13.3174C13.0831 25.8217 12.769 25.7259 12.5983 25.4508C12.2824 24.9417 12.3318 24.279 12.3323 23.7062L12.333 22.1203C12.3327 21.6997 12.3802 21.1847 12.1625 20.8293C12.0513 20.6492 11.8983 20.4393 11.6936 20.3613C10.9366 20.0729 10.1107 19.9134 9.33308 19.7004L4.53399 18.4359L1.95335 17.7684C1.36111 17.6089 0.751829 17.5469 0.376221 16.9932C0.306275 16.8901 0.232622 16.6774 0.213868 16.5534C0.0712252 15.6099 0.119745 14.6523 0.0721317 13.7021C0.0629993 13.5215 0.075352 13.1861 0.00588154 13.0274C0.00392102 13.0242 0.00196052 13.0211 0 13.0179V11.4666C0.0446143 11.4202 0.0779068 11.3318 0.105923 11.2715C0.635758 10.1111 1.88965 10.5663 2.82723 10.8249C3.04133 10.8763 3.24647 10.915 3.46066 10.9703C3.94202 11.0944 4.42675 11.2154 4.90364 11.3528C5.19028 11.4354 5.54568 11.4748 5.84719 11.5516L7.91244 12.0743C9.49746 12.4825 11.1389 12.8801 12.7362 13.2546C13.0057 13.3178 13.3983 13.111 13.6182 12.9515C13.8864 12.7582 14.0658 12.4654 14.1163 12.1387C14.1911 11.6687 14.1543 10.9098 13.7808 10.5592C13.5869 10.3773 13.3668 10.2561 13.1116 10.183C12.6176 10.0415 12.1165 9.91281 11.6208 9.77598C11.3996 9.71491 11.1662 9.6888 10.9454 9.62972L4.16759 7.84123C3.16545 7.57733 2.13095 7.3465 1.1358 7.04752C0.636538 6.89751 0.486642 6.71562 0.266916 6.28161C0.0271512 5.80801 0.163561 2.79102 0 2.56509V0.951406C0.0742865 0.871543 0.199711 0.550277 0.341896 0.427162C0.429759 0.339686 0.526974 0.240435 0.633142 0.176171C0.737871 0.112776 0.856892 0.0850137 0.95038 0Z"
+                fill="#FB2A8E"
+              />
+              <path
+                d="M1.17894 26L1.16669 25.9918C1.0621 25.9243 0.927222 25.8955 0.837493 25.8372C0.448771 25.5843 0.260552 25.3529 0.159298 24.9115C0.131923 24.7952 0.114801 24.6768 0.108128 24.5577C0.0955434 24.3326 0.0879638 23.9725 0.105281 23.7503C0.159004 23.061 -0.0303717 22.1206 0.253384 21.4936C0.667819 20.5778 1.64388 20.641 2.44833 20.9233C2.55363 20.9589 2.64874 21.0062 2.7547 21.0379C3.59566 21.2588 4.63023 21.2619 4.89003 22.2729C5.16038 23.3248 4.41656 23.6775 3.76455 24.319C3.3119 24.7644 2.83758 25.233 2.3463 25.6418C2.1156 25.8361 2.00412 25.8671 1.78655 26H1.17894Z"
+                fill="#FB2A8E"
+              />
+              <path
+                d="M18.4506 15.4268L18.5404 15.4714V21.6763C18.4859 21.557 18.4497 21.4599 18.4445 21.3261C18.4231 20.765 18.4323 20.1811 18.4323 19.62L18.4338 16.4236C18.4358 16.1298 18.4836 15.6737 18.4506 15.4268Z"
+                fill="#FB2A8E"
+              />
+              <path
+                d="M18.431 4.99316C18.4515 5.06682 18.4428 5.09256 18.4937 5.12235L18.5404 5.107V10.9564C18.4566 10.8004 18.439 10.6443 18.4367 10.4697C18.4303 10.0196 18.4325 9.56902 18.4325 9.1188L18.433 6.43044C18.4334 5.93863 18.4529 5.48521 18.431 4.99316Z"
+                fill="#FB2A8E"
+              />
+            </g>
+            <defs>
+              <clipPath id="clip0_220_56210">
+                <rect width="18.5404" height="26" fill="white" />
+              </clipPath>
+            </defs>
+          </svg>
+          <h3 class="features-grid__title">One App for Everything</h3>
+          <p class="features-grid__desc">
+            Itinerary planning, booking, expenses, and group chat all in one
+            place.
+          </p>
+        </div>
+        <div class="features-grid__item">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="17"
+            height="26"
+            viewBox="0 0 17 26"
+            fill="none"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M3.5 25.6667C1.567 25.6667 0 24.0997 0 22.1667V3.5C0 1.567 1.567 0 3.5 0H12.8333C14.7663 0 16.3333 1.567 16.3333 3.5V22.1667C16.3333 24.0997 14.7663 25.6667 12.8333 25.6667H3.5ZM7 3.5C6.35567 3.5 5.83333 4.02233 5.83333 4.66667C5.83333 5.311 6.35567 5.83333 7 5.83333H9.33333C9.97767 5.83333 10.5 5.311 10.5 4.66667C10.5 4.02233 9.97767 3.5 9.33333 3.5H7Z"
+              fill="#FB2A8E"
+            />
+          </svg>
+          <h3 class="features-grid__title">Works on Mobile</h3>
+          <p class="features-grid__desc">
+            iOS and Android apps. Plan on the go, make changes anytime.
+          </p>
+        </div>
+        <div class="features-grid__item">
+          <img src="svgs/made-for-groups.svg" class="made-for-groups" />
+          <h3 class="features-grid__title">Made for Groups</h3>
+          <p class="features-grid__desc">
+            Built specifically for traveling with friends— voting, shared
+            planning, expense splitting.
+          </p>
+        </div>
+        <div class="features-grid__item">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="40"
+            height="40"
+            viewBox="0 0 40 40"
+            fill="none"
+          >
+            <path
+              d="M29.7907 29.7906C35.275 24.3063 35.275 15.4145 29.7906 9.93016C24.3063 4.44585 15.4145 4.44584 9.93021 9.93014C4.44591 15.4144 4.44591 24.3063 9.93022 29.7906C15.4145 35.2749 24.3063 35.2749 29.7907 29.7906Z"
+              fill="#F7A531"
+            />
+            <path
+              d="M27.7192 27.7191C32.0594 23.3788 32.0594 16.3419 27.7192 12.0016C23.3789 7.66135 16.342 7.66134 12.0017 12.0016C7.66142 16.3419 7.66142 23.3788 12.0017 27.7191C16.342 32.0594 23.3789 32.0594 27.7192 27.7191Z"
+              fill="#F39119"
+            />
+            <path
+              d="M8.74653 19.8605C8.74653 13.7224 13.7225 8.74643 19.8606 8.74643C20.5176 8.74643 21.1612 8.80388 21.7869 8.91322C20.951 8.71236 20.0786 8.60522 19.1811 8.60522C13.043 8.60522 8.06702 13.5812 8.06702 19.7193C8.06702 25.2004 12.0349 29.7543 17.2548 30.6665C12.374 29.4938 8.74653 25.1011 8.74653 19.8605Z"
+              fill="#ED6F17"
+            />
+            <path
+              d="M20.8472 12.3164L22.6278 15.9243C22.7881 16.2491 23.0979 16.4741 23.4562 16.5262L27.4378 17.1047C28.3402 17.2359 28.7005 18.3448 28.0475 18.9813L25.1664 21.7897C24.9071 22.0424 24.7888 22.4066 24.85 22.7635L25.5301 26.729C25.6842 27.6277 24.7409 28.3131 23.9338 27.8888L20.3726 26.0165C20.0521 25.848 19.6692 25.848 19.3487 26.0165L15.7874 27.8888C14.9803 28.3131 14.037 27.6277 14.1912 26.729L14.8713 22.7635C14.9325 22.4066 14.8142 22.0424 14.5549 21.7897L11.6738 18.9813C11.0208 18.3448 11.3811 17.2358 12.2835 17.1047L16.2651 16.5262C16.6234 16.4741 16.9332 16.2491 17.0935 15.9243L18.8741 12.3164C19.2776 11.4987 20.4436 11.4987 20.8472 12.3164Z"
+              fill="#FCC443"
+            />
+            <path
+              d="M25.2605 25.1567C25.1504 25.0861 25.0395 25.0167 24.9303 24.9446C23.3256 23.8845 21.8255 22.6616 20.4857 21.2806C19.0843 19.8361 17.8437 18.229 16.929 16.4315C16.8992 16.3729 16.8707 16.3139 16.8415 16.2551C16.6822 16.3982 16.4829 16.4944 16.2651 16.5261L12.2835 17.1047C11.3811 17.2358 11.0208 18.3447 11.6738 18.9812L14.5549 21.7896C14.8142 22.0424 14.9325 22.4065 14.8713 22.7634L14.1912 26.7289C14.037 27.6277 14.9803 28.313 15.7874 27.8887L19.3487 26.0164C19.6692 25.8479 20.0521 25.8479 20.3726 26.0164L23.9339 27.8887C24.741 28.313 25.6843 27.6277 25.5302 26.7289L25.2605 25.1567Z"
+              fill="#FFDE7A"
+            />
+            <path
+              d="M5.81707 19.8605C5.81707 12.1403 12.0469 5.87601 19.7534 5.81825V5.81689H17.3101C9.55401 5.81689 3.26648 12.1044 3.26648 19.8605C3.26648 27.6165 9.55401 33.9041 17.3101 33.9041H19.7535V33.9027C12.0469 33.845 5.81707 27.5807 5.81707 19.8605Z"
+              fill="#ED6F17"
+            />
+            <path
+              d="M6.49426 10.9027C7.35885 10.879 8.22358 10.8619 9.08841 10.8519C9.27379 10.6305 9.46515 10.4143 9.6636 10.2048C8.80065 10.2117 7.93779 10.2251 7.07506 10.2457C6.8749 10.4587 6.68097 10.6775 6.49426 10.9027Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M7.07743 14.0392C7.17705 13.8208 7.28229 13.6055 7.39261 13.3933C6.53331 13.4032 5.67413 13.4202 4.81509 13.4437C4.70518 13.6573 4.60045 13.8741 4.50134 14.0939C5.35988 14.0687 6.21861 14.0508 7.07743 14.0392Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M6.06691 17.2156C6.10811 16.9994 6.1542 16.785 6.20519 16.5725C5.3515 16.5797 4.49791 16.5932 3.64444 16.6138C3.59396 16.8271 3.54857 17.0423 3.50793 17.2592C4.3608 17.2379 5.21381 17.2234 6.06691 17.2156Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M5.82806 20.3913C5.8215 20.215 5.81707 20.0382 5.81707 19.8603C5.81707 19.8233 5.81818 19.7865 5.81847 19.7495C4.96811 19.7498 4.11782 19.7571 3.26762 19.7708C3.26744 19.8007 3.26648 19.8304 3.26648 19.8603C3.26648 20.0453 3.27118 20.2291 3.27828 20.4124C4.12811 20.3988 4.97805 20.3916 5.82806 20.3913Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M6.14152 22.8704C5.29395 22.8762 4.44647 22.8888 3.59912 22.908C3.64664 23.1227 3.69911 23.3356 3.75635 23.5465C4.60328 23.5282 5.45032 23.5162 6.29745 23.5111C6.24057 23.2995 6.18858 23.0859 6.14152 22.8704Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M7.25579 26.0566C6.41237 26.0642 5.56903 26.078 4.72583 26.0986C4.83236 26.3131 4.94413 26.5245 5.06113 26.7325C5.90433 26.7136 6.74767 26.7011 7.59109 26.6953C7.47403 26.4857 7.36223 26.2727 7.25579 26.0566Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M8.99981 28.7634C8.16422 28.775 7.32872 28.7926 6.49341 28.8171C6.67135 29.0317 6.85602 29.2405 7.0462 29.4442C7.88228 29.4225 8.7185 29.4072 9.5548 29.3984C9.36383 29.1922 9.17828 28.9808 8.99981 28.7634Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M11.7103 31.2971C10.8879 31.3107 10.0656 31.3307 9.24353 31.3568C9.55255 31.5741 9.87086 31.7789 10.1975 31.9711C11.0226 31.9498 11.8478 31.9346 12.6731 31.9259C12.3433 31.729 12.0219 31.5196 11.7103 31.2971Z"
+              fill="#C44A13"
+            />
+            <path
+              d="M38.2622 18.03C37.0727 18.2541 36.6179 18.7089 36.3938 19.8984C36.3479 20.1419 36.0012 20.1419 35.9553 19.8984C35.7311 18.7089 35.2764 18.2541 34.0869 18.03C33.8434 17.9841 33.8434 17.6374 34.0869 17.5915C35.2764 17.3674 35.7312 16.9126 35.9553 15.7231C36.0012 15.4797 36.3479 15.4797 36.3938 15.7231C36.6179 16.9126 37.0727 17.3674 38.2622 17.5915C38.5056 17.6374 38.5056 17.9841 38.2622 18.03Z"
+              fill="#FFDC7C"
+            />
+            <path
+              d="M32.8303 22.242C32.2582 22.3499 32.0394 22.5686 31.9316 23.1407C31.9095 23.2578 31.7428 23.2578 31.7207 23.1407C31.6129 22.5686 31.3942 22.3498 30.8221 22.242C30.705 22.22 30.705 22.0532 30.8221 22.0312C31.3942 21.9233 31.6129 21.7046 31.7207 21.1325C31.7428 21.0154 31.9095 21.0154 31.9316 21.1325C32.0394 21.7046 32.2582 21.9234 32.8303 22.0312C32.9474 22.0532 32.9474 22.22 32.8303 22.242Z"
+              fill="#FFDC7C"
+            />
+            <path
+              d="M36.918 22.9792C36.3269 23.0906 36.1009 23.3166 35.9896 23.9076C35.9668 24.0286 35.7945 24.0286 35.7717 23.9076C35.6603 23.3165 35.4343 23.0906 34.8433 22.9792C34.7223 22.9564 34.7223 22.7841 34.8433 22.7613C35.4343 22.6499 35.6603 22.4239 35.7717 21.8329C35.7945 21.7119 35.9668 21.7119 35.9896 21.8329C36.101 22.4239 36.3269 22.6499 36.918 22.7613C37.0389 22.7841 37.0389 22.9564 36.918 22.9792Z"
+              fill="#FFDC7C"
+            />
+            <path
+              d="M14.1912 26.729L14.8713 22.7635C14.9326 22.4066 14.8142 22.0424 14.5549 21.7897L11.6738 18.9813C11.0209 18.3448 11.3812 17.2358 12.2835 17.1047L16.2652 16.5262C16.6235 16.4741 16.9333 16.2491 17.0935 15.9243L18.8741 12.3164C19.0582 11.9436 19.4008 11.7427 19.7573 11.7099H18.8259C18.4005 11.6707 17.9555 11.8715 17.7359 12.3164L15.9553 15.9243C15.795 16.2491 15.4853 16.4741 15.1269 16.5262L11.1453 17.1047C10.2429 17.2359 9.88262 18.3448 10.5356 18.9813L13.4167 21.7897C13.676 22.0424 13.7943 22.4066 13.7331 22.7635L13.053 26.729C12.9428 27.3711 13.3929 27.9043 13.9533 28.0017H15.093C14.532 27.905 14.081 27.3717 14.1912 26.729Z"
+              fill="#E15318"
+            />
+            <path
+              d="M28.1748 11.5356C28.3658 11.7019 28.5521 11.8736 28.7333 12.0512C28.9206 12.2348 29.1385 12.4091 29.3982 12.4464C29.9746 12.5292 30.1479 11.9005 29.9611 11.4653C29.5641 10.5397 28.7416 9.86925 27.9809 9.24558C27.0172 8.45559 23.8089 6.41377 23.2423 7.44488C22.9433 7.98909 23.4591 8.49434 23.9266 8.74612C25.4144 9.54736 26.8972 10.4223 28.1748 11.5356Z"
+              fill="white"
+            />
+            <path
+              d="M30.2606 14.3542C30.3862 14.4841 30.5214 14.5947 30.6478 14.6756C30.9952 14.8976 31.4639 14.8499 31.6382 14.4383C31.716 14.2544 31.7165 14.046 31.6833 13.8492C31.5683 13.1684 30.5307 11.9651 29.8933 12.9201C29.5841 13.3834 29.8782 13.9586 30.2606 14.3542Z"
+              fill="white"
+            />
+          </svg>
+          <h3 class="features-grid__title">Universal Rewards</h3>
+          <p class="features-grid__desc">
+            Earn points without needing a credit card or hitting spending
+            limits.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+       FAQ SECTION
+       ==================================================== -->
+    <section
+      class="faq-section"
+      id="faq"
+      aria-label="Frequently asked questions"
+    >
+      <div class="faq-section__inner">
+        <!-- Left -->
+        <div class="faq-section__left reveal">
+          <h2 class="faq-section__headline">Frequently asked questions</h2>
+          <p class="faq-section__sub">
+            Everything you need to know about planning group travel with Runwae.
+            Still have questions?
+            <a href="mailto:info@runwae.com" style="color: var(--pink)"
+              >Email us.</a
+            >
+          </p>
+        </div>
+
+        <!-- Right: Accordion -->
+        <div class="faq-list" role="list">
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">1</span>
+              <span class="faq-item__question"
+                >How do I invite friends to my trip?</span
+              >
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                After creating your trip, tap the "Invite" button to generate a
+                shareable link. Send it via WhatsApp, iMessage, or any app.
+                Friends click the link, create a free account (or log in), and
+                they're instantly added to your trip as collaborators. They can
+                view the itinerary, vote on options, and see real-time updates.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">2</span>
+              <span class="faq-item__question"
+                >Can I book flights and hotels directly in the app?</span
+              >
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                Yes! Runwae integrates with major flight and hotel providers so
+                you can search, compare, and book without leaving the app. Your
+                entire group can see available options, vote on their favorites,
+                and complete the booking together. All bookings appear on your
+                shared itinerary automatically.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">3</span>
+              <span class="faq-item__question"
+                >How does expense splitting work?</span
+              >
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                When anyone pays for a group expense—flights, accommodation,
+                dinner, activities—they log it in Runwae. The app automatically
+                calculates each person's share based on who was involved. You
+                can see a live balance for every member, and request payment or
+                settle up directly within the app. No more awkward money
+                conversations or lost spreadsheets.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">4</span>
+              <span class="faq-item__question">Is Runwae free to use?</span>
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                Runwae's core features—trip creation, itinerary building,
+                collaboration, and expense splitting—are completely free for
+                travelers. We earn a small commission on bookings made through
+                the app, which keeps the product free for you. Premium features
+                for power users are coming soon.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">5</span>
+              <span class="faq-item__question"
+                >What types of events is Runwae built for?</span
+              >
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                Runwae is built for any group travel occasion—concerts, music
+                festivals, sports events, bachelor/bachelorette parties,
+                weddings, weekend getaways, cultural events, and friend
+                vacations. Whether it's 4 friends or 40, if you're traveling
+                together, Runwae makes it stress-free.
+              </p>
+            </div>
+          </div>
+
+          <div class="faq-item" role="listitem">
+            <button class="faq-item__trigger" aria-expanded="false">
+              <span class="faq-item__num" aria-hidden="true">6</span>
+              <span class="faq-item__question">How do I earn rewards?</span>
+              <span class="faq-item__toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="faq-item__body" role="region" aria-hidden="true">
+              <p class="faq-item__answer">
+                Every booking made through Runwae—flights, hotels,
+                activities—earns you reward points. Points accumulate in your
+                wallet and can be redeemed for discounts on future bookings.
+                Group organizers earn bonus points for every member they bring
+                on board. No credit card or subscription required to start
+                earning.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================
+       FOOTER CTA
+       ==================================================== -->
+    <footer class="footer-cta" id="footer" aria-label="Footer">
+      <div class="footer-cta__inner">
+        <!-- Left: text + nav -->
+        <div class="footer-cta__left">
+          <h2 class="footer-cta__headline reveal">
+            Ready to plan your next trip?
+          </h2>
+
+          <div class="footer-cta__buttons reveal reveal--delay-1">
+            <a
+              href="#"
+              class="store-btn"
+              aria-label="Download on the App Store"
+            >
+              <span class="store-btn__icon">&#63743;</span>
+              <span class="store-btn__text">Download on the App Store</span>
+            </a>
+            <a href="#" class="store-btn" aria-label="Get it on Google Play">
+              <span class="store-btn__icon">▶</span>
+              <span class="store-btn__text">Get it on Google Play</span>
+            </a>
+          </div>
+
+          <hr class="footer-cta__separator" />
+
+          <!-- Footer nav + contact row -->
+          <div class="footer-lower">
+            <nav class="footer-nav" aria-label="Footer navigation">
+              <div>
+                <p class="footer-nav__col-title">Use Cases</p>
+                <a href="/partners" class="footer-nav__link"
+                  >For Event Hosts</a
+                >
+                <a href="/partners" class="footer-nav__link"
+                  >For Partners</a
+                >
+                <a href="#how-it-works" class="footer-nav__link"
+                  >How it Works</a
+                >
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Company</p>
+                <a href="#" class="footer-nav__link">About Us</a>
+                <a href="#" class="footer-nav__link">Careers</a>
+                <a href="#" class="footer-nav__link">Support</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Legal</p>
+                <a href="#" class="footer-nav__link">Privacy Policy</a>
+                <a href="#" class="footer-nav__link">Terms and Conditions</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Socials</p>
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Twitter / X</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >LinkedIn</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Instagram</a
+                >
+              </div>
+            </nav>
+
+            <!-- Contact info -->
+            <div class="footer-contact">
+              <div class="footer-contact__item">
+                <p class="footer-contact__label">E-mail</p>
+                <a href="mailto:info@runwae.com" class="footer-contact__value">
+                  info@runwae.com
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path
+                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                    />
+                  </svg>
+                </a>
+              </div>
+              <hr class="footer-contact__hr" />
+              <div class="footer-contact__item">
+                <p class="footer-contact__label">Phone Number</p>
+                <span class="footer-contact__value">
+                  +1 (800) 123-4567
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path
+                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: ADD QR CODE SCAN + QR -->
+        <div class="footer-cta__right">
+          <img src="images/footer-scan.png" />
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <!-- <div class="footer-bottom">
+        <p class="footer-bottom__copy">
+          &copy; 2025 Runwae Inc. All rights reserved.
+        </p>
+        <div class="footer-bottom__contact">
+          <a href="mailto:info@runwae.com">info@runwae.com</a>
+          <a href="tel:+18001234567">+1 (800) 123-4567</a>
+        </div>
+      </div> -->
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>

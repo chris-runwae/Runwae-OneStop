@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runwae Partners — For Event Hosts &amp; Travel Partners</title>
+    <meta
+      name="description"
+      content="Join Runwae as an event host or travel partner. Earn from group travelers heading to your events. No subscription fees."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+
+    <style>
+      /* Page-level overrides for dark body */
+      body {
+        background: var(--bg-dark);
+        color: var(--white);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ====================================================
+       NAVIGATION — floating pill
+       ==================================================== -->
+    <nav
+      class="site-nav"
+      id="siteNav"
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div class="nav__pill">
+        <div class="nav__links">
+          <a href="/">Home</a>
+          <a href="#event-host-content">Hosts</a>
+          <a href="#">About</a>
+          <a href="#" id="navContactTrigger">Contact Us</a>
+        </div>
+        <button class="btn btn--pink nav__pill-cta" id="navWaitlistTrigger">
+          Join the waitlist
+        </button>
+      </div>
+
+      <div class="nav__mobile-pill">
+        <button
+          class="nav__hamburger"
+          id="navHamburger"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile drawer overlay -->
+    <div class="nav__drawer" id="navDrawer" aria-hidden="true">
+      <button
+        class="nav__drawer-close"
+        id="navDrawerClose"
+        aria-label="Close menu"
+      >
+        &times;
+      </button>
+      <div class="nav__drawer-card">
+        <ul class="nav__drawer-links" role="list">
+          <li><a href="/" class="drawer-link">Home</a></li>
+          <li><a href="#event-host-content" class="drawer-link">Hosts</a></li>
+          <li><a href="#" class="drawer-link">About</a></li>
+          <li>
+            <a href="#" class="drawer-link" id="drawerContactTrigger"
+              >Contact Us</a
+            >
+          </li>
+        </ul>
+        <button
+          class="btn btn--pink btn--lg drawer-link"
+          id="drawerWaitlistTrigger"
+        >
+          Join the waitlist
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       WAITLIST MODAL
+       ==================================================== -->
+    <div
+      class="modal-overlay"
+      id="waitlistModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="waitlistModalTitle"
+    >
+      <div class="modal">
+        <button
+          class="modal__close"
+          id="waitlistClose"
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
+        <h2 class="modal__title" id="waitlistModalTitle">Join The Waitlist</h2>
+        <form class="modal__form" id="waitlistForm" novalidate>
+          <div class="modal__row">
+            <div class="modal__field">
+              <label class="modal__label" for="wl-first">First Name</label>
+              <input
+                id="wl-first"
+                type="text"
+                class="modal__input"
+                placeholder="Jane"
+                required
+              />
+            </div>
+            <div class="modal__field">
+              <label class="modal__label" for="wl-last">Last Name</label>
+              <input
+                id="wl-last"
+                type="text"
+                class="modal__input"
+                placeholder="Doe"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal__field">
+            <label class="modal__label" for="wl-email">Email</label>
+            <input
+              id="wl-email"
+              type="email"
+              class="modal__input"
+              placeholder="jane@example.com"
+              required
+            />
+          </div>
+          <button type="submit" class="modal__submit">Submit</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       CONTACT MODAL
+       ==================================================== -->
+    <div
+      class="modal-overlay"
+      id="contactModal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contactModalTitle"
+    >
+      <div class="modal">
+        <button class="modal__close" id="contactClose" aria-label="Close modal">
+          &times;
+        </button>
+        <h2 class="modal__title" id="contactModalTitle">Contact Us</h2>
+        <form class="modal__form" id="contactForm" novalidate>
+          <div class="modal__row">
+            <div class="modal__field">
+              <label class="modal__label" for="ct-first">First Name</label>
+              <input
+                id="ct-first"
+                type="text"
+                class="modal__input"
+                placeholder="Jane"
+                required
+              />
+            </div>
+            <div class="modal__field">
+              <label class="modal__label" for="ct-last">Last Name</label>
+              <input
+                id="ct-last"
+                type="text"
+                class="modal__input"
+                placeholder="Doe"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal__field">
+            <label class="modal__label" for="ct-email">Email</label>
+            <input
+              id="ct-email"
+              type="email"
+              class="modal__input"
+              placeholder="jane@example.com"
+              required
+            />
+          </div>
+          <button type="submit" class="modal__submit">Submit</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       SHARED PARTNER HEADER (logo + tab toggle)
+       ==================================================== -->
+    <div class="partner-header" id="partnerHeader">
+      <img src="logo-white.png" alt="Runwae" class="partner-header__logo" />
+      <div
+        class="partner-toggle"
+        id="partnerToggle"
+        role="tablist"
+        aria-label="Partner type"
+      >
+        <button
+          class="partner-tab is-active"
+          role="tab"
+          aria-selected="true"
+          data-target="event-host"
+        >
+          I'm an Event Host
+        </button>
+        <button
+          class="partner-tab"
+          role="tab"
+          aria-selected="false"
+          data-target="travel-partner"
+        >
+          I'm a Travel Partner
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================
+       EVENT HOST CONTENT
+       ==================================================== -->
+    <div class="partner-content is-active" id="event-host-content">
+      <!-- HERO -->
+      <section class="partner-hero" aria-label="Event Host Hero">
+        <div class="partner-hero__inner">
+          <h1 class="partner-hero__headline reveal">
+            Your attendees need to get there.<br />
+            <span style="color: var(--pink)">You should earn from it.</span>
+          </h1>
+          <p class="partner-hero__subtitle reveal reveal--delay-1">
+            One platform to coordinate attendee travel, offer exclusive perks,
+            and create a whole new revenue stream.
+          </p>
+          <a
+            href="#partner-cta"
+            class="btn btn--white btn--pill reveal reveal--delay-2"
+            >Become a Partner</a
+          >
+        </div>
+      </section>
+
+      <!-- DASHBOARD MOCKUP -->
+      <section class="dashboard-section" aria-label="Dashboard preview">
+        <img src="images/mayback-dashboard.png" />
+      </section>
+
+      <!-- EVENT HOST FEATURES BENTO -->
+      <section class="dark-features-section" aria-label="Event Host Features">
+        <div class="dark-features-section__inner">
+          <div class="dark-features-section__header reveal">
+            <div class="section-badge">
+              <span class="section-badge__icon section-badge__icon--text"
+                >✦</span
+              >
+              <span class="section-badge__label">FEATURES</span>
+            </div>
+          </div>
+
+          <!-- 2-column bento grid -->
+          <div class="dark-bento dark-bento--2col">
+            <!-- Row 1 -->
+            <!-- Card A: Your Own Travel Hub (tall) -->
+            <div class="dark-card dark-card--tall reveal">
+              <div class="dark-card__label">Branded Portal</div>
+              <h3 class="dark-card__title">Your Own Travel Hub</h3>
+              <p class="dark-card__body">
+                Set up a branded travel portal for your event attendees in
+                minutes.
+              </p>
+              <div class="dark-card__portal-mock" aria-hidden="true">
+                <div class="portal-mock__badges">
+                  <span class="portal-badge portal-badge--pink">NGN</span>
+                  <span class="portal-badge portal-badge--dark">× BON</span>
+                </div>
+                <div class="portal-mock__screen">
+                  <div
+                    class="portal-screen__row portal-screen__row--pink"
+                  ></div>
+                  <div class="portal-screen__row"></div>
+                  <div class="portal-screen__row"></div>
+                  <div class="portal-screen__row portal-screen__row--sm"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card B: New Revenue Stream -->
+            <div class="dark-card reveal reveal--delay-1">
+              <div class="dark-card__label">Monetise</div>
+              <h3 class="dark-card__title">New Revenue Stream</h3>
+              <p class="dark-card__body">
+                Earn a commission on every booking your attendees make. No
+                ceiling.
+              </p>
+              <div class="dark-card__chart" aria-hidden="true">
+                <div class="dark-chart__bars">
+                  <div class="dark-chart__bar" style="height: 40%"></div>
+                  <div class="dark-chart__bar" style="height: 60%"></div>
+                  <div class="dark-chart__bar" style="height: 35%"></div>
+                  <div
+                    class="dark-chart__bar dark-chart__bar--active"
+                    style="height: 100%"
+                  ></div>
+                  <div class="dark-chart__bar" style="height: 70%"></div>
+                  <div class="dark-chart__bar" style="height: 55%"></div>
+                </div>
+                <div class="dark-card__stat">$34,056</div>
+              </div>
+            </div>
+
+            <!-- Row 2 -->
+            <!-- Card C: Attendees Party, You Control -->
+            <div class="dark-card reveal">
+              <div class="dark-card__label">Control</div>
+              <h3 class="dark-card__title">Attendees Party, You Control</h3>
+              <p class="dark-card__body">
+                Your attendees travel the way they want. You set the parameters.
+              </p>
+              <img
+                src="assets/Group 1618868815.png"
+                alt="Attendee avatars with hotel and ticket icons"
+                class="dark-card__img"
+                loading="lazy"
+                style="height: 140px; object-fit: contain; margin-top: 16px"
+              />
+            </div>
+
+            <!-- Card D: Better Coordination -->
+            <div class="dark-card reveal reveal--delay-1">
+              <div class="dark-card__label">Coordination</div>
+              <h3 class="dark-card__title">Better Coordination</h3>
+              <p class="dark-card__body">
+                Eliminate scattered WhatsApp groups and spreadsheets. One link.
+                Everyone's in.
+              </p>
+              <img
+                src="assets/Frame 2147228074 (1).png"
+                alt="Friends group outdoors laughing"
+                class="dark-card__img dark-card__img--cover"
+                loading="lazy"
+                style="
+                  height: 150px;
+                  object-fit: cover;
+                  border-radius: 12px;
+                  margin-top: 16px;
+                  width: 100%;
+                "
+              />
+            </div>
+
+            <!-- Row 3 -->
+            <!-- Card E: See What's Happening -->
+            <div class="dark-card reveal">
+              <div class="dark-card__label">Dashboard</div>
+              <h3 class="dark-card__title">See What's Happening</h3>
+              <p class="dark-card__body">
+                Real-time dashboard shows every booking, every payment, every
+                guest.
+              </p>
+              <div class="dark-card__table" aria-hidden="true">
+                <div class="dark-table__row dark-table__row--header">
+                  <span>Guest</span><span>Status</span><span>Amount</span>
+                </div>
+                <div class="dark-table__row">
+                  <span>Alex M.</span
+                  ><span class="dark-table__badge dark-table__badge--green"
+                    >Confirmed</span
+                  ><span>$480</span>
+                </div>
+                <div class="dark-table__row dark-table__row--alt">
+                  <span>Sara K.</span
+                  ><span class="dark-table__badge dark-table__badge--yellow"
+                    >Pending</span
+                  ><span>$320</span>
+                </div>
+                <div class="dark-table__row">
+                  <span>James T.</span
+                  ><span class="dark-table__badge dark-table__badge--green"
+                    >Confirmed</span
+                  ><span>$650</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card F: Makes You Look Good -->
+            <div class="dark-card reveal reveal--delay-1">
+              <div class="dark-card__label">Brand</div>
+              <h3 class="dark-card__title">Makes You Look Good</h3>
+              <p class="dark-card__body">
+                Your guests get a seamless travel experience that reflects well
+                on your event brand.
+              </p>
+              <img
+                src="assets/Frame 2147228074 (3).png"
+                alt="Friends dining at a restaurant"
+                class="dark-card__img dark-card__img--cover"
+                loading="lazy"
+                style="
+                  height: 150px;
+                  object-fit: cover;
+                  border-radius: 12px;
+                  margin-top: 16px;
+                  width: 100%;
+                "
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUILT FOR MARQUEE -->
+      <section class="marquee-section" aria-label="Built for">
+        <p class="marquee-section__label">BUILT FOR</p>
+        <div class="marquee-wrapper">
+          <div class="marquee-track marquee-track--left" aria-hidden="true">
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <!-- duplicate -->
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+          </div>
+          <div class="marquee-track marquee-track--right" aria-hidden="true">
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <!-- duplicate -->
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS — EVENT HOST -->
+      <section
+        class="dark-how-section"
+        id="how-it-works"
+        aria-label="How it works for event hosts"
+      >
+        <div class="dark-how-section__inner">
+          <div class="section-badge reveal">
+            <span class="section-badge__icon section-badge__icon--text">✦</span>
+            <span class="section-badge__label">HOW IT WORKS</span>
+          </div>
+
+          <h2
+            class="dark-how-section__headline reveal"
+            style="margin-top: 16px"
+          >
+            For Event Hosts
+          </h2>
+          <p class="dark-how-section__sub reveal reveal--delay-1">
+            Four simple steps to turn your event's travel into a new revenue
+            stream.
+          </p>
+
+          <!-- Dark accordion steps (open by default) -->
+          <div class="dark-steps-grid reveal reveal--delay-2">
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">01</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Set up your portal.</h3>
+                  <p class="dark-step-card__desc">
+                    Register your event, add your branding, and set commission
+                    rates. Takes under 5 minutes.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <div class="dark-step-card__ui dark-step-card__ui--form">
+                  <div class="step-form__field">
+                    <span class="step-form__label">Event name</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__field">
+                    <span class="step-form__label">Commission %</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__field">
+                    <span class="step-form__label">Payout info</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__btn">Continue →</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">02</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Share with attendees.</h3>
+                  <p class="dark-step-card__desc">
+                    Send one link to your guests. They see your custom travel
+                    hub when planning their trip.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <img
+                  src="assets/Frame 2147228062.png"
+                  alt="Group friends selfie"
+                  class="dark-step-card__photo"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">03</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">They book, you earn.</h3>
+                  <p class="dark-step-card__desc">
+                    Every booking made through your link earns you a commission.
+                    Automatically tracked.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <div class="dark-step-card__booking-card">
+                  <img
+                    src="assets/Frame 1707480630.png"
+                    alt="Resort pool exterior"
+                    class="dark-step-card__booking-img"
+                    loading="lazy"
+                  />
+                  <div class="dark-step-card__booking-info">
+                    <span class="booking-info__name">Villa Resort</span>
+                    <span class="booking-info__price">$1,240 / night</span>
+                    <span class="booking-info__check">✓ Booked</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">04</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Track everything.</h3>
+                  <p class="dark-step-card__desc">
+                    Your dashboard shows bookings, earnings, guest details, and
+                    payout status in real time.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <div class="dark-step-card__analytics">
+                  <div class="analytics__row">
+                    <span class="analytics__dot analytics__dot--pink"></span
+                    ><span>Bookings</span><span>321</span>
+                  </div>
+                  <div class="analytics__row analytics__row--alt">
+                    <span class="analytics__dot analytics__dot--green"></span
+                    ><span>Earnings</span><span>$34,056</span>
+                  </div>
+                  <div class="analytics__row">
+                    <span class="analytics__dot analytics__dot--blue"></span
+                    ><span>Guests</span><span>456</span>
+                  </div>
+                  <div class="analytics__row analytics__row--alt">
+                    <span class="analytics__dot analytics__dot--yellow"></span
+                    ><span>Payouts</span><span>$28,000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER CTA — EVENT HOST -->
+      <footer
+        class="footer-cta footer-cta--dark"
+        id="partner-cta"
+        aria-label="Partner CTA footer"
+      >
+        <div class="footer-cta__inner">
+          <div class="footer-cta__left">
+            <h2 class="footer-cta__headline reveal">
+              Ready to join up with us?
+            </h2>
+
+            <div class="footer-cta__buttons reveal reveal--delay-1">
+              <a
+                href="#"
+                class="btn btn--white btn--lg"
+                style="border-radius: var(--radius-sm)"
+                >Become a Partner</a
+              >
+            </div>
+
+            <hr class="footer-cta__separator" />
+
+            <nav class="footer-nav" aria-label="Footer navigation">
+              <div>
+                <p class="footer-nav__col-title">Use Cases</p>
+                <a href="#" class="footer-nav__link">For Event Hosts</a>
+                <a href="#" class="footer-nav__link">For Travel Partners</a>
+                <a href="#how-it-works" class="footer-nav__link"
+                  >How it Works</a
+                >
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Company</p>
+                <a href="#" class="footer-nav__link">About Us</a>
+                <a href="#" class="footer-nav__link">Careers</a>
+                <a href="#" class="footer-nav__link">Support</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Legal</p>
+                <a href="#" class="footer-nav__link">Privacy Policy</a>
+                <a href="#" class="footer-nav__link">Terms and Conditions</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Socials</p>
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Twitter / X</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >LinkedIn</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Instagram</a
+                >
+              </div>
+            </nav>
+          </div>
+
+          <div class="footer-cta__right" aria-hidden="true">
+            <div class="footer-cta__scan-text">SCAN<br />SCAN</div>
+            <div
+              class="footer-qr"
+              role="img"
+              aria-label="QR code to become a partner"
+            >
+              <div class="footer-qr__grid">
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+              </div>
+              <p class="footer-qr__text">Scan to Apply</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p class="footer-bottom__copy">
+            &copy; 2025 Runwae Inc. All rights reserved.
+          </p>
+          <div class="footer-bottom__contact">
+            <a href="mailto:info@runwae.com">info@runwae.com</a>
+            <a href="tel:+18001234567">+1 (800) 123-4567</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <!-- /event-host-content -->
+
+    <!-- ====================================================
+       TRAVEL PARTNER CONTENT
+       ==================================================== -->
+    <div class="partner-content" id="travel-partner-content">
+      <!-- HERO with concert photo bg -->
+
+      <div class="travel-partner__hero">
+        <div class="tp-hero__wrap">
+          <img src="images/mayback.png" alt="Event crowd" class="tp-hero__bg" />
+          <button class="tp-hero__cta">Become a Partner</button>
+        </div>
+      </div>
+      <!-- TRAVEL PARTNER SUB-TABS: Hotels vs Activities -->
+      <div class="tp-subtabs-bar">
+        <div class="tp-subtabs" role="tablist" aria-label="Travel partner type">
+          <button
+            class="tp-subtab is-active"
+            role="tab"
+            aria-selected="true"
+            data-subtarget="hotels-features-content"
+          >
+            Hotels &amp; Accommodations
+          </button>
+          <button
+            class="tp-subtab"
+            role="tab"
+            aria-selected="false"
+            data-subtarget="activities-features-content"
+          >
+            Activities &amp; Experiences
+          </button>
+        </div>
+      </div>
+
+      <!-- ── HOTELS FEATURES ──────────────────────────────── -->
+      <div class="tp-features is-active" id="hotels-features-content">
+        <section class="dark-features-section" aria-label="Hotels Features">
+          <div class="dark-features-section__inner">
+            <div class="dark-features-section__header reveal">
+              <div class="section-badge">
+                <span class="section-badge__icon section-badge__icon--text"
+                  >✦</span
+                >
+                <span class="section-badge__label">FEATURES</span>
+              </div>
+            </div>
+
+            <div class="dark-bento dark-bento--2col">
+              <!-- Card A: Pre-Event Dinners (full width) -->
+              <div class="dark-card dark-card--full reveal">
+                <div class="dark-card__wide-content">
+                  <div class="dark-card__wide-text">
+                    <div class="dark-card__label">
+                      Dining &amp; Celebrations
+                    </div>
+                    <h3 class="dark-card__title">
+                      Pre-Event Dinners,<br />Post-Event Celebrations
+                    </h3>
+                    <p class="dark-card__body">
+                      Event crowds need somewhere to gather before and after the
+                      show. Be their first choice by being where they already
+                      are.
+                    </p>
+                  </div>
+                  <div class="dark-card__wide-img">
+                    <img
+                      src="assets/Frame 2147228074 (3).png"
+                      alt="Group friends dining at restaurant"
+                      loading="lazy"
+                      style="
+                        height: 200px;
+                        width: 260px;
+                        object-fit: cover;
+                        border-radius: 16px;
+                        flex-shrink: 0;
+                      "
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card B: Group Reservations -->
+              <div class="dark-card reveal">
+                <div class="dark-card__label">Groups</div>
+                <h3 class="dark-card__title">
+                  Group Reservations Without Chaos
+                </h3>
+                <p class="dark-card__body">
+                  Handle multiple rooms or table bookings from one group
+                  request. No back-and-forth. Just confirmed.
+                </p>
+                <img
+                  src="assets/Group 1618868805.png"
+                  alt="Four memoji avatars with checkmarks"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="height: 110px; object-fit: contain; margin-top: 16px"
+                />
+              </div>
+
+              <!-- Card C: Partner with Event Hosts -->
+              <div class="dark-card reveal reveal--delay-1">
+                <div class="dark-card__label">Partnerships</div>
+                <h3 class="dark-card__title">Partner with Event Hosts</h3>
+                <p class="dark-card__body">
+                  Event hosts recommend you directly to their
+                  attendees—guaranteed demand with zero ad spend.
+                </p>
+                <img
+                  src="assets/Group 1618868791.png"
+                  alt="Partnership icons"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="height: 100px; object-fit: contain; margin-top: 16px"
+                />
+              </div>
+
+              <!-- Card D: Fill Tables (full width) -->
+              <div class="dark-card dark-card--full reveal">
+                <div class="dark-card__wide-content">
+                  <div class="dark-card__wide-text">
+                    <div class="dark-card__label">Revenue</div>
+                    <h3 class="dark-card__title">
+                      Fill Tables on Event Weekends
+                    </h3>
+                    <p class="dark-card__body">
+                      Events drive predictable demand spikes. Plan ahead, offer
+                      group packages, and turn your slow nights into your
+                      busiest.
+                    </p>
+                  </div>
+                  <div class="dark-card__wide-img">
+                    <img
+                      src="assets/Group (1).png"
+                      alt="3D RESERVED sign"
+                      loading="lazy"
+                      style="height: 150px; object-fit: contain"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- /hotels-features-content -->
+
+      <!-- ── ACTIVITIES FEATURES ──────────────────────────── -->
+      <div class="tp-features" id="activities-features-content">
+        <section class="dark-features-section" aria-label="Activities Features">
+          <div class="dark-features-section__inner">
+            <div class="dark-features-section__header reveal">
+              <div class="section-badge">
+                <span class="section-badge__icon section-badge__icon--text"
+                  >✦</span
+                >
+                <span class="section-badge__label">FEATURES</span>
+              </div>
+            </div>
+
+            <div class="dark-bento dark-bento--2col">
+              <!-- Card A: Capture Pre & Post Crowds -->
+              <div class="dark-card reveal">
+                <div class="dark-card__label">Audiences</div>
+                <h3 class="dark-card__title">
+                  Capture Pre &amp; Post Event Crowds
+                </h3>
+                <p class="dark-card__body">
+                  Event attendees are looking for things to do. Be their go-to
+                  experience before or after the main show.
+                </p>
+                <img
+                  src="assets/Frame 2147228074 (1).png"
+                  alt="Group of friends outdoors laughing"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="
+                    height: 150px;
+                    width: 100%;
+                    object-fit: cover;
+                    border-radius: 12px;
+                    margin-top: 16px;
+                  "
+                />
+              </div>
+
+              <!-- Card B: Event-Specific Deals -->
+              <div class="dark-card reveal reveal--delay-1">
+                <div class="dark-card__label">Promotions</div>
+                <h3 class="dark-card__title">Event-Specific Deals</h3>
+                <p class="dark-card__body">
+                  Create exclusive offers tied to nearby events. Attract more
+                  bookings with targeted promotions that actually convert.
+                </p>
+                <img
+                  src="assets/Group 1618868812.png"
+                  alt="Card payment deal illustration"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="height: 140px; object-fit: contain; margin-top: 16px"
+                />
+              </div>
+
+              <!-- Card C: Handle Group Bookings -->
+              <div class="dark-card reveal">
+                <div class="dark-card__label">Groups</div>
+                <h3 class="dark-card__title">Handle Group Bookings</h3>
+                <p class="dark-card__body">
+                  Manage multiple slots for groups traveling together. Simple,
+                  seamless, and always confirmed.
+                </p>
+                <img
+                  src="assets/Group 1618868815 (1).png"
+                  alt="Group of memoji avatars with hotel and activity icons"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="height: 100px; object-fit: contain; margin-top: 16px"
+                />
+              </div>
+
+              <!-- Card D: Get Discovered -->
+              <div class="dark-card reveal reveal--delay-1">
+                <div class="dark-card__label">Visibility</div>
+                <h3 class="dark-card__title">Get Discovered</h3>
+                <p class="dark-card__body">
+                  Show up when event crowds search for experiences near your
+                  venue. We bring the audience to you.
+                </p>
+                <img
+                  src="assets/Frame 2147228074 (2).png"
+                  alt="Friends looking at phone together"
+                  class="dark-card__img"
+                  loading="lazy"
+                  style="
+                    height: 150px;
+                    width: 100%;
+                    object-fit: cover;
+                    border-radius: 12px;
+                    margin-top: 16px;
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- /activities-features-content -->
+
+      <!-- ACCESSIBLE FREE CTA SECTION (shared) -->
+      <section class="accessible-cta" aria-label="Free listing CTA">
+        <div class="accessible-cta__inner">
+          <div class="accessible-cta__watermark" aria-hidden="true">₹</div>
+          <p class="accessible-cta__eyebrow">No fees. No lock-in.</p>
+          <h2 class="accessible-cta__headline reveal">
+            Accessible, we're free to list.
+          </h2>
+          <p class="accessible-cta__sub reveal reveal--delay-1">
+            No monthly fees. No setup costs. List for free and earn when guests
+            book.
+          </p>
+          <a
+            href="#travel-partner-cta"
+            class="btn btn--white btn--pill reveal reveal--delay-2"
+            >Become a Partner</a
+          >
+        </div>
+      </section>
+
+      <!-- BUILT FOR MARQUEE -->
+      <section class="marquee-section" aria-label="Built for">
+        <p class="marquee-section__label">BUILT FOR</p>
+        <div class="marquee-wrapper">
+          <div class="marquee-track marquee-track--left" aria-hidden="true">
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+          </div>
+          <div class="marquee-track marquee-track--right" aria-hidden="true">
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">💍</span
+              ><span class="marquee-pill__label">Weddings</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎸</span
+              ><span class="marquee-pill__label">Music Festivals</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🌍</span
+              ><span class="marquee-pill__label">Friend Vacations</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎭</span
+              ><span class="marquee-pill__label">Cultural Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🧳</span
+              ><span class="marquee-pill__label">Weekend Trips</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🥂</span
+              ><span class="marquee-pill__label">Bachelor Parties</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🏟️</span
+              ><span class="marquee-pill__label">Sports Events</span>
+            </div>
+            <div class="marquee-pill">
+              <span class="marquee-pill__icon">🎵</span
+              ><span class="marquee-pill__label">Concerts</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS — TRAVEL PARTNER -->
+      <section
+        class="dark-how-section"
+        id="travel-how-it-works"
+        aria-label="How it works for travel partners"
+      >
+        <div class="dark-how-section__inner">
+          <div class="section-badge reveal">
+            <span class="section-badge__icon section-badge__icon--text">✦</span>
+            <span class="section-badge__label">HOW IT WORKS</span>
+          </div>
+
+          <h2
+            class="dark-how-section__headline reveal"
+            style="margin-top: 16px"
+          >
+            For Travel Partners
+          </h2>
+          <p class="dark-how-section__sub reveal reveal--delay-1">
+            List your business and start getting group bookings in four easy
+            steps.
+          </p>
+
+          <div class="dark-steps-grid reveal reveal--delay-2">
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">01</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Create your profile.</h3>
+                  <p class="dark-step-card__desc">
+                    List your property or activity with photos, pricing and
+                    availability.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <div class="dark-step-card__ui dark-step-card__ui--form">
+                  <div class="step-form__field">
+                    <span class="step-form__label">Property name</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__field">
+                    <span class="step-form__label">Location</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__field">
+                    <span class="step-form__label">Price / night</span>
+                    <div class="step-form__input"></div>
+                  </div>
+                  <div class="step-form__btn">Go Live →</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">02</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">
+                    Get matched with events.
+                  </h3>
+                  <p class="dark-step-card__desc">
+                    We connect you with event groups traveling to your area.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <img
+                  src="assets/Group 1618868815.png"
+                  alt="Memoji avatars with hotel and ticket icons"
+                  class="dark-step-card__photo"
+                  loading="lazy"
+                  style="object-fit: contain"
+                />
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">03</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Accept bookings.</h3>
+                  <p class="dark-step-card__desc">
+                    Review and confirm requests from verified group travelers.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <div class="dark-step-card__booking-card">
+                  <img
+                    src="assets/Frame 2147228074.png"
+                    alt="Hotel concierge with phone"
+                    class="dark-step-card__booking-img"
+                    loading="lazy"
+                  />
+                  <div class="dark-step-card__booking-info">
+                    <span class="booking-info__name">Group Request</span>
+                    <span class="booking-info__price">8 rooms · 3 nights</span>
+                    <span class="booking-info__check">✓ Confirm</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-step-card">
+              <div class="dark-step-card__left">
+                <div class="dark-step-card__num">04</div>
+                <div class="dark-step-card__content">
+                  <h3 class="dark-step-card__title">Welcome guests.</h3>
+                  <p class="dark-step-card__desc">
+                    Deliver a great experience. Build your reputation. Keep
+                    earning.
+                  </p>
+                </div>
+              </div>
+              <div class="dark-step-card__right">
+                <img
+                  src="assets/Frame 2147228074 (2).png"
+                  alt="Couple looking at phone together"
+                  class="dark-step-card__photo"
+                  loading="lazy"
+                  style="border-radius: 12px; object-fit: cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER CTA — TRAVEL PARTNER -->
+      <footer
+        class="footer-cta footer-cta--dark"
+        id="travel-partner-cta"
+        aria-label="Travel partner CTA footer"
+      >
+        <div class="footer-cta__inner">
+          <div class="footer-cta__left">
+            <h2 class="footer-cta__headline reveal">
+              Ready to join up with us?
+            </h2>
+
+            <div class="footer-cta__buttons reveal reveal--delay-1">
+              <a
+                href="#"
+                class="btn btn--white btn--lg"
+                style="border-radius: var(--radius-sm)"
+                >Become a Partner</a
+              >
+            </div>
+
+            <hr class="footer-cta__separator" />
+
+            <nav class="footer-nav" aria-label="Footer navigation">
+              <div>
+                <p class="footer-nav__col-title">Use Cases</p>
+                <a href="#" class="footer-nav__link">For Event Hosts</a>
+                <a href="#" class="footer-nav__link">For Travel Partners</a>
+                <a href="#how-it-works" class="footer-nav__link"
+                  >How it Works</a
+                >
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Company</p>
+                <a href="#" class="footer-nav__link">About Us</a>
+                <a href="#" class="footer-nav__link">Careers</a>
+                <a href="#" class="footer-nav__link">Support</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Legal</p>
+                <a href="#" class="footer-nav__link">Privacy Policy</a>
+                <a href="#" class="footer-nav__link">Terms and Conditions</a>
+              </div>
+              <div>
+                <p class="footer-nav__col-title">Socials</p>
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Twitter / X</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >LinkedIn</a
+                >
+                <a
+                  href="#"
+                  class="footer-nav__link footer-nav__link--ext"
+                  target="_blank"
+                  rel="noopener"
+                  >Instagram</a
+                >
+              </div>
+            </nav>
+          </div>
+
+          <div class="footer-cta__right" aria-hidden="true">
+            <div class="footer-cta__scan-text">SCAN<br />SCAN</div>
+            <div
+              class="footer-qr"
+              role="img"
+              aria-label="QR code to list your business"
+            >
+              <div class="footer-qr__grid">
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell--empty"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+                <div class="footer-qr__cell"></div>
+              </div>
+              <p class="footer-qr__text">Scan to List</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p class="footer-bottom__copy">
+            &copy; 2025 Runwae Inc. All rights reserved.
+          </p>
+          <div class="footer-bottom__contact">
+            <a href="mailto:info@runwae.com">info@runwae.com</a>
+            <a href="tel:+18001234567">+1 (800) 123-4567</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <!-- /travel-partner-content -->
+
+    <script src="main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,182 @@
+<!-- ====================================================
+   SITE NAV
+   ==================================================== -->
+<nav
+  class="site-nav"
+  id="siteNav"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <!-- Desktop pill -->
+  <div class="nav__pill">
+    <div class="nav__links">
+      <a href="/">Home</a>
+      <a href="/partners#travel-partner">Partner</a>
+      <a href="/blog">Blog</a>
+      <a href="#" id="navContactTrigger">Contact Us</a>
+    </div>
+    <button class="btn btn--pink nav__pill-cta" id="navWaitlistTrigger">
+      Join the waitlist
+    </button>
+  </div>
+
+  <!-- Mobile hamburger -->
+  <div class="nav__mobile-pill">
+    <button
+      class="nav__hamburger"
+      id="navHamburger"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+    >
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile drawer overlay -->
+<div class="nav__drawer" id="navDrawer" aria-hidden="true">
+  <button
+    class="nav__drawer-close"
+    id="navDrawerClose"
+    aria-label="Close menu"
+  >
+    &times;
+  </button>
+  <div class="nav__drawer-card">
+    <ul class="nav__drawer-links" role="list">
+      <li><a href="/" class="drawer-link">Home</a></li>
+      <li>
+        <a href="/partners#travel-partner" class="drawer-link"
+          >Partner</a
+        >
+      </li>
+      <li>
+        <a href="/partners#event-host" class="drawer-link">Hosts</a>
+      </li>
+      <li><a href="/blog" class="drawer-link">Blog</a></li>
+      <li>
+        <a href="#" class="drawer-link" id="drawerContactTrigger"
+          >Contact Us</a
+        >
+      </li>
+    </ul>
+    <button
+      class="btn btn--pink btn--lg drawer-link"
+      id="drawerWaitlistTrigger"
+    >
+      Join the waitlist
+    </button>
+  </div>
+</div>
+
+<!-- ====================================================
+   WAITLIST MODAL
+   ==================================================== -->
+<div
+  class="modal-overlay"
+  id="waitlistModal"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="waitlistModalTitle"
+>
+  <div class="modal">
+    <button
+      class="modal__close"
+      id="waitlistClose"
+      aria-label="Close modal"
+    >
+      &times;
+    </button>
+    <h2 class="modal__title" id="waitlistModalTitle">Join The Waitlist</h2>
+    <form class="modal__form" id="waitlistForm" novalidate>
+      <div class="modal__row">
+        <div class="modal__field">
+          <label class="modal__label" for="wl-first">First Name</label>
+          <input
+            id="wl-first"
+            type="text"
+            class="modal__input"
+            placeholder="Jane"
+            required
+          />
+        </div>
+        <div class="modal__field">
+          <label class="modal__label" for="wl-last">Last Name</label>
+          <input
+            id="wl-last"
+            type="text"
+            class="modal__input"
+            placeholder="Doe"
+            required
+          />
+        </div>
+      </div>
+      <div class="modal__field">
+        <label class="modal__label" for="wl-email">Email</label>
+        <input
+          id="wl-email"
+          type="email"
+          class="modal__input"
+          placeholder="jane@example.com"
+          required
+        />
+      </div>
+      <button type="submit" class="modal__submit">Submit</button>
+    </form>
+  </div>
+</div>
+
+<!-- ====================================================
+   CONTACT MODAL
+   ==================================================== -->
+<div
+  class="modal-overlay"
+  id="contactModal"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="contactModalTitle"
+>
+  <div class="modal">
+    <button class="modal__close" id="contactClose" aria-label="Close modal">
+      &times;
+    </button>
+    <h2 class="modal__title" id="contactModalTitle">Contact Us</h2>
+    <form class="modal__form" id="contactForm" novalidate>
+      <div class="modal__row">
+        <div class="modal__field">
+          <label class="modal__label" for="ct-first">First Name</label>
+          <input
+            id="ct-first"
+            type="text"
+            class="modal__input"
+            placeholder="Jane"
+            required
+          />
+        </div>
+        <div class="modal__field">
+          <label class="modal__label" for="ct-last">Last Name</label>
+          <input
+            id="ct-last"
+            type="text"
+            class="modal__input"
+            placeholder="Doe"
+            required
+          />
+        </div>
+      </div>
+      <div class="modal__field">
+        <label class="modal__label" for="ct-email">Email</label>
+        <input
+          id="ct-email"
+          type="email"
+          class="modal__input"
+          placeholder="jane@example.com"
+          required
+        />
+      </div>
+      <button type="submit" class="modal__submit">Submit</button>
+    </form>
+  </div>
+</div>

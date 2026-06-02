@@ -26,6 +26,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="stylesheet" href="/styles.css" />
+        <link rel="stylesheet" href="/pages.css" />
       </head>
       <body>
         {children}

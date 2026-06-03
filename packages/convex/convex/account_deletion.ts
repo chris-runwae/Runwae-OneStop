@@ -599,11 +599,13 @@ export const hardDeleteUser = internalMutation({
   handler: async (ctx, args) => hardDeleteUserInternal(ctx, args.userId),
 });
 
-// ── Dev-only immediate delete ──────────────────────────────────────────────
+// ── Immediate (permanent) delete ───────────────────────────────────────────
 
-// Skips the 30-day recovery window AND blocker checks (active bookings,
-// hosted upcoming events, active subscriptions). Intended for development
-// only — production should use `requestAccountDeletion`.
+// Permanently deletes the account right away — no 30-day recovery window and
+// no restore. This is the user-facing deletion path (Apple Guideline 5.1.1(v)
+// requires real deletion, not deactivation). An active Stripe subscription is
+// cancelled first so a deleted user is never billed again; the cascade then
+// hard-deletes / anonymises all of the user's data.
 export const deleteAccountImmediate = mutation({
   args: {},
   handler: async (ctx) => {
@@ -612,6 +614,24 @@ export const deleteAccountImmediate = mutation({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
     if (user.isSystemSentinel) throw new Error("Cannot delete system user");
+
+    // Cancel any active Stripe subscription BEFORE the cascade anonymises the
+    // subscription row to the sentinel (after which we'd lose the Stripe id).
+    // Fire-and-forget so the mutation stays DB-bound; failures are logged
+    // inside the action.
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+    if (subscription) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.payments.cancelStripeSubscription,
+        { stripeSubscriptionId: subscription.stripeSubscriptionId },
+      );
+    }
+
     return await hardDeleteUserInternal(ctx, userId);
   },
 });

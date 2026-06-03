@@ -348,11 +348,14 @@ export function useAuth(): UseAuthReturn {
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
-        const result = await convexSignIn("password", {
-          email,
-          password,
-          flow: "signIn",
-        });
+        const result = await withAuthTimeout(
+          convexSignIn("password", {
+            email,
+            password,
+            flow: "signIn",
+          }),
+          "password:signIn",
+        );
         await rememberAuthMethod("password");
         // Password is configured with `verify`, so signing in with an
         // unverified email does NOT create a session: Convex Auth emails

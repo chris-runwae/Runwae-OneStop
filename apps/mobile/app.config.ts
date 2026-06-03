@@ -175,6 +175,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       'expo-apple-authentication',
+      [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'Runwae uses your photo library so you can pick a photo to set as your profile picture or as the cover image for a trip or itinerary you create.',
+          cameraPermission:
+            'Runwae uses your camera so you can take a photo to set as your profile picture or as the cover image for a trip or itinerary you create.',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

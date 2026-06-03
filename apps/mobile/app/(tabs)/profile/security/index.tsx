@@ -23,7 +23,7 @@ const SECURITY_ITEMS: { title: string; subtitle: string; route: string }[] = [
   },
   {
     title: "Delete account",
-    subtitle: "Permanently remove your account after a 30-day grace period.",
+    subtitle: "Permanently delete your account and all your data.",
     route: "/profile/security/delete-account",
   },
 ];

@@ -116,7 +116,13 @@ export const searchByCategory = action({
     const queryKey = `${term.trim().toLowerCase()}${coordsKey}${dateKey}${iataKey}${tagsKey}${sortKey}|limit=${cap}|${CACHE_VERSION}`;
     const provider = providerFor(category);
 
-    if (!forceRefresh) {
+    // Duffel flight offers expire within minutes. Caching them means a later
+    // click re-fetches an expired offer id, so the detail/booking page shows a
+    // different (or re-priced) flight than the card the user tapped. Skip the
+    // cache entirely for flights so every card carries a live offer.
+    const cacheable = provider !== "duffel";
+
+    if (!forceRefresh && cacheable) {
       const cached = await ctx.runQuery(internal.discovery.getCached, {
         provider, category, queryKey,
       });
@@ -216,7 +222,7 @@ export const searchByCategory = action({
 
     // Only cache non-empty payloads. Caching `[]` for 24h means a transient
     // 401/network blip turns into a day of empty Discover chips.
-    if (items.length > 0) {
+    if (items.length > 0 && cacheable) {
       await ctx.runMutation(internal.discovery.setCache, {
         provider, category, queryKey, payload: items, ttlMs: TTL_MS,
       });

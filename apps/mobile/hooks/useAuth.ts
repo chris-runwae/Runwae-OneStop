@@ -533,6 +533,21 @@ export function useAuth(): UseAuthReturn {
         };
       }
 
+      // Apple returns fullName ONLY on the very first authorization for this
+      // Apple ID (and only if the user didn't hide it). We forward it so the
+      // backend can populate users.name at account-creation time — otherwise
+      // the new user lands in boarding with an empty name and is forced to
+      // re-type it, which violates Sign in with Apple HIG / App Review
+      // Guideline 4 (don't re-request data AuthenticationServices already
+      // provided). The identity token itself never carries the name.
+      const appleFullName = [
+        credential.fullName?.givenName,
+        credential.fullName?.familyName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
       // The "apple-native" provider is a ConvexCredentials provider in
       // packages/convex/convex/lib/appleNative.ts that validates the JWT
       // against Apple's JWKS, then finds-or-creates the user. The OIDC
@@ -540,7 +555,10 @@ export function useAuth(): UseAuthReturn {
       // an identity token directly.
       Sentry.captureMessage('diag:auth:apple:pre-convex-signin', { level: 'info' });
       await withAuthTimeout(
-        convexSignIn("apple-native", { identityToken: credential.identityToken }),
+        convexSignIn("apple-native", {
+          identityToken: credential.identityToken,
+          ...(appleFullName ? { fullName: appleFullName } : {}),
+        }),
         'apple-native',
       );
       Sentry.captureMessage('diag:auth:apple:post-convex-signin', { level: 'info' });

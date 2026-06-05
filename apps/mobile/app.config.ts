@@ -76,6 +76,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         LSApplicationQueriesSchemes: ['whatsapp', 'twitter'],
         NSLocationWhenInUseUsageDescription:
           'Runwae uses your location to suggest nearby trips, events, and experiences on your home feed.',
+        // Set the photo/camera purpose strings directly here, NOT only via the
+        // expo-image-picker plugin props. If the plugin prop fails to apply for
+        // any reason, expo-image-picker falls back to the generic default
+        // "Allow <app> to access your photos", which App Review rejected under
+        // Guideline 5.1.1(ii). infoPlist values are written verbatim and win.
+        NSPhotoLibraryUsageDescription:
+          'Runwae uses your photo library so you can pick a photo to set as your profile picture or as the cover image for a trip or itinerary you create.',
+        NSCameraUsageDescription:
+          'Runwae uses your camera so you can take a photo to set as your profile picture or as the cover image for a trip or itinerary you create.',
       },
       usesAppleSignIn: true,
     },

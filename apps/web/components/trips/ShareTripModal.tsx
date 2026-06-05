@@ -52,8 +52,8 @@ export function ShareTripModal({ open, onClose, trip }: ShareTripModalProps) {
 
   const shareLink = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/trips/${trip.slug}`;
-  }, [trip.slug]);
+    return `${window.location.origin}/j/${trip.joinCode}`;
+  }, [trip.joinCode]);
 
   async function handleInvite(userId: Id<"users">) {
     setPendingId(userId);

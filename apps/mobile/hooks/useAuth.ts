@@ -803,13 +803,23 @@ export function useAuth(): UseAuthReturn {
     await storage.setItem(WELCOME_MODAL_TRIGGER_KEY, show.toString());
   }, []);
 
+  // Expose the server's onboardingComplete directly rather than the
+  // effect-synced local mirror. The mirror (setHasCompletedBoarding) updates
+  // in an effect that runs AFTER render, so on the first render following
+  // sign-in — when local state still defaults to false but the loaded viewer
+  // already has onboardingComplete === true — a stale `false` would briefly
+  // bounce an already-onboarded user back into the boarding flow. ORing the
+  // server value in closes that one-render gap.
+  const hasCompletedBoardingResolved =
+    hasCompletedBoarding || viewer?.onboardingComplete === true;
+
   return {
     user,
     isLoading,
     isAuthenticated,
     isProfileComplete,
     hasSeenOnboarding,
-    hasCompletedBoarding,
+    hasCompletedBoarding: hasCompletedBoardingResolved,
     showWelcomeModal,
     setShowWelcomeModal,
     currentBoardingStep,

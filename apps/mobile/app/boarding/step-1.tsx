@@ -25,6 +25,7 @@ const BoardingStep1 = () => {
   const { user, updateUser, setCurrentBoardingStep } = useAuth();
   const generateAvatarUrl = useMutation(api.users.generateAvatarUploadUrl);
   const setAvatar = useMutation(api.users.setAvatar);
+  const persistUsername = useMutation(api.users.setUsername);
   const [name, setName] = useState(user?.full_name || "");
   const [username, setUsername] = useState(user?.username || "");
   const [profileImage, setProfileImage] = useState<string | null>(user?.avatar_url || null);
@@ -50,9 +51,13 @@ const BoardingStep1 = () => {
   };
 
   const handleNext = async () => {
-    if (!name || !username) {
+    // Apple Guideline 4: Sign in with Apple already supplies the user's name,
+    // so we must not force them to re-enter it. Name is pre-filled when the
+    // provider shares it and stays optional. Only the app-specific username
+    // (which no SSO provider supplies) is required.
+    if (!username.trim()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Alert.alert("Required fields", "Please provide your name and a username.");
+      Alert.alert("Username required", "Please choose a username.");
       return;
     }
 
@@ -69,9 +74,12 @@ const BoardingStep1 = () => {
         });
       }
 
+      // Username persists through its own mutation (with format + uniqueness
+      // validation); updateUser only handles name/avatar.
+      await persistUsername({ username: username.trim() });
+
       await updateUser({
-        full_name: name,
-        username: username,
+        full_name: name.trim() || undefined,
         avatar_url: finalImageUrl || undefined,
       });
 
@@ -125,7 +133,7 @@ const BoardingStep1 = () => {
 
           <View className="gap-y-4">
             <View>
-              <Text className="text-gray-500 text-xs mb-2 ml-1">Full Name</Text>
+              <Text className="text-gray-500 text-xs mb-2 ml-1">Full Name (optional)</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}

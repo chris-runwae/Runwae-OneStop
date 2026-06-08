@@ -28,7 +28,6 @@ import {
 } from '@react-navigation/native';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -38,11 +37,12 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
 import ToastManager from 'toastify-react-native';
 
-export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
-
 import SplashScreen from '@/components/ui/splash-screen';
 import LocaleSync from '@/components/i18n/LocaleSync';
-import { StripeProviderSafe } from '@/utils/stripe-safe';
+import {
+  STRIPE_MERCHANT_IDENTIFIER,
+  StripeProviderSafe,
+} from '@/utils/stripe-safe';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { useAppleCredentialsRevoke } from '@/hooks/useAppleCredentialsRevoke';
 import { TripsProvider } from '@/context/TripsContext';
@@ -57,6 +57,8 @@ import { cssInterop, useColorScheme } from 'nativewind';
 import { Image as ExpoImageComponent } from 'expo-image';
 import '../global.css';
 
+export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
+
 // expo-image isn't in NativeWind's default interop registry, so without this
 // `className="h-full w-full"` (and any other style-only classes) silently
 // drops on `<Image />`, causing remote photos to render at 0×0. Done once at
@@ -67,12 +69,7 @@ cssInterop(ExpoImageComponent, { className: 'style' });
 // banners surface correctly even before the first auth ready event.
 configurePushHandler();
 
-const stripeMerchantIdentifier =
-  (
-    Constants.expoConfig?.extra as
-      | { stripeMerchantIdentifier?: string }
-      | undefined
-  )?.stripeMerchantIdentifier ?? 'merchant.io.runwae.app';
+const stripeMerchantIdentifier = STRIPE_MERCHANT_IDENTIFIER;
 
 function RouteGuard() {
   const segments = useSegments();
@@ -80,7 +77,6 @@ function RouteGuard() {
   const {
     user,
     isLoading,
-    hasSeenOnboarding,
     hasCompletedBoarding,
     currentBoardingStep,
     isAuthenticated,
@@ -93,7 +89,7 @@ function RouteGuard() {
   // corners on dark mode — the artifact reported as "white edge on
   // transition." Match the screen content background to the active
   // theme so the underlay is invisible.
-  const screenBackgroundColor = colorScheme === "dark" ? "#000000" : "#FFFFFF";
+  const screenBackgroundColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
 
   // Sign the user out if they revoke Apple credentials in iOS Settings.
   useAppleCredentialsRevoke();
@@ -144,8 +140,6 @@ function RouteGuard() {
     'onboarding-steps',
   ]);
 
-  const ONBOARDING_STEPS = new Set(['onboarding', 'onboarding-steps']);
-
   const BOARDING_STEPS = new Set([
     'boarding',
     'step-1',
@@ -155,44 +149,16 @@ function RouteGuard() {
     'step-5',
   ]);
 
-  const AUTHORIZED_ROOT_ROUTES = new Set([
-    '(tabs)',
-    'notifications',
-    'modal',
-    'itinerary',
-    'experience',
-    'viator',
-    'create-trip',
-    'create-trip-options',
-    'create-trip-ai',
-    'create-trip-from-link',
-    'events',
-    'search',
-    'flights',
-    'hotels',
-    'hotels-search',
-    'experiences-search',
-    'invite',
-    'trip',
-    'feed',
-  ]);
-
   const [currentSegment, secondSegment] = segments as string[];
   const isInAuthFlow =
     AUTH_ROUTES.has(currentSegment) ||
     (currentSegment === '(auth)' &&
       secondSegment &&
       AUTH_ROUTES.has(secondSegment));
-  const isInOnboardingSteps =
-    currentSegment === '(auth)' &&
-    secondSegment &&
-    ONBOARDING_STEPS.has(secondSegment);
   const isInBoardingSteps =
     currentSegment === 'boarding' &&
     secondSegment &&
     BOARDING_STEPS.has(secondSegment);
-  const isInTabs = currentSegment === '(tabs)';
-  const isInOnboarding = currentSegment === 'onboarding';
   const isInAuthorizedRoot = [
     undefined,
     '(tabs)',
@@ -355,7 +321,8 @@ function RootLayout() {
       <StripeProviderSafe
         publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
         merchantIdentifier={stripeMerchantIdentifier}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <ThemeProvider
+          value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AuthProvider>

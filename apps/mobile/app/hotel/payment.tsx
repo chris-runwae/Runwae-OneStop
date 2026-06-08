@@ -1,4 +1,4 @@
-import { useStripeSafe } from '@/utils/stripe-safe';
+import { STRIPE_MERCHANT_IDENTIFIER, useStripeSafe } from '@/utils/stripe-safe';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 import { useAction } from 'convex/react';
@@ -103,7 +103,7 @@ export default function PaymentScreen() {
           paymentIntentClientSecret: clientSecret,
           applePay: {
             merchantCountryCode: 'GB',
-            merchantIdentifier: 'merchant.io.runwae.app',
+            merchantIdentifier: STRIPE_MERCHANT_IDENTIFIER,
           },
           googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
           returnURL: 'runwae://stripe-redirect',

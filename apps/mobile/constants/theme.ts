@@ -76,7 +76,21 @@ export const COLORS = {
     border: '#FF96BA',
     dark: '#FF48A0',
     darkBackground: '#FFF0F4',
-    // darkBorder: "#FF96BA",
+
+    900: '#8C0048',
+    800: '#A3005A',
+    700: '#CC0069',
+    600: '#E6007A',
+    500: '#FF2E92',
+    400: '#FF6BB1',
+    300: '#FF9FCC',
+    200: '#FFB8D9',
+    100: '#FFCCE6',
+    50: '#FFD6ED',
+    10: '#FFE5F3',
+    5: '#FFF0F8',
+    1: '#FFF7FB',
+    0: '#FFFAFD',
   },
 };
 
@@ -89,8 +103,6 @@ export const addOpacity = (hex: string, opacity: number): string => {
 
 export const Colors = {
   light: {
-    // text: '#11181C',
-    // background: '#fff',
     white: COLORS.white.base,
     tint: tintColorLight,
     icon: '#687076',
@@ -122,7 +134,7 @@ export const Colors = {
       subtle: COLORS.gray[380],
     },
     primaryColors: {
-      default: COLORS.pink.default,
+      default: COLORS.pink[700],
       background: COLORS.pink.light,
       border: COLORS.pink.border,
     },
@@ -172,7 +184,7 @@ export const Colors = {
       subtle: COLORS.gray[750],
     },
     primaryColors: {
-      default: COLORS.pink.dark,
+      default: COLORS.pink[500],
       background: addOpacity(COLORS.pink.light, 0.3),
       border: COLORS.pink.border,
     },

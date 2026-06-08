@@ -96,7 +96,7 @@ const LocationPrompt = () => {
           busy ? 'opacity-60' : ''
         }`}>
         <Text className="text-[12px] font-semibold text-white">
-          {busy ? '…' : 'Enable'}
+          {busy ? '…' : 'Continue'}
         </Text>
       </Pressable>
       <Pressable

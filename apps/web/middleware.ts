@@ -14,6 +14,9 @@ const isPublicRoute = createRouteMatcher([
   "/t/(.*)",
   "/e/(.*)",
   "/d/(.*)",
+  // Trip join-by-code landing. Recipients can preview the trip before
+  // signing in; the "Join" action itself is auth-gated client-side.
+  "/j/(.*)",
   // Server-to-server endpoints with their own auth (Bearer token /
   // webhook signature). Convex auth middleware doesn't apply here —
   // letting it redirect these to /sign-in breaks the callers.

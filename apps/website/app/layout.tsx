@@ -1,39 +1,10 @@
-import { Bricolage_Grotesque, Inter } from "next/font/google";
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { PostHogProvider } from "@/components/posthog-provider";
-import { OrganizationJsonLd } from "@/components/organization-json-ld";
-import "./globals.css";
-
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
+import Script from "next/script";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.runwae.io"),
-  title: {
-    default: "Runwae — Plan Together. Book Together. Split the Cost.",
-    template: "%s | Runwae",
-  },
+  title: "Runwae — Plan Group Trips. Book Together. Split Costs.",
   description:
-    "Runwae is the all-in-one app for groups — discover events, build itineraries, and handle payments without the chaos.",
-  openGraph: {
-    type: "website",
-    siteName: "Runwae",
-    locale: "en_US",
-  },
-  twitter: { card: "summary_large_image", site: "@runwae" },
-  icons: { icon: "/favicon.ico" },
+    "The app for traveling to events with friends—without the chaos. Plan group trips, book together, and split costs instantly.",
 };
 
 export default function RootLayout({
@@ -42,12 +13,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${bricolage.variable} ${inter.variable}`}>
-        <PostHogProvider>{children}</PostHogProvider>
-        <Analytics />
-        <SpeedInsights />
-        <OrganizationJsonLd />
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/styles.css" />
+        <link rel="stylesheet" href="/pages.css" />
+      </head>
+      <body>
+        {children}
+        <Script src="/main.js" strategy="afterInteractive" />
       </body>
     </html>
   );

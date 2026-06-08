@@ -20,6 +20,10 @@ type NominatimResult = {
     city?: string;
     town?: string;
     village?: string;
+    hamlet?: string;
+    municipality?: string;
+    suburb?: string;
+    county?: string;
     state?: string;
     country?: string;
   };
@@ -30,10 +34,23 @@ const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 function shortenLabel(r: NominatimResult): string {
   const a = r.address;
   if (!a) return r.display_name.split(",").slice(0, 3).join(",").trim();
-  const place = a.city ?? a.town ?? a.village ?? a.state ?? "";
+  const place =
+    a.city ?? a.town ?? a.village ?? a.hamlet ?? a.municipality ?? a.suburb ?? a.state ?? "";
   const country = a.country ?? "";
   if (place && country) return `${place}, ${country}`;
   return r.display_name.split(",").slice(0, 3).join(",").trim();
+}
+
+// Nominatim ranks country/region rows above the actual city for bare queries
+// like "Paris", and with a small result limit the city can fall out of the
+// window entirely — that's why users could "only select countries". Pull
+// populated places to the top so cities are always reachable and selectable.
+function placeRank(r: NominatimResult): number {
+  const a = r.address;
+  if (a?.city || a?.town || a?.village || a?.hamlet || a?.municipality) return 0;
+  if (r.class === "place") return 1;
+  if (a?.state) return 2;
+  return 3;
 }
 
 export function LocationPicker({
@@ -74,14 +91,17 @@ export function LocationPicker({
       try {
         const url = `${NOMINATIM_URL}?q=${encodeURIComponent(
           q
-        )}&format=json&addressdetails=1&limit=6`;
+        )}&format=json&addressdetails=1&dedupe=1&limit=12`;
         const res = await fetch(url, {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`Nominatim ${res.status}`);
         const data = (await res.json()) as NominatimResult[];
+        // Stable-sort populated places ahead of country/region rows so the
+        // city the user typed is always visible and pickable.
+        data.sort((x, y) => placeRank(x) - placeRank(y));
         if (myReq === reqIdRef.current) {
-          setResults(data);
+          setResults(data.slice(0, 6));
           setLoading(false);
         }
       } catch (err) {

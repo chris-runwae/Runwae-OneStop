@@ -71,6 +71,16 @@ export const AppleNative = ConvexCredentials({
       return null;
     }
 
+    // Apple only sends the user's name on the FIRST authorization, so the
+    // client forwards it alongside the token. It is never part of the signed
+    // JWT — treat it as untrusted display text and only use it to seed the
+    // profile on account creation (App Review Guideline 4: don't force the
+    // user to re-enter the name Sign in with Apple already gave us).
+    const appleFullName =
+      typeof credentials.fullName === "string"
+        ? credentials.fullName.trim()
+        : "";
+
     const audiences = allowedAudiences();
     if (audiences.length === 0) {
       console.error(
@@ -138,6 +148,7 @@ export const AppleNative = ConvexCredentials({
       provider: "apple-native",
       account: { id: claims.sub },
       profile: {
+        ...(appleFullName ? { name: appleFullName } : {}),
         ...(claims.email ? { email: claims.email } : {}),
         // emailVerificationTime is the authTables field for verified email.
         // Apple's email_verified is trustworthy.

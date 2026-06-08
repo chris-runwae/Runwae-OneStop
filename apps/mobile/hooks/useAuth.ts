@@ -348,11 +348,14 @@ export function useAuth(): UseAuthReturn {
   const signIn = useCallback(
     async (email: string, password: string) => {
       try {
-        const result = await convexSignIn("password", {
-          email,
-          password,
-          flow: "signIn",
-        });
+        const result = await withAuthTimeout(
+          convexSignIn("password", {
+            email,
+            password,
+            flow: "signIn",
+          }),
+          "password:signIn",
+        );
         await rememberAuthMethod("password");
         // Password is configured with `verify`, so signing in with an
         // unverified email does NOT create a session: Convex Auth emails
@@ -530,6 +533,21 @@ export function useAuth(): UseAuthReturn {
         };
       }
 
+      // Apple returns fullName ONLY on the very first authorization for this
+      // Apple ID (and only if the user didn't hide it). We forward it so the
+      // backend can populate users.name at account-creation time — otherwise
+      // the new user lands in boarding with an empty name and is forced to
+      // re-type it, which violates Sign in with Apple HIG / App Review
+      // Guideline 4 (don't re-request data AuthenticationServices already
+      // provided). The identity token itself never carries the name.
+      const appleFullName = [
+        credential.fullName?.givenName,
+        credential.fullName?.familyName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
       // The "apple-native" provider is a ConvexCredentials provider in
       // packages/convex/convex/lib/appleNative.ts that validates the JWT
       // against Apple's JWKS, then finds-or-creates the user. The OIDC
@@ -537,7 +555,10 @@ export function useAuth(): UseAuthReturn {
       // an identity token directly.
       Sentry.captureMessage('diag:auth:apple:pre-convex-signin', { level: 'info' });
       await withAuthTimeout(
-        convexSignIn("apple-native", { identityToken: credential.identityToken }),
+        convexSignIn("apple-native", {
+          identityToken: credential.identityToken,
+          ...(appleFullName ? { fullName: appleFullName } : {}),
+        }),
         'apple-native',
       );
       Sentry.captureMessage('diag:auth:apple:post-convex-signin', { level: 'info' });
@@ -782,13 +803,23 @@ export function useAuth(): UseAuthReturn {
     await storage.setItem(WELCOME_MODAL_TRIGGER_KEY, show.toString());
   }, []);
 
+  // Expose the server's onboardingComplete directly rather than the
+  // effect-synced local mirror. The mirror (setHasCompletedBoarding) updates
+  // in an effect that runs AFTER render, so on the first render following
+  // sign-in — when local state still defaults to false but the loaded viewer
+  // already has onboardingComplete === true — a stale `false` would briefly
+  // bounce an already-onboarded user back into the boarding flow. ORing the
+  // server value in closes that one-render gap.
+  const hasCompletedBoardingResolved =
+    hasCompletedBoarding || viewer?.onboardingComplete === true;
+
   return {
     user,
     isLoading,
     isAuthenticated,
     isProfileComplete,
     hasSeenOnboarding,
-    hasCompletedBoarding,
+    hasCompletedBoarding: hasCompletedBoardingResolved,
     showWelcomeModal,
     setShowWelcomeModal,
     currentBoardingStep,

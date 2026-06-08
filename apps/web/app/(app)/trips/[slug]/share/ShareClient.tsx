@@ -41,7 +41,9 @@ export function ShareClient({ trip }: { trip: Doc<"trips"> }) {
   }
 
   const shareUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/t/${trip.slug}` : `/t/${trip.slug}`;
+    typeof window !== "undefined"
+      ? `${window.location.origin}/j/${trip.joinCode}`
+      : `/j/${trip.joinCode}`;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6">

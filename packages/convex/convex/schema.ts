@@ -2,12 +2,21 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+const onboardingResponsesValidator = v.object({
+  'travel-party': v.array(v.string()),   // multiple-select
+  'travel-style': v.string(),            // single choice
+  'trip-types':   v.array(v.string()),   // multiple-select
+  'pain-point':   v.string(),            // single choice
+  'planning-horizon': v.string(),        // single choice
+});
+
 export default defineSchema({
   ...authTables,
 
   // ── AUTH & IDENTITY ────────────────────────────────────────
   // Merges @convex-dev/auth required fields with Runwae app fields.
   // Auth inserts the row first, so all app fields are optional.
+  
   users: defineTable({
     // Auth fields (required by @convex-dev/auth at runtime)
     name: v.optional(v.string()),
@@ -32,6 +41,7 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     stripeConnectId: v.optional(v.string()),
     onboardingComplete: v.optional(v.boolean()),
+    onboardingResponses: v.optional(onboardingResponsesValidator),
     travellerTags: v.optional(v.array(v.string())),
     username: v.optional(v.string()),
     homeCoords: v.optional(v.object({ lat: v.number(), lng: v.number() })),

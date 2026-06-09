@@ -136,24 +136,40 @@ export const setHomeLocation = mutation({
 });
 
 export const completeOnboarding = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { 
+      responses: v.object({
+      'travel-party':       v.array(v.string()),
+      'travel-style':       v.string(),
+      'trip-types':         v.array(v.string()),
+      'pain-point':         v.string(),
+      'planning-horizon':   v.string(),
+    }), 
+  },
+  handler: async (ctx, { responses }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
-    // Read current state before patching so we only fire the event on
-    // the FIRST transition (false/undefined → true). Re-calling this
-    // mutation (e.g. the 5-step boarding screen retrying on stale state)
-    // mustn't refire the event.
     const current = await ctx.db.get(userId);
     const wasAlreadyComplete = current?.onboardingComplete === true;
 
-    await ctx.db.patch(userId, { onboardingComplete: true });
+    await ctx.db.patch(userId, { 
+      onboardingComplete: true, 
+      ...(responses !== undefined && { onboardingResponses: responses }),
+    });
+
+    const trackProperties = {
+      travel_party:     responses?.['travel-party'] ?? [],
+      travel_style:     responses?.['travel-style'] ?? null,
+      trip_types:       responses?.['trip-types'] ?? [],
+      pain_point:       responses?.['pain-point'] ?? null,
+      planning_horizon: responses?.['planning-horizon'] ?? null,
+      skipped:          responses === null,
+    };
 
     if (!wasAlreadyComplete) {
       await scheduleServerTrack(ctx, String(userId), {
         name: "onboarding_completed",
-        properties: {},
+        properties: trackProperties,
       });
     }
 

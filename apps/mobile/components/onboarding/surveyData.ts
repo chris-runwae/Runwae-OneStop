@@ -149,7 +149,7 @@ export const surveyData = [
   {
     id: 'runwae-features',
     type: 'features',
-    title: "You're all set",
+    title: "You're all set 🎉",
     description: "Here's what Runwae unlocks for you.",
     features: [
       {

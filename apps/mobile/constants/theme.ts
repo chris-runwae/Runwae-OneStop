@@ -184,7 +184,7 @@ export const Colors = {
       subtle: COLORS.gray[750],
     },
     primaryColors: {
-      default: COLORS.pink[500],
+      default: COLORS.pink[600],
       background: addOpacity(COLORS.pink.light, 0.3),
       border: COLORS.pink.border,
     },

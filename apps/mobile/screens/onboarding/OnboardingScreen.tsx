@@ -23,7 +23,7 @@ import {
   FeaturesSlide,
 } from '@/components/onboarding/OnboardingSlides';
 import { surveyData } from '@/components/onboarding/surveyData';
-import { Colors, COLORS } from '@/constants';
+import { Colors, AppFonts } from '@/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -257,6 +257,7 @@ export default function OnboardingScreen() {
         {renderSlide()}
       </ScrollView>
 
+      {/* Continue Button */}
       {currentStep > 0 && (
         <View className="mb-10 items-center px-6">
           {currentStep === 0 ? null : currentStep === totalSteps - 1 ? (
@@ -264,9 +265,11 @@ export default function OnboardingScreen() {
               <TouchableOpacity
                 onPress={() => {}}
                 className="w-full items-center justify-center rounded-xl py-4"
-                style={{ backgroundColor: colors.primary[500] }}>
-                <Text className="text-lg font-semibold text-white">
-                  Continue to Premium
+                style={{ backgroundColor: colors.primaryColors.default }}>
+                <Text
+                  className="text-lg font-semibold text-white"
+                  style={{ fontFamily: AppFonts.inter.semiBold }}>
+                  Let&apos;s plan some trips!
                 </Text>
               </TouchableOpacity>
             </Animated.View>
@@ -278,7 +281,7 @@ export default function OnboardingScreen() {
                 style={{
                   backgroundColor:
                     selectedOptions.length > 0
-                      ? colors.primary[500]
+                      ? colors.primaryColors.default
                       : colors.borderColors.subtle,
                   opacity: selectedOptions.length > 0 ? 1 : 0.7,
                 }}

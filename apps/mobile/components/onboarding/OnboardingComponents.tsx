@@ -16,7 +16,7 @@ import Animated, {
 import { Check } from 'lucide-react-native';
 
 import CustomImage from '@/components/ui/CustomImage';
-import { AppFonts, Colors, COLORS } from '@/constants';
+import { AppFonts, Colors, addOpacity } from '@/constants';
 
 export const FeatureCard = ({
   icon,
@@ -60,6 +60,7 @@ export const FeatureCard = ({
         className="flex-1 text-base font-medium"
         style={{
           color: appColors.textColors.default,
+          fontFamily: AppFonts.inter.regular,
         }}>
         {feature}
       </Text>
@@ -129,7 +130,7 @@ export const AnimatedOption = ({
     <Animated.View style={animatedStyle}>
       <TouchableOpacity
         onPress={onSelect}
-        className={`flex-row items-center rounded-xl border-2 p-4 ${
+        className={`border-1 flex-row items-center rounded-xl p-4 ${
           isSelected
             ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
             : isDarkMode
@@ -140,7 +141,7 @@ export const AnimatedOption = ({
           transform: [{ scale: isSelected ? 1.02 : 1 }],
           backgroundColor: isSelected
             ? isDarkMode
-              ? colors.pink[100]
+              ? colors.pink[600]
               : colors.pink[50]
             : isDarkMode
               ? colors.gray[750]
@@ -155,10 +156,10 @@ export const AnimatedOption = ({
         <Text
           className="flex-1 text-lg"
           style={{
-            color: isSelected
-              ? appColors.primaryColors.default
-              : isDarkMode
-                ? colors.white.default
+            color: isDarkMode
+              ? colors.white.default
+              : isSelected
+                ? colors.pink[500]
                 : colors.gray[900],
             fontFamily: isSelected
               ? AppFonts.inter.semiBold
@@ -170,7 +171,11 @@ export const AnimatedOption = ({
           <Animated.View
             entering={FadeIn.duration(200)}
             className="h-6 w-6 items-center justify-center rounded-full"
-            style={{ backgroundColor: appColors.primaryColors.default }}>
+            style={{
+              backgroundColor: isDarkMode
+                ? addOpacity(colors.pink[600], 0.3)
+                : colors.pink[500],
+            }}>
             <Check size={16} color={colors.white.default} />
           </Animated.View>
         )}

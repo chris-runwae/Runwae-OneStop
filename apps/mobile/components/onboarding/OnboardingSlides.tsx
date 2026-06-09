@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Text from '@/components/ui/Text';
 import { AppFonts, COLORS } from '@/constants';
@@ -201,14 +200,20 @@ export const FeaturesSlide: React.FC<SlideProps> = ({
     <View style={{ width }} className="flex-1 px-6 pt-6">
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
+          replaceDefaultStyle
           className="mb-3 text-3xl font-bold"
-          style={{ color: isDarkMode ? colors.white : colors.gray[900] }}>
+          style={{
+            color: colors.textColors.default,
+            fontFamily: AppFonts.bricolage.bold,
+          }}>
           {slide.title}
         </Text>
         <Text
+          replaceDefaultStyle
           className="mb-8 text-base"
           style={{
-            color: isDarkMode ? colors.gray[400] : colors.gray[600],
+            color: colors.textColors.subtitle,
+            fontFamily: AppFonts.inter.regular,
           }}>
           {slide.description}
         </Text>

@@ -16,11 +16,14 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
 
 import {
   WelcomeSlide,
   ChoiceSlide,
   FeaturesSlide,
+  AuthSlide,
 } from '@/components/onboarding/OnboardingSlides';
 import { surveyData } from '@/components/onboarding/surveyData';
 import { Colors, AppFonts } from '@/constants';
@@ -33,6 +36,10 @@ export default function OnboardingScreen() {
   const isDarkMode = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { completeOnboarding } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = surveyData.length;
@@ -140,6 +147,18 @@ export default function OnboardingScreen() {
 
   const handleSkip = () => {};
 
+  const handleComplete = async () => {
+    setIsLoading(true);
+    try {
+      // await completeOnboarding();
+      console.log('complete onboarding: ', JSON.stringify(responses, null, 2));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleOptionSelect = (optionId: string) => {
     if (currentSlide.type === 'multiple-choice') {
       setSelectedOptions([optionId]);
@@ -159,6 +178,18 @@ export default function OnboardingScreen() {
       case 'welcome':
         return (
           <WelcomeSlide
+            slide={slide}
+            slideAnimation={slideAnimation}
+            selectedOptions={selectedOptions}
+            handleOptionSelect={handleOptionSelect}
+            handleNext={handleNext}
+            colors={colors}
+            isDarkMode={isDarkMode}
+          />
+        );
+      case 'auth':
+        return (
+          <AuthSlide
             slide={slide}
             slideAnimation={slideAnimation}
             selectedOptions={selectedOptions}
@@ -221,29 +252,33 @@ export default function OnboardingScreen() {
             <ChevronLeft size={24} color={colors.textColors.subtitle} />
           </TouchableOpacity>
 
-          <View
-            className="mx-3 h-2 flex-1 overflow-hidden rounded-full"
-            style={{
-              backgroundColor: isDarkMode
-                ? '#222222'
-                : colors.borderColors.subtle,
-            }}>
-            <Animated.View
-              className="h-full rounded-full"
-              style={[
-                progressStyle,
-                { backgroundColor: colors.primaryColors.default },
-              ]}
-            />
-          </View>
+          {currentStep !== 1 && (
+            <View
+              className="mx-3 h-2 flex-1 overflow-hidden rounded-full"
+              style={{
+                backgroundColor: isDarkMode
+                  ? '#222222'
+                  : colors.borderColors.subtle,
+              }}>
+              <Animated.View
+                className="h-full rounded-full"
+                style={[
+                  progressStyle,
+                  { backgroundColor: colors.primaryColors.default },
+                ]}
+              />
+            </View>
+          )}
 
-          <TouchableOpacity onPress={handleSkip}>
-            <Text
-              style={{ color: colors.textColors.default }}
-              className="text-base font-medium">
-              Skip
-            </Text>
-          </TouchableOpacity>
+          {currentStep !== 1 && (
+            <TouchableOpacity onPress={handleSkip}>
+              <Text
+                style={{ color: colors.textColors.default }}
+                className="text-base font-medium">
+                Skip
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -258,12 +293,12 @@ export default function OnboardingScreen() {
       </ScrollView>
 
       {/* Continue Button */}
-      {currentStep > 0 && (
+      {currentStep > 1 && (
         <View className="mb-10 items-center px-6">
           {currentStep === 0 ? null : currentStep === totalSteps - 1 ? (
             <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
               <TouchableOpacity
-                onPress={() => {}}
+                onPress={handleComplete}
                 className="w-full items-center justify-center rounded-xl py-4"
                 style={{ backgroundColor: colors.primaryColors.default }}>
                 <Text

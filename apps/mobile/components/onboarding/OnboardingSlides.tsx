@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { ArrowRight, Map, Users, Sparkles } from 'lucide-react-native';
 import Animated, {
   useAnimatedStyle,
@@ -16,6 +23,9 @@ import {
 } from './OnboardingComponents';
 
 const { width } = Dimensions.get('window');
+
+import { AppleLogo, GoogleLogo } from '@/components/auth/SocialAuthButtons';
+import { EmailAuthForm } from '@/components/auth/EmailAuthForm';
 
 interface SlideProps {
   slide: any;
@@ -108,6 +118,121 @@ export const WelcomeSlide: React.FC<SlideProps> = ({
           </View>
         </Animated.View>
       </CustomImageBackground>
+    </View>
+  );
+};
+
+export const AuthSlide: React.FC<SlideProps> = ({
+  // slide,
+  slideAnimation,
+  handleNext,
+  colors,
+  isDarkMode,
+}) => {
+  const slideAnimStyle = useAnimatedStyle(() => ({
+    opacity: slideAnimation.value,
+    transform: [
+      { translateY: interpolate(slideAnimation.value, [0, 1], [20, 0]) },
+    ],
+  }));
+
+  const handleSSOSignIn = (provider: 'apple' | 'google', next: () => void) => {
+    // if (provider === 'apple') {
+    //   handleAppleSignIn();
+    // } else {
+    //   handleGoogleSignIn();
+    // }
+    next();
+  };
+  // const handleNext = () => {
+  //   // handleNext();
+  // };
+
+  return (
+    <View style={{ width }} className="flex-1 pb-6">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={220}>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: 32,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <Animated.View style={slideAnimStyle} className="px-6">
+            <>
+              <Text
+                replaceDefaultStyle
+                className="mb-2 mt-4 text-4xl font-bold"
+                style={{
+                  fontFamily: AppFonts.bricolage.bold,
+                  color: colors.textColors.default,
+                }}>
+                Let&apos;s get you set up 🔐
+              </Text>
+              <Text
+                className="mb-16 text-base"
+                style={{ color: colors.textColors.subtitle }}>
+                Use an account to save your preferences and plan trips with your
+                crew.
+              </Text>
+            </>
+
+            <>
+              {/* Apple SSO */}
+              <TouchableOpacity
+                onPress={() => handleSSOSignIn('apple', handleNext)}
+                className="mb-3 flex-row items-center justify-center rounded-xl py-4"
+                style={{ backgroundColor: isDarkMode ? '#fff' : '#000' }}>
+                <AppleLogo color={isDarkMode ? '#000' : '#fff'} />
+                <Text
+                  className="ml-3 text-base font-semibold"
+                  style={{ color: isDarkMode ? '#000' : '#fff' }}>
+                  Continue with Apple
+                </Text>
+              </TouchableOpacity>
+
+              {/* Google SSO */}
+              <TouchableOpacity
+                onPress={() => handleSSOSignIn('google', handleNext)}
+                className="mb-6 flex-row items-center justify-center rounded-xl border py-4"
+                style={{
+                  borderColor: colors.borderColors.subtle,
+                  backgroundColor: colors.backgroundColors.subtle,
+                }}>
+                <GoogleLogo />
+                <Text
+                  className="ml-3 text-base font-semibold"
+                  style={{ color: colors.textColors.default }}>
+                  Continue with Google
+                </Text>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View className="mb-6 flex-row items-center gap-x-3">
+                <View
+                  className="h-px flex-1"
+                  style={{ backgroundColor: colors.borderColors.subtle }}
+                />
+                <Text style={{ color: colors.textColors.subtitle }}>or</Text>
+                <View
+                  className="h-px flex-1"
+                  style={{ backgroundColor: colors.borderColors.subtle }}
+                />
+              </View>
+
+              {/* Email/Password */}
+              <EmailAuthForm
+                onSuccess={handleNext}
+                colors={colors}
+                isDarkMode={isDarkMode}
+              />
+            </>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };

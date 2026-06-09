@@ -9,6 +9,12 @@ export const surveyData = [
       'https://images.unsplash.com/photo-1527605158555-853f200063e9?q=80&w=971&auto=format&fit=crop',
   },
   {
+    id: 'auth',
+    type: 'auth',
+    title: 'Create your account',
+    description: 'Save your trips and sync across devices',
+  },
+  {
     id: 'travel-party',
     type: 'multiple-select',
     question: 'How do you usually travel?',

@@ -12,6 +12,7 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
+import { router } from 'expo-router';
 
 import Text from '@/components/ui/Text';
 import { AppFonts, COLORS } from '@/constants';
@@ -225,7 +226,8 @@ export const AuthSlide: React.FC<SlideProps> = ({
 
               {/* Email/Password */}
               <EmailAuthForm
-                onSuccess={handleNext}
+                onSignInSuccess={() => router.replace('/(tabs)/home')}
+                onSignUpSuccess={handleNext}
                 colors={colors}
                 isDarkMode={isDarkMode}
               />

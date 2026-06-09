@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,11 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
 
+import { useAuth } from '@/context/AuthContext';
 import {
   WelcomeSlide,
   ChoiceSlide,
@@ -41,7 +42,19 @@ export default function OnboardingScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState<number | null>(null);
+
+  const authSlideIndex = surveyData.findIndex((slide) => slide.type === 'auth');
+
+  useEffect(() => {
+    const checkOnboardingSeen = async () => {
+      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+      setCurrentStep(hasSeenOnboarding !== null ? authSlideIndex : 0);
+    };
+
+    checkOnboardingSeen();
+  }, []);
+
   const totalSteps = surveyData.length;
 
   const slideAnimation = useSharedValue(0);
@@ -51,13 +64,13 @@ export default function OnboardingScreen() {
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
-  const currentSlide = surveyData[currentStep];
+  const currentSlide = surveyData[currentStep ?? 0];
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (currentStep === null) return;
+
     progressAnimation.value = withSpring(currentStep / (totalSteps - 1));
-
     slideAnimation.value = withTiming(1, { duration: 300 });
-
     buttonAnimation.value = withTiming(1, { duration: 400 });
 
     return () => {
@@ -67,81 +80,80 @@ export default function OnboardingScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  const progressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressAnimation.value * 100}%`,
-    };
-  });
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progressAnimation.value * 100}%`,
+  }));
 
-  const buttonAnimStyle = useAnimatedStyle(() => {
-    return {
-      opacity: buttonAnimation.value,
-      transform: [
-        { translateY: interpolate(buttonAnimation.value, [0, 1], [10, 0]) },
-      ],
-    };
-  });
+  const buttonAnimStyle = useAnimatedStyle(() => ({
+    opacity: buttonAnimation.value,
+    transform: [
+      { translateY: interpolate(buttonAnimation.value, [0, 1], [10, 0]) },
+    ],
+  }));
 
   const handleNext = () => {
+    if (currentStep === null) return;
+
+    if (currentStep === 0) {
+      AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    }
+
     const processCurrentStepResponses = () => {
       if (
         currentSlide.type === 'multiple-choice' &&
         selectedOptions.length > 0
       ) {
         const value = selectedOptions[0];
-        setResponses({ ...responses, [currentSlide.id]: value });
-
-        if (currentSlide.id === 'plant-experience') {
-        } else if (currentSlide.id === 'goals') {
-        } else if (currentSlide.id === 'frequency') {
-        }
+        setResponses((prev) => ({ ...prev, [currentSlide.id]: value }));
       } else if (
         currentSlide.type === 'multiple-select' &&
         selectedOptions.length > 0
       ) {
-        setResponses({ ...responses, [currentSlide.id]: [...selectedOptions] });
-
-        if (currentSlide.id === 'plant-types') {
-        }
+        setResponses((prev) => ({
+          ...prev,
+          [currentSlide.id]: [...selectedOptions],
+        }));
       }
     };
 
     slideAnimation.value = 0;
-
     processCurrentStepResponses();
 
     if (currentStep === totalSteps - 1) {
+      // handled by handleComplete
     } else {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
       setSelectedOptions([]);
       scrollRef.current?.scrollTo({
-        x: width * (currentStep + 1),
+        x: width * nextStep,
         animated: true,
       });
     }
   };
 
   const handleBack = () => {
-    if (currentStep > 0) {
-      slideAnimation.value = 0;
+    if (currentStep === null || currentStep <= 0) return;
 
-      setCurrentStep(currentStep - 1);
-      scrollRef.current?.scrollTo({
-        x: width * (currentStep - 1),
-        animated: true,
-      });
+    slideAnimation.value = 0;
 
-      const prevSlide = surveyData[currentStep - 1];
-      if (prevSlide.type === 'multiple-choice' && responses[prevSlide.id]) {
-        setSelectedOptions([responses[prevSlide.id]]);
-      } else if (
-        prevSlide.type === 'multiple-select' &&
-        responses[prevSlide.id]
-      ) {
-        setSelectedOptions(responses[prevSlide.id]);
-      } else {
-        setSelectedOptions([]);
-      }
+    const prevStep = currentStep - 1;
+    setCurrentStep(prevStep);
+    scrollRef.current?.scrollTo({
+      x: width * prevStep,
+      animated: true,
+    });
+
+    const prevSlide = surveyData[prevStep];
+    if (prevSlide.type === 'multiple-choice' && responses[prevSlide.id]) {
+      setSelectedOptions([responses[prevSlide.id]]);
+    } else if (
+      prevSlide.type === 'multiple-select' &&
+      responses[prevSlide.id]
+    ) {
+      setSelectedOptions(responses[prevSlide.id]);
+    } else {
+      setSelectedOptions([]);
     }
   };
 
@@ -150,10 +162,10 @@ export default function OnboardingScreen() {
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // await completeOnboarding();
+      // await completeOnboarding(responses);
       console.log('complete onboarding: ', JSON.stringify(responses, null, 2));
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Something went wrong');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
@@ -164,14 +176,16 @@ export default function OnboardingScreen() {
       setSelectedOptions([optionId]);
     } else if (currentSlide.type === 'multiple-select') {
       if (selectedOptions.includes(optionId)) {
-        setSelectedOptions(selectedOptions.filter((id) => id !== optionId));
+        setSelectedOptions((prev) => prev.filter((id) => id !== optionId));
       } else {
-        setSelectedOptions([...selectedOptions, optionId]);
+        setSelectedOptions((prev) => [...prev, optionId]);
       }
     }
   };
 
   const renderSlide = () => {
+    if (currentStep === null) return null;
+
     const slide = surveyData[currentStep];
 
     switch (slide.type) {
@@ -229,6 +243,13 @@ export default function OnboardingScreen() {
     }
   };
 
+  // ─── Guard: don't render until AsyncStorage check resolves ────────
+  if (currentStep === null) {
+    return null;
+  }
+
+  const isAuthSlide = currentSlide.type === 'auth';
+
   return (
     <View
       className="flex-1"
@@ -238,8 +259,8 @@ export default function OnboardingScreen() {
           : colors.backgroundColors.subtle,
         paddingTop: insets.top + 16,
       }}>
-      {/* Progress Bar */}
-      {currentStep > 0 && (
+      {/* Progress bar — hidden on welcome (0) and auth (1) slides */}
+      {currentStep > 1 && (
         <View className="flex-row items-center justify-between gap-x-4 px-6 pb-4 pt-16">
           <TouchableOpacity
             onPress={handleBack}
@@ -252,33 +273,29 @@ export default function OnboardingScreen() {
             <ChevronLeft size={24} color={colors.textColors.subtitle} />
           </TouchableOpacity>
 
-          {currentStep !== 1 && (
-            <View
-              className="mx-3 h-2 flex-1 overflow-hidden rounded-full"
-              style={{
-                backgroundColor: isDarkMode
-                  ? '#222222'
-                  : colors.borderColors.subtle,
-              }}>
-              <Animated.View
-                className="h-full rounded-full"
-                style={[
-                  progressStyle,
-                  { backgroundColor: colors.primaryColors.default },
-                ]}
-              />
-            </View>
-          )}
+          <View
+            className="mx-3 h-2 flex-1 overflow-hidden rounded-full"
+            style={{
+              backgroundColor: isDarkMode
+                ? '#222222'
+                : colors.borderColors.subtle,
+            }}>
+            <Animated.View
+              className="h-full rounded-full"
+              style={[
+                progressStyle,
+                { backgroundColor: colors.primaryColors.default },
+              ]}
+            />
+          </View>
 
-          {currentStep !== 1 && (
-            <TouchableOpacity onPress={handleSkip}>
-              <Text
-                style={{ color: colors.textColors.default }}
-                className="text-base font-medium">
-                Skip
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={handleSkip}>
+            <Text
+              style={{ color: colors.textColors.default }}
+              className="text-base font-medium">
+              Skip
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -292,10 +309,10 @@ export default function OnboardingScreen() {
         {renderSlide()}
       </ScrollView>
 
-      {/* Continue Button */}
-      {currentStep > 1 && (
+      {/* Continue button — hidden on welcome and auth slides */}
+      {currentStep > 1 && !isAuthSlide && (
         <View className="mb-10 items-center px-6">
-          {currentStep === 0 ? null : currentStep === totalSteps - 1 ? (
+          {currentStep === totalSteps - 1 ? (
             <Animated.View style={[buttonAnimStyle, { width: '100%' }]}>
               <TouchableOpacity
                 onPress={handleComplete}

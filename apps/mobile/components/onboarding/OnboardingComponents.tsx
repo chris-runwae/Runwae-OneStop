@@ -14,8 +14,9 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Check } from 'lucide-react-native';
+
 import CustomImage from '@/components/ui/CustomImage';
-import { Colors } from '@/constants';
+import { AppFonts, Colors, COLORS } from '@/constants';
 
 export const FeatureCard = ({
   icon,
@@ -27,7 +28,7 @@ export const FeatureCard = ({
   index: number;
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme ?? 'light'];
+  const appColors = Colors[colorScheme ?? 'light'];
   const isDarkMode = colorScheme === 'dark';
   const animatedValue = useSharedValue(0);
 
@@ -58,7 +59,7 @@ export const FeatureCard = ({
       <Text
         className="flex-1 text-base font-medium"
         style={{
-          color: isDarkMode ? colors.white : colors.textColors.default,
+          color: appColors.textColors.default,
         }}>
         {feature}
       </Text>
@@ -107,6 +108,8 @@ export const AnimatedOption = ({
   colors: any;
 }) => {
   const animatedValue = useSharedValue(0);
+  const colorScheme = useColorScheme() ?? 'light';
+  const appColors = Colors[colorScheme ?? 'light'];
 
   React.useEffect(() => {
     animatedValue.value = withTiming(1, { duration: 400 + index * 100 });
@@ -137,15 +140,15 @@ export const AnimatedOption = ({
           transform: [{ scale: isSelected ? 1.02 : 1 }],
           backgroundColor: isSelected
             ? isDarkMode
-              ? 'rgba(61, 164, 80, 0.15)'
-              : colors.primary[50]
+              ? colors.pink[100]
+              : colors.pink[50]
             : isDarkMode
-              ? '#1e1e1e'
-              : colors.white,
+              ? colors.gray[750]
+              : colors.white.default,
           borderColor: isSelected
-            ? colors.primary[500]
+            ? appColors.primaryColors.border
             : isDarkMode
-              ? '#2c2c2c'
+              ? colors.gray[750]
               : colors.gray[200],
         }}>
         <Text className="mr-3 text-2xl">{option.icon}</Text>
@@ -153,11 +156,13 @@ export const AnimatedOption = ({
           className="flex-1 text-lg"
           style={{
             color: isSelected
-              ? colors.primary[500]
+              ? appColors.primaryColors.default
               : isDarkMode
-                ? colors.white
+                ? colors.white.default
                 : colors.gray[900],
-            fontWeight: isSelected ? '600' : 'normal',
+            fontFamily: isSelected
+              ? AppFonts.inter.semiBold
+              : AppFonts.inter.regular,
           }}>
           {option.text}
         </Text>
@@ -165,8 +170,8 @@ export const AnimatedOption = ({
           <Animated.View
             entering={FadeIn.duration(200)}
             className="h-6 w-6 items-center justify-center rounded-full"
-            style={{ backgroundColor: colors.primary[500] }}>
-            <Check size={16} color="white" />
+            style={{ backgroundColor: appColors.primaryColors.default }}>
+            <Check size={16} color={colors.white.default} />
           </Animated.View>
         )}
       </TouchableOpacity>

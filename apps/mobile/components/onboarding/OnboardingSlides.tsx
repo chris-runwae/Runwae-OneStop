@@ -5,9 +5,10 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Text from '@/components/ui/Text';
-import { AppFonts } from '@/constants';
+import { AppFonts, COLORS } from '@/constants';
 import {
   AnimatedFeatureIcon,
   AnimatedOption,
@@ -136,11 +137,11 @@ export const ChoiceSlide: React.FC<SlideProps> = ({
   });
 
   return (
-    <View style={{ width }} className="flex-1 px-6 pt-6">
+    <View className="flex-1 px-6 pt-6" style={{ width }}>
       <Animated.View style={[slideAnimStyle]} className="flex-1">
         <Text
           className="mb-6 text-2xl font-bold"
-          style={{ color: isDarkMode ? colors.white : colors.gray[900] }}>
+          style={{ color: colors.textColors.default }}>
           {slide.question}
         </Text>
 
@@ -148,7 +149,7 @@ export const ChoiceSlide: React.FC<SlideProps> = ({
           <Text
             className="mb-6 text-base"
             style={{
-              color: isDarkMode ? colors.gray[400] : colors.gray[600],
+              color: colors.textColors.subtitle,
             }}>
             {slide.description}
           </Text>
@@ -165,7 +166,7 @@ export const ChoiceSlide: React.FC<SlideProps> = ({
                 isSelected={isSelected}
                 onSelect={() => handleOptionSelect(option.id)}
                 isDarkMode={isDarkMode}
-                colors={colors}
+                colors={COLORS}
               />
             );
           })}

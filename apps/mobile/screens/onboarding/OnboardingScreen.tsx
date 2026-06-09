@@ -15,6 +15,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   WelcomeSlide,
@@ -22,7 +23,7 @@ import {
   FeaturesSlide,
 } from '@/components/onboarding/OnboardingSlides';
 import { surveyData } from '@/components/onboarding/surveyData';
-import { Colors } from '@/constants';
+import { Colors, COLORS } from '@/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,7 @@ export default function OnboardingScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const isDarkMode = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = surveyData.length;
@@ -203,9 +205,11 @@ export default function OnboardingScreen() {
         backgroundColor: isDarkMode
           ? '#121212'
           : colors.backgroundColors.subtle,
+        paddingTop: insets.top + 16,
       }}>
+      {/* Progress Bar */}
       {currentStep > 0 && (
-        <View className="flex-row items-center justify-between px-6 pb-4 pt-16">
+        <View className="flex-row items-center justify-between gap-x-4 px-6 pb-4 pt-16">
           <TouchableOpacity
             onPress={handleBack}
             className="h-10 w-10 items-center justify-center rounded-full"
@@ -235,7 +239,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity onPress={handleSkip}>
             <Text
-              style={{ color: colors.primary[500] }}
+              style={{ color: colors.textColors.default }}
               className="text-base font-medium">
               Skip
             </Text>

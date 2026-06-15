@@ -8,6 +8,7 @@ import {
   toPublicUserOtherOrNull,
 } from "./lib/user_sanitize";
 import { scheduleServerTrack } from "./lib/posthog";
+import { onboardingResponsesValidator } from "./schema";
 
 export const getCurrentUser = query({
   args: {},
@@ -136,14 +137,10 @@ export const setHomeLocation = mutation({
 });
 
 export const completeOnboarding = mutation({
-  args: { 
-      responses: v.object({
-      'travel-party':       v.array(v.string()),
-      'travel-style':       v.string(),
-      'trip-types':         v.array(v.string()),
-      'pain-point':         v.string(),
-      'planning-horizon':   v.string(),
-    }), 
+  args: {
+    // null = survey skipped; undefined = arg omitted. Either leaves
+    // onboardingResponses unset (see patch below).
+    responses: v.optional(v.union(onboardingResponsesValidator, v.null())),
   },
   handler: async (ctx, { responses }) => {
     const userId = await getAuthUserId(ctx);
@@ -154,15 +151,21 @@ export const completeOnboarding = mutation({
 
     await ctx.db.patch(userId, { 
       onboardingComplete: true, 
-      ...(responses !== undefined && { onboardingResponses: responses }),
+      ...(responses != null && { onboardingResponses: responses }),
     });
 
+    // Record values are typed string | string[]; normalize per field for analytics.
+    const asArray = (val: string | string[] | undefined): string[] =>
+      Array.isArray(val) ? val : val !== undefined ? [val] : [];
+    const asString = (val: string | string[] | undefined): string | null =>
+      Array.isArray(val) ? (val[0] ?? null) : val ?? null;
+
     const trackProperties = {
-      travel_party:     responses?.['travel-party'] ?? [],
-      travel_style:     responses?.['travel-style'] ?? null,
-      trip_types:       responses?.['trip-types'] ?? [],
-      pain_point:       responses?.['pain-point'] ?? null,
-      planning_horizon: responses?.['planning-horizon'] ?? null,
+      travel_party:     asArray(responses?.['travel-party']),
+      travel_style:     asString(responses?.['travel-style']),
+      trip_types:       asArray(responses?.['trip-types']),
+      pain_point:       asString(responses?.['pain-point']),
+      planning_horizon: asString(responses?.['planning-horizon']),
       skipped:          responses === null,
     };
 

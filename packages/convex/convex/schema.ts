@@ -2,13 +2,14 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
-const onboardingResponsesValidator = v.object({
-  'travel-party': v.array(v.string()),   // multiple-select
-  'travel-style': v.string(),            // single choice
-  'trip-types':   v.array(v.string()),   // multiple-select
-  'pain-point':   v.string(),            // single choice
-  'planning-horizon': v.string(),        // single choice
-});
+// Survey ids use hyphens (e.g. 'travel-party'), which Convex object
+// validators reject as keys (identifiers allow only alphanumerics/underscores).
+// v.record keys are validated as plain strings, so hyphenated keys are fine.
+// Values are either multi-select arrays or single-choice strings.
+export const onboardingResponsesValidator = v.record(
+  v.string(),
+  v.union(v.array(v.string()), v.string()),
+);
 
 export default defineSchema({
   ...authTables,

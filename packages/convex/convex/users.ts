@@ -8,6 +8,7 @@ import {
   toPublicUserOtherOrNull,
 } from "./lib/user_sanitize";
 import { scheduleServerTrack } from "./lib/posthog";
+import { onboardingResponsesValidator } from "./schema";
 
 export const getCurrentUser = query({
   args: {},
@@ -136,24 +137,42 @@ export const setHomeLocation = mutation({
 });
 
 export const completeOnboarding = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    // null = survey skipped; undefined = arg omitted. Either leaves
+    // onboardingResponses unset (see patch below).
+    responses: v.optional(v.union(onboardingResponsesValidator, v.null())),
+  },
+  handler: async (ctx, { responses }) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
-    // Read current state before patching so we only fire the event on
-    // the FIRST transition (false/undefined → true). Re-calling this
-    // mutation (e.g. the 5-step boarding screen retrying on stale state)
-    // mustn't refire the event.
     const current = await ctx.db.get(userId);
     const wasAlreadyComplete = current?.onboardingComplete === true;
 
-    await ctx.db.patch(userId, { onboardingComplete: true });
+    await ctx.db.patch(userId, { 
+      onboardingComplete: true, 
+      ...(responses != null && { onboardingResponses: responses }),
+    });
+
+    // Record values are typed string | string[]; normalize per field for analytics.
+    const asArray = (val: string | string[] | undefined): string[] =>
+      Array.isArray(val) ? val : val !== undefined ? [val] : [];
+    const asString = (val: string | string[] | undefined): string | null =>
+      Array.isArray(val) ? (val[0] ?? null) : val ?? null;
+
+    const trackProperties = {
+      travel_party:     asArray(responses?.['travel-party']),
+      travel_style:     asString(responses?.['travel-style']),
+      trip_types:       asArray(responses?.['trip-types']),
+      pain_point:       asString(responses?.['pain-point']),
+      planning_horizon: asString(responses?.['planning-horizon']),
+      skipped:          responses === null,
+    };
 
     if (!wasAlreadyComplete) {
       await scheduleServerTrack(ctx, String(userId), {
         name: "onboarding_completed",
-        properties: {},
+        properties: trackProperties,
       });
     }
 

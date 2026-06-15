@@ -25,7 +25,7 @@ import { savedItemFromEvent } from '@/utils/savedIdeaInputs';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
-import { useStripeSafe } from '@/utils/stripe-safe';
+import { STRIPE_MERCHANT_IDENTIFIER, useStripeSafe } from '@/utils/stripe-safe';
 import { useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, Star } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -104,7 +104,10 @@ const EventDetailScreen = () => {
         const { error: initErr } = await initPaymentSheet({
           merchantDisplayName: 'Runwae',
           paymentIntentClientSecret: clientSecret,
-          applePay: { merchantCountryCode: 'GB' },
+          applePay: {
+            merchantCountryCode: 'GB',
+            merchantIdentifier: STRIPE_MERCHANT_IDENTIFIER,
+          },
           googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
           style: 'automatic',
         });

@@ -12,10 +12,18 @@ import { Colors, textStyles } from '@/constants';
 type CustomTextProps = TextProps & {
   children: string | React.ReactNode;
   style?: StyleProp<TextStyle>;
+  className?: string;
+  replaceDefaultStyle?: boolean;
 };
 
 const Text = (props: CustomTextProps) => {
-  const { children, style, ...rest } = props;
+  const {
+    children,
+    style,
+    className,
+    replaceDefaultStyle = false,
+    ...rest
+  } = props;
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -27,7 +35,10 @@ const Text = (props: CustomTextProps) => {
   });
 
   return (
-    <RNText style={[styles.text, style]} {...rest}>
+    <RNText
+      style={[replaceDefaultStyle ? {} : styles.text, style]}
+      className={className}
+      {...rest}>
       {children}
     </RNText>
   );

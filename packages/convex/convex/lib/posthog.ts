@@ -19,7 +19,17 @@ export type ServerAnalyticsEvent =
     }
   | { name: "first_trip_created"; properties: Record<string, never> }
   | { name: "first_invite_accepted"; properties: Record<string, never> }
-  | { name: "onboarding_completed"; properties: Record<string, never> }
+  | {
+      name: "onboarding_completed";
+      properties: {
+        travel_party: string[];
+        travel_style: string | null;
+        trip_types: string[];
+        pain_point: string | null;
+        planning_horizon: string | null;
+        skipped: boolean;
+      };
+    }
   | {
       name: "booking_completed";
       properties: {

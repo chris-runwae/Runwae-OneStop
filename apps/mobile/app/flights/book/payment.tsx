@@ -1,6 +1,6 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import PaymentErrorBanner from '@/components/payment/PaymentErrorBanner';
-import { useStripeSafe } from '@/utils/stripe-safe';
+import { STRIPE_MERCHANT_IDENTIFIER, useStripeSafe } from '@/utils/stripe-safe';
 import { useTheme } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
@@ -44,7 +44,7 @@ export default function FlightPaymentScreen() {
           paymentIntentClientSecret: params.clientSecret,
           applePay: {
             merchantCountryCode: 'GB',
-            merchantIdentifier: 'merchant.io.runwae.app',
+            merchantIdentifier: STRIPE_MERCHANT_IDENTIFIER,
           },
           googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
           returnURL: 'runwae://stripe-redirect',

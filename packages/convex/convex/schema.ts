@@ -2,12 +2,22 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+// Survey ids use hyphens (e.g. 'travel-party'), which Convex object
+// validators reject as keys (identifiers allow only alphanumerics/underscores).
+// v.record keys are validated as plain strings, so hyphenated keys are fine.
+// Values are either multi-select arrays or single-choice strings.
+export const onboardingResponsesValidator = v.record(
+  v.string(),
+  v.union(v.array(v.string()), v.string()),
+);
+
 export default defineSchema({
   ...authTables,
 
   // ── AUTH & IDENTITY ────────────────────────────────────────
   // Merges @convex-dev/auth required fields with Runwae app fields.
   // Auth inserts the row first, so all app fields are optional.
+  
   users: defineTable({
     // Auth fields (required by @convex-dev/auth at runtime)
     name: v.optional(v.string()),
@@ -32,6 +42,7 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     stripeConnectId: v.optional(v.string()),
     onboardingComplete: v.optional(v.boolean()),
+    onboardingResponses: v.optional(onboardingResponsesValidator),
     travellerTags: v.optional(v.array(v.string())),
     username: v.optional(v.string()),
     homeCoords: v.optional(v.object({ lat: v.number(), lng: v.number() })),

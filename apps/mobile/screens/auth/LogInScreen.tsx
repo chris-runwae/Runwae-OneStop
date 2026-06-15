@@ -1,6 +1,6 @@
-import * as Haptics from "expo-haptics";
-import { Link, useRouter } from "expo-router";
-import React, { useState } from "react";
+import * as Haptics from 'expo-haptics';
+import { Link, useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,17 +10,17 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Toast } from "toastify-react-native";
-import z from "zod";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Toast } from 'toastify-react-native';
+import z from 'zod';
 
-import { Spacer } from "@/components";
-import CustomTextInput from "@/components/containers/TextInput";
-import { useAuth } from "@/context/AuthContext";
-import { LoginFormData, loginSchema } from "@/utils/validation/auth.validation";
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
+import { Spacer } from '@/components';
+import CustomTextInput from '@/components/containers/TextInput';
+import { useAuth } from '@/context/AuthContext';
+import { LoginFormData, loginSchema } from '@/utils/validation/auth.validation';
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons';
 
 const LogInScreen = () => {
   const insets = useSafeAreaInsets();
@@ -28,21 +28,21 @@ const LogInScreen = () => {
   const { signIn, signInWithGoogle, signInWithApple, lastAuthMethod } =
     useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<
-    "google" | "apple" | null
-  >(null);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(
+    null
+  );
   const [formData, setFormData] = useState<LoginFormData>({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
   const [errors, setErrors] = useState<LoginFormData>({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" }));
+    setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const handleBlur = (field: keyof LoginFormData) => {
@@ -52,10 +52,10 @@ const LogInScreen = () => {
       if (issue) {
         setErrors((prev) => ({ ...prev, [field]: issue.message }));
       } else {
-        setErrors((prev) => ({ ...prev, [field]: "" }));
+        setErrors((prev) => ({ ...prev, [field]: '' }));
       }
     } else {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -71,7 +71,7 @@ const LogInScreen = () => {
         // Unverified email: Convex Auth emailed an OTP instead of creating
         // a session. Route into the same verification flow sign-up uses.
         router.push({
-          pathname: "/(auth)/verification-sent",
+          pathname: '/(auth)/verification-sent',
           params: { email: formData.email },
         } as any);
         return;
@@ -80,10 +80,10 @@ const LogInScreen = () => {
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
-          type: "error",
+          type: 'error',
           text1: "Couldn't sign in",
           text2: result.error,
-          position: "bottom",
+          position: 'bottom',
           visibilityTime: 4000,
           autoHide: true,
         });
@@ -92,7 +92,7 @@ const LogInScreen = () => {
     } catch (error) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (error instanceof z.ZodError) {
-        const newErrors = { email: "", password: "" };
+        const newErrors = { email: '', password: '' };
         error.issues.forEach((issue) => {
           const field = issue.path[0] as keyof LoginFormData;
           if (field) newErrors[field] = issue.message;
@@ -104,20 +104,20 @@ const LogInScreen = () => {
     }
   };
 
-  const handleSocial = async (provider: "google" | "apple") => {
+  const handleSocial = async (provider: 'google' | 'apple') => {
     setSocialLoading(provider);
     try {
       const result =
-        provider === "google"
+        provider === 'google'
           ? await signInWithGoogle()
           : await signInWithApple();
       if (!result.success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         Toast.show({
-          type: "error",
-          text1: provider === "google" ? "Google sign-in" : "Apple sign-in",
+          type: 'error',
+          text1: provider === 'google' ? 'Google sign-in' : 'Apple sign-in',
           text2: result.error,
-          position: "bottom",
+          position: 'bottom',
           visibilityTime: 4000,
           autoHide: true,
         });
@@ -130,28 +130,25 @@ const LogInScreen = () => {
   return (
     <AppSafeAreaView className="px-[20px]">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1">
         <ScrollView
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           <Spacer size={24} vertical />
           <Text
-            style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-            className="text-3xl font-bold text-black dark:text-white"
-          >
-            Welcome {"\n"}Back!
+            style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
+            className="text-3xl font-bold text-black dark:text-white">
+            Welcome {'\n'}Back!
           </Text>
           <Spacer size={5} vertical />
 
           <Text className="text-gray-400">
-            Login to your account or{" "}
+            Login to your account or{' '}
             <Link href="/(auth)/signup" className="text-primary underline">
               sign up
-            </Link>{" "}
+            </Link>{' '}
             here.
           </Text>
           <Spacer size={50} vertical />
@@ -161,8 +158,8 @@ const LogInScreen = () => {
             keyboardType="email-address"
             placeholder="example@email.com"
             value={formData.email}
-            onChangeText={(value) => handleInputChange("email", value)}
-            onBlur={() => handleBlur("email")}
+            onChangeText={(value) => handleInputChange('email', value)}
+            onBlur={() => handleBlur('email')}
             error={errors.email}
           />
           <Spacer size={16} vertical />
@@ -171,24 +168,23 @@ const LogInScreen = () => {
             label="Password"
             isPassword
             value={formData.password}
-            onChangeText={(value) => handleInputChange("password", value)}
-            onBlur={() => handleBlur("password")}
+            onChangeText={(value) => handleInputChange('password', value)}
+            onBlur={() => handleBlur('password')}
             error={errors.password}
           />
           <Spacer size={5} vertical />
 
           <View style={styles.forgotPasswordContainer}>
             <Link
-              href={"/(auth)/forgot-password"}
-              className="text-sm text-primary underline"
-            >
+              href={'/(auth)/forgot-password'}
+              className="text-sm text-primary underline">
               Forgot Password?
             </Link>
           </View>
           <Spacer size={20} vertical />
 
           <View>
-            {lastAuthMethod === "password" && (
+            {lastAuthMethod === 'password' && (
               <View style={styles.lastUsedBadgeWrap} pointerEvents="none">
                 <View style={styles.lastUsedBadge}>
                   <Text style={styles.lastUsedBadgeText}>Last used</Text>
@@ -198,12 +194,11 @@ const LogInScreen = () => {
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={isSubmitting || socialLoading !== null}
-              className="bg-primary h-[45px] rounded-full w-full items-center justify-center disabled:opacity-50"
-            >
+              className="h-[45px] w-full items-center justify-center rounded-full bg-primary disabled:opacity-50">
               {isSubmitting ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text className="text-white font-medium text-base">Log in</Text>
+                <Text className="text-base font-medium text-white">Log in</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -211,8 +206,8 @@ const LogInScreen = () => {
           <Spacer size={20} vertical />
 
           <SocialAuthButtons
-            onGoogle={() => handleSocial("google")}
-            onApple={() => handleSocial("apple")}
+            onGoogle={() => handleSocial('google')}
+            onApple={() => handleSocial('apple')}
             loading={socialLoading}
             disabled={isSubmitting}
             lastAuthMethod={lastAuthMethod}
@@ -227,26 +222,26 @@ export default LogInScreen;
 
 const styles = StyleSheet.create({
   forgotPasswordContainer: {
-    alignItems: "flex-end",
-    width: "100%",
+    alignItems: 'flex-end',
+    width: '100%',
   },
   lastUsedBadgeWrap: {
-    position: "absolute",
+    position: 'absolute',
     top: -10,
     right: 12,
     zIndex: 10,
   },
   lastUsedBadge: {
-    backgroundColor: "#111",
+    backgroundColor: '#111',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   },
   lastUsedBadgeText: {
-    color: "white",
+    color: 'white',
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: '600',
     letterSpacing: 0.4,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
   },
 });

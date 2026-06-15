@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -6,16 +6,16 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
-import { useColorScheme } from "nativewind";
-import Svg, { Path } from "react-native-svg";
+} from 'react-native';
+import { useColorScheme } from 'nativewind';
+import Svg, { Path } from 'react-native-svg';
 
-import type { AuthMethod } from "@/hooks/useAuth";
+import type { AuthMethod } from '@/hooks/useAuth';
 
 interface Props {
   onGoogle: () => void;
   onApple: () => void;
-  loading: "google" | "apple" | null;
+  loading: 'google' | 'apple' | null;
   disabled?: boolean;
   // Used to render a small "Last used" badge over whichever button matches.
   lastAuthMethod?: AuthMethod | null;
@@ -23,7 +23,7 @@ interface Props {
 
 // Inline 4-color Google "G". Inline SVG works offline and avoids depending on
 // expo-image's flaky remote-SVG support.
-function GoogleLogo({ size = 18 }: { size?: number }) {
+export function GoogleLogo({ size = 18 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 18 18">
       <Path
@@ -48,7 +48,13 @@ function GoogleLogo({ size = 18 }: { size?: number }) {
 
 // Apple HIG: in dark mode the canonical button flips to a white surface with a
 // black logo, so the logo's fill follows the foreground color we pick below.
-function AppleLogo({ size = 18, color = "#fff" }: { size?: number; color?: string }) {
+export function AppleLogo({
+  size = 18,
+  color = '#fff',
+}: {
+  size?: number;
+  color?: string;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 384 512">
       <Path
@@ -67,20 +73,20 @@ export function SocialAuthButtons({
   lastAuthMethod,
 }: Props) {
   const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const showApple = Platform.OS === "ios";
+  const isDark = colorScheme === 'dark';
+  const showApple = Platform.OS === 'ios';
   const isBusy = loading !== null;
 
   // Apple: black-on-white in dark mode (HIG §Sign In with Apple), black-on-
   // white-stays-black in light. Google: keep a single neutral surface that
   // contrasts with the screen background in either mode.
-  const appleBg = isDark ? "#fff" : "#000";
-  const appleFg = isDark ? "#000" : "#fff";
-  const googleBg = isDark ? "#1F2937" : "#fff";
-  const googleFg = isDark ? "#F9FAFB" : "#111827";
-  const googleBorder = isDark ? "#374151" : "#E5E7EB";
-  const dividerLine = isDark ? "#374151" : "#E5E7EB";
-  const dividerText = isDark ? "#6B7280" : "#9CA3AF";
+  const appleBg = isDark ? '#fff' : '#000';
+  const appleFg = isDark ? '#000' : '#fff';
+  const googleBg = isDark ? '#1F2937' : '#fff';
+  const googleFg = isDark ? '#F9FAFB' : '#111827';
+  const googleBorder = isDark ? '#374151' : '#E5E7EB';
+  const dividerLine = isDark ? '#374151' : '#E5E7EB';
+  const dividerText = isDark ? '#6B7280' : '#9CA3AF';
 
   return (
     <View>
@@ -94,7 +100,7 @@ export function SocialAuthButtons({
 
       <View style={styles.row}>
         <View style={styles.buttonWrap}>
-          {lastAuthMethod === "google" && <LastUsedBadge isDark={isDark} />}
+          {lastAuthMethod === 'google' && <LastUsedBadge isDark={isDark} />}
           <TouchableOpacity
             onPress={onGoogle}
             disabled={isBusy || disabled}
@@ -106,9 +112,8 @@ export function SocialAuthButtons({
                 borderWidth: 1,
               },
             ]}
-            activeOpacity={0.85}
-          >
-            {loading === "google" ? (
+            activeOpacity={0.85}>
+            {loading === 'google' ? (
               <ActivityIndicator size="small" color={googleFg} />
             ) : (
               <>
@@ -123,14 +128,13 @@ export function SocialAuthButtons({
 
         {showApple && (
           <View style={styles.buttonWrap}>
-            {lastAuthMethod === "apple" && <LastUsedBadge isDark={isDark} />}
+            {lastAuthMethod === 'apple' && <LastUsedBadge isDark={isDark} />}
             <TouchableOpacity
               onPress={onApple}
               disabled={isBusy || disabled}
               style={[styles.button, { backgroundColor: appleBg }]}
-              activeOpacity={0.85}
-            >
-              {loading === "apple" ? (
+              activeOpacity={0.85}>
+              {loading === 'apple' ? (
                 <ActivityIndicator size="small" color={appleFg} />
               ) : (
                 <>
@@ -154,15 +158,13 @@ function LastUsedBadge({ isDark }: { isDark: boolean }) {
       <View
         style={[
           styles.lastUsedBadge,
-          { backgroundColor: isDark ? "#F9FAFB" : "#111" },
-        ]}
-      >
+          { backgroundColor: isDark ? '#F9FAFB' : '#111' },
+        ]}>
         <Text
           style={[
             styles.lastUsedBadgeText,
-            { color: isDark ? "#111" : "#fff" },
-          ]}
-        >
+            { color: isDark ? '#111' : '#fff' },
+          ]}>
           Last used
         </Text>
       </View>
@@ -172,8 +174,8 @@ function LastUsedBadge({ isDark }: { isDark: boolean }) {
 
 const styles = StyleSheet.create({
   dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
     marginBottom: 14,
   },
@@ -183,31 +185,31 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: '600',
     letterSpacing: 0.5,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
   },
   row: {
     gap: 10,
   },
   buttonWrap: {
-    position: "relative",
+    position: 'relative',
   },
   button: {
     height: 45,
     borderRadius: 999,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     gap: 10,
   },
   label: {
-    fontWeight: "600",
+    fontWeight: '600',
     fontSize: 15,
   },
   lastUsedBadgeWrap: {
-    position: "absolute",
+    position: 'absolute',
     top: -10,
     right: 12,
     zIndex: 10,
@@ -219,8 +221,8 @@ const styles = StyleSheet.create({
   },
   lastUsedBadgeText: {
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: '600',
     letterSpacing: 0.4,
-    textTransform: "uppercase",
+    textTransform: 'uppercase',
   },
 });

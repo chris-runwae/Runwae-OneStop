@@ -1,0 +1,120 @@
+# Hotel booking flow — Runwae OneStop (Expo app)
+#
+# Covers: Home > Stays search > results > hotel detail > booking summary >
+#         payment (Stripe test card) > confirmation.
+#
+# Selectors use testIDs added to the source components. Only two spots fall
+# back to text/coordinates because they aren't our components:
+#   - the calendar day cells (3rd-party @marceloterreiro/flash-calendar)
+#   - the Stripe native PaymentSheet
+#
+# PRECONDITIONS
+#   - A user is already logged in (the (app) group is auth-gated).
+#   - Convex + LiteAPI return live rooms for the chosen destination/dates.
+#   - Stripe is in TEST mode (so 4242… is accepted).
+#
+# APP ID: dev = app.runwae.dev | preview = app.runwae.preview | prod = app.runwae.io
+appId: app.runwae.dev
+---
+- launchApp
+
+# --- Home: open the Stays search tab -------------------------------------
+- tapOn:
+    id: "home-stays-tab"
+- assertVisible:
+    id: "hotel-search-destination"
+
+# --- Destination ---------------------------------------------------------
+- tapOn:
+    id: "hotel-search-destination"
+- tapOn:
+    id: "destination-input"
+- inputText: "London"
+- tapOn:
+    id: "destination-done"
+
+# --- Dates ---------------------------------------------------------------
+# Calendar day cells come from a 3rd-party calendar with no testIDs, so we
+# tap day-of-month numbers. Compute two future days that are on the current
+# month's grid. If check-in lands late in the month, bump the offsets so
+# check-out (+2 days) is still visible.
+- evalScript: ${output.checkInDay = new Date(Date.now() + 10 * 86400000).getDate()}
+- evalScript: ${output.checkOutDay = new Date(Date.now() + 12 * 86400000).getDate()}
+
+- tapOn:
+    id: "hotel-search-dates"
+- assertVisible: "Select Dates"
+- tapOn: "${output.checkInDay}"
+- tapOn: "${output.checkOutDay}"
+- tapOn:
+    id: "date-modal-done"
+
+# Guests default to "2 guests · 1 room" (valid) — skip the stepper.
+
+# --- Search --------------------------------------------------------------
+- tapOn:
+    id: "hotel-search-submit"
+
+# --- Results: open the first hotel --------------------------------------
+- assertVisible:
+    id: "hotel-result-card-0"
+- tapOn:
+    id: "hotel-result-card-0"
+
+# --- Hotel detail: pick the first room ----------------------------------
+- assertVisible: "Available rooms"
+- scrollUntilVisible:
+    element:
+      id: "select-room-0"
+    direction: DOWN
+- tapOn:
+    id: "select-room-0"
+
+# --- Booking summary -----------------------------------------------------
+- assertVisible: "Booking Summary"
+- tapOn:
+    id: "confirm-and-pay-button"
+
+# --- Payment: guest details ---------------------------------------------
+- assertVisible: "Guest Details"
+- tapOn:
+    id: "guest-first-name"
+- inputText: "Test"
+- tapOn:
+    id: "guest-last-name"
+- inputText: "Booker"
+- tapOn:
+    id: "guest-email"
+- eraseText: 40            # clear any prefilled email from the logged-in user
+- inputText: "test.booker@example.com"
+- hideKeyboard
+- tapOn:
+    id: "pay-button"
+
+# --- LiteAPI hosted checkout (in-app browser, NOT our UI) ---------------
+# Tapping "pay-button" opens LiteAPI's Payment SDK page in an in-app browser
+# (SFSafariViewController on iOS / Chrome Custom Tabs on Android). That's web
+# content in a separate surface, so there are NO testIDs and Maestro's ability
+# to drive it is platform-dependent (generally workable on Android, flaky on
+# iOS). Sandbox test card: 4242 4242 4242 4242, any future expiry, any CVC.
+#
+# The card fields below are best-effort by visible label. If Maestro can't
+# reach them on your platform, delete this block and stop the test at the
+# assertion above (reaching the checkout window is still a meaningful E2E pass).
+- inputText: "4242424242424242"   # card number (focus is usually on first field)
+- inputText: "1230"               # MM/YY expiry
+- inputText: "123"                # CVC
+- runFlow:
+    when:
+      visible: "ZIP"
+    commands:
+      - inputText: "12345"
+- tapOn:
+    text: "Pay.*"
+
+# --- Confirmation --------------------------------------------------------
+# After payment, the bridge page deep-links back into the app, which finalizes
+# the booking (confirmAfterPayment) and lands here.
+- assertVisible: "Booking Confirmed!"
+- tapOn:
+    id: "confirmation-done-button"

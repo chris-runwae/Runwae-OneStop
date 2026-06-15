@@ -184,7 +184,10 @@ export default function ConfirmationScreen() {
 
         <Spacer size={16} vertical />
 
-        <Pressable style={styles.primaryBtn} onPress={handleDone}>
+        <Pressable
+          testID="confirmation-done-button"
+          style={styles.primaryBtn}
+          onPress={handleDone}>
           <Text style={styles.primaryBtnText}>Done</Text>
         </Pressable>
       </View>

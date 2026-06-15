@@ -104,7 +104,10 @@ export default function DateModal({
           <Text style={[styles.modalTitle, { color: dark ? '#fff' : '#000' }]}>
             Select Dates
           </Text>
-          <TouchableOpacity onPress={handleDone} style={styles.modalDoneButton}>
+          <TouchableOpacity
+            testID="date-modal-done"
+            onPress={handleDone}
+            style={styles.modalDoneButton}>
             <Text style={{ color: '#FF1F8C', fontWeight: 'bold' }}>Done</Text>
           </TouchableOpacity>
         </View>

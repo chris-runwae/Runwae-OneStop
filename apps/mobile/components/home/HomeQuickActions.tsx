@@ -83,6 +83,7 @@ export default function HomeQuickActions({ dark }: Props) {
           }
         />
         <CategoryItem
+          testID="home-stays-tab"
           imageSrc={require('@/assets/images/house.png')}
           label="Stays"
           onPress={() =>

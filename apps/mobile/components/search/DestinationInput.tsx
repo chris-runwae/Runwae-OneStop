@@ -97,6 +97,7 @@ export default function DestinationInput({
             Where to?
           </Text>
           <Pressable
+            testID="destination-done"
             onPress={() => submit(query)}
             disabled={!query.trim()}
             hitSlop={10}>
@@ -117,6 +118,7 @@ export default function DestinationInput({
           ]}>
           <Search size={18} color={colors.icon} />
           <TextInput
+            testID="destination-input"
             value={query}
             onChangeText={setQuery}
             placeholder="City, hotel, or address"

@@ -84,8 +84,9 @@ export default function HotelsResultsScreen() {
     return `${fmt(params.checkin)} – ${fmt(params.checkout)} · ${adults} ${adults === 1 ? 'guest' : 'guests'}`;
   }, [params.checkin, params.checkout, adults]);
 
-  const renderCard = ({ item }: { item: DiscoveryItem }) => (
+  const renderCard = ({ item, index }: { item: DiscoveryItem; index: number }) => (
     <Pressable
+      testID={`hotel-result-card-${index}`}
       style={[
         styles.card,
         { backgroundColor: colors.card, borderColor: colors.borderColors.subtle },

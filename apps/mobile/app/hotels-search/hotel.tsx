@@ -450,6 +450,7 @@ export default function HotelsSearchHotelScreen() {
               return (
                 <Pressable
                   key={`${rate.offerId}-${idx}`}
+                  testID={`select-room-${idx}`}
                   style={[
                     styles.rateCard,
                     { borderColor: colors.borderColors.subtle },

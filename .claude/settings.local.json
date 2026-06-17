@@ -70,7 +70,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(cat)",
       "Read(//tmp/**)",
-      "Bash(echo \"TSC_EXIT:$?\")"
+      "Bash(echo \"TSC_EXIT:$?\")",
+      "Bash(CLAUDE_CODE_TMPDIR=/tmp grep -rl \"WalletBalance\\\\|MerchantOffer\" /Users/mac/Documents/code/Runwae-OneStop --include=\"*.tsx\" --include=\"*.ts\" --exclude-dir=node_modules)",
+      "Bash(cp -r /Users/mac/Documents/code/Runwae-OneStop/apps/mobile/app/wallet /Users/mac/Documents/code/Runwae-OneStop/apps/mobile/app/\\\\\\(tabs\\\\\\)/wallet)"
     ]
   }
 }

@@ -25,6 +25,10 @@ export default function TabLayout() {
           <Label>Trips</Label>
           <Icon sf="airplane" />
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="wallet">
+          <Label>Wallet</Label>
+          <Icon sf="wallet.pass.fill" />
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <Label>Profile</Label>
           <Icon sf="person.crop.circle.fill" />
@@ -47,6 +51,7 @@ export default function TabLayout() {
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
         <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
         <Tabs.Screen name="(trips)" options={{ title: 'Trips' }} />
+        <Tabs.Screen name="wallet" options={{ title: 'Wallet' }} />
         <Tabs.Screen name="create" options={{ title: 'Create' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       </Tabs>

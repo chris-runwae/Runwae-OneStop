@@ -2,7 +2,7 @@ import { HomeIcon } from '@/components/icons/HomeIcon';
 import { PlaneIcon } from '@/components/icons/PlaneIcon';
 import { SearchIcon } from '@/components/icons/SearchIcon';
 import { Tab } from '@/types/tabs.type';
-import { User } from 'lucide-react-native';
+import { User, Wallet } from 'lucide-react-native';
 
 const ORIENTATION = {
   HORIZONTAL: 'horizontal',
@@ -33,6 +33,12 @@ export const tabs: Tab[] = [
     title: 'Trips',
     icon: PlaneIcon,
     route: '/(trips)/trip',
+  },
+  {
+    name: 'wallet',
+    title: 'Wallet',
+    icon: Wallet,
+    route: '/wallet',
   },
   {
     name: 'profile',

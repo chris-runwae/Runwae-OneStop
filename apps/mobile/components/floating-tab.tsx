@@ -43,12 +43,18 @@ const FloatingTabBar = () => {
         return s.includes('profile');
       }
 
+      // Wallet
+      if (tab.name === 'wallet') {
+        return pathname.startsWith('/wallet');
+      }
+
       // Home (Active ONLY if no other tab group is present)
       if (tab.name === 'home') {
         const isOtherRootTab =
           s.includes('(trips)') ||
           s.includes('explore') ||
-          s.includes('profile');
+          s.includes('profile') ||
+          pathname.startsWith('/wallet');
         return !isOtherRootTab && (pathname === '/' || pathname === '/home');
       }
 
@@ -57,7 +63,7 @@ const FloatingTabBar = () => {
     [pathname, segments]
   );
 
-  const handlePress = (route: string, isSelected: boolean, index: number) => {
+  const handlePress = (route: string, isSelected: boolean, _index: number) => {
     if (Platform.OS === 'ios' && !isSelected) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }

@@ -2,7 +2,7 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@runwae/convex/convex/_generated/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useAction } from 'convex/react';
 import { format } from 'date-fns';
 import { router, useLocalSearchParams } from 'expo-router';

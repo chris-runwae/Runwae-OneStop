@@ -3,7 +3,7 @@ import {
   type ExperienceCategory,
 } from '@/hooks/useExperiencesSearchState';
 import DateModal from '@/components/trips/edit/DateModal';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import {

@@ -4,7 +4,7 @@ import {
   useGenerateTripFromUrl,
   useMyActiveImports,
 } from '@/hooks/useAiTripActions';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, AlertCircle } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';

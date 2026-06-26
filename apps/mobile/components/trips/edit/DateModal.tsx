@@ -14,7 +14,7 @@ import { CalendarContainer } from '@/components/trip-creation/calendar/CalendarC
 import { useDateRange } from '@marceloterreiro/flash-calendar';
 import { format } from 'date-fns';
 import { Colors } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 interface DateModalProps {
   visible: boolean;

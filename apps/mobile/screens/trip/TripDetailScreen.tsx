@@ -1,7 +1,7 @@
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';

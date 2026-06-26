@@ -4,7 +4,7 @@ import MainTabHeader from '@/components/ui/MainTabHeader';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { MENU_OPTIONS, MOCK_REWARDS } from '@/constants/profile.constant';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';

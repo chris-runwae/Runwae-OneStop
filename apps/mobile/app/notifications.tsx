@@ -1,4 +1,4 @@
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Bell, UserPlus } from 'lucide-react-native';
 import React, { useState } from 'react';

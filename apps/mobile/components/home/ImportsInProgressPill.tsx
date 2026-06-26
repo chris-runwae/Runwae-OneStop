@@ -2,7 +2,7 @@ import {
   useDismissImport,
   useMyActiveImports,
 } from '@/hooks/useAiTripActions';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { router } from 'expo-router';
 import {
   ChevronRight,

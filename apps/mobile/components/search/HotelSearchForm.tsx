@@ -3,7 +3,7 @@ import GuestRoomsStepper from '@/components/search/GuestRoomsStepper';
 import DateModal from '@/components/trips/edit/DateModal';
 import { textStyles } from '@/constants';
 import { useHotelSearchState } from '@/hooks/useHotelSearchState';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import {

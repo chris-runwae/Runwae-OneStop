@@ -10,7 +10,7 @@ import DiscoverCard, {
   type SaveControls,
 } from "@/components/discover/DiscoverCard";
 import { api } from "@runwae/convex/convex/_generated/api";
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "expo-router/react-navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
   openBrowserAsync,

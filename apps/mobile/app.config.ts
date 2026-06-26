@@ -64,7 +64,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: './assets/images/icon.png',
     scheme: v.scheme,
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
     runtimeVersion: {
       policy: 'appVersion',
     },
@@ -184,6 +183,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       'expo-apple-authentication',
+      'expo-web-browser',
       [
         'expo-image-picker',
         {

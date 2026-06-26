@@ -1,4 +1,4 @@
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "expo-router/react-navigation";
 import { Search, Settings2 } from "lucide-react-native";
 import React from "react";
 import { TextInput, TouchableOpacity, View } from "react-native";

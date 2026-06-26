@@ -1,5 +1,5 @@
 import { useTrips } from '@/context/TripsContext';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Loader2, Search, SlidersHorizontal } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {

@@ -3,7 +3,7 @@ import ScreenHeader from "@/components/ui/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { uploadAvatarFromUri } from "@/lib/uploadAvatar";
 import { api } from "@runwae/convex/convex/_generated/api";
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "expo-router/react-navigation";
 import { useMutation } from "convex/react";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -141,7 +141,6 @@ const ProfileEditScreen = () => {
         title="Edit Profile"
         subtitle="Update your personal information"
       />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"

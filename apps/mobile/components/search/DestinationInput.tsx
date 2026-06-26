@@ -1,5 +1,5 @@
 import { Colors, textStyles } from '@/constants';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Clock, MapPin, Search, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';

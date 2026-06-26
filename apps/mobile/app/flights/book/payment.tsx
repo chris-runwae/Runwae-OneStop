@@ -1,7 +1,7 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import PaymentErrorBanner from '@/components/payment/PaymentErrorBanner';
 import { STRIPE_MERCHANT_IDENTIFIER, useStripeSafe } from '@/utils/stripe-safe';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';

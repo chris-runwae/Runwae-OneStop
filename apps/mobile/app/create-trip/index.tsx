@@ -8,7 +8,7 @@ import { useDateRange } from '@marceloterreiro/flash-calendar';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import ScreenHeader from '@/components/ui/ScreenHeader';
 import { COLORS } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { router, useLocalSearchParams } from 'expo-router';
 import React, {
   useCallback,

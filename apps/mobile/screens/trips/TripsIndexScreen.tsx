@@ -5,7 +5,7 @@ import { TripCardSkeleton } from '@/components/ui/CardSkeletons';
 import { useTrips } from '@/context/TripsContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Trip } from '@/hooks/useTripActions';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { FlashList } from '@shopify/flash-list';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';

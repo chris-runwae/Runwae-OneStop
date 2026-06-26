@@ -1,5 +1,5 @@
 import { api } from "@runwae/convex/convex/_generated/api";
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "expo-router/react-navigation";
 import { useQuery } from "convex/react";
 import { router } from "expo-router";
 import { Bell } from "lucide-react-native";

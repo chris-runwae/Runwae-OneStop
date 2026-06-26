@@ -1,4 +1,4 @@
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Vote, Receipt, Image as ImageIcon, Plus } from 'lucide-react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import {

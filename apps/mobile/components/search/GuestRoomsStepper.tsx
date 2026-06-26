@@ -1,5 +1,5 @@
 import { Colors, textStyles } from '@/constants';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Minus, Plus, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {

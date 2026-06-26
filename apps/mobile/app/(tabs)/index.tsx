@@ -19,7 +19,7 @@ import { useTrips } from '@/context/TripsContext';
 import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useQuery } from 'convex/react';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';

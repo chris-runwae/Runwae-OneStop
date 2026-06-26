@@ -25,7 +25,7 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from '@react-navigation/native';
+} from "expo-router/react-navigation";
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts } from 'expo-font';

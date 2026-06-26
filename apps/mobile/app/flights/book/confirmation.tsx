@@ -1,7 +1,7 @@
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useQuery } from 'convex/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { X } from 'lucide-react-native';

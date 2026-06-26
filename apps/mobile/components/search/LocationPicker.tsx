@@ -1,6 +1,6 @@
 import type { Airport } from '@/hooks/useFlightSearchState';
 import { api } from '@runwae/convex/convex/_generated/api';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useQuery } from 'convex/react';
 import { Plane, Search, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';

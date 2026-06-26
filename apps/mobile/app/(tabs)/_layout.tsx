@@ -1,6 +1,6 @@
 import FloatingTabBar from '@/components/floating-tab';
 import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
 import { Platform, View } from 'react-native';
 
@@ -14,24 +14,24 @@ export default function TabLayout() {
     return (
       <NativeTabs tintColor="#FF2E92">
         <NativeTabs.Trigger name="index">
-          <Label>Home</Label>
-          <Icon sf="house.fill" />
+          <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="house.fill" />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="explore">
-          <Label>Explore</Label>
-          <Icon sf="magnifyingglass" />
+          <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="magnifyingglass" />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="(trips)">
-          <Label>Trips</Label>
-          <Icon sf="airplane" />
+          <NativeTabs.Trigger.Label>Trips</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="airplane" />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
-          <Label>Profile</Label>
-          <Icon sf="person.crop.circle.fill" />
+          <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="create" role="search">
-          <Label>Create</Label>
-          <Icon sf="plus" />
+          <NativeTabs.Trigger.Label>Create</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf="plus" />
         </NativeTabs.Trigger>
       </NativeTabs>
     );

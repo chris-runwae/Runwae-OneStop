@@ -64,6 +64,7 @@ const CreateTrip = () => {
   const [currentStep, setCurrentStep] = useState<Step>(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const colorScheme = useColorScheme() ?? 'light';
+  // @ts-ignore
   const colors = Colors[colorScheme ?? 'light'];
 
   const params = useLocalSearchParams<{ seedDestination?: string }>();

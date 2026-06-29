@@ -181,7 +181,7 @@ export const TripDetailsStep: React.FC<TripDetailsStepProps> = ({
 
         <View className="mb-10">
           <Text className="text-sm font-semibold mb-2 dark:text-gray-300">
-            Header Image
+            Cover Image
           </Text>
 
           <TouchableOpacity

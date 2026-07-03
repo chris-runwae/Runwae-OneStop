@@ -130,21 +130,21 @@ export default function HomeScreen() {
 
           <HeroFeatured />
           <UpcomingTrips trips={upcomingTrips} loading={loading} />
-          <UpcomingEvents
-            data={featuredEvents}
-            title="Featured Events"
-            showSubtitle={false}
-            loading={loading}
-            headerPath="/events/featured"
-          />
-          <AddOnsForYou data={featuredExperiences} loading={loading} />
-          {discoverEnabled ? (
-            <DiscoverGrid
-              city={viewer?.homeCity ?? viewer?.homeCountry ?? 'London'}
-              coords={viewer?.homeCoords ?? undefined}
-              originIata={viewer?.homeIata ?? null}
-            />
-          ) : null}
+          {/*<UpcomingEvents*/}
+          {/*  data={featuredEvents}*/}
+          {/*  title="Featured Events"*/}
+          {/*  showSubtitle={false}*/}
+          {/*  loading={loading}*/}
+          {/*  headerPath="/events/featured"*/}
+          {/*/>*/}
+          {/*<AddOnsForYou data={featuredExperiences} loading={loading} />*/}
+          {/*{discoverEnabled ? (*/}
+          {/*  <DiscoverGrid*/}
+          {/*    city={viewer?.homeCity ?? viewer?.homeCountry ?? 'London'}*/}
+          {/*    coords={viewer?.homeCoords ?? undefined}*/}
+          {/*    originIata={viewer?.homeIata ?? null}*/}
+          {/*  />*/}
+          {/*) : null}*/}
           <OpenPollCard />
           <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
         </View>

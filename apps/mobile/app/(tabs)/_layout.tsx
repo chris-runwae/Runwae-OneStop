@@ -12,26 +12,26 @@ const NATIVE_TABS_ENABLED =
 export default function TabLayout() {
   if (NATIVE_TABS_ENABLED) {
     return (
-      <NativeTabs tintColor="#FF2E92">
+      <NativeTabs tintColor="#FF2E92" minimizeBehavior="automatic">
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf="house.fill" />
+          <NativeTabs.Trigger.Icon sf="house.fill" md="home"/>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="explore">
           <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf="magnifyingglass" />
+          <NativeTabs.Trigger.Icon sf="magnifyingglass"  md="magnification_large" />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="(trips)">
           <NativeTabs.Trigger.Label>Trips</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf="airplane" />
+          <NativeTabs.Trigger.Icon sf="airplane" md="plane_contrails"/>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
           <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
+          <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" md="person"/>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="create" role="search">
           <NativeTabs.Trigger.Label>Create</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon sf="plus" />
+          <NativeTabs.Trigger.Icon sf="plus" md="1k_plus"/>
         </NativeTabs.Trigger>
       </NativeTabs>
     );

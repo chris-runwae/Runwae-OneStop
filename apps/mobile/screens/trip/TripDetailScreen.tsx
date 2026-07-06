@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import { useTheme } from "expo-router/react-navigation";
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -43,6 +43,7 @@ export default function TripDetailScreen() {
   const router = useRouter();
   const { dark } = useTheme();
   const colorScheme = useColorScheme();
+  // @ts-ignore
   const colors = Colors[colorScheme ?? 'light'];
 
   const { user } = useAuth();
@@ -177,176 +178,181 @@ export default function TripDetailScreen() {
   ];
 
   return (
-    <View style={styles.container}>
-      <ItineraryHeader
-        scrollY={scrollY}
-        imageUri={coverUrl || ''}
-        title={activeTrip.title}
-        isOwner={isOwner}
-        isMember={isMember}
-        onEdit={showImagePicker}
-        showMoreOptions={true}
-        dropdownOptions={dropdownOptions}
-        hideFavorite={true}
-        joinCode={activeTrip.joinCode ?? null}
-      />
+    <>
+      <Stack.Toolbar placement='right'>
+        <Stack.Toolbar.Button icon='ellipses.bubble' onPress={() => {}}/>
+      </Stack.Toolbar>
+      <View style={styles.container}>
+        {/*<ItineraryHeader*/}
+        {/*  scrollY={scrollY}*/}
+        {/*  imageUri={coverUrl || ''}*/}
+        {/*  title={activeTrip.title}*/}
+        {/*  isOwner={isOwner}*/}
+        {/*  isMember={isMember}*/}
+        {/*  onEdit={showImagePicker}*/}
+        {/*  showMoreOptions={true}*/}
+        {/*  dropdownOptions={dropdownOptions}*/}
+        {/*  hideFavorite={true}*/}
+        {/*  joinCode={activeTrip.joinCode ?? null}*/}
+        {/*/>*/}
 
-      <Animated.ScrollView
-        style={[
-          styles.container,
-          { backgroundColor: dark ? '#000000' : '#ffffff' },
-        ]}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}>
-        <View style={{ height: 300 }}>
-          {coverUrl ? (
-            <Image
-              source={{ uri: coverUrl }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-            />
-          ) : (
-            <View
-              style={[
-                styles.heroPlaceholder,
-                { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' },
-              ]}>
-              <MapPin
-                size={48}
-                strokeWidth={1.2}
-                color={dark ? '#4b5563' : '#9ca3af'}
-              />
-            </View>
-          )}
-        </View>
-
-        <View
+        <Animated.ScrollView
           style={[
-            styles.contentContainer,
-            { backgroundColor: colors.backgroundColors.default },
-          ]}>
-          <Spacer size={24} vertical />
-
-          <Text style={styles.tripTitle}>{activeTrip.title}</Text>
-
-          <Spacer size={16} vertical />
-
-          <View style={styles.locationTimeSpan}>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <Text
-                style={[styles.infoText, dynamicStyles.infoText]}
-                numberOfLines={1}>
-                📍 {activeTrip.destinationLabel}
-              </Text>
-            </View>
-            <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
-              <DateRange
-                startDate={activeTrip.startDate}
-                endDate={activeTrip.endDate}
-                emoji={true}
-                color={dark ? '#ADB5BD' : '#A8A8A8'}
-                fontSize={12}
-              />
-            </View>
-          </View>
-
-          <Spacer size={14} vertical />
-          <Text
-            style={[
-              styles.description,
-              !activeTrip?.description && { color: colors.textColors.subtle },
-            ]}>
-            {activeTrip?.description ||
-              'No description provided for this trip.'}
-          </Text>
-
-          <Spacer size={14} vertical />
-          <View style={styles.membershipRow}>
-            {activeTripMembers.length > 1 ? (
-              <AvatarGroup
-                members={activeTripMembers}
-                maxVisible={4}
-                size={30}
-                overlap={12}
+            styles.container,
+            { backgroundColor: dark ? '#000000' : '#ffffff' },
+          ]}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}>
+          <View style={{ height: 300 }}>
+            {coverUrl ? (
+              <Image
+                source={{ uri: coverUrl }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
               />
             ) : (
-              <View style={styles.creatorInfo}>
-                <ProfileAvatar
-                  name={creator?.user?.name || 'User'}
-                  imageUrl={creator?.user?.avatarUrl ?? creator?.user?.image}
-                  size={32}
+              <View
+                style={[
+                  styles.heroPlaceholder,
+                  { backgroundColor: dark ? '#1c1c1e' : '#e5e7eb' },
+                ]}>
+                <MapPin
+                  size={48}
+                  strokeWidth={1.2}
+                  color={dark ? '#4b5563' : '#9ca3af'}
                 />
-                <Spacer size={8} horizontal />
-                <View>
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    style={styles.creatorName}>
-                    {creator?.user?.name || 'Guest'}
-                    {isOwner ? ' (You)' : ''}
-                  </Text>
-                  <Text style={styles.createdByLabel}>Created by</Text>
-                </View>
               </View>
             )}
-
-            <View style={styles.actionArea}>
-              {isSolo && (
-                <View style={[styles.soloBadge, dynamicStyles.soloBadge]}>
-                  <Text style={styles.soloBadgeText}>Solo Trip</Text>
-                </View>
-              )}
-              {!isMember && (
-                <TouchableOpacity
-                  style={[
-                    styles.soloBadge,
-                    { backgroundColor: '#FF2E92', borderColor: '#FF2E92' },
-                  ]}
-                  onPress={handleJoinTrip}
-                  disabled={isJoining}
-                  activeOpacity={0.8}>
-                  <Text style={[styles.soloBadgeText, { color: '#ffffff' }]}>
-                    {isJoining ? 'Joining...' : 'Join Trip'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
 
-          <Spacer size={32} vertical />
+          <View
+            style={[
+              styles.contentContainer,
+              { backgroundColor: colors.backgroundColors.default },
+            ]}>
+            <Spacer size={24} vertical />
 
-          <HorizontalTabs
-            tabs={[
-              { id: 'ideas', label: 'IDEAS' },
-              { id: 'itinerary', label: 'ITINERARY' },
-              { id: 'activity', label: 'ACTIVITY' },
-            ]}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-          <Spacer size={24} vertical />
+            <Text style={styles.tripTitle}>{activeTrip.title}</Text>
 
-          {activeTab === 'ideas' && (isMember || isPublic) && (
-            <View style={styles.tabContent}>
-              <TripOverviewTab trip={activeTrip} isMember={isMember} />
-              <Spacer size={24} vertical />
+            <Spacer size={16} vertical />
+
+            <View style={styles.locationTimeSpan}>
+              <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+                <Text
+                  style={[styles.infoText, dynamicStyles.infoText]}
+                  numberOfLines={1}>
+                  📍 {activeTrip.destinationLabel}
+                </Text>
+              </View>
+              <View style={[styles.infoContainer, dynamicStyles.infoContainer]}>
+                <DateRange
+                  startDate={activeTrip.startDate}
+                  endDate={activeTrip.endDate}
+                  emoji={true}
+                  color={dark ? '#ADB5BD' : '#A8A8A8'}
+                  fontSize={12}
+                />
+              </View>
             </View>
-          )}
-          {activeTab === 'itinerary' && (isMember || isPublic) && (
-            <TripItineraryTab isMember={isMember} />
-          )}
-          {activeTab === 'activity' && (isMember || isPublic) && (
-            <ActivityTab
-              tripId={activeTrip._id as unknown as string}
-              trip={activeTrip}
-              isMember={isMember}
+
+            <Spacer size={14} vertical />
+            <Text
+              style={[
+                styles.description,
+                !activeTrip?.description && { color: colors.textColors.subtle },
+              ]}>
+              {activeTrip?.description ||
+                'No description provided for this trip.'}
+            </Text>
+
+            <Spacer size={14} vertical />
+            <View style={styles.membershipRow}>
+              {activeTripMembers.length > 1 ? (
+                <AvatarGroup
+                  members={activeTripMembers}
+                  maxVisible={4}
+                  size={30}
+                  overlap={12}
+                />
+              ) : (
+                <View style={styles.creatorInfo}>
+                  <ProfileAvatar
+                    name={creator?.user?.name || 'User'}
+                    imageUrl={creator?.user?.avatarUrl ?? creator?.user?.image}
+                    size={32}
+                  />
+                  <Spacer size={8} horizontal />
+                  <View>
+                    <Text
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                      style={styles.creatorName}>
+                      {creator?.user?.name || 'Guest'}
+                      {isOwner ? ' (You)' : ''}
+                    </Text>
+                    <Text style={styles.createdByLabel}>Created by</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.actionArea}>
+                {isSolo && (
+                  <View style={[styles.soloBadge, dynamicStyles.soloBadge]}>
+                    <Text style={styles.soloBadgeText}>Solo Trip</Text>
+                  </View>
+                )}
+                {!isMember && (
+                  <TouchableOpacity
+                    style={[
+                      styles.soloBadge,
+                      { backgroundColor: '#FF2E92', borderColor: '#FF2E92' },
+                    ]}
+                    onPress={handleJoinTrip}
+                    disabled={isJoining}
+                    activeOpacity={0.8}>
+                    <Text style={[styles.soloBadgeText, { color: '#ffffff' }]}>
+                      {isJoining ? 'Joining...' : 'Join Trip'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <Spacer size={32} vertical />
+
+            <HorizontalTabs
+              tabs={[
+                { id: 'ideas', label: 'IDEAS' },
+                { id: 'itinerary', label: 'ITINERARY' },
+                { id: 'activity', label: 'ACTIVITY' },
+              ]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
             />
-          )}
-          <Spacer size={100} vertical />
-        </View>
-      </Animated.ScrollView>
-    </View>
+            <Spacer size={24} vertical />
+
+            {activeTab === 'ideas' && (isMember || isPublic) && (
+              <View style={styles.tabContent}>
+                <TripOverviewTab trip={activeTrip} isMember={isMember} />
+                <Spacer size={24} vertical />
+              </View>
+            )}
+            {activeTab === 'itinerary' && (isMember || isPublic) && (
+              <TripItineraryTab isMember={isMember} />
+            )}
+            {activeTab === 'activity' && (isMember || isPublic) && (
+              <ActivityTab
+                tripId={activeTrip._id as unknown as string}
+                trip={activeTrip}
+                isMember={isMember}
+              />
+            )}
+            <Spacer size={100} vertical />
+          </View>
+        </Animated.ScrollView>
+      </View>
+      </>
   );
 }
 
@@ -367,7 +373,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },

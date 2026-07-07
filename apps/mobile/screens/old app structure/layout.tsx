@@ -25,12 +25,13 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from 'expo-router/react-navigation';
+} from "expo-router/react-navigation";
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import 'react-native-reanimated';
@@ -71,8 +72,24 @@ configurePushHandler();
 const stripeMerchantIdentifier = STRIPE_MERCHANT_IDENTIFIER;
 
 function RouteGuard() {
-  const { user, isLoading, hasCompletedBoarding, isAuthenticated, initialize } =
-    useAuth();
+  const segments = useSegments();
+  const { colorScheme } = useColorScheme();
+  const {
+    user,
+    isLoading,
+    hasCompletedBoarding,
+    currentBoardingStep,
+    isAuthenticated,
+    initialize,
+  } = useAuth();
+
+  // Native stack screens default to a white content background. During
+  // the iOS swipe-back gesture (and during the brief moment a new
+  // screen is mounting), that white edge bleeds out around the rounded
+  // corners on dark mode — the artifact reported as "white edge on
+  // transition." Match the screen content background to the active
+  // theme so the underlay is invisible.
+  const screenBackgroundColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
 
   // Sign the user out if they revoke Apple credentials in iOS Settings.
   useAppleCredentialsRevoke();
@@ -90,6 +107,12 @@ function RouteGuard() {
     void registerPushNotifications(convex);
   }, [isAuthenticated]);
 
+  // Tie PostHog's distinct_id to the Convex user id whenever auth state
+  // changes. The Convex _id is the same identifier the server-side
+  // PostHog wrapper (Commit 3) will use, so events from mobile and from
+  // Convex mutations line up on one timeline per user. On sign-out we
+  // call reset() so the next user doesn't inherit the previous user's
+  // events or super-properties.
   useEffect(() => {
     if (user?.id) {
       analytics.identify(user.id);
@@ -102,15 +125,168 @@ function RouteGuard() {
     return <SplashScreen />;
   }
 
+  const AUTH_ROUTES = new Set([
+    '(auth)',
+    'login',
+    'signup',
+    'register',
+    'forgot-password',
+    'check-email',
+    'reset-password',
+    'verification-sent',
+    'reset-success',
+    'email-confirmation',
+    'onboarding',
+    'onboarding-steps',
+  ]);
+
+  const BOARDING_STEPS = new Set([
+    'boarding',
+    'step-1',
+    'step-2',
+    'step-3',
+    'step-4',
+    'step-5',
+  ]);
+
+  const [currentSegment, secondSegment] = segments as string[];
+  const isInAuthFlow =
+    AUTH_ROUTES.has(currentSegment) ||
+    (currentSegment === '(auth)' &&
+      secondSegment &&
+      AUTH_ROUTES.has(secondSegment));
+  const isInBoardingSteps =
+    currentSegment === 'boarding' &&
+    secondSegment &&
+    BOARDING_STEPS.has(secondSegment);
+  const isInAuthorizedRoot = [
+    undefined,
+    '(tabs)',
+    'notifications',
+    'modal',
+    'itinerary',
+    'experience',
+    'viator',
+    'destination',
+    'create-trip',
+    'create-trip-options',
+    'create-trip-ai',
+    'create-trip-from-link',
+    'events',
+    'search',
+    'flights',
+    'hotel',
+    'hotels',
+    'hotels-search',
+    'experiences-search',
+    'invite',
+    'trip',
+    'feed',
+  ].includes(currentSegment as any);
+
+  // Redirection Logic
+  if (!isAuthenticated && !isInAuthFlow) {
+    return <Redirect href="/(auth)/onboarding" />;
+  }
+
+  // Email-verification gate is intentionally disabled until the Convex auth
+  // setup adds a verifier (Resend integration). Password sign-ups land
+  // straight in the boarding flow.
+
+  if (
+    isAuthenticated &&
+    !hasCompletedBoarding &&
+    !isInAuthorizedRoot &&
+    !isInBoardingSteps
+  ) {
+    return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
+  }
+
+  if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   return (
+    // <Stack
+    //   screenOptions={{
+    //     headerShown: false,
+    //     contentStyle: { backgroundColor: screenBackgroundColor },
+    //   }}>
+    //   <Stack.Screen name="(auth)" />
+    //   <Stack.Screen name="boarding" />
+    //   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    //   <Stack.Screen name="create-trip/index" options={{ headerShown: false }} />
+    //   <Stack.Screen name="itinerary" options={{ headerShown: false }} />
+    //   <Stack.Screen name="experience" options={{ headerShown: false }} />
+    //   <Stack.Screen name="viator" options={{ headerShown: false }} />
+    //   <Stack.Screen name="destination" options={{ headerShown: false }} />
+    //   <Stack.Screen name="events" options={{ headerShown: false }} />
+    //   <Stack.Screen name="search" options={{ headerShown: false }} />
+    //   <Stack.Screen
+    //     name="flights"
+    //     options={{ presentation: 'modal', headerShown: false }}
+    //   />
+    //   <Stack.Screen
+    //     name="hotels-search"
+    //     options={{ presentation: 'modal', headerShown: false }}
+    //   />
+    //   <Stack.Screen
+    //     name="experiences-search"
+    //     options={{ presentation: 'modal', headerShown: false }}
+    //   />
+    //   <Stack.Screen name="hotel" options={{ headerShown: false }} />
+    //   <Stack.Screen name="hotels" options={{ headerShown: false }} />
+    //   <Stack.Screen name="invite" options={{ headerShown: false }} />
+    //   <Stack.Screen name="trip" options={{ headerShown: false }} />
+    //   <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
+    //   <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
+    //   <Stack.Screen name="feed" options={{ headerShown: false }} />
+    //   <Stack.Screen
+    //     name="create-trip-options"
+    //     options={{
+    //       headerShown: false,
+    //       presentation: 'formSheet',
+    //       sheetAllowedDetents: [0.85, 1],
+    //       sheetGrabberVisible: true,
+    //       sheetCornerRadius: 24,
+    //     }}
+    //   />
+    //   <Stack.Screen
+    //     name="create-trip-ai"
+    //     options={{
+    //       headerShown: false,
+    //       presentation: 'formSheet',
+    //       sheetAllowedDetents: [0.85, 1],
+    //       sheetGrabberVisible: true,
+    //       sheetCornerRadius: 24,
+    //     }}
+    //   />
+    //   <Stack.Screen
+    //     name="create-trip-from-link"
+    //     options={{
+    //       headerShown: false,
+    //       presentation: 'formSheet',
+    //       sheetAllowedDetents: [0.85, 1],
+    //       sheetGrabberVisible: true,
+    //       sheetCornerRadius: 24,
+    //     }}
+    //   />
+    //   <Stack.Screen
+    //     name="modal"
+    //     options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
+    //   />
+    // </Stack>
+
     <Stack>
       <Stack.Protected guard={!hasCompletedBoarding || !isAuthenticated}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name='(auth)' options={{ headerShown: false }} />
       </Stack.Protected>
 
       <Stack.Protected guard={hasCompletedBoarding && isAuthenticated}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
       </Stack.Protected>
+
+      <
     </Stack>
   );
 }

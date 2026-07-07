@@ -19,12 +19,11 @@ import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
 import { useTheme } from 'expo-router/react-navigation';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
 import { Image as ExpoImage, useImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View, Text } from 'react-native';
-import { User } from 'lucide-react-native';
 
 // Consistent vertical rhythm between every home section. 32px is the
 // standard mobile section gap and gives the page enough breathing room
@@ -32,6 +31,7 @@ import { User } from 'lucide-react-native';
 const SECTION_GAP = 32;
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
@@ -118,7 +118,7 @@ export default function HomeScreen() {
         <Stack.Toolbar.Button onPress={() => {}}>
           <Stack.Toolbar.Icon sf="magnifyingglass" />
         </Stack.Toolbar.Button>
-        <Stack.Toolbar.Button onPress={() => {}}>
+        <Stack.Toolbar.Button onPress={() => router.push('/notifications')}>
           <Stack.Toolbar.Icon sf="bell.fill" />
         </Stack.Toolbar.Button>
       </Stack.Toolbar>

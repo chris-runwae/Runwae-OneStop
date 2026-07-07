@@ -1,6 +1,4 @@
 import { Stack } from 'expo-router';
-import { StackHeader } from 'expo-router/build/layouts/stack-utils';
-import React from 'react';
 import { AppFonts } from '@/constants';
 
 // Home lives in its own Stack so the screen has a native header/toolbar
@@ -27,6 +25,14 @@ export default function HomeLayout() {
           title: 'Hi',
           headerLargeTitle: true,
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          headerShown: true,
+          headerBackButtonDisplayMode: 'minimal',
         }}
       />
     </Stack>

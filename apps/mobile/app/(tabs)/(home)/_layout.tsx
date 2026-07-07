@@ -19,14 +19,7 @@ export default function HomeLayout() {
           fontSize: 32,
         },
       }}>
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Hi',
-          headerLargeTitle: true,
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen name="index" />
       <Stack.Screen
         name="notifications"
         options={{

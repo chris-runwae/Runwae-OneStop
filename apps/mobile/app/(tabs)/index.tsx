@@ -13,13 +13,12 @@ import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
 import { useFeatureFlag } from '@/lib/featureFlags';
-import { NATIVE_TABS_ENABLED } from '@/app/(tabs)/_layout';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
-import { useTheme } from "expo-router/react-navigation";
+import { useTheme } from 'expo-router/react-navigation';
 import { useQuery } from 'convex/react';
 import { Image as ExpoImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -36,8 +35,11 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
   const { myTrips, joinedTrips } = useTrips();
-  const { data: exploreData, loading, refresh: refreshExplore } =
-    useExploreData();
+  const {
+    data: exploreData,
+    loading,
+    refresh: refreshExplore,
+  } = useExploreData();
   const featuredEvents = exploreData.events;
   const featuredExperiences = exploreData.experiences;
 
@@ -94,19 +96,15 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [
-    refreshExplore,
-    featuredEvents,
-    featuredExperiences,
-    upcomingTrips,
-  ]);
+  }, [refreshExplore, featuredEvents, featuredExperiences, upcomingTrips]);
 
   return (
-    <AppSafeAreaView edges={['top']}>
+    <>
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: NATIVE_TABS_ENABLED ? 32 : 100,
+          paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -145,9 +143,11 @@ export default function HomeScreen() {
           {/*    originIata={viewer?.homeIata ?? null}*/}
           {/*  />*/}
           {/*) : null}*/}
+
           <OpenPollCard />
           <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
         </View>
+        <View style={{ height: 400 }} />
       </ScrollView>
 
       <WelcomeModal
@@ -158,6 +158,6 @@ export default function HomeScreen() {
         open={findFriendsOpen}
         onClose={() => setFindFriendsOpen(false)}
       />
-    </AppSafeAreaView>
+    </>
   );
 }

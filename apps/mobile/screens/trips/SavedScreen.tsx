@@ -57,13 +57,13 @@ export default function SavedScreen() {
 
   return (
     <AppSafeAreaView edges={['top']}>
-      <View className="px-5 pt-4 pb-2">
+      <View className="px-5 pb-2 pt-4">
         <Text
           className="text-3xl text-black dark:text-white"
           style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}>
           Saved
         </Text>
-        <Text className="text-sm text-gray-500 mt-1">
+        <Text className="mt-1 text-sm text-gray-500">
           Things you&apos;ve hearted across Discover
         </Text>
       </View>
@@ -79,11 +79,11 @@ export default function SavedScreen() {
       ) : isEmpty ? (
         <View className="flex-1 items-center justify-center px-10">
           <Text
-            className="text-lg text-black dark:text-white text-center"
+            className="text-center text-lg text-black dark:text-white"
             style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
             Nothing saved yet
           </Text>
-          <Text className="text-sm text-gray-500 text-center mt-2">
+          <Text className="mt-2 text-center text-sm text-gray-500">
             Tap the heart on a hotel, tour or destination to start a wishlist.
           </Text>
         </View>
@@ -98,7 +98,7 @@ export default function SavedScreen() {
             return (
               <View key={category} className="mb-6">
                 <Text
-                  className="text-base text-black dark:text-white mb-3"
+                  className="mb-3 text-base text-black dark:text-white"
                   style={{ fontFamily: 'BricolageGrotesque-Bold' }}>
                   {meta.emoji} {meta.label} ({list.length})
                 </Text>
@@ -107,16 +107,16 @@ export default function SavedScreen() {
                   return (
                     <View
                       key={id}
-                      className="flex-row items-center bg-white dark:bg-dark-seconndary/50 rounded-xl p-3 mb-3 border border-gray-100 dark:border-dark-seconndary">
+                      className="mb-3 flex-row items-center rounded-xl border border-gray-100 bg-white p-3 dark:border-dark-seconndary dark:bg-dark-seconndary/50">
                       <Image
                         source={{
                           uri:
                             row.imageUrl ??
                             'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400',
                         }}
-                        className="w-[60px] h-[60px] rounded-lg"
+                        className="h-[60px] w-[60px] rounded-lg"
                       />
-                      <View className="flex-1 ml-3">
+                      <View className="ml-3 flex-1">
                         <Text
                           className="text-sm text-black dark:text-white"
                           numberOfLines={1}>
@@ -124,7 +124,7 @@ export default function SavedScreen() {
                         </Text>
                         {row.locationName ? (
                           <Text
-                            className="text-xs text-gray-500 mt-1"
+                            className="mt-1 text-xs text-gray-500"
                             numberOfLines={1}>
                             {row.locationName}
                           </Text>
@@ -146,9 +146,7 @@ export default function SavedScreen() {
                         }}>
                         <Trash2
                           size={18}
-                          color={
-                            colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'
-                          }
+                          color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
                         />
                       </Pressable>
                     </View>

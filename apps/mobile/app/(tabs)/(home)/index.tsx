@@ -19,10 +19,12 @@ import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
 import { useTheme } from 'expo-router/react-navigation';
+import { Stack } from 'expo-router';
 import { useQuery } from 'convex/react';
-import { Image as ExpoImage } from 'expo-image';
+import { Image as ExpoImage, useImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View, Text } from 'react-native';
+import { User } from 'lucide-react-native';
 
 // Consistent vertical rhythm between every home section. 32px is the
 // standard mobile section gap and gives the page enough breathing room
@@ -100,10 +102,32 @@ export default function HomeScreen() {
 
   return (
     <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="index"
+          options={{
+            title: `Hello ${user?.full_name ?? 'there'}`,
+            headerLargeTitle: true,
+            headerShown: false,
+            headerShadowVisible: false,
+          }}
+        />
+      </Stack>
+
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button onPress={() => {}}>
+          <Stack.Toolbar.Icon sf="magnifyingglass" />
+        </Stack.Toolbar.Button>
+        <Stack.Toolbar.Button onPress={() => {}}>
+          <Stack.Toolbar.Icon sf="bell.fill" />
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
+
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           flexGrow: 1,
+          paddingTop: 32,
           paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
@@ -114,7 +138,7 @@ export default function HomeScreen() {
             tintColor={dark ? '#ffffff' : '#000000'}
           />
         }>
-        <HomeTopSection user={user} dark={dark} />
+        {/* <HomeTopSection user={user} dark={dark} /> */}
 
         {showLocationPrompt && (
           <View style={{ marginBottom: SECTION_GAP }}>
@@ -124,7 +148,7 @@ export default function HomeScreen() {
 
         <View style={{ gap: SECTION_GAP }}>
           <ImportsInProgressPill />
-          <HomeQuickActions dark={dark} />
+          {/* <HomeQuickActions dark={dark} /> */}
 
           <HeroFeatured />
           <UpcomingTrips trips={upcomingTrips} loading={loading} />
@@ -147,7 +171,7 @@ export default function HomeScreen() {
           <OpenPollCard />
           <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
         </View>
-        <View style={{ height: 400 }} />
+        <View style={{ height: 1400 }} />
       </ScrollView>
 
       <WelcomeModal

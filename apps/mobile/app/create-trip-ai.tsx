@@ -1,24 +1,19 @@
-import { DateSelectionStep } from "@/components/trip-creation/steps/DateSelectionStep";
-import { DestinationStep } from "@/components/trip-creation/steps/DestinationStep";
-import TripSuccessStep from "@/components/trip-creation/steps/TripSuccessStep";
+import { DateSelectionStep } from '@/components/trip-creation/steps/DateSelectionStep';
+import { DestinationStep } from '@/components/trip-creation/steps/DestinationStep';
+import TripSuccessStep from '@/components/trip-creation/steps/TripSuccessStep';
 import GroupSizeStep, {
   type GroupSize,
-} from "@/components/ai-trip/GroupSizeStep";
-import AiVerifyStep from "@/components/ai-trip/AiVerifyStep";
-import AiBuildingStep from "@/components/ai-trip/AiBuildingStep";
-import { useDateRange } from "@marceloterreiro/flash-calendar";
+} from '@/components/ai-trip/GroupSizeStep';
+import AiVerifyStep from '@/components/ai-trip/AiVerifyStep';
+import AiBuildingStep from '@/components/ai-trip/AiBuildingStep';
+import { useDateRange } from '@marceloterreiro/flash-calendar';
 
-import AppSafeAreaView from "@/components/ui/AppSafeAreaView";
-import ScreenHeader from "@/components/ui/ScreenHeader";
-import { COLORS } from "@/constants/theme";
-import { useTheme } from "expo-router/react-navigation";
-import { router } from "expo-router";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
+import ScreenHeader from '@/components/ui/ScreenHeader';
+import { COLORS } from '@/constants/theme';
+import { useTheme } from 'expo-router/react-navigation';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -28,7 +23,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 import Animated, {
   Easing,
   SlideInLeft,
@@ -38,18 +33,18 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
-import { Toast } from "toastify-react-native";
+} from 'react-native-reanimated';
+import { Toast } from 'toastify-react-native';
 
-import ShareTripModal from "@/components/trip-creation/ShareTripModal";
-import { useAuth } from "@/context/AuthContext";
-import { useGenerateFreeFormTrip } from "@/hooks/useAiTripActions";
-import { useQuery } from "convex/react";
-import { api } from "@runwae/convex/convex/_generated/api";
-import { usePlaceSearch } from "@/components/trip-creation/hooks/usePlaceSearch";
-import { LiteAPIPlace } from "@/types/liteapi.types";
+import ShareTripModal from '@/components/trip-creation/ShareTripModal';
+import { useAuth } from '@/context/AuthContext';
+import { useGenerateFreeFormTrip } from '@/hooks/useAiTripActions';
+import { useQuery } from 'convex/react';
+import { api } from '@runwae/convex/convex/_generated/api';
+import { usePlaceSearch } from '@/components/trip-creation/hooks/usePlaceSearch';
+import { LiteAPIPlace } from '@/types/liteapi.types';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -58,10 +53,10 @@ const TOTAL_PROGRESS_STEPS = 4; // destination → dates → group → verify
 const CreateTripAi = () => {
   const { dark } = useTheme();
   const [currentStep, setCurrentStep] = useState<Step>(0);
-  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
 
-  const [destination, setDestination] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [destination, setDestination] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [places, setPlaces] = useState<LiteAPIPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,7 +66,7 @@ const CreateTripAi = () => {
     setPlaces,
     setLoading,
     setErrorMessage,
-    setShowDropdown,
+    setShowDropdown
   );
 
   const { calendarActiveDateRanges, onCalendarDayPress, dateRange } =
@@ -80,6 +75,7 @@ const CreateTripAi = () => {
     startId?: string;
     endId?: string;
   }>({});
+
   useEffect(() => {
     setSelectedDates(dateRange);
   }, [dateRange]);
@@ -105,16 +101,16 @@ const CreateTripAi = () => {
 
   const baseTags = useMemo(() => {
     const tags = currentUser?.travellerTags ?? [];
-    return tags.filter((t): t is string => typeof t === "string");
+    return tags.filter((t): t is string => typeof t === 'string');
   }, [currentUser]);
 
   const goToStep = useCallback(
-    (next: Step, dir: "forward" | "back" = "forward") => {
+    (next: Step, dir: 'forward' | 'back' = 'forward') => {
       Keyboard.dismiss();
       setDirection(dir);
       setCurrentStep(next);
     },
-    [],
+    []
   );
 
   const handleQuickPickDates = useCallback(
@@ -127,13 +123,13 @@ const CreateTripAi = () => {
       onCalendarDayPress(todayId);
       onCalendarDayPress(endId);
     },
-    [onCalendarDayPress],
+    [onCalendarDayPress]
   );
 
   const formatDate = (dateId?: string) => {
-    if (!dateId) return "";
+    if (!dateId) return '';
     const date = new Date(dateId);
-    return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
   };
 
   const calendarTheme = useMemo(
@@ -152,19 +148,19 @@ const CreateTripAi = () => {
               }
             : {},
           content: isToday
-            ? { color: "#fff", fontWeight: "bold" }
-            : { color: dark ? "#fff" : "#000" },
+            ? { color: '#fff', fontWeight: 'bold' }
+            : { color: dark ? '#fff' : '#000' },
         }),
         active: ({ isToday }: { isToday: boolean }) => ({
           container: { backgroundColor: COLORS.pink.default },
           content: {
-            color: "#fff",
-            fontWeight: isToday ? "bold" : "normal",
+            color: '#fff',
+            fontWeight: isToday ? 'bold' : 'normal',
           },
         }),
       },
     }),
-    [dark],
+    [dark]
   );
 
   const handleSubmit = async () => {
@@ -172,7 +168,7 @@ const CreateTripAi = () => {
     if (!selectedDates.startId) return;
     if (!destination.trim()) return;
     setIsSubmitting(true);
-    goToStep(4, "forward");
+    goToStep(4, 'forward');
     try {
       const idempotencyKey = `mobile_${user.id}_${Date.now()}_${Math.random()
         .toString(36)
@@ -197,44 +193,45 @@ const CreateTripAi = () => {
           startDate,
           endDate,
         });
-        goToStep(5, "forward");
+        goToStep(5, 'forward');
       } else {
         const reason = (result as { reason: string }).reason;
         Toast.show({
-          type: "error",
+          type: 'error',
           text1:
-            reason === "quota_exhausted"
-              ? "AI trip limit reached"
+            reason === 'quota_exhausted'
+              ? 'AI trip limit reached'
               : "Couldn't build the trip",
           text2:
-            reason === "quota_exhausted"
+            reason === 'quota_exhausted'
               ? "You've used all your AI trips this month."
-              : "Try again, or use the manual flow.",
-          position: "bottom",
+              : 'Try again, or use the manual flow.',
+          position: 'bottom',
         });
-        goToStep(3, "back");
+        goToStep(3, 'back');
       }
     } catch (err) {
-      console.error("[ai] generate failed", err);
+      console.error('[ai] generate failed', err);
       Toast.show({
-        type: "error",
-        text1: "Something went wrong",
-        text2: err instanceof Error ? err.message : "Try again in a moment.",
-        position: "bottom",
+        type: 'error',
+        text1: 'Something went wrong',
+        text2: err instanceof Error ? err.message : 'Try again in a moment.',
+        position: 'bottom',
       });
-      goToStep(3, "back");
+      goToStep(3, 'back');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleBack = () => {
-    if (currentStep === 4 || currentStep === 5) {
-      router.back();
-      return;
-    }
+    // For testing I always want to go back
+    // if (currentStep === 4 || currentStep === 5) {
+    //   router.back();
+    //   return;
+    // }
     if (currentStep > 0) {
-      goToStep((currentStep - 1) as Step, "back");
+      goToStep((currentStep - 1) as Step, 'back');
     } else {
       router.back();
     }
@@ -298,12 +295,7 @@ const CreateTripAi = () => {
           />
         );
       case 4:
-        return (
-          <AiBuildingStep
-            width={width}
-            destination={destination}
-          />
-        );
+        return <AiBuildingStep width={width} destination={destination} />;
       case 5:
         return createdTrip ? (
           <TripSuccessStep
@@ -311,9 +303,7 @@ const CreateTripAi = () => {
             destination={createdTrip.destination}
             title={createdTrip.title}
             onViewTrip={() =>
-              router.replace(
-                `/(tabs)/(trips)/${createdTrip.tripId}` as any,
-              )
+              router.replace(`/(tabs)/(trips)/${createdTrip.tripId}` as any)
             }
             onShare={() => setShowShareModal(true)}
           />
@@ -339,51 +329,53 @@ const CreateTripAi = () => {
   }));
 
   const stepEntering =
-    direction === "forward"
+    direction === 'forward'
       ? SlideInRight.duration(280).easing(Easing.out(Easing.cubic))
       : SlideInLeft.duration(280).easing(Easing.out(Easing.cubic));
   const stepExiting =
-    direction === "forward"
+    direction === 'forward'
       ? SlideOutLeft.duration(220).easing(Easing.in(Easing.cubic))
       : SlideOutRight.duration(220).easing(Easing.in(Easing.cubic));
 
   const headerTitle = useMemo(() => {
-    if (currentStep === 5) return "Trip ready";
-    if (currentStep === 4) return "Building";
-    return "Plan with AI";
+    if (currentStep === 5) return 'Trip ready';
+    if (currentStep === 4) return 'Building';
+    return 'Plan with AI';
   }, [currentStep]);
 
   const shareLink = useMemo(() => {
-    if (!createdTrip?.slug) return "";
+    if (!createdTrip?.slug) return '';
     const host =
-      process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, "") ??
-      "https://runwae.com";
+      process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, '') ??
+      'https://runwae.com';
     return `${host}/t/${createdTrip.slug}`;
   }, [createdTrip]);
 
   const formattedDates = useMemo(() => {
-    if (!createdTrip) return "";
+    if (!createdTrip) return '';
     const start = new Date(createdTrip.startDate);
     const end = new Date(createdTrip.endDate);
-    const startMonth = start.toLocaleDateString("en-US", { month: "short" });
+    const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
     const startDay = start.getDate();
     const endDay = end.getDate();
     const year = start.getFullYear();
-    if (startMonth === end.toLocaleDateString("en-US", { month: "short" })) {
+    if (startMonth === end.toLocaleDateString('en-US', { month: 'short' })) {
       return `${startMonth} ${startDay}-${endDay} ${year}`;
     }
-    return `${startMonth} ${startDay} - ${end.toLocaleDateString("en-US", {
-      month: "short",
+    return `${startMonth} ${startDay} - ${end.toLocaleDateString('en-US', {
+      month: 'short',
     })} ${endDay} ${year}`;
   }, [createdTrip]);
 
+  // console.log('Current step: ', currentStep);
+
   return (
-    <AppSafeAreaView edges={["top"]}>
+    <AppSafeAreaView edges={['top']}>
       <ScreenHeader title={headerTitle} onBack={handleBack} />
 
       {currentStep < 4 ? (
         <View className="px-5">
-          <View className="h-[3px] rounded-full bg-gray-200 dark:bg-gray-800 mb-3 overflow-hidden">
+          <View className="mb-3 h-[3px] overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
             <Animated.View
               style={[
                 {
@@ -399,16 +391,14 @@ const CreateTripAi = () => {
       ) : null}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <View style={{ flex: 1, overflow: "hidden" }}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1">
+        <View style={{ flex: 1, overflow: 'hidden' }}>
           <Animated.View
             key={currentStep}
             entering={stepEntering}
             exiting={stepExiting}
-            style={{ flex: 1 }}
-          >
+            style={{ flex: 1 }}>
             {renderStepContent(currentStep)}
           </Animated.View>
         </View>
@@ -418,23 +408,22 @@ const CreateTripAi = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               disabled={isButtonDisabled}
-              className={`bg-primary h-[45px] rounded-full justify-center items-center ${
-                isButtonDisabled ? "opacity-50" : ""
+              className={`h-[45px] items-center justify-center rounded-full bg-primary ${
+                isButtonDisabled ? 'opacity-50' : ''
               }`}
               onPress={() => {
                 Keyboard.dismiss();
                 if (currentStep < 3) {
-                  goToStep((currentStep + 1) as Step, "forward");
+                  goToStep((currentStep + 1) as Step, 'forward');
                 } else {
                   handleSubmit();
                 }
-              }}
-            >
+              }}>
               {isSubmitting && currentStep === 3 ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-white text-base font-medium">
-                  {currentStep === 3 ? "Build my trip ✨" : "Next"}
+                <Text className="text-base font-medium text-white">
+                  {currentStep === 3 ? 'Build my trip ✨' : 'Next'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -446,8 +435,8 @@ const CreateTripAi = () => {
         isVisible={showShareModal}
         onClose={() => setShowShareModal(false)}
         tripData={{
-          title: createdTrip?.title || "",
-          destination: createdTrip?.destination || "",
+          title: createdTrip?.title || '',
+          destination: createdTrip?.destination || '',
           dates: formattedDates,
           shareLink,
         }}

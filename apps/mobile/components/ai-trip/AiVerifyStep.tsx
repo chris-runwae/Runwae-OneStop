@@ -57,11 +57,13 @@ const AiVerifyStep = ({
       return;
     }
     setAdHocTags([...adHocTags, trimmed]);
+    setSelectedTags([...selectedTags, trimmed]);
     setDraft('');
   };
 
   const removeAdHoc = (tag: string) => {
     setAdHocTags(adHocTags.filter((t) => t !== tag));
+    setSelectedTags(selectedTags.filter((t) => t !== tag));
   };
 
   return (

@@ -18,23 +18,6 @@ type Props = {
   onShare: () => void;
 };
 
-const STREAMER_COLORS = [
-  '#FF1F8C',
-  '#FFB13B',
-  '#7B5EFF',
-  '#00C3A0',
-  '#FFE066',
-  '#FF6FB1',
-];
-
-const STREAMERS = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  color: STREAMER_COLORS[i % STREAMER_COLORS.length],
-  left: `${5 + i * 8 + (i % 3) * 4}%`,
-  rotate: (i % 2 === 0 ? -1 : 1) * (10 + ((i * 7) % 28)),
-  delay: i * 40,
-}));
-
 const TripSuccessStep = ({
   width,
   destination,

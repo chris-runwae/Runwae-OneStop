@@ -24,6 +24,7 @@ import { useQuery } from 'convex/react';
 import { Image as ExpoImage, useImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Consistent vertical rhythm between every home section. 32px is the
 // standard mobile section gap and gives the page enough breathing room
@@ -32,6 +33,7 @@ const SECTION_GAP = 32;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
@@ -102,7 +104,7 @@ export default function HomeScreen() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      {/* <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="index"
           options={{
@@ -121,13 +123,13 @@ export default function HomeScreen() {
         <Stack.Toolbar.Button onPress={() => router.push('/notifications')}>
           <Stack.Toolbar.Icon sf="bell.fill" />
         </Stack.Toolbar.Button>
-      </Stack.Toolbar>
+      </Stack.Toolbar> */}
 
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: 32,
+          // paddingTop: insets.top + 12,
           paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
@@ -138,8 +140,7 @@ export default function HomeScreen() {
             tintColor={dark ? '#ffffff' : '#000000'}
           />
         }>
-        {/* <HomeTopSection user={user} dark={dark} /> */}
-
+        <HomeTopSection user={user} dark={dark} />
         {showLocationPrompt && (
           <View style={{ marginBottom: SECTION_GAP }}>
             <LocationPrompt />

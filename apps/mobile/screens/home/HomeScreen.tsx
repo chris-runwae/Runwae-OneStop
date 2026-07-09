@@ -37,25 +37,17 @@ export default function HomeScreen() {
       <Stack.Screen
         options={{
           title: `Hello ${user?.full_name ?? 'there'}`,
-          headerLargeTitle: false,
           headerShown: true,
           headerShadowVisible: false,
           headerTitleAlign: 'left',
 
-          // headerLeft: () => (
+          // headerRight: () => (
           //   <Pressable
           //     testID="home-notification-bell"
           //     onPress={() => router.push('/notifications')}>
           //     <Bell size={16} />
           //   </Pressable>
           // ),
-          headerRight: () => (
-            <Pressable
-              testID="home-notification-bell"
-              onPress={() => router.push('/notifications')}>
-              <Bell size={16} />
-            </Pressable>
-          ),
         }}
       />
 

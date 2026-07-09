@@ -12,10 +12,25 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 export type GroupSize = 'solo' | 'small' | 'large';
 
-const OPTIONS: { value: GroupSize; emoji: string; label: string; hint: string }[] = [
+const OPTIONS: {
+  value: GroupSize;
+  emoji: string;
+  label: string;
+  hint: string;
+}[] = [
   { value: 'solo', emoji: '🙋🏽', label: 'Just me', hint: 'Solo traveller' },
-  { value: 'small', emoji: '👯', label: 'A few of us', hint: '2–4 friends, partner, or family' },
-  { value: 'large', emoji: '🌍', label: 'Big crew', hint: '5+ — bachelor, birthday, group trip' },
+  {
+    value: 'small',
+    emoji: '👯',
+    label: 'A few of us',
+    hint: '2–4 friends, partner, or family',
+  },
+  {
+    value: 'large',
+    emoji: '🌍',
+    label: 'Big crew',
+    hint: '5+ — bachelor, birthday, group trip',
+  },
 ];
 
 type Props = {
@@ -31,9 +46,8 @@ const GroupSizeStep = ({ width, value, onChange }: Props) => {
   return (
     <View style={[styles.container, { width }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text
-          style={[styles.title, { color: colors.textColors.default }]}>
-          Who's coming on this {'\n'}adventure? ✨
+        <Text style={[styles.title, { color: colors.textColors.default }]}>
+          Who&#39;s coming on this {'\n'}adventure? ✨
         </Text>
         <Text style={[styles.subtitle, { color: colors.textColors.subtle }]}>
           Helps us pick the right vibe.
@@ -51,27 +65,22 @@ const GroupSizeStep = ({ width, value, onChange }: Props) => {
                   styles.card,
                   {
                     backgroundColor: selected
-                      ? dark
-                        ? 'rgba(255,31,140,0.15)'
-                        : '#FFF1F8'
-                      : dark
-                        ? 'rgba(255,255,255,0.04)'
-                        : '#F8F9FA',
-                    borderColor: selected
-                      ? '#FF1F8C'
-                      : dark
-                        ? '#374151'
-                        : '#E5E7EB',
+                      ? colors.primaryColors.default
+                      : colors.backgroundColors.default,
+                    borderWidth: 1,
+                    borderColor: colors.borderColors.subtle,
                   },
                 ]}>
-                <Text style={styles.emoji}>{opt.emoji}</Text>
+                <View>
+                  <Text style={styles.emoji}>{opt.emoji}</Text>
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={[
                       styles.label,
                       {
                         color: selected
-                          ? '#FF1F8C'
+                          ? colors.backgroundColors.default
                           : colors.textColors.default,
                       },
                     ]}>
@@ -80,7 +89,11 @@ const GroupSizeStep = ({ width, value, onChange }: Props) => {
                   <Text
                     style={[
                       styles.hint,
-                      { color: colors.textColors.subtle },
+                      {
+                        color: selected
+                          ? colors.backgroundColors.default
+                          : colors.textColors.default,
+                      },
                     ]}>
                     {opt.hint}
                   </Text>
@@ -109,9 +122,9 @@ const styles = StyleSheet.create({
     paddingTop: 32,
   },
   title: {
+    paddingVertical: 12,
     fontSize: 24,
     fontFamily: AppFonts.bricolage.extraBold,
-    marginBottom: 6,
   },
   subtitle: {
     fontSize: 13,
@@ -121,14 +134,15 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 16,
-    borderWidth: 1,
   },
   emoji: {
     fontSize: 26,
+    paddingVertical: 12,
   },
   label: {
     fontSize: 15,

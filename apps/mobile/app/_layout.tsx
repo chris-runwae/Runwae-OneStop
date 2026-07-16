@@ -1,10 +1,5 @@
-// Side-effect import: initialises Sentry before anything else loads so
-// early-boot errors are captured. Must stay at the very top of this file.
 import '@/lib/sentry';
 import * as Sentry from '@sentry/react-native';
-// PostHog client is constructed at module-eval time; importing it here
-// makes the singleton ready before any screen mounts so the first
-// `identify()` call in RouteGuard isn't racing the SDK boot.
 import * as analytics from '@/lib/analytics';
 // Side-effect import: i18next is initialised at module load with the
 // device locale as default. LocaleSync (below) re-syncs from
@@ -25,7 +20,7 @@ import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
-} from "expo-router/react-navigation";
+} from 'expo-router/react-navigation';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts } from 'expo-font';
@@ -59,14 +54,8 @@ import '../global.css';
 
 export { ErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 
-// expo-image isn't in NativeWind's default interop registry, so without this
-// `className="h-full w-full"` (and any other style-only classes) silently
-// drops on `<Image />`, causing remote photos to render at 0×0. Done once at
-// app start so every screen's expo-image instances pick it up.
 cssInterop(ExpoImageComponent, { className: 'style' });
 
-// One-shot foreground handler config — runs at module import so push
-// banners surface correctly even before the first auth ready event.
 configurePushHandler();
 
 const stripeMerchantIdentifier = STRIPE_MERCHANT_IDENTIFIER;
@@ -83,12 +72,6 @@ function RouteGuard() {
     initialize,
   } = useAuth();
 
-  // Native stack screens default to a white content background. During
-  // the iOS swipe-back gesture (and during the brief moment a new
-  // screen is mounting), that white edge bleeds out around the rounded
-  // corners on dark mode — the artifact reported as "white edge on
-  // transition." Match the screen content background to the active
-  // theme so the underlay is invisible.
   const screenBackgroundColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
 
   // Sign the user out if they revoke Apple credentials in iOS Settings.
@@ -98,21 +81,11 @@ function RouteGuard() {
     initialize();
   }, []);
 
-  // Register the device's push token once the user is authenticated.
-  // The Convex mutation upserts on (userId, deviceId), so re-running
-  // on every auth-state transition is safe — and useful, since iOS
-  // can rotate tokens after backups/restores.
   useEffect(() => {
     if (!isAuthenticated) return;
     void registerPushNotifications(convex);
   }, [isAuthenticated]);
 
-  // Tie PostHog's distinct_id to the Convex user id whenever auth state
-  // changes. The Convex _id is the same identifier the server-side
-  // PostHog wrapper (Commit 3) will use, so events from mobile and from
-  // Convex mutations line up on one timeline per user. On sign-out we
-  // call reset() so the next user doesn't inherit the previous user's
-  // events or super-properties.
   useEffect(() => {
     if (user?.id) {
       analytics.identify(user.id);
@@ -345,7 +318,4 @@ function RootLayout() {
   );
 }
 
-// Sentry.wrap adds the navigation/render auto-instrumentation that the
-// @sentry/react-native SDK ships. Must wrap the root layout's default
-// export so it owns the React tree.
 export default Sentry.wrap(RootLayout);

@@ -1,9 +1,6 @@
 import '@/lib/sentry';
 import * as Sentry from '@sentry/react-native';
 import * as analytics from '@/lib/analytics';
-// Side-effect import: i18next is initialised at module load with the
-// device locale as default. LocaleSync (below) re-syncs from
-// `users.locale` once the viewer is authenticated.
 import '@/lib/i18n';
 import {
   Inter_100Thin,
@@ -22,9 +19,8 @@ import {
   ThemeProvider,
 } from 'expo-router/react-navigation';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
-import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts } from 'expo-font';
-import { Redirect, Stack, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -61,13 +57,10 @@ configurePushHandler();
 const stripeMerchantIdentifier = STRIPE_MERCHANT_IDENTIFIER;
 
 function RouteGuard() {
-  const segments = useSegments();
   const { colorScheme } = useColorScheme();
   const {
     user,
     isLoading,
-    hasCompletedBoarding,
-    currentBoardingStep,
     isAuthenticated,
     initialize,
   } = useAuth();
@@ -98,156 +91,18 @@ function RouteGuard() {
     return <SplashScreen />;
   }
 
-  const AUTH_ROUTES = new Set([
-    '(auth)',
-    'login',
-    'signup',
-    'register',
-    'forgot-password',
-    'check-email',
-    'reset-password',
-    'verification-sent',
-    'reset-success',
-    'email-confirmation',
-    'onboarding',
-    'onboarding-steps',
-  ]);
-
-  const BOARDING_STEPS = new Set([
-    'boarding',
-    'step-1',
-    'step-2',
-    'step-3',
-    'step-4',
-    'step-5',
-  ]);
-
-  const [currentSegment, secondSegment] = segments as string[];
-  const isInAuthFlow =
-    AUTH_ROUTES.has(currentSegment) ||
-    (currentSegment === '(auth)' &&
-      secondSegment &&
-      AUTH_ROUTES.has(secondSegment));
-  const isInBoardingSteps =
-    currentSegment === 'boarding' &&
-    secondSegment &&
-    BOARDING_STEPS.has(secondSegment);
-  const isInAuthorizedRoot = [
-    undefined,
-    '(tabs)',
-    'notifications',
-    'modal',
-    'itinerary',
-    'experience',
-    'viator',
-    'destination',
-    'create-trip',
-    'create-trip-options',
-    'create-trip-ai',
-    'create-trip-from-link',
-    'events',
-    'search',
-    'flights',
-    'hotel',
-    'hotels',
-    'hotels-search',
-    'experiences-search',
-    'invite',
-    'trip',
-    'feed',
-  ].includes(currentSegment as any);
-
-  // Redirection Logic
-  if (!isAuthenticated && !isInAuthFlow) {
-    return <Redirect href="/(auth)/onboarding" />;
-  }
-
-  // Email-verification gate is intentionally disabled until the Convex auth
-  // setup adds a verifier (Resend integration). Password sign-ups land
-  // straight in the boarding flow.
-
-  if (
-    isAuthenticated &&
-    !hasCompletedBoarding &&
-    !isInAuthorizedRoot &&
-    !isInBoardingSteps
-  ) {
-    return <Redirect href={`/boarding/step-${currentBoardingStep}` as any} />;
-  }
-
-  if (isAuthenticated && !isInAuthorizedRoot && !isInBoardingSteps) {
-    return <Redirect href="/(tabs)" />;
-  }
-
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: screenBackgroundColor },
       }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="boarding" />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="create-trip/index" options={{ headerShown: false }} />
-      <Stack.Screen name="itinerary" options={{ headerShown: false }} />
-      <Stack.Screen name="experience" options={{ headerShown: false }} />
-      <Stack.Screen name="viator" options={{ headerShown: false }} />
-      <Stack.Screen name="destination" options={{ headerShown: false }} />
-      <Stack.Screen name="events" options={{ headerShown: false }} />
-      <Stack.Screen name="search" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="flights"
-        options={{ presentation: 'modal', headerShown: false }}
-      />
-      <Stack.Screen
-        name="hotels-search"
-        options={{ presentation: 'modal', headerShown: false }}
-      />
-      <Stack.Screen
-        name="experiences-search"
-        options={{ presentation: 'modal', headerShown: false }}
-      />
-      <Stack.Screen name="hotel" options={{ headerShown: false }} />
-      <Stack.Screen name="hotels" options={{ headerShown: false }} />
-      <Stack.Screen name="invite" options={{ headerShown: false }} />
-      <Stack.Screen name="trip" options={{ headerShown: false }} />
-      <Stack.Screen name="itinerary/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="experience/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="feed" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="create-trip-options"
-        options={{
-          headerShown: false,
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.85, 1],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-        }}
-      />
-      <Stack.Screen
-        name="create-trip-ai"
-        options={{
-          headerShown: false,
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.85, 1],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-        }}
-      />
-      <Stack.Screen
-        name="create-trip-from-link"
-        options={{
-          headerShown: false,
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.85, 1],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 24,
-        }}
-      />
-      <Stack.Screen
-        name="modal"
-        options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
-      />
+      <Stack.Protected guard={!isAuthenticated || !user}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack.Protected>
     </Stack>
   );
 }

@@ -19,6 +19,7 @@ import {
   ThemeProvider,
 } from 'expo-router/react-navigation';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

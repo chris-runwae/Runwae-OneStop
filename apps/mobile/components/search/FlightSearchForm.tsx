@@ -5,7 +5,7 @@ import {
   useFlightSearchState,
   type TripType,
 } from '@/hooks/useFlightSearchState';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import {

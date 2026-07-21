@@ -2,7 +2,7 @@ import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Doc, Id } from '@runwae/convex/convex/_generated/dataModel';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useMutation } from 'convex/react';
 import { X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';

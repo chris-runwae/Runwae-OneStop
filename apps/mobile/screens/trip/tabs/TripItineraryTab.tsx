@@ -6,7 +6,7 @@ import {
   type CreateItineraryItemInput,
   useDayWithTravelTimes,
 } from '@/hooks/useItineraryActions';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { addDays, format, parseISO } from 'date-fns';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';

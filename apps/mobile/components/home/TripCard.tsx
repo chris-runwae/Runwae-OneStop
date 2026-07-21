@@ -15,7 +15,7 @@ import { AppFonts, COLORS } from '@/constants/theme';
 import { useItineraryItemCount } from '@/hooks/useItineraryActions';
 import { useTripMembers, type Trip } from '@/hooks/useTripActions';
 import { formatDaysToGo, getDaysUntil } from '@/utils/date';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { AvatarGroup } from '@/components/containers/AvatarGroup';
 
 interface TripCardProps {

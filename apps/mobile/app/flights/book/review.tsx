@@ -2,7 +2,7 @@ import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { FunctionReturnType } from 'convex/server';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { useAction } from 'convex/react';
 import { format, parseISO } from 'date-fns';
 import { Image as ExpoImage } from 'expo-image';

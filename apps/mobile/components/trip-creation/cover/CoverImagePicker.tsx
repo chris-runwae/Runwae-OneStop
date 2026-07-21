@@ -120,7 +120,7 @@ const CoverImagePicker = ({
           style={styles.backdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
           <Animated.View
-            entering={SlideInDown.duration(280).springify().damping(18)}
+            entering={SlideInDown.duration(280).damping(18)}
             style={[
               styles.sheet,
               { backgroundColor: dark ? '#1C1C1E' : '#fff' },

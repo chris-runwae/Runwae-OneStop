@@ -149,12 +149,19 @@ export const AuthSlide: React.FC<SlideProps> = ({
   //   // handleNext();
   // };
 
+  const authStyles = {
+    bodyText: {
+      fontFamily: AppFonts.inter.medium,
+      fontSize: 14
+    }
+  };
+
   return (
     <View style={{ width }} className="flex-1 pb-6">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={220}>
+        keyboardVerticalOffset={120}>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
@@ -189,8 +196,12 @@ export const AuthSlide: React.FC<SlideProps> = ({
                 style={{ backgroundColor: isDarkMode ? '#fff' : '#000' }}>
                 <AppleLogo color={isDarkMode ? '#000' : '#fff'} />
                 <Text
-                  className="ml-3 text-base font-semibold"
-                  style={{ color: isDarkMode ? '#000' : '#fff' }}>
+                  replaceDefaultStyle
+                  className="ml-3 text-base"
+                  style={{
+                    color: isDarkMode ? '#000' : '#fff',
+                    ...authStyles.bodyText,
+                  }}>
                   Continue with Apple
                 </Text>
               </TouchableOpacity>
@@ -205,8 +216,11 @@ export const AuthSlide: React.FC<SlideProps> = ({
                 }}>
                 <GoogleLogo />
                 <Text
-                  className="ml-3 text-base font-semibold"
-                  style={{ color: colors.textColors.default }}>
+                  className="ml-3 text-base"
+                  style={{
+                    color: colors.textColors.default,
+                    ...authStyles.bodyText
+                  }}>
                   Continue with Google
                 </Text>
               </TouchableOpacity>

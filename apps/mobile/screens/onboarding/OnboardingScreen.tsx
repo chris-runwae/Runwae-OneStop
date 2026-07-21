@@ -33,6 +33,7 @@ const { width } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  // @ts-ignore
   const colors = Colors[colorScheme ?? 'light'];
   const isDarkMode = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);

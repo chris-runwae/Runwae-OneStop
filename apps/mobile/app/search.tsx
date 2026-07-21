@@ -37,7 +37,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 type SearchTab = 'flights' | 'stays' | 'experiences';
 

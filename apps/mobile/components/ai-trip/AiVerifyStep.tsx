@@ -57,22 +57,23 @@ const AiVerifyStep = ({
       return;
     }
     setAdHocTags([...adHocTags, trimmed]);
+    setSelectedTags([...selectedTags, trimmed]);
     setDraft('');
   };
 
   const removeAdHoc = (tag: string) => {
     setAdHocTags(adHocTags.filter((t) => t !== tag));
+    setSelectedTags(selectedTags.filter((t) => t !== tag));
   };
 
   return (
     <View style={[styles.container, { width }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text
-          style={[styles.title, { color: colors.textColors.default }]}>
-          We'll plan with these {'\n'}in mind.
+        <Text style={[styles.title, { color: colors.textColors.default }]}>
+          We&apos;ll plan with these {'\n'}in mind.
         </Text>
         <Text style={[styles.subtitle, { color: colors.textColors.subtle }]}>
-          Tap to remove any that don't fit this trip, or add new ones.
+          Tap to remove any that don&apos;t fit this trip, or add new ones.
         </Text>
 
         {baseTags.length > 0 ? (
@@ -125,7 +126,10 @@ const AiVerifyStep = ({
           <Text
             style={[
               styles.empty,
-              { color: colors.textColors.subtle, borderColor: dark ? '#374151' : '#E5E7EB' },
+              {
+                color: colors.textColors.subtle,
+                borderColor: dark ? '#374151' : '#E5E7EB',
+              },
             ]}>
             No saved preferences yet. Add a few below to guide this trip.
           </Text>
@@ -152,10 +156,7 @@ const AiVerifyStep = ({
             onChangeText={setDraft}
             placeholder="e.g. coffee, jazz bars, hiking…"
             placeholderTextColor={dark ? '#6B7280' : '#9CA3AF'}
-            style={[
-              styles.adHocInput,
-              { color: colors.textColors.default },
-            ]}
+            style={[styles.adHocInput, { color: colors.textColors.default }]}
             onSubmitEditing={addAdHoc}
             returnKeyType="done"
           />
@@ -183,18 +184,14 @@ const AiVerifyStep = ({
                 style={[
                   styles.chipRemovable,
                   {
-                    backgroundColor: dark
-                      ? 'rgba(255,31,140,0.18)'
-                      : '#FFF1F8',
+                    backgroundColor: dark ? 'rgba(255,31,140,0.18)' : '#FFF1F8',
                     borderColor: '#FF1F8C',
                   },
                 ]}>
                 <Text style={[styles.chipText, { color: '#FF1F8C' }]}>
                   {tag}
                 </Text>
-                <TouchableOpacity
-                  onPress={() => removeAdHoc(tag)}
-                  hitSlop={6}>
+                <TouchableOpacity onPress={() => removeAdHoc(tag)} hitSlop={6}>
                   <X size={12} color="#FF1F8C" strokeWidth={2.4} />
                 </TouchableOpacity>
               </Animated.View>
@@ -217,7 +214,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: AppFonts.bricolage.extraBold,
-    marginBottom: 6,
+    paddingVertical: 12,
   },
   subtitle: {
     fontSize: 13,

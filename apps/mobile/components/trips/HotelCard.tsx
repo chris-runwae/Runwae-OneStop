@@ -1,6 +1,6 @@
 import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Image } from 'expo-image';
 import { MoreHorizontal, Plus } from 'lucide-react-native';
 import React, { useRef } from 'react';

@@ -1,5 +1,5 @@
 import { AppFonts, Colors } from '@/constants';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { BlurView } from 'expo-blur';
 import React from 'react';
 import {

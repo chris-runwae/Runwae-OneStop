@@ -1,58 +1,28 @@
-import FloatingTabBar from '@/components/floating-tab';
-import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import React from 'react';
-import { Platform, View } from 'react-native';
-
-const NATIVE_TABS_ENABLED =
-  Platform.OS === 'ios' &&
-  parseInt(String(Platform.Version), 10) >= 18 &&
-  process.env.EXPO_PUBLIC_NATIVE_TABS !== '0';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 export default function TabLayout() {
-  if (NATIVE_TABS_ENABLED) {
-    return (
-      <NativeTabs tintColor="#FF2E92">
-        <NativeTabs.Trigger name="index">
-          <Label>Home</Label>
-          <Icon sf="house.fill" />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="explore">
-          <Label>Explore</Label>
-          <Icon sf="magnifyingglass" />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="(trips)">
-          <Label>Trips</Label>
-          <Icon sf="airplane" />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="profile">
-          <Label>Profile</Label>
-          <Icon sf="person.crop.circle.fill" />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="create" role="search">
-          <Label>Create</Label>
-          <Icon sf="plus" />
-        </NativeTabs.Trigger>
-      </NativeTabs>
-    );
-  }
-
   return (
-    <View style={{ flex: 1 }}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: { display: 'none' },
-        }}>
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-        <Tabs.Screen name="(trips)" options={{ title: 'Trips' }} />
-        <Tabs.Screen name="create" options={{ title: 'Create' }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-      </Tabs>
-      <FloatingTabBar />
-    </View>
+    <NativeTabs minimizeBehavior="onScrollDown" tintColor="#FF2E92">
+      <NativeTabs.Trigger name="(home)">
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="house.fill" md="home" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="explore">
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="(trips)">
+        <NativeTabs.Trigger.Label>Trips</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="airplane" md="plane_contrails" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" md="person" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="create" role="search">
+        <NativeTabs.Trigger.Label>Create</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="plus" md="1k_plus" />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
-
-export { NATIVE_TABS_ENABLED };

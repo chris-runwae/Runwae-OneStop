@@ -10,7 +10,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { X } from 'lucide-react-native';

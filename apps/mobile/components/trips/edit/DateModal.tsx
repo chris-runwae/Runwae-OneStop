@@ -14,7 +14,7 @@ import { CalendarContainer } from '@/components/trip-creation/calendar/CalendarC
 import { useDateRange } from '@marceloterreiro/flash-calendar';
 import { format } from 'date-fns';
 import { Colors } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 interface DateModalProps {
   visible: boolean;
@@ -104,7 +104,10 @@ export default function DateModal({
           <Text style={[styles.modalTitle, { color: dark ? '#fff' : '#000' }]}>
             Select Dates
           </Text>
-          <TouchableOpacity onPress={handleDone} style={styles.modalDoneButton}>
+          <TouchableOpacity
+            testID="date-modal-done"
+            onPress={handleDone}
+            style={styles.modalDoneButton}>
             <Text style={{ color: '#FF1F8C', fontWeight: 'bold' }}>Done</Text>
           </TouchableOpacity>
         </View>

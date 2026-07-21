@@ -36,6 +36,18 @@
         "disabled": true
       }
     },
+    "prod-simulator": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "APP_VARIANT": "production",
+        "RNAsyncStorage_useSystemSQLite": "1",
+        "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN"
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",

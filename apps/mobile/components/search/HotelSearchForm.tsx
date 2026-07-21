@@ -3,7 +3,7 @@ import GuestRoomsStepper from '@/components/search/GuestRoomsStepper';
 import DateModal from '@/components/trips/edit/DateModal';
 import { textStyles } from '@/constants';
 import { useHotelSearchState } from '@/hooks/useHotelSearchState';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import {
@@ -93,6 +93,7 @@ export default function HotelSearchForm() {
           { backgroundColor: cardBg, borderColor: borderClr },
         ]}>
         <Row
+          testID="hotel-search-destination"
           icon={<MapPin size={18} color={dark ? '#fff' : '#0F1115'} />}
           label="Destination"
           value={state.destination ?? 'Search city, hotel, or address'}
@@ -105,6 +106,7 @@ export default function HotelSearchForm() {
       {/* Dates + Guests row */}
       <View style={styles.splitRow}>
         <PressableCell
+          testID="hotel-search-dates"
           flex={1.4}
           dark={dark}
           cardBg={cardBg}
@@ -116,6 +118,7 @@ export default function HotelSearchForm() {
           placeholder={!state.checkIn || !state.checkOut}
         />
         <PressableCell
+          testID="hotel-search-guests"
           flex={1}
           dark={dark}
           cardBg={cardBg}
@@ -130,7 +133,7 @@ export default function HotelSearchForm() {
 
       <View style={{ height: 14 }} />
 
-      <SearchButton enabled={isValid} onPress={onSearch} />
+      <SearchButton testID="hotel-search-submit" enabled={isValid} onPress={onSearch} />
 
       <DestinationInput
         visible={sheet === 'destination'}
@@ -160,6 +163,7 @@ export default function HotelSearchForm() {
 }
 
 function Row({
+  testID,
   icon,
   label,
   value,
@@ -167,6 +171,7 @@ function Row({
   dark,
   onPress,
 }: {
+  testID?: string;
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -181,6 +186,7 @@ function Row({
   return (
     <Animated.View style={animatedStyle}>
       <Pressable
+        testID={testID}
         onPressIn={() => {
           scale.value = withSpring(0.985, { damping: 18, stiffness: 320 });
         }}
@@ -210,6 +216,7 @@ function Row({
 }
 
 function PressableCell({
+  testID,
   flex,
   dark,
   cardBg,
@@ -220,6 +227,7 @@ function PressableCell({
   value,
   placeholder,
 }: {
+  testID?: string;
   flex: number;
   dark: boolean;
   cardBg: string;
@@ -237,6 +245,7 @@ function PressableCell({
   return (
     <Animated.View style={[{ flex }, animatedStyle]}>
       <Pressable
+        testID={testID}
         onPressIn={() => {
           scale.value = withSpring(0.97, { damping: 18, stiffness: 320 });
         }}
@@ -269,9 +278,11 @@ function PressableCell({
 }
 
 function SearchButton({
+  testID,
   enabled,
   onPress,
 }: {
+  testID?: string;
   enabled: boolean;
   onPress: () => void;
 }) {
@@ -290,6 +301,7 @@ function SearchButton({
   return (
     <Animated.View style={[styles.searchBtnWrap, animatedStyle]}>
       <Pressable
+        testID={testID}
         onPress={onPress}
         disabled={!enabled}
         onPressIn={() => {

@@ -363,6 +363,7 @@ export default function BookingScreen() {
           },
         ]}>
         <Pressable
+          testID="confirm-and-pay-button"
           style={[styles.ctaBtn, loading && { opacity: 0.7 }]}
           onPress={handleConfirm}
           disabled={loading}>

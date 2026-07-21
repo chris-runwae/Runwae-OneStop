@@ -16,3 +16,7 @@ out
 
 # Apple .p8 keys — keep these well away from git
 *.p8
+
+# WebStorm
+.idea/
+.DS_Store

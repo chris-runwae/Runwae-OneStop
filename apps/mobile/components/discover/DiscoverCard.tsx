@@ -3,7 +3,7 @@ import CustomModal from "@/components/ui/CustomModal";
 import { useTrips } from "@/context/TripsContext";
 import { savedItemFromDiscoveryItem } from "@/utils/savedIdeaInputs";
 import type { DiscoverItem } from "@/constants/discoverCategories";
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "expo-router/react-navigation";
 import { Heart, MapPin, Plus } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {

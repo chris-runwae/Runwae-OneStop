@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>Complete your booking</title>
+    <!--
+      LiteAPI Payment SDK host page.
+
+      Loaded by the mobile app inside an in-app browser (expo-web-browser).
+      LiteAPI is merchant of record: the Stripe PaymentIntent lives in
+      LiteAPI's Stripe account, so payment MUST be collected by LiteAPI's
+      hosted SDK here, NOT by @stripe/stripe-react-native in the app.
+
+      Params are read from the URL hash (so the short-lived secretKey is not
+      sent to / logged by the web server):
+        #secretKey=<from prebook>&env=sandbox|live&returnUrl=<app deep link>
+
+      On success the SDK redirects the browser to returnUrl (a runwae:// deep
+      link). expo-web-browser's openAuthSessionAsync intercepts that scheme
+      and hands control back to the app, which then finalizes the booking.
+    -->
+    <script src="https://payment-wrapper.liteapi.travel/dist/liteAPIPayment.js?v=a1"></script>
+    <style>
+      :root {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: #0f1115;
+      }
+      #targetElement {
+        padding: 16px;
+        max-width: 560px;
+        margin: 0 auto;
+      }
+      #message {
+        display: none;
+        padding: 24px;
+        text-align: center;
+        color: #da2020;
+        font-size: 15px;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="targetElement"></div>
+    <div id="message"></div>
+
+    <script>
+      (function () {
+        function showMessage(text) {
+          var el = document.getElementById('message');
+          el.textContent = text;
+          el.style.display = 'block';
+        }
+
+        function readParam(name) {
+          // Hash first (kept off the server), then query string as a fallback.
+          var fromHash = new URLSearchParams(
+            (window.location.hash || '').replace(/^#/, ''),
+          ).get(name);
+          if (fromHash != null) return fromHash;
+          return new URLSearchParams(window.location.search).get(name);
+        }
+
+        var secretKey = readParam('secretKey');
+        var env = readParam('env') || 'sandbox'; // "sandbox" | "live"
+        var returnUrl = readParam('returnUrl');
+        var business = readParam('business') || 'Runwae';
+
+        if (!secretKey || !returnUrl) {
+          showMessage('This payment link is missing required details. Please go back and try again.');
+          return;
+        }
+
+        if (typeof LiteAPIPayment === 'undefined') {
+          showMessage('Could not load the payment provider. Check your connection and try again.');
+          return;
+        }
+
+        try {
+          var liteAPIConfig = {
+            publicKey: env, // LiteAPI expects the literal "sandbox" or "live"
+            secretKey: secretKey,
+            returnUrl: returnUrl,
+            targetElement: '#targetElement',
+            appearance: { theme: 'flat' },
+            options: { business: { name: business } },
+          };
+          var liteAPIPayment = new LiteAPIPayment(liteAPIConfig);
+          liteAPIPayment.handlePayment();
+        } catch (e) {
+          showMessage('Something went wrong loading the payment form. Please go back and try again.');
+        }
+      })();
+    </script>
+  </body>
+</html>

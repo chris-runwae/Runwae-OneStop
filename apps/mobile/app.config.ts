@@ -54,6 +54,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const variant = resolveAppVariant();
   const v = VARIANT_CONFIG[variant];
 
+  // @ts-ignore
+  // @ts-ignore
   return {
     ...config,
     name: v.name,
@@ -64,7 +66,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: './assets/images/icon.png',
     scheme: v.scheme,
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
     runtimeVersion: {
       policy: 'appVersion',
     },
@@ -95,6 +96,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundImage: './assets/images/android-icon-background.png',
         monochromeImage: './assets/images/android-icon-monochrome.png',
       },
+      //@ts-ignore
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: v.androidPackage,
@@ -184,6 +186,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       'expo-apple-authentication',
+      'expo-web-browser',
       [
         'expo-image-picker',
         {
@@ -198,7 +201,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       typedRoutes: true,
       reactCompiler: true,
     },
-    // @ts-expect-error - fonts is not a valid property in the ExpoConfig type
+
     fonts: [
       {
         src: './assets/fonts/Bricolage_Grotesque/static/BricolageGrotesque-Regular.ttf',

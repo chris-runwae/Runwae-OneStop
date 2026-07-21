@@ -1,7 +1,7 @@
 import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
 import { SavedItineraryItem } from '@/hooks/useIdeaActions';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { MoreHorizontal, Plus } from 'lucide-react-native';

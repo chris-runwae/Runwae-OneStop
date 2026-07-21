@@ -4,7 +4,7 @@ import { MapPin, Navigation, X } from 'lucide-react-native';
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 interface FullScreenMapModalProps {
   visible: boolean;

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Returning to the app…</title>
+    <!--
+      Bridge page for the LiteAPI Payment SDK return URL.
+
+      LiteAPI redirects the in-app browser here (an https URL) after payment.
+      Some providers won't accept a custom-scheme (runwae://) returnUrl, so we
+      land on https and immediately bounce to the app's deep link, passed as
+      the ?to= query param. expo-web-browser's openAuthSessionAsync is watching
+      for that custom scheme and closes the browser when it fires.
+    -->
+    <style>
+      body {
+        margin: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Returning to the app…</p>
+    <script>
+      (function () {
+        var to = new URLSearchParams(window.location.search).get('to');
+        if (to) {
+          // Forward any params LiteAPI appended (e.g. transactionId) in case a
+          // future flow wants them; the backend already has them stored too.
+          window.location.replace(to);
+        }
+      })();
+    </script>
+  </body>
+</html>

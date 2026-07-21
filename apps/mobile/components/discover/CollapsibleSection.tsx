@@ -1,4 +1,4 @@
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { ChevronDown, MoveRight } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';

@@ -7,14 +7,17 @@ const CategoryItem = ({
   label,
   isActive,
   onPress,
+  testID,
 }: {
   icon?: string;
   imageSrc?: any;
   label: string;
   isActive?: boolean;
   onPress?: () => void;
+  testID?: string;
 }) => (
   <Pressable
+    testID={testID}
     className="flex-1 items-center justify-between pt-2"
     onPress={onPress}>
     <View className="items-center justify-center gap-y-2 pb-4">

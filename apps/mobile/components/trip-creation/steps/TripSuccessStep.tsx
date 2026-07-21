@@ -1,7 +1,6 @@
 import { Text } from '@/components';
 import { AppFonts, Colors } from '@/constants';
 import { Check, Share2 } from 'lucide-react-native';
-import React, { useEffect, useMemo } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,14 +8,7 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import Animated, {
-  Easing,
-  ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { Easing, ZoomIn } from 'react-native-reanimated';
 
 type Props = {
   width: number;
@@ -25,62 +17,6 @@ type Props = {
   onViewTrip: () => void;
   onShare: () => void;
 };
-
-const STREAMER_COLORS = [
-  '#FF1F8C',
-  '#FFB13B',
-  '#7B5EFF',
-  '#00C3A0',
-  '#FFE066',
-  '#FF6FB1',
-];
-
-const STREAMERS = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  color: STREAMER_COLORS[i % STREAMER_COLORS.length],
-  left: `${5 + (i * 8) + (i % 3) * 4}%`,
-  rotate: (i % 2 === 0 ? -1 : 1) * (10 + (i * 7) % 28),
-  delay: i * 40,
-}));
-
-function Streamer({
-  color,
-  left,
-  rotate,
-  delay,
-}: {
-  color: string;
-  left: string;
-  rotate: number;
-  delay: number;
-}) {
-  const y = useSharedValue(-12);
-  useEffect(() => {
-    y.value = withRepeat(
-      withTiming(80, { duration: 1400, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true,
-    );
-  }, [y]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: y.value },
-      { rotate: `${rotate}deg` },
-    ],
-  }));
-
-  return (
-    <Animated.View
-      entering={ZoomIn.delay(delay).duration(500)}
-      style={[
-        styles.streamer,
-        animatedStyle,
-        { left: left as any, backgroundColor: color },
-      ]}
-    />
-  );
-}
 
 const TripSuccessStep = ({
   width,
@@ -92,33 +28,15 @@ const TripSuccessStep = ({
   const dark = useColorScheme() === 'dark';
   const colors = Colors[dark ? 'dark' : 'light'];
 
-  const streamers = useMemo(() => STREAMERS, []);
-
   return (
     <View style={[styles.container, { width }]}>
-      <View style={styles.streamerLayer} pointerEvents="none">
-        {streamers.map((s) => (
-          <Streamer
-            key={s.id}
-            color={s.color}
-            left={s.left}
-            rotate={s.rotate}
-            delay={s.delay}
-          />
-        ))}
-      </View>
-
       <Animated.View
         entering={ZoomIn.duration(360).easing(Easing.out(Easing.back(1.6)))}
-        style={[
-          styles.checkCircle,
-          { backgroundColor: '#FF1F8C' },
-        ]}>
+        style={[styles.checkCircle, { backgroundColor: '#FF1F8C' }]}>
         <Check size={36} color="#fff" strokeWidth={3} />
       </Animated.View>
 
-      <Text
-        style={[styles.title, { color: colors.textColors.default }]}>
+      <Text style={[styles.title, { color: colors.textColors.default }]}>
         Trip created
       </Text>
       <Text style={[styles.subtitle, { color: colors.textColors.subtle }]}>
@@ -144,10 +62,7 @@ const TripSuccessStep = ({
           ]}>
           <Share2 size={16} color={colors.textColors.default} />
           <Text
-            style={[
-              styles.shareBtnText,
-              { color: colors.textColors.default },
-            ]}>
+            style={[styles.shareBtnText, { color: colors.textColors.default }]}>
             Share
           </Text>
         </Pressable>
@@ -165,16 +80,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     alignItems: 'center',
   },
-  streamerLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  streamer: {
-    position: 'absolute',
-    top: 0,
-    width: 6,
-    height: 18,
-    borderRadius: 3,
-  },
   checkCircle: {
     width: 88,
     height: 88,
@@ -189,9 +94,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   title: {
-    fontSize: 22,
     fontFamily: AppFonts.bricolage.semiBold,
-    marginBottom: 6,
+    fontSize: 24,
+    paddingVertical: 12,
     textAlign: 'center',
   },
   subtitle: {

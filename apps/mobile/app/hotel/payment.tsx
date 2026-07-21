@@ -1,11 +1,12 @@
-import { STRIPE_MERCHANT_IDENTIFIER, useStripeSafe } from '@/utils/stripe-safe';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 import { useAction } from 'convex/react';
 import { Image } from 'expo-image';
+import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { ArrowLeft, CreditCard, Lock } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +37,13 @@ const GENERIC_PAYMENT_INIT_ERROR =
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
+
+// Base URL of apps/web, which hosts the LiteAPI Payment SDK wrapper page at
+// /hotel-pay.html. Must be set in the app's env (e.g. EXPO_PUBLIC_WEB_URL).
+const WEB_BASE_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? '').replace(/\/$/, '');
+// LiteAPI environment for the SDK — must match the LITEAPI_KEY mode on the
+// Convex backend ("sandbox" for sand_… keys, "live" for prod_… keys).
+const LITEAPI_PAYMENT_ENV = process.env.EXPO_PUBLIC_LITEAPI_ENV ?? 'sandbox';
 
 export default function PaymentScreen() {
   const {
@@ -72,15 +80,12 @@ export default function PaymentScreen() {
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { initPaymentSheet, presentPaymentSheet } = useStripeSafe();
   const confirmAfterPayment = useAction(api.hotels.confirmAfterPayment);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState(user?.email ?? '');
   const [loading, setLoading] = useState(false);
-  const [paymentReady, setPaymentReady] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
   const price = parseFloat(priceStr ?? '0');
   const guests = parseInt(guestsStr ?? '1', 10);
@@ -91,37 +96,6 @@ export default function PaymentScreen() {
     maximumFractionDigits: 0,
   }).format(price);
 
-  // The hotel-booking flow now begins on the Convex backend
-  // (`api.hotels.startBooking`), which returns a Stripe PaymentIntent
-  // client_secret. Initialise the Payment Sheet against that secret.
-  useEffect(() => {
-    if (!clientSecret) return;
-    (async () => {
-      try {
-        const { error: initErr } = await initPaymentSheet({
-          merchantDisplayName: 'Runwae',
-          paymentIntentClientSecret: clientSecret,
-          applePay: {
-            merchantCountryCode: 'GB',
-            merchantIdentifier: STRIPE_MERCHANT_IDENTIFIER,
-          },
-          googlePay: { merchantCountryCode: 'GB', testEnv: __DEV__ },
-          returnURL: 'runwae://stripe-redirect',
-          style: 'automatic',
-        });
-        if (initErr) throw new Error(initErr.message);
-        setPaymentReady(true);
-      } catch (e) {
-        console.error('[Stripe] init failed:', e);
-        Sentry.captureException(e, {
-          tags: { feature: 'hotel_payment', stage: 'init_payment_sheet' },
-          extra: { bookingId },
-        });
-        setInitError(GENERIC_PAYMENT_INIT_ERROR);
-      }
-    })();
-  }, [clientSecret, initPaymentSheet]);
-
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -130,40 +104,60 @@ export default function PaymentScreen() {
       Alert.alert('Missing info', 'Please fill in your name and email.');
       return;
     }
+    if (!WEB_BASE_URL) {
+      // EXPO_PUBLIC_WEB_URL not configured — the checkout page can't be reached.
+      console.error('[PaymentFlow] EXPO_PUBLIC_WEB_URL is not set');
+      Sentry.captureException(new Error('EXPO_PUBLIC_WEB_URL not set'), {
+        tags: { feature: 'hotel_payment', stage: 'config' },
+        extra: { bookingId },
+      });
+      setPayError(GENERIC_PAYMENT_INIT_ERROR);
+      return;
+    }
+    if (!clientSecret) {
+      setPayError(GENERIC_PAYMENT_INIT_ERROR);
+      return;
+    }
+
     setPayError(null);
     setLoading(true);
-    setBookingStatus('Confirming payment...');
+    setBookingStatus('Opening secure checkout…');
 
     try {
-      const { error: paymentError } = await presentPaymentSheet();
+      // LiteAPI is merchant of record. The Stripe PaymentIntent lives in
+      // LiteAPI's Stripe account, so payment is collected by LiteAPI's hosted
+      // Payment SDK (liteAPIPayment.js) — loaded from apps/web/hotel-pay.html
+      // in an in-app browser — NOT by @stripe/stripe-react-native (whose
+      // publishable key can't see that PaymentIntent → "No such payment_intent").
+      // App deep link we ultimately return to (e.g. runwae-dev://hotel-pay-return).
+      const deepLink = Linking.createURL('hotel-pay-return');
+      // LiteAPI redirects to this https bridge page, which bounces to deepLink.
+      // Using https here avoids providers that reject custom-scheme returnUrls.
+      const bridgeUrl =
+        `${WEB_BASE_URL}/hotel-pay-return.html?to=${encodeURIComponent(deepLink)}`;
+      const checkoutUrl =
+        `${WEB_BASE_URL}/hotel-pay.html` +
+        `#secretKey=${encodeURIComponent(clientSecret)}` +
+        `&env=${encodeURIComponent(LITEAPI_PAYMENT_ENV)}` +
+        `&returnUrl=${encodeURIComponent(bridgeUrl)}`;
 
-      if (paymentError) {
-        if (paymentError.code !== 'Canceled') {
-          console.error('[Stripe] Payment presented error:', paymentError);
-          Sentry.captureException(
-            new Error(`Stripe payment sheet error: ${paymentError.message}`),
-            {
-              tags: { feature: 'hotel_payment', stage: 'present_payment_sheet' },
-              extra: {
-                bookingId,
-                stripeCode: paymentError.code,
-                stripeMessage: paymentError.message,
-              },
-            },
-          );
-          setPayError(GENERIC_PAYMENT_ERROR);
-        }
+      // openAuthSessionAsync watches for the custom scheme (deepLink) and
+      // closes the in-app browser when the bridge page bounces to it.
+      const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, deepLink);
+
+      // Anything other than a redirect back to returnUrl means the user closed
+      // the sheet without completing payment. Not an error — just bail.
+      if (result.type !== 'success') {
         setBookingStatus(null);
         setLoading(false);
         return;
       }
 
-      // LiteAPI is merchant of record (Payment SDK mode), so Runwae's
-      // Stripe webhook does not fire for these payments. Call the
-      // confirmation action directly — it runs LiteAPI book() and flips
-      // the booking to confirmed. Idempotent: safe to retry on network
-      // blips.
-      setBookingStatus('Confirming reservation...');
+      // The redirect to returnUrl fired, so LiteAPI captured the payment.
+      // Finalize the reservation: confirmAfterPayment runs LiteAPI book()
+      // (method=TRANSACTION) and flips the booking to confirmed. Idempotent:
+      // safe to retry on network blips.
+      setBookingStatus('Confirming reservation…');
       const confirmation = await confirmAfterPayment({
         bookingId: bookingId as unknown as Id<'bookings'>,
         holderFirstName: firstName.trim(),
@@ -187,7 +181,7 @@ export default function PaymentScreen() {
     } catch (err) {
       console.error('[PaymentFlow] Error:', err);
       Sentry.captureException(err, {
-        tags: { feature: 'hotel_payment', stage: 'confirm_after_payment' },
+        tags: { feature: 'hotel_payment', stage: 'liteapi_payment_sdk' },
         extra: { bookingId },
       });
       setPayError(GENERIC_PAYMENT_ERROR);
@@ -263,6 +257,7 @@ export default function PaymentScreen() {
                 First Name
               </Text>
               <TextInput
+                testID="guest-first-name"
                 style={inputStyle}
                 value={firstName}
                 onChangeText={setFirstName}
@@ -280,6 +275,7 @@ export default function PaymentScreen() {
                 Last Name
               </Text>
               <TextInput
+                testID="guest-last-name"
                 style={inputStyle}
                 value={lastName}
                 onChangeText={setLastName}
@@ -295,6 +291,7 @@ export default function PaymentScreen() {
             Email
           </Text>
           <TextInput
+            testID="guest-email"
             style={inputStyle}
             value={email}
             onChangeText={setEmail}
@@ -315,7 +312,8 @@ export default function PaymentScreen() {
                 styles.paymentNoteText,
                 { color: colors.textColors.subtle },
               ]}>
-              Payments secured by Stripe. Supports Apple Pay & Google Pay.
+              You&apos;ll complete payment in a secure checkout window. Cards
+              accepted.
             </Text>
           </View>
 
@@ -343,34 +341,24 @@ export default function PaymentScreen() {
           <Lock size={12} color="#22C55E" />
           <Text style={styles.secureText}>Secured & encrypted</Text>
         </View>
-        {initError ? (
-          <Text style={[styles.payBtnText, { color: '#EF4444', fontSize: 13 }]}>
-            {initError}
-          </Text>
-        ) : (
-          <Pressable
-            style={[
-              styles.payBtn,
-              (!paymentReady || loading) && { opacity: 0.7 },
-            ]}
-            onPress={handlePay}
-            disabled={!paymentReady || loading}>
-            {loading ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <ActivityIndicator color="#fff" />
-                {bookingStatus && (
-                  <Text style={[styles.payBtnText, { marginLeft: 10 }]}>
-                    {bookingStatus}
-                  </Text>
-                )}
-              </View>
-            ) : !paymentReady ? (
-              <Text style={styles.payBtnText}>Loading payment...</Text>
-            ) : (
-              <Text style={styles.payBtnText}>Pay {priceLabel}</Text>
-            )}
-          </Pressable>
-        )}
+        <Pressable
+          testID="pay-button"
+          style={[styles.payBtn, loading && { opacity: 0.7 }]}
+          onPress={handlePay}
+          disabled={loading}>
+          {loading ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ActivityIndicator color="#fff" />
+              {bookingStatus && (
+                <Text style={[styles.payBtnText, { marginLeft: 10 }]}>
+                  {bookingStatus}
+                </Text>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.payBtnText}>Pay {priceLabel}</Text>
+          )}
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );

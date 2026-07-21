@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { Colors } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 export default function EditTripSkeleton() {
   const insets = useSafeAreaInsets();

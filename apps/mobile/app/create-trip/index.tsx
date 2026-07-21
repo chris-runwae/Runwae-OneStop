@@ -8,7 +8,7 @@ import { useDateRange } from '@marceloterreiro/flash-calendar';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import ScreenHeader from '@/components/ui/ScreenHeader';
 import { COLORS } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 import { router, useLocalSearchParams } from 'expo-router';
 import React, {
   useCallback,
@@ -64,6 +64,7 @@ const CreateTrip = () => {
   const [currentStep, setCurrentStep] = useState<Step>(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const colorScheme = useColorScheme() ?? 'light';
+  // @ts-ignore
   const colors = Colors[colorScheme ?? 'light'];
 
   const params = useLocalSearchParams<{ seedDestination?: string }>();

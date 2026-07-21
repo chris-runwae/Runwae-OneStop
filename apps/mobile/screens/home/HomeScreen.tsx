@@ -13,17 +13,18 @@ import UpcomingTrips from '@/components/home/UpcomingTrips';
 import AppSafeAreaView from '@/components/ui/AppSafeAreaView';
 import WelcomeModal from '@/components/WelcomeModal';
 import { useFeatureFlag } from '@/lib/featureFlags';
-import { NATIVE_TABS_ENABLED } from '@/app/(tabs)/_layout';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
 import type { Trip } from '@/hooks/useTripActions';
 import { useExploreData } from '@/hooks/useExploreData';
 import { api } from '@runwae/convex/convex/_generated/api';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from 'expo-router/react-navigation';
+import { Stack, useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
-import { Image as ExpoImage } from 'expo-image';
+import { Image as ExpoImage, useImage } from 'expo-image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Consistent vertical rhythm between every home section. 32px is the
 // standard mobile section gap and gives the page enough breathing room
@@ -31,13 +32,18 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 const SECTION_GAP = 32;
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { showWelcomeModal, setShowWelcomeModal, user } = useAuth();
   const { dark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [findFriendsOpen, setFindFriendsOpen] = useState(false);
   const { myTrips, joinedTrips } = useTrips();
-  const { data: exploreData, loading, refresh: refreshExplore } =
-    useExploreData();
+  const {
+    data: exploreData,
+    loading,
+    refresh: refreshExplore,
+  } = useExploreData();
   const featuredEvents = exploreData.events;
   const featuredExperiences = exploreData.experiences;
 
@@ -94,19 +100,37 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [
-    refreshExplore,
-    featuredEvents,
-    featuredExperiences,
-    upcomingTrips,
-  ]);
+  }, [refreshExplore, featuredEvents, featuredExperiences, upcomingTrips]);
 
   return (
-    <AppSafeAreaView edges={['top']}>
+    <>
+      {/* <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="index"
+          options={{
+            title: `Hello ${user?.full_name ?? 'there'}`,
+            headerLargeTitle: true,
+            headerShown: false,
+            headerShadowVisible: false,
+          }}
+        />
+      </Stack>
+
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button onPress={() => {}}>
+          <Stack.Toolbar.Icon sf="magnifyingglass" />
+        </Stack.Toolbar.Button>
+        <Stack.Toolbar.Button onPress={() => router.push('/notifications')}>
+          <Stack.Toolbar.Icon sf="bell.fill" />
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar> */}
+
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: NATIVE_TABS_ENABLED ? 32 : 100,
+          // paddingTop: insets.top + 12,
+          paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -117,7 +141,6 @@ export default function HomeScreen() {
           />
         }>
         <HomeTopSection user={user} dark={dark} />
-
         {showLocationPrompt && (
           <View style={{ marginBottom: SECTION_GAP }}>
             <LocationPrompt />
@@ -126,28 +149,30 @@ export default function HomeScreen() {
 
         <View style={{ gap: SECTION_GAP }}>
           <ImportsInProgressPill />
-          <HomeQuickActions dark={dark} />
+          {/* <HomeQuickActions dark={dark} /> */}
 
           <HeroFeatured />
           <UpcomingTrips trips={upcomingTrips} loading={loading} />
-          <UpcomingEvents
-            data={featuredEvents}
-            title="Featured Events"
-            showSubtitle={false}
-            loading={loading}
-            headerPath="/events/featured"
-          />
-          <AddOnsForYou data={featuredExperiences} loading={loading} />
-          {discoverEnabled ? (
-            <DiscoverGrid
-              city={viewer?.homeCity ?? viewer?.homeCountry ?? 'London'}
-              coords={viewer?.homeCoords ?? undefined}
-              originIata={viewer?.homeIata ?? null}
-            />
-          ) : null}
+          {/*<UpcomingEvents*/}
+          {/*  data={featuredEvents}*/}
+          {/*  title="Featured Events"*/}
+          {/*  showSubtitle={false}*/}
+          {/*  loading={loading}*/}
+          {/*  headerPath="/events/featured"*/}
+          {/*/>*/}
+          {/*<AddOnsForYou data={featuredExperiences} loading={loading} />*/}
+          {/*{discoverEnabled ? (*/}
+          {/*  <DiscoverGrid*/}
+          {/*    city={viewer?.homeCity ?? viewer?.homeCountry ?? 'London'}*/}
+          {/*    coords={viewer?.homeCoords ?? undefined}*/}
+          {/*    originIata={viewer?.homeIata ?? null}*/}
+          {/*  />*/}
+          {/*) : null}*/}
+
           <OpenPollCard />
           <FriendsActivity onFindFriends={() => setFindFriendsOpen(true)} />
         </View>
+        <View style={{ height: 1400 }} />
       </ScrollView>
 
       <WelcomeModal
@@ -158,6 +183,6 @@ export default function HomeScreen() {
         open={findFriendsOpen}
         onClose={() => setFindFriendsOpen(false)}
       />
-    </AppSafeAreaView>
+    </>
   );
 }

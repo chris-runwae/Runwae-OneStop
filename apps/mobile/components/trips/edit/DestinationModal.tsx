@@ -17,7 +17,7 @@ import { usePlaceSearch } from '@/components/trip-creation/hooks/usePlaceSearch'
 import { LiteAPIPlace } from '@/types/liteapi.types';
 import SkeletonBox from '@/components/ui/SkeletonBox';
 import { Colors } from '@/constants/theme';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from "expo-router/react-navigation";
 
 interface DestinationModalProps {
   visible: boolean;

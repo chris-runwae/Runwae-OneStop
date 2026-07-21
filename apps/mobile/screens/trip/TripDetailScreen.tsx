@@ -179,22 +179,22 @@ export default function TripDetailScreen() {
 
   return (
     <>
-      <Stack.Toolbar placement='right'>
-        <Stack.Toolbar.Button icon='ellipses.bubble' onPress={() => {}}/>
-      </Stack.Toolbar>
+      {/*<Stack.Toolbar placement='right'>*/}
+      {/*  <Stack.Toolbar.Button icon='ellipses.bubble' onPress={() => {}}/>*/}
+      {/*</Stack.Toolbar>*/}
       <View style={styles.container}>
-        {/*<ItineraryHeader*/}
-        {/*  scrollY={scrollY}*/}
-        {/*  imageUri={coverUrl || ''}*/}
-        {/*  title={activeTrip.title}*/}
-        {/*  isOwner={isOwner}*/}
-        {/*  isMember={isMember}*/}
-        {/*  onEdit={showImagePicker}*/}
-        {/*  showMoreOptions={true}*/}
-        {/*  dropdownOptions={dropdownOptions}*/}
-        {/*  hideFavorite={true}*/}
-        {/*  joinCode={activeTrip.joinCode ?? null}*/}
-        {/*/>*/}
+        <ItineraryHeader
+          scrollY={scrollY}
+          imageUri={coverUrl || ''}
+          title={activeTrip.title}
+          isOwner={isOwner}
+          isMember={isMember}
+          onEdit={showImagePicker}
+          showMoreOptions={true}
+          dropdownOptions={dropdownOptions}
+          hideFavorite={true}
+          joinCode={activeTrip.joinCode ?? null}
+        />
 
         <Animated.ScrollView
           style={[

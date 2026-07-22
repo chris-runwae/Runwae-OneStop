@@ -1,9 +1,9 @@
 import { Itinerary } from "@/constants/home.constant";
-import { useRouter } from "expo-router";
-import { Heart } from "lucide-react-native";
+import { Link } from "expo-router";
+import { ImageBackground } from 'expo-image'
+import { Heart, ArrowUpRightIcon } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -19,76 +19,65 @@ interface ItineraryCardProps {
 
 const ItineraryCard = ({
   item,
-  fullWidth = false,
-  hasBorder = true,
-  height = 245,
 }: ItineraryCardProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
-  const router = useRouter();
-  const isNavigating = React.useRef(false);
 
-  const handlePress = () => {
-    if (isNavigating.current) return;
-    isNavigating.current = true;
-    router.navigate(`/itinerary/${item.id}`);
-    setTimeout(() => {
-      isNavigating.current = false;
-    }, 1000);
-  };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      className={`rounded-[24px] overflow-hidden`}
-      style={{ width: fullWidth ? "100%" : 338, height }}
-    >
-      <ImageBackground
-        source={{ uri: item.image }}
-        className="w-full h-full rounded-[20px] overflow-hidden"
-        imageStyle={{ borderRadius: 20 }}
-        resizeMode="cover"
-      >
-        <View
-          className="flex-1 justify-between p-3"
-          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-        >
-        <View style={styles.heartContainer}>
-          <Pressable onPress={() => setIsFavorite(!isFavorite)}>
-            <Heart
-              size={24}
-              color={isFavorite ? "#FF2E92" : "#fff"}
-              fill={isFavorite ? "#FF2E92" : "transparent"}
-              strokeWidth={1.5}
-            />
-          </Pressable>
-        </View>
-
-          <View>
-            <Text
-              className="text-white text-3xl font-bold leading-tight mb-3"
-              style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
-              ellipsizeMode="tail"
-              numberOfLines={2}
+    <View className={`rounded-[24px] overflow-hidden`}>
+    <Link href={`/itinerary/${item.id}`} asChild>
+      <Link.AppleZoom>
+        <Pressable>
+          <ImageBackground
+            source={{ uri: item.image }}
+            imageStyle={{ borderRadius: 20 }}
+            style={{ width: 320, height: 240, overflow: 'hidden'  }}
+            contentFit="cover"
+          >
+            <View
+              className="flex-1 justify-between p-3"
+              style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
             >
-              {item.title}
-            </Text>
+            <View style={styles.heartContainer}>
+              <Pressable onPress={() => setIsFavorite(!isFavorite)}>
+                <ArrowUpRightIcon //replace with Heart functionality
+                  size={24}
+                  color={isFavorite ? "#FF2E92" : "#fff"}
+                  fill={isFavorite ? "#FF2E92" : "transparent"}
+                  strokeWidth={1.5}
+                />
+              </Pressable>
+            </View>
 
-            <View className="flex-row items-center gap-x-2">
-              <View className="bg-[#3D3D44] px-3 py-1.5 rounded-full border border-white/30">
-                <Text className="text-white text-xs font-semibold">
-                  {item.activities} activities
+              <View>
+                <Text
+                  className="text-white text-3xl font-bold leading-tight mb-3"
+                  style={{ fontFamily: "BricolageGrotesque-ExtraBold" }}
+                  ellipsizeMode="tail"
+                  numberOfLines={2}
+                >
+                  {item.title}
                 </Text>
-              </View>
-              <View className="bg-[#3D3D44] px-3 py-1.5 rounded-full border border-white/30">
-                <Text className="text-white text-xs font-semibold">
-                  {item.duration}
-                </Text>
+
+                <View className="flex-row items-center gap-x-2">
+                  <View className="bg-[#3D3D44] px-3 py-1.5 rounded-full border border-white/30">
+                    <Text className="text-white text-xs font-semibold">
+                      {item.activities} activities
+                    </Text>
+                  </View>
+                  <View className="bg-[#3D3D44] px-3 py-1.5 rounded-full border border-white/30">
+                    <Text className="text-white text-xs font-semibold">
+                      {item.duration}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
-          </View>
-        </View>
-      </ImageBackground>
-    </Pressable>
+          </ImageBackground>
+        </Pressable>
+      </Link.AppleZoom>
+    </Link>
+    </View>
   );
 };
 

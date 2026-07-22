@@ -1,4 +1,3 @@
-import { useTheme } from 'expo-router/react-navigation';
 import { BlurView } from 'expo-blur';
 import { useRouter, useSegments } from 'expo-router';
 import { ImageBackground } from 'expo-image';
@@ -10,7 +9,12 @@ import {
   Upload,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 import Animated, {
   SharedValue,
   interpolate,
@@ -22,7 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../ui/Text';
 import ActionMenu, { ActionOption } from '../common/ActionMenu';
 import ShareModal from './ShareModal';
-import { AppFonts } from '@/constants';
+import { AppFonts, Colors } from '@/constants';
 
 export const EXPANDED_HEIGHT = 320;
 
@@ -37,6 +41,7 @@ interface ItineraryHeaderProps {
   scrollY: SharedValue<number>;
   imageUri: string;
   title: string;
+  subtitle?: string;
   isOwner?: boolean;
   isMember?: boolean;
   showMoreOptions?: boolean;
@@ -52,6 +57,7 @@ const ItineraryHeader = ({
   scrollY,
   imageUri,
   title,
+  subtitle,
   isOwner,
   isMember,
   showMoreOptions,
@@ -65,7 +71,9 @@ const ItineraryHeader = ({
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
-  const { dark } = useTheme();
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
+  const colors = Colors[colorScheme];
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isShareModalVisible, setIsShareModalVisible] = useState(false);
@@ -191,7 +199,8 @@ const ItineraryHeader = ({
 
         {/* Bottom scrim for the expanded title */}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.55)']}
+          // colors={['transparent', 'rgba(0,0,0,0.55)']}
+          colors={['transparent', colors.backgroundColors.default]}
           style={styles.bottomScrim}
           pointerEvents="none"
         />
@@ -268,6 +277,13 @@ const ItineraryHeader = ({
           style={[styles.expandedTitleWrap, expandedTitleStyle]}
           pointerEvents="none">
           <Text style={styles.expandedTitle}>{title}</Text>
+          <Text
+            style={[
+              styles.expandedSubTitle,
+              { color: colors.textColors.subtle },
+            ]}>
+            {subtitle}
+          </Text>
         </Animated.View>
       </Animated.View>
 
@@ -322,7 +338,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 140,
+    height: 390,
   },
   topRow: {
     position: 'absolute',
@@ -362,10 +378,15 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     bottom: 24,
+    paddingVertical: 8,
   },
   expandedTitle: {
     fontFamily: AppFonts.bricolage.bold,
     fontSize: 30,
-    color: '#fff',
+    paddingTop: 12,
+  },
+  expandedSubTitle: {
+    fontFamily: AppFonts.bricolage.regular,
+    fontSize: 13,
   },
 });

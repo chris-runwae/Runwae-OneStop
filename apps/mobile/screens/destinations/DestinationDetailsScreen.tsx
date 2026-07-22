@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View, useColorScheme } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -13,7 +13,6 @@ import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 
 import { Spacer } from '@/components';
-import DestinationInfo from '@/components/destination/DestinationInfo';
 import RecommendationsSection from '@/components/destination/RecommendationsSection';
 import DetailNotFound from '@/components/experience/DetailNotFound';
 import AddToTripContent from '@/components/home/AddToTripContent';
@@ -26,8 +25,14 @@ import ItineraryHeader, {
 import { useTrips } from '@/context/TripsContext';
 import { savedItemFromDestination } from '@/utils/savedIdeaInputs';
 import { toItineraryTemplate } from '@/utils/adapters/toItineraryTemplate';
+import Text from '@/components/ui/Text';
+import { Colors } from '@/constants';
 
 const DestinationDetailScreen = () => {
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
+  const colors = Colors[colorScheme];
+
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { destination, loading } = useDestinationById(id ?? null);
@@ -84,16 +89,15 @@ const DestinationDetailScreen = () => {
   };
 
   return (
-    <View className="flex-1">
-      {/* <Link.AppleZoomTarget> */}
+    <View style={{ flex: 1, backgroundColor: colors.backgroundColors.default }}>
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={destination?.image ?? ''}
         title={destination.title}
+        subtitle={destination.description}
         onFavoritePress={() => setAddToTripOpen(true)}
         favoriteFilled={ideaSaved}
       />
-      {/* </Link.AppleZoomTarget> */}
 
       <Animated.ScrollView
         style={styles.scroll}
@@ -104,17 +108,9 @@ const DestinationDetailScreen = () => {
         {/* Spacer that the header sits over. Replaces the duplicate Image. */}
         <View style={styles.headerSpacer} />
 
-        <DestinationInfo
-          title={destination.title}
-          location={destination.location}
-          rating={destination.rating ?? 4.5}
-          description={destination.description ?? ''}
-        />
-
+        <Spacer size={12} vertical />
         {destinationItineraries.length > 0 && (
           <>
-            <View className="mt-5 h-2 bg-gray-100 dark:bg-dark-seconndary/20" />
-
             <ItineraryForYou
               data={destinationItineraries}
               title="Featured Itineraries"
@@ -196,4 +192,10 @@ const styles = StyleSheet.create({
   },
   similarWrap: { marginTop: 32, paddingBottom: 40 },
   listContent: { paddingHorizontal: 20 },
+
+  descriptionText: {
+    fontSize: 14,
+    lineHeight: 19.5,
+    paddingHorizontal: 16,
+  },
 });

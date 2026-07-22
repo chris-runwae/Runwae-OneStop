@@ -1,7 +1,9 @@
-import { useTheme } from "expo-router/react-navigation";
+import { useTheme } from 'expo-router/react-navigation';
 import { MoveRight } from 'lucide-react-native';
-import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+
+import Text from './Text';
+import { AppFonts } from '@/constants';
 
 interface SectionHeaderProps {
   title: string;
@@ -21,7 +23,7 @@ const SectionHeader = ({
   return (
     <View className="flex-row items-center justify-between px-[20px]">
       <View className="flex-1">
-        <Text className="text-base font-medium dark:text-white">{title}</Text>
+        <Text style={styles.headerText}>{title}</Text>
         {subtitle && showSubtitle && (
           <Text className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
             {subtitle}
@@ -44,3 +46,10 @@ const SectionHeader = ({
 };
 
 export default SectionHeader;
+
+const styles = StyleSheet.create({
+  headerText: {
+    fontSize: 18,
+    fontFamily: AppFonts.bricolage.semiBold,
+  },
+});

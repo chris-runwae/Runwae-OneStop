@@ -372,8 +372,9 @@ const styles = StyleSheet.create({
   },
   collapsedTitle: {
     fontFamily: AppFonts.bricolage.bold,
-    fontSize: 17,
+    fontSize: 16,
     color: '#fff',
+    width: '70%',
   },
   expandedTitleWrap: {
     position: 'absolute',

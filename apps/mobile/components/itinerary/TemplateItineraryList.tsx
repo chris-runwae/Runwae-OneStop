@@ -115,21 +115,23 @@ function TemplateItemRow({ item }: TemplateItemRowProps) {
           </View>
         </View>
 
-        {item.locationName ? (
-          <Text
-            style={[styles.subtleText, { color: colors.textColors.subtle }]}
-            numberOfLines={1}>
-            {item.locationName}
-          </Text>
-        ) : null}
+        <View>
+          {item.locationName ? (
+            <Text
+              style={[styles.subtleText, { color: colors.textColors.subtle }]}
+              numberOfLines={1}>
+              {item.locationName}
+            </Text>
+          ) : null}
 
-        {timeLabel ? (
-          <Text
-            style={[styles.subtleText, { color: colors.textColors.subtle }]}
-            numberOfLines={1}>
-            {timeLabel}
-          </Text>
-        ) : null}
+          {timeLabel ? (
+            <Text
+              style={[styles.subtleText, { color: colors.textColors.subtle }]}
+              numberOfLines={1}>
+              {timeLabel}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -160,9 +162,9 @@ const TemplateItineraryList = ({ days }: TemplateItineraryListProps) => {
     <View style={styles.list}>
       {ordered.map((day) => (
         <View key={day.dayNumber} style={styles.daySection}>
-          <Text style={[styles.dayHeader, { color: colors.textColors.default }]}>
-            Day {day.dayNumber}
-            {day.title ? ` — ${day.title}` : ''}
+          <Text
+            style={[styles.dayHeader, { color: colors.textColors.default }]}>
+            {day.title ? `${day.title}` : `Day ${day.dayNumber}`}
           </Text>
           {day.items.length === 0 ? (
             <Text
@@ -195,19 +197,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   dayHeader: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: AppFonts.bricolage.semiBold,
     letterSpacing: -0.1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   itemWrapper: {
-    marginBottom: 12,
+    marginBottom: 4,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'stretch',
     minHeight: 112,
-    borderWidth: 1,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -222,8 +223,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   topRow: {
     flexDirection: 'row',

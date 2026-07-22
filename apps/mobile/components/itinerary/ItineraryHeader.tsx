@@ -51,6 +51,7 @@ interface ItineraryHeaderProps {
   favoriteFilled?: boolean;
   dropdownOptions?: DropdownOption[];
   joinCode?: string | null;
+  showTitle?: boolean;
 }
 
 const ItineraryHeader = ({
@@ -67,6 +68,7 @@ const ItineraryHeader = ({
   favoriteFilled,
   dropdownOptions,
   joinCode,
+  showTitle = true,
 }: ItineraryHeaderProps) => {
   const router = useRouter();
   const segments = useSegments();
@@ -276,7 +278,7 @@ const ItineraryHeader = ({
         <Animated.View
           style={[styles.expandedTitleWrap, expandedTitleStyle]}
           pointerEvents="none">
-          <Text style={styles.expandedTitle}>{title}</Text>
+          {showTitle && <Text style={styles.expandedTitle}>{title}</Text>}
           <Text
             style={[
               styles.expandedSubTitle,
@@ -299,7 +301,7 @@ const ItineraryHeader = ({
       <ShareModal
         isVisible={isShareModalVisible}
         onClose={() => setIsShareModalVisible(false)}
-        title={title}
+        title={title ?? ''}
         showImage={!isExperienceOrDestination}
         imageUri={imageUri}
         joinCode={joinCode}
@@ -384,6 +386,7 @@ const styles = StyleSheet.create({
     fontFamily: AppFonts.bricolage.bold,
     fontSize: 30,
     paddingTop: 12,
+    lineHeight: 32,
   },
   expandedSubTitle: {
     fontFamily: AppFonts.bricolage.regular,

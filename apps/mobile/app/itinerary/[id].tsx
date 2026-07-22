@@ -11,13 +11,14 @@ import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { Image } from 'expo-image';
-import React, { useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, Text, View, useColorScheme } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
 
 const ItineraryDetail = () => {
   type ColorScheme = keyof typeof Colors;
@@ -105,6 +106,7 @@ const ItineraryDetail = () => {
         scrollY={scrollY}
         imageUri={coverUrl ?? ''}
         title={title}
+        showTitle={false}
       />
 
       <Animated.ScrollView
@@ -136,7 +138,6 @@ const ItineraryDetail = () => {
           <Text style={[styles.title, { color: colors.textColors.default }]}>
             {title}
           </Text>
-
           <Spacer size={16} vertical />
 
           <View style={styles.badgesRow}>
@@ -209,28 +210,25 @@ const ItineraryDetail = () => {
 
         <Spacer size={32} vertical />
 
-        <SectionHeader title="Itinerary" />
-        <Spacer size={16} vertical />
+        {/* <SectionHeader title="Itinerary" />
+        <Spacer size={16} vertical /> */}
         <TemplateItineraryList days={days} />
 
         {moreTemplates.length > 0 && (
           <>
             <Spacer size={32} vertical />
-            <Text
-              style={[styles.moreHeader, { color: colors.textColors.default }]}>
-              More itineraries from {destinationName ?? 'this destination'}
-            </Text>
-            <Spacer size={16} vertical />
-            <FlatList
+            <SectionHeader
+              title={`More itineraries from ${destinationName ?? 'this destination'}`}
+            />
+            <Spacer size={8} vertical />
+            <FlashList
               data={moreTemplates}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20 }}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
               keyExtractor={(item) => item.id}
               ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-              renderItem={({ item }) => (
-                <ItineraryCard item={item} fullWidth={false} />
-              )}
+              renderItem={({ item }) => <ItineraryCard item={item} />}
             />
           </>
         )}
@@ -249,8 +247,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   description: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: AppFonts.inter.regular,
   },
   badgesRow: {
@@ -269,8 +267,7 @@ const styles = StyleSheet.create({
   },
   moreHeader: {
     fontSize: 20,
-    fontFamily: AppFonts.bricolage.extraBold,
-    letterSpacing: -0.3,
-    paddingHorizontal: 20,
+    fontFamily: AppFonts.bricolage.semiBold,
+    paddingHorizontal: 16,
   },
 });

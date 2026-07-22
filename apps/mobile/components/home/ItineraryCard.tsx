@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import {
   ImageBackground,
   Pressable,
+  StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -39,11 +39,7 @@ const ItineraryCard = ({
   return (
     <Pressable
       onPress={handlePress}
-      className={`rounded-[24px] overflow-hidden ${
-        hasBorder
-          ? "border-[1.5px] border-gray-200 dark:border-dark-seconndary bg-white p-1 dark:bg-dark-seconndary/50"
-          : ""
-      }`}
+      className={`rounded-[24px] overflow-hidden`}
       style={{ width: fullWidth ? "100%" : 338, height }}
     >
       <ImageBackground
@@ -56,16 +52,16 @@ const ItineraryCard = ({
           className="flex-1 justify-between p-3"
           style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
         >
-{/* <View className="flex-row justify-end">
-  <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
-    <Heart
-      size={20}
-      color={isFavorite ? "#FF2E92" : "#fff"}
-      fill={isFavorite ? "#FF2E92" : "transparent"}
-      strokeWidth={1.5}
-    />
-  </TouchableOpacity>
-</View> */}
+        <View style={styles.heartContainer}>
+          <Pressable onPress={() => setIsFavorite(!isFavorite)}>
+            <Heart
+              size={24}
+              color={isFavorite ? "#FF2E92" : "#fff"}
+              fill={isFavorite ? "#FF2E92" : "transparent"}
+              strokeWidth={1.5}
+            />
+          </Pressable>
+        </View>
 
           <View>
             <Text
@@ -97,3 +93,11 @@ const ItineraryCard = ({
 };
 
 export default ItineraryCard;
+
+const styles = StyleSheet.create({
+  heartContainer: {
+    alignSelf: 'flex-end',
+    paddingTop: 6,
+    paddingRight: 6
+  }
+})

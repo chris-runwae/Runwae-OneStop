@@ -1,9 +1,11 @@
+import React from 'react';
+import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { FlashList } from "@shopify/flash-list";
+
 import { ItineraryCardSkeleton } from '@/components/ui/CardSkeletons';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { Itinerary } from '@/constants/home.constant';
-import { useRouter } from 'expo-router';
-import React from 'react';
-import { FlatList, Text, View } from 'react-native';
 import ItineraryCard from './ItineraryCard';
 
 interface ItineraryForYouProps {
@@ -38,9 +40,10 @@ const ItineraryForYou = ({
     }, 1000);
   };
 
+  if(!data) return null;
+
   return (
-    <View
-      className={`${noTopMargin ? '' : 'mt-5'} ${showBorder ? 'border-b-[3px] border-b-gray-200 pb-5 dark:border-b-dark-seconndary' : ''}`}>
+    <>
       <SectionHeader
         title={title}
         subtitle={subtitle}
@@ -48,7 +51,7 @@ const ItineraryForYou = ({
         onPress={handleHeaderPress}
       />
 
-      <FlatList
+      <FlashList
         data={displayData}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -78,7 +81,7 @@ const ItineraryForYou = ({
           </View>
         }
       />
-    </View>
+    </>
   );
 };
 

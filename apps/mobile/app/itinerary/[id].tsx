@@ -20,7 +20,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ItineraryDetail = () => {
-  const colorScheme = useColorScheme() ?? 'light';
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
   const colors = Colors[colorScheme];
 
   // The hook returns the raw `itinerary_templates` doc (or null while

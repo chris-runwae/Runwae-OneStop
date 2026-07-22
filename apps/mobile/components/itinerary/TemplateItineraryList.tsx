@@ -53,7 +53,8 @@ interface TemplateItemRowProps {
 }
 
 function TemplateItemRow({ item }: TemplateItemRowProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
   const dark = colorScheme === 'dark';
   const colors = Colors[colorScheme];
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.other;
@@ -139,7 +140,8 @@ interface TemplateItineraryListProps {
 }
 
 const TemplateItineraryList = ({ days }: TemplateItineraryListProps) => {
-  const colorScheme = useColorScheme() ?? 'light';
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
   const colors = Colors[colorScheme];
 
   if (!days || days.length === 0) {

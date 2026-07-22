@@ -1,6 +1,8 @@
-import { useTheme } from "expo-router/react-navigation";
+import { useTheme } from 'expo-router/react-navigation';
 import { BlurView } from 'expo-blur';
 import { useRouter, useSegments } from 'expo-router';
+import { Image, ImageBackground } from 'expo-image';
+import { GlassContainer, GlassView } from 'expo-glass-effect';
 import {
   ChevronLeft,
   EllipsisVertical,
@@ -8,7 +10,7 @@ import {
   Upload,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -17,8 +19,11 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import Text from '../ui/Text';
 import ActionMenu, { ActionOption } from '../common/ActionMenu';
 import ShareModal from './ShareModal';
+import { AppFonts } from '@/constants';
 
 interface DropdownOption {
   label: string;
@@ -108,26 +113,30 @@ const ItineraryHeader = ({
         <Animated.View
           className="absolute bottom-0 left-0 right-0 top-0 overflow-hidden bg-gray-100 dark:bg-dark-seconndary"
           style={headerAnimatedStyle}>
-          <Animated.Image
+          <Image
             key={imageUri}
-            entering={FadeIn.duration(1000)}
-            exiting={FadeOut.duration(1000)}
+            // entering={FadeIn.duration(1000)}
+            // exiting={FadeOut.duration(1000)}
             source={{ uri: imageUri }}
             className="absolute bottom-0 left-0 right-0 top-0"
-            resizeMode="cover"
+            contentFit="cover"
           />
           <BlurView intensity={20} tint="light" className="flex-1" />
         </Animated.View>
 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-          <ChevronLeft
-            size={20}
-            strokeWidth={1.5}
-            color={dark ? '#fff' : '#000'}
-          />
-        </TouchableOpacity>
+        <GlassView style={{ borderRadius: 99 }} isInteractive>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="h-10 w-10 items-center justify-center rounded-full">
+            <ChevronLeft
+              size={20}
+              strokeWidth={1.5}
+              color={dark ? '#fff' : '#000'}
+            />
+          </TouchableOpacity>
+        </GlassView>
+
+        {/* <GlassView style={styles.tintedGlassView} glassEffectStyle="clear" /> */}
 
         <View className="flex-row items-center gap-x-3">
           {showMoreOptions && !dropdownOptions && (
@@ -141,47 +150,6 @@ const ItineraryHeader = ({
               />
             </TouchableOpacity>
           )}
-
-{/* <TouchableOpacity
-  onPress={() => setIsShareModalVisible(true)}
-  className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-  <Upload
-    size={17}
-    strokeWidth={1.5}
-    color={dark ? '#fff' : '#000'}
-  />
-</TouchableOpacity>
-
-{!showMoreOptions && (
-  <>
-    {!hideFavorite && (
-      <TouchableOpacity
-        onPress={() =>
-          onFavoritePress
-            ? onFavoritePress()
-            : setIsFavorite(!isFavorite)
-        }
-        className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-dark-seconndary">
-        <Heart
-          size={17}
-          strokeWidth={1.5}
-          color={
-            (onFavoritePress ? favoriteFilled : isFavorite)
-              ? '#FF2E92'
-              : dark
-                ? '#fff'
-                : '#000'
-          }
-          fill={
-            (onFavoritePress ? favoriteFilled : isFavorite)
-              ? '#FF2E92'
-              : 'transparent'
-          }
-        />
-      </TouchableOpacity>
-    )}
-  </>
-)} */}
 
           {(isMember || isOwner) && dropdownOptions && (
             <TouchableOpacity
@@ -219,3 +187,33 @@ const ItineraryHeader = ({
 };
 
 export default ItineraryHeader;
+
+const styles = StyleSheet.create({
+  header: {
+    position: 'sticky',
+    fontFamily: AppFonts.bricolage.bold,
+    fontSize: 24,
+  },
+  glassView: {
+    position: 'absolute',
+    top: 100,
+    left: 50,
+    width: 200,
+    height: 100,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  tintedGlassView: {
+    position: 'absolute',
+    top: 250,
+    left: 50,
+    width: 200,
+    height: 100,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+});

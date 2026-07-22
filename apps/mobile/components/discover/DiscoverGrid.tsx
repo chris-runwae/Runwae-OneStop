@@ -1,36 +1,49 @@
+import { useAction, useMutation, useQuery } from 'convex/react';
+import {
+  openBrowserAsync,
+  WebBrowserPresentationStyle,
+} from 'expo-web-browser';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Dimensions,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { RefreshCcw } from 'lucide-react-native';
+
+import { api } from '@runwae/convex/convex/_generated/api';
+import { AppFonts, Colors } from '@/constants';
 import {
   DISCOVER_CATEGORIES,
   DISCOVER_SAMPLES,
   CHIP_QUERY,
   defaultSearchDates,
   type DiscoverItem,
-} from "@/constants/discoverCategories";
-import SkeletonBox from "@/components/ui/SkeletonBox";
+} from '@/constants/discoverCategories';
+import SkeletonBox from '@/components/ui/SkeletonBox';
 import DiscoverCard, {
   type SaveControls,
-} from "@/components/discover/DiscoverCard";
-import { api } from "@runwae/convex/convex/_generated/api";
-import { useTheme } from "expo-router/react-navigation";
-import { useAction, useMutation, useQuery } from "convex/react";
-import {
-  openBrowserAsync,
-  WebBrowserPresentationStyle,
-} from "expo-web-browser";
-import { router } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Dimensions,
-  Linking,
-  Pressable,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+} from '@/components/discover/DiscoverCard';
+import Text from '@/components/ui/Text';
+import Spacer from '../utils/Spacer';
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const GUTTER = 12;
-const SIDE_PADDING = 20;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GUTTER = 8;
+const SIDE_PADDING = 16;
 const CARD_WIDTH = (SCREEN_WIDTH - SIDE_PADDING * 2 - GUTTER) / 2;
 
 type Props = {
@@ -56,21 +69,23 @@ export default function DiscoverGrid({
   destinationIata,
   checkin,
   checkout,
-  initialCategory = "all",
+  initialCategory = 'all',
   excludeCategories,
   showHeading = true,
-  heading = "Discover",
+  heading = 'Discover',
 }: Props) {
-  const { dark } = useTheme();
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
+  const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
+
   const search = useAction(api.discovery.searchByCategory);
   const savedKeys = useQuery(api.user_saves.listKeys, {});
   const addSave = useMutation(api.user_saves.add);
   const removeSave = useMutation(api.user_saves.remove);
 
   const [active, setActive] = useState<string>(initialCategory);
-  const [results, setResults] = useState<DiscoverItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [refreshTick, setRefreshTick] = useState(0);
 
   const visibleCategories = useMemo(
@@ -78,7 +93,7 @@ export default function DiscoverGrid({
       excludeCategories
         ? DISCOVER_CATEGORIES.filter((c) => !excludeCategories.includes(c.k))
         : DISCOVER_CATEGORIES,
-    [excludeCategories],
+    [excludeCategories]
   );
 
   const savedSet = useMemo(() => {
@@ -113,24 +128,26 @@ export default function DiscoverGrid({
         }
       },
     }),
-    [savedSet, addSave, removeSave],
+    [savedSet, addSave, removeSave]
   );
 
+  const cfg = active === 'all' ? null : CHIP_QUERY[active];
+
+  const [fetchState, setFetchState] = useState<{
+    items: DiscoverItem[];
+    error: string | null;
+    loading: boolean;
+  }>({ items: [], error: null, loading: false });
+
+  // Derived, not stored.
+  const results = cfg ? fetchState.items : [];
+  const error = cfg ? fetchState.error : null;
+  const loading = cfg ? fetchState.loading : false;
+
   useEffect(() => {
-    if (active === "all") {
-      setResults([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    const cfg = CHIP_QUERY[active];
-    if (!cfg) {
-      setResults([]);
-      return;
-    }
+    if (!cfg) return;
+
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     const term = cfg.termSuffix ? `${city}${cfg.termSuffix}` : city;
     const fallback = defaultSearchDates();
@@ -145,36 +162,40 @@ export default function DiscoverGrid({
     if (coords?.lat !== undefined) args.lat = coords.lat;
     if (coords?.lng !== undefined) args.lng = coords.lng;
 
-    if (cfg.providerCategory === "fly") {
+    if (cfg.providerCategory === 'fly') {
       if (!originIata) {
-        setLoading(false);
-        setResults([]);
-        setError("Set your home airport in Profile to see flight deals.");
+        setFetchState({
+          items: [],
+          loading: false,
+          error: 'Set your home airport in Profile to see flight deals.',
+        });
         return;
       }
       args.originIata = originIata;
       if (destinationIata) args.destinationIata = destinationIata;
     }
 
+    setFetchState((s) => ({ ...s, loading: true, error: null }));
+
     (search(args as Parameters<typeof search>[0]) as Promise<DiscoverItem[]>)
       .then((items) => {
         if (cancelled) return;
-        setResults(items ?? []);
+        setFetchState({ items: items ?? [], loading: false, error: null });
       })
       .catch((err) => {
         if (cancelled) return;
-        setResults([]);
-        setError(err instanceof Error ? err.message : "Search failed");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        setFetchState({
+          items: [],
+          loading: false,
+          error: err instanceof Error ? err.message : 'Search failed',
+        });
       });
 
     return () => {
       cancelled = true;
     };
   }, [
-    active,
+    cfg,
     city,
     coords?.lat,
     coords?.lng,
@@ -186,53 +207,84 @@ export default function DiscoverGrid({
     search,
   ]);
 
-  const handleCardPress = useCallback((item: DiscoverItem) => {
-    if (item.provider === "viator") {
-      if (item.externalUrl) {
-        openBrowserAsync(item.externalUrl, {
-          presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
-        }).catch(() => {});
+  const spin = useSharedValue(0);
+
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value}deg` }],
+  }));
+
+  useEffect(() => {
+    if (loading) {
+      spin.value = 0;
+      spin.value = withRepeat(
+        withTiming(360, { duration: 800, easing: Easing.linear }),
+        -1
+      );
+    } else {
+      cancelAnimation(spin);
+      spin.value = withTiming(360, {
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshTick((n) => n + 1);
+  }, []);
+
+  const handleCardPress = useCallback(
+    (item: DiscoverItem) => {
+      if (item.provider === 'viator') {
+        if (item.externalUrl) {
+          openBrowserAsync(item.externalUrl, {
+            presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+          }).catch(() => {});
+          return;
+        }
+        router.push({
+          pathname: '/viator/[productCode]',
+          params: { productCode: item.apiRef },
+        });
         return;
       }
-      router.push({
-        pathname: "/viator/[productCode]",
-        params: { productCode: item.apiRef },
-      });
-      return;
-    }
-    if (item.provider === "liteapi") {
-      const fallback = defaultSearchDates();
-      router.push({
-        pathname: "/hotel/[hotelId]",
-        params: {
-          hotelId: item.apiRef,
-          checkin: checkin ?? fallback.checkin,
-          checkout: checkout ?? fallback.checkout,
-          adults: "2",
-        },
-      });
-      return;
-    }
-    if (item.externalUrl) {
-      Linking.openURL(item.externalUrl).catch(() => {});
-    }
-  }, [checkin, checkout]);
+      if (item.provider === 'liteapi') {
+        const fallback = defaultSearchDates();
+        router.push({
+          pathname: '/hotel/[hotelId]',
+          params: {
+            hotelId: item.apiRef,
+            checkin: checkin ?? fallback.checkin,
+            checkout: checkout ?? fallback.checkout,
+            adults: '2',
+          },
+        });
+        return;
+      }
+      if (item.externalUrl) {
+        Linking.openURL(item.externalUrl).catch(() => {});
+      }
+    },
+    [checkin, checkout]
+  );
+
+  const emptyBorderColor = isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db';
+  const emptyTextColor = isDark ? '#9ca3af' : '#6b7280';
 
   const renderHeader = showHeading ? (
-    <View className="mb-3 flex-row items-center justify-between" style={{ paddingHorizontal: SIDE_PADDING }}>
-      <Text
-        className="text-lg font-bold text-foreground dark:text-white"
-        style={{ fontFamily: "BricolageGrotesque-Bold" }}>
-        {heading}
-      </Text>
-      {active !== "all" ? (
+    <View style={styles.headerRow}>
+      <Text style={styles.headingText}>{heading}</Text>
+      {active !== 'all' ? (
         <TouchableOpacity
-          onPress={() => setRefreshTick((n) => n + 1)}
+          testID="refresh-recommendations-button"
+          onPress={handleRefresh}
           hitSlop={8}
+          accessibilityRole="button"
           accessibilityLabel="Refresh results">
-          <Text className="text-[12px] font-semibold text-primary">
-            Refresh
-          </Text>
+          <Animated.View style={spinStyle}>
+            <RefreshCcw size={18} color={colors.textColors.default} />
+          </Animated.View>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -241,71 +293,96 @@ export default function DiscoverGrid({
   return (
     <View>
       {renderHeader}
+      <Spacer size={8} vertical />
 
+      {/* Recommendation chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: SIDE_PADDING,
-          paddingBottom: 4,
-        }}>
+        contentContainerStyle={[
+          styles.chipScrollContent,
+          { backgroundColor: colors.backgroundColors.default },
+        ]}>
         {visibleCategories.map((c, idx) => {
-          const on = active === c.k;
+          const isSelected = active === c.k;
+          const isLast = idx === visibleCategories.length - 1;
+
           return (
             <Pressable
               key={c.k}
+              testID="recommendation-chip-button"
               onPress={() => setActive(c.k)}
               accessibilityRole="button"
               accessibilityLabel={`${c.label} category`}
-              accessibilityState={{ selected: on }}
-              className={`mr-2 flex-row items-center rounded-full border px-3.5 py-2 ${
-                on
-                  ? "border-primary bg-primary"
-                  : "border-gray-200 bg-gray-100 dark:border-white/10 dark:bg-dark-seconndary"
-              }`}
-              style={idx === visibleCategories.length - 1 ? { marginRight: 0 } : undefined}>
+              accessibilityState={{ selected: isSelected }}
+              style={[
+                styles.chip,
+                isLast && styles.chipLast,
+                {
+                  backgroundColor: isSelected
+                    ? colors.primaryColors.default
+                    : colors.backgroundColors.subtle,
+                  borderColor: isSelected
+                    ? 'transparent'
+                    : colors.borderColors.subtle,
+                },
+              ]}>
               <Text
-                className={`text-[12.5px] font-medium ${
-                  on ? "text-white" : "text-gray-500 dark:text-gray-300"
-                }`}>
-                {c.emoji ? `${c.emoji} ` : ""}
+                style={[
+                  styles.chipText,
+                  {
+                    fontFamily: isSelected
+                      ? AppFonts.bricolage.medium
+                      : AppFonts.bricolage.regular,
+                    color: isSelected ? '#fff' : colors.text,
+                  },
+                ]}>
+                {c.emoji ? `${c.emoji} ` : ''}
                 {c.label}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
+      <Spacer size={8} vertical />
 
-      <View style={{ paddingHorizontal: SIDE_PADDING, paddingTop: 12 }}>
+      <View style={styles.body}>
         {error ? (
-          <View className="items-center rounded-2xl border border-dashed border-gray-300 px-4 py-6 dark:border-white/15">
-            <Text className="text-center text-[12.5px] text-gray-500 dark:text-gray-400">
+          <View style={[styles.emptyBox, { borderColor: emptyBorderColor }]}>
+            <Text style={[styles.emptyText, { color: emptyTextColor }]}>
               {error}
             </Text>
             <TouchableOpacity
-              onPress={() => setRefreshTick((n) => n + 1)}
-              className="mt-3 rounded-full bg-primary px-4 py-2">
-              <Text className="text-[12px] font-semibold text-white">
-                Try again
-              </Text>
+              onPress={handleRefresh}
+              style={[
+                styles.retryButton,
+                { backgroundColor: colors.primaryColors.default },
+              ]}>
+              <Text style={styles.retryText}>Try again</Text>
             </TouchableOpacity>
           </View>
-        ) : active === "all" ? (
-          <Grid items={DISCOVER_SAMPLES.map(toDiscoverFromSample)} onCardPress={handleCardPress} saveControls={saveControls} />
+        ) : active === 'all' ? (
+          <Grid
+            items={DISCOVER_SAMPLES.map(toDiscoverFromSample)}
+            onCardPress={handleCardPress}
+            saveControls={saveControls}
+          />
         ) : loading ? (
           <SkeletonGrid />
         ) : results.length === 0 ? (
-          <View className="items-center rounded-2xl border border-dashed border-gray-300 px-4 py-6 dark:border-white/15">
-            <Text className="text-center text-[12.5px] text-gray-500 dark:text-gray-400">
-              No results for{" "}
-              {DISCOVER_CATEGORIES.find((c) => c.k === active)?.label} near {city}.
+          <View style={[styles.emptyBox, { borderColor: emptyBorderColor }]}>
+            <Text style={[styles.emptyText, { color: emptyTextColor }]}>
+              No results for{' '}
+              {DISCOVER_CATEGORIES.find((c) => c.k === active)?.label} near{' '}
+              {city}.
             </Text>
             <TouchableOpacity
-              onPress={() => setRefreshTick((n) => n + 1)}
-              className="mt-3 rounded-full bg-primary px-4 py-2">
-              <Text className="text-[12px] font-semibold text-white">
-                Try again
-              </Text>
+              onPress={handleRefresh}
+              style={[
+                styles.retryButton,
+                { backgroundColor: colors.primaryColors.default },
+              ]}>
+              <Text style={styles.retryText}>Try again</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -321,10 +398,10 @@ export default function DiscoverGrid({
 }
 
 function toDiscoverFromSample(
-  d: (typeof DISCOVER_SAMPLES)[number],
+  d: (typeof DISCOVER_SAMPLES)[number]
 ): DiscoverItem {
   return {
-    provider: "static",
+    provider: 'static',
     apiRef: d.id,
     category: d.cat,
     title: d.title,
@@ -335,45 +412,45 @@ function toDiscoverFromSample(
 }
 
 function mapToSaveCategory(
-  category: string,
+  category: string
 ):
-  | "hotel"
-  | "flight"
-  | "tour"
-  | "activity"
-  | "restaurant"
-  | "event"
-  | "destination"
-  | "trip"
-  | "other" {
+  | 'hotel'
+  | 'flight'
+  | 'tour'
+  | 'activity'
+  | 'restaurant'
+  | 'event'
+  | 'destination'
+  | 'trip'
+  | 'other' {
   switch (category) {
-    case "stay":
-    case "hotel":
-      return "hotel";
-    case "fly":
-    case "flight":
-      return "flight";
-    case "tour":
-    case "explore":
-      return "tour";
-    case "do":
-    case "adventure":
-    case "activity":
-    case "adv":
-    case "relax":
-      return "activity";
-    case "eat":
-    case "restaurant":
-      return "restaurant";
-    case "attend":
-    case "event":
-      return "event";
-    case "destination":
-      return "destination";
-    case "trip":
-      return "trip";
+    case 'stay':
+    case 'hotel':
+      return 'hotel';
+    case 'fly':
+    case 'flight':
+      return 'flight';
+    case 'tour':
+    case 'explore':
+      return 'tour';
+    case 'do':
+    case 'adventure':
+    case 'activity':
+    case 'adv':
+    case 'relax':
+      return 'activity';
+    case 'eat':
+    case 'restaurant':
+      return 'restaurant';
+    case 'attend':
+    case 'event':
+      return 'event';
+    case 'destination':
+      return 'destination';
+    case 'trip':
+      return 'trip';
     default:
-      return "other";
+      return 'other';
   }
 }
 
@@ -396,17 +473,11 @@ function Grid({
   return (
     <View>
       {rows.map((row, rowIdx) => (
-        <View
-          key={rowIdx}
-          className="flex-row"
-          style={{
-            gap: GUTTER,
-            marginBottom: rowIdx === rows.length - 1 ? 0 : GUTTER,
-          }}>
+        <View key={rowIdx} style={[styles.gridRow]}>
           {row.map((item) => (
             <View
               key={`${item.provider}:${item.apiRef}`}
-              style={{ width: CARD_WIDTH }}>
+              style={styles.gridCell}>
               <DiscoverCard
                 item={item}
                 categoryLabel={
@@ -421,9 +492,7 @@ function Grid({
               />
             </View>
           ))}
-          {row.length === 1 ? (
-            <View style={{ width: CARD_WIDTH }} />
-          ) : null}
+          {row.length === 1 ? <View style={styles.gridCell} /> : null}
         </View>
       ))}
     </View>
@@ -433,14 +502,99 @@ function Grid({
 function SkeletonGrid() {
   return (
     <View>
-      <View className="flex-row" style={{ gap: GUTTER, marginBottom: GUTTER }}>
-        <SkeletonBox width={CARD_WIDTH} height={CARD_WIDTH * 1.25} borderRadius={16} />
-        <SkeletonBox width={CARD_WIDTH} height={CARD_WIDTH * 1.25} borderRadius={16} />
+      <View style={[styles.gridRow, { marginBottom: GUTTER }]}>
+        <SkeletonBox
+          width={CARD_WIDTH}
+          height={CARD_WIDTH * 1.25}
+          borderRadius={16}
+        />
+        <SkeletonBox
+          width={CARD_WIDTH}
+          height={CARD_WIDTH * 1.25}
+          borderRadius={16}
+        />
       </View>
-      <View className="flex-row" style={{ gap: GUTTER }}>
-        <SkeletonBox width={CARD_WIDTH} height={CARD_WIDTH * 1.25} borderRadius={16} />
-        <SkeletonBox width={CARD_WIDTH} height={CARD_WIDTH * 1.25} borderRadius={16} />
+      <View style={styles.gridRow}>
+        <SkeletonBox
+          width={CARD_WIDTH}
+          height={CARD_WIDTH * 1.25}
+          borderRadius={16}
+        />
+        <SkeletonBox
+          width={CARD_WIDTH}
+          height={CARD_WIDTH * 1.25}
+          borderRadius={16}
+        />
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRow: {
+    // marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SIDE_PADDING,
+  },
+  headingText: {
+    fontFamily: AppFonts.bricolage.semiBold,
+    fontSize: 18,
+  },
+  chipScrollContent: {
+    paddingHorizontal: SIDE_PADDING,
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  chipLast: {
+    marginRight: 0,
+  },
+  chipText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  body: {
+    paddingHorizontal: SIDE_PADDING,
+  },
+  emptyBox: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 12.5,
+  },
+  retryButton: {
+    marginTop: 12,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  retryText: {
+    fontSize: 12,
+    fontFamily: AppFonts.bricolage.semiBold,
+    color: '#fff',
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: GUTTER,
+  },
+  gridCell: {
+    width: CARD_WIDTH,
+  },
+});

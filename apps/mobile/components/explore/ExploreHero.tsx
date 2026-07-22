@@ -1,11 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import { Image } from 'expo-image'
-import { ArrowRight, Sparkles } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground } from 'expo-image';
+import { ArrowRight } from 'lucide-react-native';
+import { Pressable, StyleSheet, View, useColorScheme } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
 
 import type { Destination } from '@/types/content.types';
+import Text from '@/components/ui/Text';
+import { AppFonts, Colors, COLORS } from '@/constants';
 
 interface ExploreHeroProps {
   destination: Destination;
@@ -15,52 +17,50 @@ const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200';
 
 const ExploreHero = ({ destination }: ExploreHeroProps) => {
+  type ColorScheme = keyof typeof Colors;
+  const colorScheme = (useColorScheme() ?? 'light') as ColorScheme;
+  const colors = Colors[colorScheme];
   return (
     <Link href={`/destination/${destination.id}`} asChild>
       <Link.AppleZoom>
         <Pressable
           // className="mx-5 mt-4 overflow-hidden rounded-2xl"
-          style={styles.container}
-        >
-          <Image
+          style={styles.container}>
+          <ImageBackground
             source={{ uri: destination.image || FALLBACK_IMAGE }}
             contentFit="cover"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-          />
+            style={styles.imageContainer}>
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.65)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{ position: 'absolute', inset: 0 }}
+            />
 
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.65)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={{ position: 'absolute', inset: 0 }}
-          />
+            <View style={styles.textContainer}>
+              <View>
+                <Text style={[styles.headerText]}>{destination.title}</Text>
+                {destination.location ? (
+                  <Text style={[styles.subText]}>{destination.location}</Text>
+                ) : null}
+              </View>
 
-          <View className="absolute left-3 top-3 flex-row items-center rounded-full bg-white/90 px-2.5 py-1">
-            <Sparkles size={12} color="#FF2E92" strokeWidth={2.4} />
-            <Text className="ml-1 text-[11px] font-bold text-black">Featured</Text>
-          </View>
-
-          <View className="absolute inset-x-0 bottom-0 flex-row items-end justify-between p-4">
-            <View className="flex-1 pr-3">
-              <Text
-                className="text-2xl font-extrabold text-white"
-                numberOfLines={1}
-                style={{ fontFamily: 'BricolageGrotesque-ExtraBold' }}
-              >
-                {destination.title}
-              </Text>
-              {destination.location ? (
-                <Text className="mt-0.5 text-sm text-white/80" numberOfLines={1}>
-                  {destination.location}
+              <GlassView style={styles.glassView} isInteractive>
+                <Text
+                  style={[
+                    styles.exploreText,
+                    { color: colors.backgroundColors.default },
+                  ]}>
+                  Explore
                 </Text>
-              ) : null}
+                <ArrowRight
+                  size={14}
+                  color={colors.backgroundColors.default}
+                  strokeWidth={2.4}
+                />
+              </GlassView>
             </View>
-
-            <View className="flex-row items-center rounded-full bg-white px-3 py-2">
-              <Text className="mr-1 text-xs font-bold text-black">Explore</Text>
-              <ArrowRight size={14} color="#000" strokeWidth={2.4} />
-            </View>
-          </View>
+          </ImageBackground>
         </Pressable>
       </Link.AppleZoom>
     </Link>
@@ -71,11 +71,50 @@ export default ExploreHero;
 
 const styles = StyleSheet.create({
   container: {
-    height: 350,
+    height: 450,
     width: '90%',
     alignSelf: 'center',
     overflow: 'hidden',
     borderRadius: 16,
-    marginTop: 12
-  }
-})
+    marginTop: 12,
+  },
+  imageContainer: {
+    width: '100%',
+    height: '100%',
+  },
+  textContainer: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    position: 'absolute',
+    bottom: 0,
+  },
+  glassView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 99,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    gap: 2,
+  },
+  headerText: {
+    paddingTop: 12,
+    fontSize: 24,
+    fontFamily: AppFonts.bricolage.bold,
+    color: COLORS.white.base,
+  },
+  exploreText: {
+    fontSize: 14,
+    fontFamily: AppFonts.bricolage.semiBold,
+    color: COLORS.white.base,
+  },
+  subText: {
+    fontSize: 14,
+    fontFamily: AppFonts.bricolage.regular,
+    color: COLORS.white.base,
+  },
+});

@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Spacer, Text as AppText } from '@/components';
 import { Colors, AppFonts } from '@/constants';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 const SECTION_GAP = 32;
 
@@ -42,7 +43,7 @@ const ExploreScreen = () => {
     <>
       <Spacer size={insets.top + 20} vertical />
       <Text style={[styles.header, { color: colors.textColors.default }]}>
-        Explore
+        Find your next adventure
       </Text>
 
       <ScrollView
@@ -125,8 +126,9 @@ const styles = StyleSheet.create({
   },
   header: {
     fontFamily: AppFonts.bricolage.bold,
-    fontSize: 32,
+    fontSize: 28,
     paddingHorizontal: 16,
     paddingVertical: 16,
+    alignSelf: 'center',
   },
 });

@@ -12,8 +12,6 @@ import {
 
 interface ItineraryCardProps {
   item: Itinerary;
-  fullWidth?: boolean;
-  hasBorder?: boolean;
   height?: number;
 }
 

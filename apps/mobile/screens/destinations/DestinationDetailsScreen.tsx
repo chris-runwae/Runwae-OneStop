@@ -1,16 +1,5 @@
-import DestinationInfo from '@/components/destination/DestinationInfo';
-import RecommendationsSection from '@/components/destination/RecommendationsSection';
-import DetailNotFound from '@/components/experience/DetailNotFound';
-import AddToTripContent from '@/components/home/AddToTripContent';
-import CustomModal from '@/components/ui/CustomModal';
-import DestinationCard from '@/components/home/DestinationCard';
-import ItineraryForYou from '@/components/home/IteneryForYou';
-import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
-import { useTrips } from '@/context/TripsContext';
-import { savedItemFromDestination } from '@/utils/savedIdeaInputs';
-import { toItineraryTemplate } from '@/utils/adapters/toItineraryTemplate';
 import React, { useMemo, useState } from 'react';
-import { Alert, Image, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -19,10 +8,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { useDestinationById, useDestinations } from '@/hooks/useDestinations';
 import { FlashList } from '@shopify/flash-list';
-import { Spacer } from '@/components';
 import { useQuery } from 'convex/react';
 import { api } from '@runwae/convex/convex/_generated/api';
 import type { Id } from '@runwae/convex/convex/_generated/dataModel';
+
+import { Spacer } from '@/components';
+import DestinationInfo from '@/components/destination/DestinationInfo';
+import RecommendationsSection from '@/components/destination/RecommendationsSection';
+import DetailNotFound from '@/components/experience/DetailNotFound';
+import AddToTripContent from '@/components/home/AddToTripContent';
+import CustomModal from '@/components/ui/CustomModal';
+import DestinationCard from '@/components/home/DestinationCard';
+import ItineraryForYou from '@/components/home/IteneryForYou';
+import ItineraryHeader, {
+  EXPANDED_HEIGHT,
+} from '@/components/itinerary/ItineraryHeader';
+import { useTrips } from '@/context/TripsContext';
+import { savedItemFromDestination } from '@/utils/savedIdeaInputs';
+import { toItineraryTemplate } from '@/utils/adapters/toItineraryTemplate';
 
 const DestinationDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -82,6 +85,7 @@ const DestinationDetailScreen = () => {
 
   return (
     <View className="flex-1">
+      {/* <Link.AppleZoomTarget> */}
       <ItineraryHeader
         scrollY={scrollY}
         imageUri={destination?.image ?? ''}
@@ -89,18 +93,16 @@ const DestinationDetailScreen = () => {
         onFavoritePress={() => setAddToTripOpen(true)}
         favoriteFilled={ideaSaved}
       />
+      {/* </Link.AppleZoomTarget> */}
 
       <Animated.ScrollView
-        className="flex-1"
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}>
-        <Image
-          source={{ uri: destination.image ?? undefined }}
-          className="h-[300px] w-full"
-          resizeMode="cover"
-        />
+        {/* Spacer that the header sits over. Replaces the duplicate Image. */}
+        <View style={styles.headerSpacer} />
 
         <DestinationInfo
           title={destination.title}
@@ -180,3 +182,18 @@ const DestinationDetailScreen = () => {
 };
 
 export default DestinationDetailScreen;
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+  headerSpacer: { height: EXPANDED_HEIGHT },
+  divider: { marginTop: 20, height: 8, backgroundColor: '#f3f4f6' },
+  sectionTitle: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+    fontSize: 20,
+    fontFamily: 'BricolageGrotesque-ExtraBold',
+  },
+  similarWrap: { marginTop: 32, paddingBottom: 40 },
+  listContent: { paddingHorizontal: 20 },
+});

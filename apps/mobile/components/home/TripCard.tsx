@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { FileText, Users } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import {
@@ -26,7 +26,6 @@ interface TripCardProps {
 const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
-  const router = useRouter();
 
   const itemsCount = useItineraryItemCount(trip._id);
   const members = useTripMembers(trip._id) ?? [];
@@ -37,111 +36,113 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
   const { dark } = useTheme();
 
   return (
-    <Pressable
-      onPress={() => {
-        router.push(`/(tabs)/(trips)/${trip._id}`);
-      }}
-      className="bg-white dark:bg-dark-seconndary/50"
-      style={[
-        styles.card,
-        {
-          width: fullWidth ? '100%' : 340,
-        },
-        Platform.OS === 'ios' ? styles.shadowIos : styles.shadowAndroid,
-      ]}>
-      <View style={styles.imageContainer}>
-        <TripCardImage uri={trip.coverImageUrl} />
-        <TripStatusChip status={(trip as any).status} />
-      </View>
+    <Link href={`/(tabs)/(trips)/${trip._id}`} asChild>
+      <Link.AppleZoom>
+        <Pressable
+          className="bg-white dark:bg-dark-seconndary/50"
+          style={StyleSheet.flatten([
+            styles.card,
+            {
+              width: fullWidth ? '100%' : 340,
+            },
+            Platform.OS === 'ios' ? styles.shadowIos : styles.shadowAndroid,
+          ])}>
+          <View style={styles.imageContainer}>
+            <TripCardImage uri={trip.coverImageUrl} />
+            <TripStatusChip status={(trip as any).status} />
+          </View>
 
-      <View style={styles.infoContainer}>
-        <Text
-          style={[
-            styles.title,
-            { color: isDark ? COLORS.white.default : COLORS.black.default },
-          ]}
-          numberOfLines={1}>
-          {trip.title}
-        </Text>
-
-        <View style={styles.metadataRow}>
-          <View
-            style={[
-              styles.metadataCol,
-              { borderRightColor: isDark ? '#374151' : '#E5E5E5' },
-            ]}>
-            <Text style={styles.emoji}>📍</Text>
+          <View style={styles.infoContainer}>
             <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={styles.metadataText}>
-              {trip.destinationLabel || 'TBD'}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.metadataCol,
-              { paddingLeft: 8, borderRightWidth: 0 },
-            ]}>
-            <Text style={styles.emoji}>⏳</Text>
-            <Text style={styles.metadataText}>{countdown}!</Text>
-          </View>
-        </View>
-
-        {/* Bottom Row: Pills & Avatars */}
-        <View style={styles.bottomRow}>
-          <View
-            style={[
-              styles.pillContainer,
-              {
-                borderColor: isDark ? 'rgba(131, 24, 67, 0.5)' : '#FBCFE8',
-                backgroundColor: isDark
-                  ? 'rgba(131, 24, 67, 0.2)'
-                  : 'rgba(253, 242, 248, 0.8)',
-              },
-            ]}>
-            <View style={styles.pillItem}>
-              <Users size={14} color="#ec4899" strokeWidth={2.5} />
-              <Text
-                style={[
-                  styles.pillText,
-                  { color: isDark ? '#D1D5DB' : '#374151' },
-                ]}>
-                {members.length} {members.length === 1 ? 'person' : 'people'}
-              </Text>
-            </View>
-
-            <View
               style={[
-                styles.separator,
-                { backgroundColor: isDark ? '#4B5563' : '#D1D5DB' },
+                styles.title,
+                { color: isDark ? COLORS.white.default : COLORS.black.default },
               ]}
-            />
+              numberOfLines={1}>
+              {trip.title}
+            </Text>
 
-            <View style={styles.pillItem}>
-              <FileText size={14} color="#ec4899" strokeWidth={2.5} />
-              <Text
+            <View style={styles.metadataRow}>
+              <View
                 style={[
-                  styles.pillText,
-                  { color: isDark ? '#D1D5DB' : '#374151' },
+                  styles.metadataCol,
+                  { borderRightColor: isDark ? '#374151' : '#E5E5E5' },
                 ]}>
-                {itemsCount === undefined ? '...' : itemsCount}{' '}
-                {itemsCount === 1 ? 'item' : 'items'}
-              </Text>
+                <Text style={styles.emoji}>📍</Text>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.metadataText}>
+                  {trip.destinationLabel || 'TBD'}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.metadataCol,
+                  { paddingLeft: 8, borderRightWidth: 0 },
+                ]}>
+                <Text style={styles.emoji}>⏳</Text>
+                <Text style={styles.metadataText}>{countdown}!</Text>
+              </View>
+            </View>
+
+            {/* Bottom Row: Pills & Avatars */}
+            <View style={styles.bottomRow}>
+              <View
+                style={[
+                  styles.pillContainer,
+                  {
+                    borderColor: isDark ? 'rgba(131, 24, 67, 0.5)' : '#FBCFE8',
+                    backgroundColor: isDark
+                      ? 'rgba(131, 24, 67, 0.2)'
+                      : 'rgba(253, 242, 248, 0.8)',
+                  },
+                ]}>
+                <View style={styles.pillItem}>
+                  <Users size={14} color="#ec4899" strokeWidth={2.5} />
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: isDark ? '#D1D5DB' : '#374151' },
+                    ]}>
+                    {members.length}{' '}
+                    {members.length === 1 ? 'person' : 'people'}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.separator,
+                    { backgroundColor: isDark ? '#4B5563' : '#D1D5DB' },
+                  ]}
+                />
+
+                <View style={styles.pillItem}>
+                  <FileText size={14} color="#ec4899" strokeWidth={2.5} />
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: isDark ? '#D1D5DB' : '#374151' },
+                    ]}>
+                    {itemsCount === undefined ? '...' : itemsCount}{' '}
+                    {itemsCount === 1 ? 'item' : 'items'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.avatarWrapper}>
+                <AvatarGroup
+                  members={members}
+                  maxVisible={3}
+                  size={30}
+                  overlap={12}
+                />
+              </View>
             </View>
           </View>
-
-          <View style={styles.avatarWrapper}>
-            <AvatarGroup
-              members={members}
-              maxVisible={3}
-              size={30}
-              overlap={12}
-            />
-          </View>
-        </View>
-      </View>
-    </Pressable>
+        </Pressable>
+      </Link.AppleZoom>
+    </Link>
   );
 };
 

@@ -1,4 +1,4 @@
-import ExploreHero from '@/components/explore/ExploreHero';
+import ExploreHeroStack from '@/components/explore/ExploreHeroStack';
 import DestinationsForYou from '@/components/home/DestinationsForYou';
 import ItineraryForYou from '@/components/home/IteneryForYou';
 import ExploreSkeleton from '@/components/ui/ExploreSkeleton';
@@ -52,7 +52,7 @@ const ExploreScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}>
-        <ExploreHero destination={destinations[0]} />
+        <ExploreHeroStack destinations={destinations} />
         <Spacer size={SECTION_GAP} vertical />
 
         <ItineraryForYou

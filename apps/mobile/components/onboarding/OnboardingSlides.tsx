@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { ArrowRight, Map, Users, Sparkles } from 'lucide-react-native';
 import Animated, {
@@ -13,8 +14,10 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { toast } from 'burnt';
 
 import Text from '@/components/ui/Text';
+import { useAuth } from '@/context/AuthContext';
 import { AppFonts, COLORS } from '@/constants';
 import {
   AnimatedFeatureIcon,
@@ -130,6 +133,11 @@ export const AuthSlide: React.FC<SlideProps> = ({
   colors,
   isDarkMode,
 }) => {
+  const { signInWithApple, signInWithGoogle } = useAuth();
+  const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(
+    null
+  );
+
   const slideAnimStyle = useAnimatedStyle(() => ({
     opacity: slideAnimation.value,
     transform: [
@@ -137,17 +145,28 @@ export const AuthSlide: React.FC<SlideProps> = ({
     ],
   }));
 
-  const handleSSOSignIn = (provider: 'apple' | 'google', next: () => void) => {
-    // if (provider === 'apple') {
-    //   handleAppleSignIn();
-    // } else {
-    //   handleGoogleSignIn();
-    // }
-    next();
+  // Run the real provider sign-in; RouteGuard swaps to the authed stack on success.
+  const handleSSOSignIn = async (provider: 'apple' | 'google') => {
+    if (socialLoading) return;
+    setSocialLoading(provider);
+    try {
+      const result =
+        provider === 'apple'
+          ? await signInWithApple()
+          : await signInWithGoogle();
+      if (!result.success && result.error) {
+        toast({
+          title: provider === 'apple' ? 'Apple sign-in' : 'Google sign-in',
+          message: result.error,
+          preset: 'error',
+          duration: 4,
+          haptic: 'error',
+        });
+      }
+    } finally {
+      setSocialLoading(null);
+    }
   };
-  // const handleNext = () => {
-  //   // handleNext();
-  // };
 
   const authStyles = {
     bodyText: {
@@ -189,40 +208,66 @@ export const AuthSlide: React.FC<SlideProps> = ({
             </>
 
             <>
-              {/* Apple SSO */}
-              <TouchableOpacity
-                onPress={() => handleSSOSignIn('apple', handleNext)}
-                className="mb-3 flex-row items-center justify-center rounded-xl py-4"
-                style={{ backgroundColor: isDarkMode ? '#fff' : '#000' }}>
-                <AppleLogo color={isDarkMode ? '#000' : '#fff'} />
-                <Text
-                  replaceDefaultStyle
-                  className="ml-3 text-base"
+              {/* Apple SSO — iOS only, per Sign in with Apple guidelines */}
+              {Platform.OS === 'ios' && (
+                <TouchableOpacity
+                  onPress={() => handleSSOSignIn('apple')}
+                  disabled={socialLoading !== null}
+                  className="mb-3 flex-row items-center justify-center rounded-xl py-4"
                   style={{
-                    color: isDarkMode ? '#000' : '#fff',
-                    ...authStyles.bodyText,
+                    backgroundColor: isDarkMode ? '#fff' : '#000',
+                    opacity: socialLoading !== null ? 0.6 : 1,
                   }}>
-                  Continue with Apple
-                </Text>
-              </TouchableOpacity>
+                  {socialLoading === 'apple' ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={isDarkMode ? '#000' : '#fff'}
+                    />
+                  ) : (
+                    <>
+                      <AppleLogo color={isDarkMode ? '#000' : '#fff'} />
+                      <Text
+                        replaceDefaultStyle
+                        className="ml-3 text-base"
+                        style={{
+                          color: isDarkMode ? '#000' : '#fff',
+                          ...authStyles.bodyText,
+                        }}>
+                        Continue with Apple
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {/* Google SSO */}
               <TouchableOpacity
-                onPress={() => handleSSOSignIn('google', handleNext)}
+                onPress={() => handleSSOSignIn('google')}
+                disabled={socialLoading !== null}
                 className="mb-6 flex-row items-center justify-center rounded-xl border py-4"
                 style={{
                   borderColor: colors.borderColors.subtle,
                   backgroundColor: colors.backgroundColors.subtle,
+                  opacity: socialLoading !== null ? 0.6 : 1,
                 }}>
-                <GoogleLogo />
-                <Text
-                  className="ml-3 text-base"
-                  style={{
-                    color: colors.textColors.default,
-                    ...authStyles.bodyText
-                  }}>
-                  Continue with Google
-                </Text>
+                {socialLoading === 'google' ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.textColors.default}
+                  />
+                ) : (
+                  <>
+                    <GoogleLogo />
+                    <Text
+                      className="ml-3 text-base"
+                      style={{
+                        color: colors.textColors.default,
+                        ...authStyles.bodyText,
+                      }}>
+                      Continue with Google
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               {/* Divider */}

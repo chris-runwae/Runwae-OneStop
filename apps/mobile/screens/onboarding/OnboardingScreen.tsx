@@ -158,13 +158,22 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleSkip = () => {};
+  // Skip/complete are only reachable unauthenticated: mark onboarding seen, then go to sign-in.
+  const handleSkip = () => {
+    void (async () => {
+      try {
+        await completeOnboarding();
+      } finally {
+        router.replace('/(auth)/login');
+      }
+    })();
+  };
 
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // await completeOnboarding(responses);
-      console.log('complete onboarding: ', JSON.stringify(responses, null, 2));
+      await completeOnboarding();
+      router.replace('/(auth)/login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

@@ -833,7 +833,10 @@ export const createFromTemplate = mutation({
     const now = Date.now();
     const finalTitle = args.title ?? `${template.title}`;
     const slug = slugify(finalTitle);
-    const cover = template.coverImageUrl ?? destination.heroImageUrl;
+    const cover =
+      template.coverImageUrl ??
+      destination.heroImageUrl ??
+      pickDefaultCover(slug);
     // Trip currency is initialised from the template; held in a local so
     // the item materialisation loop below can reference it as the final
     // tier of the currency fallback chain without a re-read.
@@ -959,6 +962,7 @@ export const cloneTrip = mutation({
 
     const now = Date.now();
     const newTitle = args.title ?? `${source.title} (copy)`;
+    const newSlug = slugify(newTitle);
     const newTripId = await ctx.db.insert("trips", {
       title: newTitle,
       description: source.description,
@@ -971,8 +975,8 @@ export const cloneTrip = mutation({
       category: source.category,
       visibility: "private",
       status: "planning",
-      coverImageUrl: source.coverImageUrl,
-      slug: slugify(newTitle),
+      coverImageUrl: source.coverImageUrl ?? pickDefaultCover(newSlug),
+      slug: newSlug,
       joinCode: randomId(JOIN_CODE_ALPHABET, 8),
       estimatedBudget: source.estimatedBudget,
       currency: source.currency,
@@ -1072,5 +1076,26 @@ export const cloneTrip = mutation({
     }
 
     return newTripId;
+  },
+});
+
+// One-off migration: backfill a deterministic default cover for any legacy
+// trip row missing one (template/clone/seed paths predating the guaranteed
+// default). Run from the Convex dashboard function runner or
+// `npx convex run trips:backfillTripCovers`. Idempotent — rows that already
+// have a coverImageUrl are skipped, so it's safe to re-run.
+export const backfillTripCovers = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const trips = await ctx.db.query("trips").collect();
+    let patched = 0;
+    for (const trip of trips) {
+      if (trip.coverImageUrl) continue;
+      await ctx.db.patch(trip._id, {
+        coverImageUrl: pickDefaultCover(trip.slug),
+      });
+      patched += 1;
+    }
+    return { scanned: trips.length, patched };
   },
 });

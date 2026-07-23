@@ -15,7 +15,7 @@ import { AppFonts, COLORS } from '@/constants/theme';
 import { useItineraryItemCount } from '@/hooks/useItineraryActions';
 import { useTripMembers, type Trip } from '@/hooks/useTripActions';
 import { formatDaysToGo, getDaysUntil } from '@/utils/date';
-import { useTheme } from "expo-router/react-navigation";
+import { useTheme } from 'expo-router/react-navigation';
 import { AvatarGroup } from '@/components/containers/AvatarGroup';
 
 interface TripCardProps {
@@ -107,8 +107,7 @@ const TripCard = ({ trip, fullWidth = false }: TripCardProps) => {
                   styles.pillText,
                   { color: isDark ? '#D1D5DB' : '#374151' },
                 ]}>
-                {members.length}{' '}
-                {members.length === 1 ? 'person' : 'people'}
+                {members.length} {members.length === 1 ? 'person' : 'people'}
               </Text>
             </View>
 
@@ -157,7 +156,7 @@ const TripCardImage = React.memo(({ uri }: { uri?: string | null }) => {
         uri ??
         'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600',
     }),
-    [uri],
+    [uri]
   );
   return (
     <Image
@@ -197,9 +196,10 @@ const STATUS_BG: Record<TripStatus, string> = {
 };
 
 function TripStatusChip({ status }: { status?: string }) {
-  const key = (status as TripStatus) in STATUS_LABEL
-    ? (status as TripStatus)
-    : 'planning';
+  const key =
+    (status as TripStatus) in STATUS_LABEL
+      ? (status as TripStatus)
+      : 'planning';
   return (
     <View style={[styles.statusChip, { backgroundColor: STATUS_BG[key] }]}>
       <View style={styles.statusDot} />

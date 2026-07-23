@@ -1,7 +1,7 @@
 import ItineraryHeader from '@/components/itinerary/ItineraryHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useTrips } from '@/context/TripsContext';
-import { useTheme } from "expo-router/react-navigation";
+import { useTheme } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Copy, LogOut, MapPin, Pencil, Trash2 } from 'lucide-react-native';
@@ -37,6 +37,7 @@ import {
   Text,
 } from '@/components';
 import { AppFonts, COLORS, Colors, textStyles } from '@/constants';
+import { pickDefaultCover } from '@runwae/convex/convex/lib/coverImage';
 
 export default function TripDetailScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -89,7 +90,10 @@ export default function TripDetailScreen() {
     return <TripDetailSkeleton insetTop={insets.top} />;
   }
 
-  const coverUrl = activeTrip?.coverImageUrl;
+  // Match TripCard: fall back to a deterministic default so legacy trips
+  // without a stored cover still render an image instead of the placeholder.
+  const coverUrl =
+    activeTrip?.coverImageUrl ?? pickDefaultCover(activeTrip.slug);
 
   const dynamicStyles = StyleSheet.create({
     infoContainer: {
@@ -118,7 +122,7 @@ export default function TripDetailScreen() {
 
   const isOwner = (activeTrip.creatorId as unknown as string) === user?.id;
   const isMember = activeTripMembers.some(
-    (m) => (m.user?._id as unknown as string) === user?.id,
+    (m) => (m.user?._id as unknown as string) === user?.id
   );
   const isPublic = activeTrip.visibility === 'public';
   const isSolo = isOwner && activeTripMembers.length === 1;
@@ -179,9 +183,6 @@ export default function TripDetailScreen() {
 
   return (
     <>
-      {/*<Stack.Toolbar placement='right'>*/}
-      {/*  <Stack.Toolbar.Button icon='ellipses.bubble' onPress={() => {}}/>*/}
-      {/*</Stack.Toolbar>*/}
       <View style={styles.container}>
         <ItineraryHeader
           scrollY={scrollY}
@@ -194,6 +195,7 @@ export default function TripDetailScreen() {
           dropdownOptions={dropdownOptions}
           hideFavorite={true}
           joinCode={activeTrip.joinCode ?? null}
+          showTitle={false}
         />
 
         <Animated.ScrollView
@@ -352,7 +354,7 @@ export default function TripDetailScreen() {
           </View>
         </Animated.ScrollView>
       </View>
-      </>
+    </>
   );
 }
 
@@ -444,9 +446,9 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   tripTitle: {
-    ...textStyles.textHeading24,
-    fontSize: 20,
-    fontFamily: 'BricolageGrotesque-Bold',
+    fontSize: 24,
+    fontFamily: AppFonts.bricolage.bold,
+    paddingTop: 12,
   },
   creatorInfo: {
     flexDirection: 'row',
